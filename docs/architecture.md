@@ -1,9 +1,9 @@
 # Architecture
 
-## Milestone 0 and 1 boundary
+## Milestone 0–2 boundary
 
-The repository intentionally contains only the contracts and a small verified
-simulation spike:
+The repository intentionally keeps the verified simulation spike isolated from
+the aggregate evidence and synthetic-population paths:
 
 ```text
 strict config/provenance models
@@ -16,6 +16,7 @@ strict config/provenance models
           |
           v
 official ss.Sim + ss.SIR + ss.RandomNet
+```
 
 Milestone 1 adds a separate aggregate evidence path:
 
@@ -32,6 +33,29 @@ immutable raw snapshots + source registry
  validation/reconciliation + deterministic quality report
 ```
 
+Milestone 2 adds a bounded synthetic-population path that consumes only the
+validated aggregate controls:
+
+```text
+canonical aggregate tables + source/table hashes
+                  |
+                  v
+        strict population configuration
+                  |
+                  v
+      seeded parish/age/sex allocation
+          /                    \\
+         v                      v
+ private household generator   communal-setting generator
+         |                      |
+         +----------+-----------+
+                    v
+     invariant validation + diagnostics
+                    |
+                    v
+       Parquet artifacts + manifest
+```
+
 `src/jersey_outbreak/starsim_compat.py` is the only application module allowed
 to import Starsim. It owns the exact 3.5.2 API calls used by the spike and
 converts Starsim result arrays into plain Python values. The rest of the
@@ -40,7 +64,15 @@ application does not depend on Starsim's internal object graph.
 `src/jersey_outbreak/data_pipeline.py` is deliberately independent of Starsim.
 It validates local snapshot hashes before parsing, keeps observed and derived
 rows distinct, and records manual extraction locators and evidence source IDs.
-It stops at aggregate controls and creates no synthetic people or settings.
+It stops at aggregate controls. `population_controls.py` is the explicit
+boundary from those controls into Milestone 2 generation; it fails closed when
+the canonical table manifest or quality report is invalid.
+
+`population_generator.py` owns only synthetic residents, private households and
+communal settings. It does not create contacts, schools, workplaces, commutes,
+mobility, disease state or interventions. `population_artifacts.py` writes
+Parquet plus diagnostics and a manifest; logical content is hashed separately
+from volatile runtime metadata.
 
 ## Stable boundaries for later milestones
 
@@ -49,8 +81,9 @@ It stops at aggregate controls and creates no synthetic people or settings.
 - **Data:** raw snapshots and canonical aggregate tables remain independent of
   simulation runtime state; each row retains source hash, reference period,
   locator and transformation metadata.
-- **Population:** future synthetic residents and settings remain
-  disease-agnostic.
+- **Population:** synthetic residents and settings remain disease-agnostic.
+  Milestone 2 implements only the bounded resident, household and communal-
+  setting layer; contact structures are deferred.
 - **Simulation adapter:** the only deep Starsim integration point.
 - **Disease:** future disease modules own natural history and transmission
   parameters; they do not create Jersey households or geography.

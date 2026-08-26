@@ -10,10 +10,15 @@ import typer
 
 from .data_pipeline import build_canonical
 from .demo import run_demo
+from .population_artifacts import write_population_artifact
+from .population_generator import generate_population
+from .population_schemas import PopulationGenerationConfig, PopulationMode
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 data_app = typer.Typer(add_completion=False, no_args_is_help=True)
+population_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(data_app, name="data")
+app.add_typer(population_app, name="population")
 
 
 @app.callback()
@@ -67,6 +72,42 @@ def data_build(
                 "table_count": len(report["tables"]),
                 "warning_count": len(report["warnings"]),
                 "quality_report": _display_path(destination / "quality_report.json", root),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@population_app.command("generate")
+def population_generate(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Population scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Non-negative generator seed.")] = 123,
+    output_dir: Annotated[
+        Path, typer.Option(help="Directory for versioned population artifacts.")
+    ] = Path("outputs/populations"),
+) -> None:
+    """Generate and validate a disease-agnostic synthetic population."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    config = PopulationGenerationConfig(mode=mode, seed=seed)
+    generated = generate_population(root, config)
+    artifact = write_population_artifact(generated, root, destination)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_id": artifact.manifest.artifact_id,
+                "artifact_directory": str(artifact.artifact_directory),
+                "diagnostics_status": artifact.manifest.diagnostics_status,
+                "logical_content_hash": artifact.manifest.logical_content_hash,
+                "mode": artifact.manifest.mode,
+                "target_population": artifact.manifest.target_population,
+                "households": artifact.manifest.household_count,
+                "communal_residents": artifact.manifest.communal_resident_count,
+                "runtime_seconds": artifact.manifest.runtime_seconds,
             },
             ensure_ascii=False,
             sort_keys=True,

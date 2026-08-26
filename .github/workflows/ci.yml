@@ -20,3 +20,4 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run jos demo --seed 123
+      - run: uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci

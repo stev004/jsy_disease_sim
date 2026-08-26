@@ -17,6 +17,15 @@ synthetic residents and not a validated outbreak reconstruction. Reference
 periods, universes, rounding, suppression and source conflicts remain visible
 in the canonical tables and quality report.
 
+Milestone 2 uses those controls to generate wholly synthetic residents at CI,
+scaled and full population sizes. Parish counts are scaled shares, detailed
+age/sex cells use a documented raking transformation, and household and
+communal-setting counts are derived from the available aggregate controls.
+Housing, crowding and car-access attributes are broad generated controls, not
+individual-level observations. Diagnostics preserve input hashes and list the
+assumptions and transformations. This layer has no contacts and makes no claim
+to reproduce actual household identities, addresses or movements.
+
 ## Scientific rules
 
 - Use synthetic people only; never imply that an agent represents a real
@@ -34,6 +43,8 @@ in the canonical tables and quality report.
 - Preserve code version, dependency lock, configuration, data snapshots and
   random seeds for reproducibility.
 - Bound claims visibly: a working demo is not a forecast or policy authority.
+- Treat a synthetic population as a latent modelling substrate, not as a list
+  of real Jersey residents.
 
 ## Parameters in the spike
 
