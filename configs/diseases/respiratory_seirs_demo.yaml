@@ -1,0 +1,242 @@
+schema_version: "1.0"
+parameter_set_id: respiratory-demo-v0.1
+module: generic_respiratory_seirs
+parameters:
+  transmission_beta:
+    value: 0.08
+    distribution: fixed daily per-edge probability before route weight
+    units: probability per active daily edge
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: Demonstration value only; it is not a named-pathogen estimate.
+  initial_seed_count:
+    value: 10.0
+    distribution: fixed count
+    units: synthetic agents
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 104540.0]
+    notes: Deterministically selected from the existing synthetic population.
+  initial_prevalence:
+    value: null
+    distribution: not used in the default run
+    units: proportion
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: An alternative deterministic initializer; the default uses an explicit seed count.
+  import_rate_per_day:
+    value: 0.0
+    distribution: Poisson rate
+    units: synthetic imports per day
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1000.0]
+    notes: Disabled in the default run; no visitor or port process is represented.
+  import_schedule:
+    value: null
+    distribution: optional date-to-count schedule
+    units: synthetic imports by date
+    status: scenario_assumption
+    source_ids: []
+    notes: Empty in the default run; this is not an arrivals or origin-prevalence model.
+  latent_period_days:
+    value: 2.0
+    distribution: fixed duration
+    units: days
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.1, 30.0]
+    notes: Demonstration duration pending named-disease evidence.
+  infectious_period_days:
+    value: 5.0
+    distribution: fixed duration
+    units: days
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.1, 60.0]
+    notes: Demonstration duration pending named-disease evidence.
+  recovery_timing:
+    value: 5.0
+    distribution: fixed duration inherited from infectious_period_days
+    units: days after becoming infectious
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.1, 60.0]
+    notes: Recovery is scheduled after the active infectious period.
+  infectiousness_profile:
+    value: 1.0
+    distribution: constant while infected
+    units: relative infectiousness
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: No presymptomatic, symptomatic or asymptomatic profile is enabled in M5.
+  immunity_duration_days:
+    value: 30.0
+    distribution: fixed duration
+    units: days
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.1, 3650.0]
+    notes: Used only when immunity waning is enabled.
+  immunity_waning_enabled:
+    value: 1.0
+    distribution: fixed switch
+    units: boolean encoded as 0 or 1
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: The default is a short illustrative immunity duration, not a measured control.
+  immunity_acquisition:
+    value: 1.0
+    distribution: fixed post-recovery protection
+    units: relative protection
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: Recovery moves agents to the recovered state until configured waning.
+  symptom_probability:
+    value: null
+    distribution: not implemented
+    units: probability
+    status: scenario_assumption
+    source_ids: []
+    notes: Presymptomatic, symptomatic and asymptomatic substates are deferred from M5.
+  asymptomatic_relative_infectiousness:
+    value: null
+    distribution: not implemented
+    units: relative infectiousness
+    status: scenario_assumption
+    source_ids: []
+    notes: Deferred with the asymptomatic substate.
+  age_susceptibility:
+    value: null
+    distribution: not implemented
+    units: relative susceptibility
+    status: scenario_assumption
+    source_ids: []
+    notes: The core demonstration uses equal susceptibility across synthetic ages.
+  severe_progression:
+    value: null
+    distribution: not implemented
+    units: probability
+    status: scenario_assumption
+    source_ids: []
+    notes: Severity and disease deaths are explicitly deferred from the core M5 module.
+  disease_death_probability:
+    value: null
+    distribution: not implemented
+    units: probability
+    status: scenario_assumption
+    source_ids: []
+    notes: Disease deaths are not enabled; Starsim demographic deaths are not used by M5.
+  seasonal_amplitude:
+    value: 0.0
+    distribution: fixed amplitude
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: Seasonality is disabled pending evidence and a separate controlled feature.
+  route_multiplier_household:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 household edge opportunity weight.
+  route_multiplier_school_class:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 school_class edge opportunity weight.
+  route_multiplier_school_cross_class:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 school_cross_class edge opportunity weight.
+  route_multiplier_workplace_team:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 workplace_team edge opportunity weight.
+  route_multiplier_workplace_transient:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 workplace_transient edge opportunity weight.
+  route_multiplier_care_resident:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 care_resident edge opportunity weight.
+  route_multiplier_care_staff:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 care_staff edge opportunity weight.
+  route_multiplier_shared_vehicle:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 shared_vehicle edge opportunity weight.
+  route_multiplier_bus:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 bus edge opportunity weight.
+  route_multiplier_community_indoor:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 community_indoor edge opportunity weight.
+  route_multiplier_community_outdoor:
+    value: 1.0
+    distribution: fixed route multiplier
+    units: relative multiplier
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 10.0]
+    notes: Applied to the M4 community_outdoor edge opportunity weight.
+route_multipliers:
+  household: 1.0
+  school_class: 1.0
+  school_cross_class: 1.0
+  workplace_team: 1.0
+  workplace_transient: 1.0
+  care_resident: 1.0
+  care_staff: 1.0
+  shared_vehicle: 1.0
+  bus: 1.0
+  community_indoor: 1.0
+  community_outdoor: 1.0

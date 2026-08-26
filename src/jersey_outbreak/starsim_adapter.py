@@ -161,6 +161,36 @@ def build_starsim_sim(
     return sim
 
 
+def build_starsim_disease_sim(
+    generated: GeneratedNetworks,
+    disease: Any,
+    *,
+    start_date: date | None = None,
+    duration_days: int = 2,
+    seed: int | None = None,
+) -> Any:
+    """Build an initialized Starsim simulation using the existing JOS routes."""
+
+    if duration_days <= 0:
+        raise ValueError("duration_days must be positive")
+    ss = _load_starsim()
+    start = start_date or generated.config.start_date
+    stop = start + timedelta(days=duration_days)
+    sim = ss.Sim(
+        n_agents=len(generated.agent_ids),
+        start=start.isoformat(),
+        stop=stop.isoformat(),
+        dt=ss.days(1),
+        rand_seed=generated.config.seed if seed is None else seed,
+        networks=build_starsim_networks(generated),
+        diseases=disease,
+        verbose=0,
+        copy_inputs=False,
+    )
+    sim.init()
+    return sim
+
+
 def run_starsim_network_compatibility(
     generated: GeneratedNetworks, *, duration_days: int = 2
 ) -> dict[str, Any]:

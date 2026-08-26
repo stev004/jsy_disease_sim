@@ -1,4 +1,4 @@
-"""Command-line interface for the bounded Milestone 0–4 workflows."""
+"""Command-line interface for the bounded Milestone 0–5 workflows."""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ from .demo import run_demo
 from .network_artifacts import write_network_artifact
 from .network_generator import generate_networks
 from .network_schemas import NetworkGenerationConfig
+from .outbreak_artifacts import write_outbreak_artifact
+from .outbreak_runner import default_run_config, load_parameter_set, run_outbreak
 from .population_artifacts import write_population_artifact
 from .population_generator import generate_population
 from .population_schemas import PopulationGenerationConfig, PopulationMode
@@ -29,10 +31,12 @@ data_app = typer.Typer(add_completion=False, no_args_is_help=True)
 population_app = typer.Typer(add_completion=False, no_args_is_help=True)
 structure_app = typer.Typer(add_completion=False, no_args_is_help=True)
 network_app = typer.Typer(add_completion=False, no_args_is_help=True)
+outbreak_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(data_app, name="data")
 app.add_typer(population_app, name="population")
 app.add_typer(structure_app, name="structure")
 app.add_typer(network_app, name="network")
+app.add_typer(outbreak_app, name="outbreak")
 
 
 @app.callback()
@@ -256,6 +260,72 @@ def network_generate(
                 "routes": len(generated.route_specs),
                 "baseline_edges": generated.diagnostics["benchmark"]["total_baseline_edges"],
                 "runtime_seconds": generated.runtime_seconds,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@outbreak_app.command("run")
+def outbreak_run(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Outbreak scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Non-negative outbreak seed.")] = 123,
+    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    output_dir: Annotated[
+        Path, typer.Option(help="Directory for versioned M5 outbreak artifacts.")
+    ] = Path("outputs/outbreaks"),
+) -> None:
+    """Run the latent generic respiratory SEIRS demonstration."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    parameter_path = parameter_set
+    if parameter_path is not None and not parameter_path.is_absolute():
+        parameter_path = root / parameter_path
+    parameters = load_parameter_set(root, parameter_path)
+    config = default_run_config(
+        mode,
+        seed,
+        parameters,
+        duration_days=duration_days,
+    )
+
+    m2_output = destination.parent / "populations"
+    m3_output = destination.parent / "structures"
+    m4_output = destination.parent / "networks"
+    m2_generated = generate_population(root, PopulationGenerationConfig(mode=mode, seed=seed))
+    m2_artifact = write_population_artifact(m2_generated, root, m2_output)
+    m2_input = load_m2_population_artifact(root, m2_artifact.artifact_directory)
+    m3_generated = generate_structure(
+        root, StructureGenerationConfig(mode=mode, seed=seed), m2_input
+    )
+    m3_artifact = write_structure_artifact(m3_generated, root, m3_output, m2_input)
+    m3_input = load_m3_structure_artifact(root, m3_artifact.artifact_directory)
+    generated = generate_networks(
+        NetworkGenerationConfig(mode=mode, seed=seed), m2_input, m3_input, root
+    )
+    m4_artifact = write_network_artifact(generated, root, m4_output)
+    result = run_outbreak(generated, config, parameters)
+    artifact = write_outbreak_artifact(result, root, destination)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_id": artifact.manifest.artifact_id,
+                "artifact_directory": str(artifact.artifact_directory),
+                "diagnostics_status": artifact.manifest.diagnostics_status,
+                "logical_content_hash": artifact.manifest.logical_content_hash,
+                "mode": artifact.manifest.mode,
+                "target_population": len(generated.agent_ids),
+                "m4_artifact_id": m4_artifact.manifest.artifact_id,
+                "starsim_version": artifact.manifest.starsim_version,
+                "attribution_totals": artifact.manifest.attribution_totals,
+                "runtime_seconds": result.runtime_seconds,
             },
             ensure_ascii=False,
             sort_keys=True,

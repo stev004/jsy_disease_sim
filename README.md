@@ -7,7 +7,7 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–4.1**: repository contracts, a verified
+This repository contains **Milestones 0–5**: repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
 synthetic daytime structure for schools, employment, workplaces and commuting,
@@ -15,6 +15,14 @@ plus a disease-agnostic Jersey route layer adapted to Starsim 3.5.2. M4.1
 closes the school-staff and supported care-home staffing overlays using frozen
 official evidence and explicit synthetic allocation assumptions; it does not
 claim to reconstruct real staff rosters.
+Milestone 5 adds a generic, pathogen-neutral daily respiratory SEIRS
+demonstration. Its active states are susceptible, exposed, infectious and
+recovered, with configurable immunity waning; severity, disease deaths,
+symptom substates, observation, calibration and named-pathogen parameters are
+explicitly deferred. Starsim owns network transmission, while JOS records
+route-attributed latent infections and writes tidy daily epidemic, parish, age
+and route tables. Demonstration values are scenario assumptions, not Jersey
+surveillance controls.
 The Starsim demo is an official SIR example using Starsim's built-in
 `RandomNet`; it is not a Jersey outbreak reconstruction or a validated
 forecast. The Milestone 2 population is synthetic and control-driven; it is
@@ -60,6 +68,13 @@ explicit secondary jobs remain; household, community and transport contacts are
 preserved. It does not contain a custom disease, transmission calibration or
 intervention model.
 
+Milestone 5 consumes an immutable M4.1 route object and runs a generic
+respiratory SEIRS module through Starsim 3.5.2. Seeded infections and optional
+generic exogenous imports are distinct from locally acquired infections. Local
+events retain the Starsim infector UID and route ID; no visitors, arrivals,
+airport/ferry process, observation model, calibration, interventions or API are
+implemented.
+
 ## Quick start
 
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
@@ -71,6 +86,7 @@ uv run jos data build
 uv run jos population generate --mode ci --seed 123
 uv run jos structure generate --mode ci --seed 123
 uv run jos network generate --mode ci --seed 123
+uv run jos outbreak run --mode ci --seed 123
 ```
 
 The command prints a machine-readable JSON summary and writes:
@@ -112,6 +128,13 @@ pathogen-specific transmission probabilities. The network artifact includes
 route and staffing diagnostics, cross-route diagnostics, assumptions, selected
 snapshots and M2/M3/config/Starsim/source provenance.
 
+The outbreak command builds the matching M2/M3/M4.1 artifacts, runs the generic
+respiratory module, and writes versioned M5 output artifacts containing
+`daily_epidemic.parquet`, `daily_parish.parquet`, `daily_route.parquet`,
+`daily_age.parquet`, `transmission_events.parquet`, parameter metadata,
+diagnostics and a manifest. These are latent truth outputs; they are not
+detected or reported case counts.
+
 ## Verification
 
 ```bash
@@ -129,7 +152,12 @@ uv run mypy --ignore-missing-imports \
   src/jersey_outbreak/network_artifacts.py \
   src/jersey_outbreak/staffing_evidence.py \
   src/jersey_outbreak/staffing_generator.py \
-  src/jersey_outbreak/starsim_adapter.py
+  src/jersey_outbreak/starsim_adapter.py \
+  src/jersey_outbreak/outbreak_schemas.py \
+  src/jersey_outbreak/respiratory.py \
+  src/jersey_outbreak/outbreak_runner.py \
+  src/jersey_outbreak/outbreak_artifacts.py \
+  src/jersey_outbreak/cli.py
 uv run jos demo --seed 123
 uv run jos structure generate --mode ci --seed 123
 uv run jos network generate --mode ci --seed 123
@@ -143,9 +171,9 @@ The verified CI seed-123 logical structure hash is
 `18087772e7286f1b88e3e30ca325e53d97d4fcce3582cf2e8f2fe3ac6e198d2a`.
 
 The repository-wide legacy codebase still has pre-existing mypy errors, so CI
-currently type-checks the four M3 modules and the M4/M4.1 route, staffing and adapter modules
-explicitly. This is an engineering cleanup item, not evidence that the M3/M4
-contracts are untyped.
+currently type-checks the M3, M4/M4.1 and M5 modules explicitly. This is an
+engineering cleanup item, not evidence that the milestone contracts are
+untyped.
 
 ## Scientific scope
 

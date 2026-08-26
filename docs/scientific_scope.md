@@ -72,6 +72,31 @@ ordinary workplace routes, while declared M3 secondary jobs remain eligible.
 M3 job rows and counts are unchanged, and household, community and transport
 participation is retained.
 
+## Milestone 5 generic respiratory disease
+
+M5 adds a pathogen-neutral daily SEIRS demonstration behind the Starsim 3.5.2
+disease/adapter boundary. It uses the existing M4.1 route objects and weights;
+Starsim performs the network transmission draw. The active states are
+susceptible, exposed, infectious and recovered, with optional configurable
+immunity waning. The default parameter file contains demonstration values
+labelled `scenario_assumption`; it does not name or parameterize influenza,
+COVID-19, RSV or another real pathogen.
+
+Initial seeds, generic exogenous imports and locally acquired infections are
+reported separately. Each local infection is attributed to one of the 11
+configured M4 route IDs and retains an infector UID when Starsim supplies one.
+Same-timestep multiple-route opportunities are resolved by Starsim's existing
+route iteration and the first retained event, rather than by a second JOS
+transmission engine. Daily tidy outputs are latent truth: no ascertainment,
+reporting delay, detected-case, calibration, ensemble or observation model is
+included.
+
+Severity, disease deaths, symptom substates, age susceptibility, seasonality,
+visitors, arrivals, ports, interventions and API/UI functionality are outside
+the M5 boundary. Consequently the `severe` and `dead` output columns remain
+zero by design, and M5 is a demonstration validation level rather than a
+forecast or clinical model.
+
 The full M3 benchmark has 104,540 synthetic residents, 13,991 school
 assignments, 8,500 workplaces and 62,108 job assignments. These counts show
 that the generated artifact reconciles to the selected controls; they do not

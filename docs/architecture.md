@@ -56,12 +56,13 @@ canonical aggregate tables + source/table hashes
        Parquet artifacts + manifest
 ```
 
-`src/jersey_outbreak/starsim_compat.py` and the M4
-`src/jersey_outbreak/starsim_adapter.py` are the only application modules
-allowed to import Starsim. They own the exact 3.5.2 API calls used by the
-spike and route adapter and convert Starsim result arrays into plain Python
-values. The rest of the application does not depend on Starsim's internal
-object graph.
+`src/jersey_outbreak/starsim_compat.py`,
+`src/jersey_outbreak/starsim_adapter.py` and the M5
+`src/jersey_outbreak/respiratory.py` disease boundary are the only application
+modules allowed to import Starsim. They own the exact 3.5.2 API calls used by
+the spike, route adapter and generic disease, and the run layer converts
+Starsim result arrays into plain Python values. The rest of the application
+does not depend on Starsim's internal object graph.
 
 `src/jersey_outbreak/data_pipeline.py` is deliberately independent of Starsim.
 It validates local snapshot hashes before parsing, keeps observed and derived
@@ -176,6 +177,25 @@ Calendar-aware routes use the supported `DynamicNetwork.step()` lifecycle to
 replace the current daily snapshot; fixed always-active routes use a static
 Starsim network with a no-op step hook. No custom disease or transmission
 engine is present in M4.
+
+### Milestone 5 disease boundary
+
+M5 consumes the M4.1 `GeneratedNetworks` object without modifying its route
+tables. `starsim_adapter.py` converts the existing 11 route families into
+Starsim networks and initializes the generic `RespiratorySEIRS` infection. The
+disease subclass uses Starsim's `Infection.infect()` and `Network.net_beta()`
+machinery; JOS adds only deterministic generic import selection, SEIRS state
+progression and event attribution. The run layer maps stable Starsim UIDs back
+to synthetic JOS agent IDs and writes daily latent-truth summaries by epidemic
+state, parish, age band and route.
+
+M5 parameter metadata is stored separately from runtime controls. Demonstration
+values are `scenario_assumption`; unsupported symptom, severity, death and
+seasonality families are recorded as deferred rather than assigned fake
+observed values. The run manifest references the M2, M3 and M4.1 logical hashes,
+the parameter hash, Starsim version, seed, outputs, attribution totals and
+network immutability check. Observation, calibration, ensembles, interventions,
+visitors, API and UI remain later-milestone concerns.
 
 ## Stable boundaries for later milestones
 
