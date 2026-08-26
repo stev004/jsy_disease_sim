@@ -130,8 +130,10 @@ class SourceRecord(StrictModel):
     reference_period: NonEmptyString
     license: NonEmptyString
     status: EvidenceStatus
+    acquisition_method: Literal["automated", "manual", "unavailable"] = "automated"
     local_snapshot: NonEmptyString | None = None
     sha256: StrictStr | None = None
+    evidence_source_id: NonEmptyString | None = None
     notes: StrictStr | None = None
 
     @field_validator("url")

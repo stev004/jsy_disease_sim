@@ -7,14 +7,17 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository currently contains **Milestone 0 only**: repository contracts
-and a verified Starsim compatibility/reproducibility spike. The demo is an
-official Starsim SIR example using Starsim's built-in `RandomNet`; it is not a
-Jersey population, a Jersey outbreak reconstruction, or a validated forecast.
+This repository contains **Milestones 0 and 1**: repository contracts, a
+verified Starsim compatibility/reproducibility spike, and a source-registered
+aggregate evidence layer. The demo is an official Starsim SIR example using
+Starsim's built-in `RandomNet`; it is not a Jersey population, a Jersey
+outbreak reconstruction, or a validated forecast.
 
-No Jersey data, synthetic residents, household synthesis, custom routes,
-respiratory disease module, observation model, calibration, API or UI are
-included yet.
+Milestone 1 includes immutable official source snapshots, explicitly labelled
+manual PDF transcriptions, canonical aggregate CSVs and deterministic data
+quality reports. It does not include synthetic residents, household synthesis,
+individual schools/workplaces/commutes, custom routes, a respiratory disease
+module, observation, calibration, API or UI.
 
 ## Quick start
 
@@ -23,6 +26,7 @@ Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
 ```bash
 uv sync --locked
 uv run jos demo --seed 123
+uv run jos data build
 ```
 
 The command prints a machine-readable JSON summary and writes:
@@ -36,6 +40,11 @@ The summary is the declared deterministic output. The manifest also records
 run metadata such as code state, Python and Starsim versions, lock/config
 hashes, seed, runtime and output hashes. Runtime timestamps and measured
 duration are intentionally not expected to match between runs.
+
+The data build validates every registered snapshot hash and writes canonical
+tables plus `data/processed/quality_report.json` and
+`data/processed/quality_report.md`. Warnings in that report are retained source
+limitations or published rounding conflicts; they are not silently imputed.
 
 ## Verification
 

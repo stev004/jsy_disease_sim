@@ -1,0 +1,224 @@
+sources:
+  - source_id: jersey_population_2024_total_pdf
+    title: Population and migration statistics 2024 - Total population December 2024
+    publisher: Statistics Jersey
+    url: https://stats.je/wp-content/uploads/2025/09/R-Population-and-migration-2024-total-population-SJ20250924.pdf
+    retrieved_at: 2026-08-25
+    reference_period: "2024-12-31"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/jersey_population_2024_total_pdf/population_2024_total.pdf
+    sha256: a21ab32f0117ee10334197f496b92348a70bed75677a500855092c3b73191ab3
+    notes: Provisional administrative-data population estimate and broad age/sex summary.
+
+  - source_id: census_2021_report_pdf
+    title: Report on the 2021 Jersey Census
+    publisher: Statistics Jersey / States of Jersey
+    url: https://statesassembly.je/getmedia/bf0fd1bc-0104-4de5-b9df-ca685aabf9ef/R.45-2023.pdf?ext=.pdf
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_report_pdf/R.45-2023.pdf
+    sha256: e4f8c38e96330fc60af584b8fae75d3011d29f4992bb2d8031e8baa192a91095
+    notes: Official PDF preserved for page-level manual controls and definitions.
+
+  - source_id: census_2021_age_gender_csv
+    title: Population by age and gender - 2021 Census
+    publisher: Statistics Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/5840dfa1-8f67-4455-af42-241586ac8999/resource/96bc726b-d820-4be1-933a-7080b139fd24/download/2021-census-age-gender.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_age_gender_csv/2021-census-age-gender.csv
+    sha256: c0c1c2f211737129a8ec8f3db52442baf5ad0d85dd8f627e3f833314e9f9dabc
+    notes: Machine-readable single-year age and sex counts.
+
+  - source_id: census_2021_parish_population_density_csv
+    title: Population and population density by Parish - 2021 Census
+    publisher: Statistics Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/5840dfa1-8f67-4455-af42-241586ac8999/resource/8b9b106e-6bf6-400f-8a0b-a413204051e3/download/2021-census-parish-population-density.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_parish_population_density_csv/2021-census-parish-population-density.csv
+    sha256: e46abd1eac1c13087fa92a3ecba9bb049b179d94868b7b9c967224f5127818ab
+    notes: Parish population and density controls.
+
+  - source_id: census_2021_parish_age_sex_csv
+    title: Population by Parish, Age and Sex - 2021 Census
+    publisher: Statistics Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/5840dfa1-8f67-4455-af42-241586ac8999/resource/24384097-b5f4-40b6-a0f3-2fcf7f7d683d/download/2021-census-parish-by-age-and-sex.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_parish_age_sex_csv/2021-census-parish-by-age-and-sex.csv
+    sha256: 532eb6d7a9a76b682ab056ba45f09f129bd768b71d45f7f7b0d587af95d8ff39
+    notes: Five-year parish age and sex counts.
+
+  - source_id: census_2021_household_type_tenure_csv
+    title: Households by Household Type and Tenure - 2021 Census
+    publisher: Statistics Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/5840dfa1-8f67-4455-af42-241586ac8999/resource/5eb10530-8847-4fc9-bb12-66114f05e562/download/2021-census-householdtype-tenure.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_household_type_tenure_csv/2021-census-householdtype-tenure.csv
+    sha256: 5404e3ccb551b5e27b4bd5edf1f628f9e52bf733cd495150746ecd7b6b059e66
+    notes: Machine-readable household type and tenure table; counts are rounded in the published table.
+
+  - source_id: census_2021_household_property_type_csv
+    title: Household Type by Property Type - 2021 Census
+    publisher: Statistics Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/5840dfa1-8f67-4455-af42-241586ac8999/resource/384078ae-1f1d-4136-aafa-0e0ac1fe4645/download/2021-census-householdtype-propertytype.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_household_property_type_csv/2021-census-householdtype-propertytype.csv
+    sha256: 498ed541367041ebe9e9a038995e608940b58588fdbfa4211349027a812c0569
+    notes: Household/property-type controls by tenure.
+
+  - source_id: census_2021_housing_persons_bedrooms_csv
+    title: Persons, bedrooms and households by tenure - 2021 Census
+    publisher: Statistics Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/5840dfa1-8f67-4455-af42-241586ac8999/resource/8ea6b3d0-9e04-4ab6-81fd-f400275f85e1/download/2021-census-persons-bedrooms-tenure.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_housing_persons_bedrooms_csv/2021-census-persons-bedrooms-tenure.csv
+    sha256: 0f79666e06d28f896dee4cdd173dc6c8e8bdab125864950cf4ee10a2b5339236
+    notes: Tenure-level household and person controls. The all-households mean bedroom value is retained as an evidence-quality conflict against the official report and is not silently used.
+
+  - source_id: census_2021_overcrowding_csv
+    title: Proportion of overcrowded households by tenure - 2021 Census
+    publisher: Statistics Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/5840dfa1-8f67-4455-af42-241586ac8999/resource/a7d39672-2f7e-4f65-938e-7a9e676bc751/download/proportion-of-overcrowded-households-by-tenurepercent-census2021.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_overcrowding_csv/proportion-of-overcrowded-households-by-tenurepercent-census2021.csv
+    sha256: 4882a98d8765f5ffad760cecfdb38c5972097b25bb91c04580d8f77fc0b967ae
+    notes: Overcrowding percentages by tenure.
+
+  - source_id: census_2021_commute_mode_csv
+    title: Usual mode of travel to work by parish - 2021 Census
+    publisher: Statistics Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/5840dfa1-8f67-4455-af42-241586ac8999/resource/7ec2bf87-04ee-4689-a213-f7a664ae713b/download/2021-census-modeoftravel-parish.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_commute_mode_csv/2021-census-modeoftravel-parish.csv
+    sha256: 991a92f1eba7ac05751eac0376a3eabeb3ecb1eee5cfcbe3336545257cb031d6
+    notes: Parish-level commuting counts; published values are rounded and blank cells indicate positive values below 10.
+
+  - source_id: census_2021_industry_sex_csv
+    title: Employment by industry and sex - 2021 Census
+    publisher: Statistics Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/5840dfa1-8f67-4455-af42-241586ac8999/resource/1e6165ed-02bd-47c5-a10c-6f4a45e6f1f1/download/industry-by-sex-2021-census.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/census_2021_industry_sex_csv/industry-by-sex-2021-census.csv
+    sha256: fa5771d6a2b5ab80e8764d20596d3d0cf1f5b66b2da02dac82e00bd208850dbb
+    notes: Working adults aged 16 and over by industry and sex.
+
+  - source_id: labour_market_june_2025_pdf
+    title: Labour Market June 2025
+    publisher: Statistics Jersey
+    url: https://stats.je/wp-content/uploads/2025/10/R-Labour-Market-June-2025-SJ20251031.pdf
+    retrieved_at: 2026-08-25
+    reference_period: "2025-06"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/labour_market_june_2025_pdf/R-Labour-Market-June-2025.pdf
+    sha256: 647cdf53997f66faa36f41036ec9fd904ae729d8bbccc01a97eb23cb5e398fe0
+    notes: Official report used for sector jobs and undertaking-size controls.
+
+  - source_id: education_students_by_school_type_csv
+    title: Student numbers by school type
+    publisher: Children, Young People, Education and Skills / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/e9acb214-5778-4a0a-a8b7-2622c51a0a9e/resource/7d16ab4d-e0ff-4b59-bec7-b45db60ea48a/download/total-students-by-school-type.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2024 spring term"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/education_students_by_school_type_csv/total-students-by-school-type.csv
+    sha256: 922812ce877bb573a6e5164c11d80d30a274ced1c6a571e2d3c0076497fea35e
+    notes: Pupil census totals by school type; 2024 row is the Milestone 1 control.
+
+  - source_id: passenger_arrivals_total_csv
+    title: Passenger and freight statistics - Total arrivals
+    publisher: Ports of Jersey / Government of Jersey Open Data
+    url: https://opendata.gov.je/dataset/2da64802-1281-429e-8506-1d568e488d22/resource/dcc8a6c2-152a-48c0-b24b-de1774354d3c/download/total-arrivals.csv
+    retrieved_at: 2026-08-25
+    reference_period: "2025"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/passenger_arrivals_total_csv/total-arrivals.csv
+    sha256: da0fc97a508256ad44c88637573d5ff69de4b612f3a7702cde97a21602a8d194
+    notes: Annual air and sea passenger arrivals; source notes values are rounded to the nearest thousand where applicable.
+
+  - source_id: jersey_population_2024_manual_fixture
+    title: Population and migration 2024 manual extraction
+    publisher: Statistics Jersey
+    url: https://stats.je/wp-content/uploads/2025/09/R-Population-and-migration-2024-total-population-SJ20250924.pdf
+    retrieved_at: 2026-08-25
+    reference_period: "2024-12-31"
+    license: Open Government Licence - Jersey, where applicable
+    status: fixture
+    acquisition_method: manual
+    local_snapshot: data/raw/jersey_population_2024_manual_fixture/population_2024_summary.csv
+    sha256: a9590787131d349f18392243f11c0082944289b0473782428b3714f2b966d3fa
+    evidence_source_id: jersey_population_2024_total_pdf
+    notes: Narrow manual transcription of PDF pages 1, 3, 8, 18 and 19; no values were copied from charter prose.
+
+  - source_id: census_2021_report_manual_fixture
+    title: 2021 Census report manual aggregate extraction
+    publisher: Statistics Jersey / States of Jersey
+    url: https://statesassembly.je/getmedia/bf0fd1bc-0104-4de5-b9df-ca685aabf9ef/R.45-2023.pdf?ext=.pdf
+    retrieved_at: 2026-08-25
+    reference_period: "2021-03-21"
+    license: Open Government Licence - Jersey, where applicable
+    status: fixture
+    acquisition_method: manual
+    local_snapshot: data/raw/census_2021_report_manual_fixture/census_2021_manual_controls.csv
+    sha256: 7a1e567cccc81a3814ef1020ad954e6caf51fe980066937917bdfb8d6b16af05
+    evidence_source_id: census_2021_report_pdf
+    notes: Narrow manual transcription of report pages 9, 37, 44, 46, 78 and 81. Values are labelled by page and measure.
+
+  - source_id: labour_market_june_2025_manual_fixture
+    title: Labour Market June 2025 manual aggregate extraction
+    publisher: Statistics Jersey
+    url: https://stats.je/wp-content/uploads/2025/10/R-Labour-Market-June-2025-SJ20251031.pdf
+    retrieved_at: 2026-08-25
+    reference_period: "2025-06"
+    license: Open Government Licence - Jersey, where applicable
+    status: fixture
+    acquisition_method: manual
+    local_snapshot: data/raw/labour_market_june_2025_manual_fixture/labour_market_manual_controls.csv
+    sha256: f2254ce92420ec96c9cc27b2282c0528a0a551c8a8db390720870cec305dca27
+    evidence_source_id: labour_market_june_2025_pdf
+    notes: Narrow manual transcription of Table 6 page 11 and Table 9 page 13.

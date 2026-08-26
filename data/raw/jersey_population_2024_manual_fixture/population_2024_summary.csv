@@ -1,0 +1,9 @@
+measure,value,unit,reference_period,source_locator,notes
+population_total,104540,people,2024-12-31,pdf_page_3,"Provisional total population estimate; rounded source value."
+net_migration,670,people,2024-12-31,pdf_page_18,"Rounded source value."
+natural_change,-150,people,2024-12-31,pdf_page_18,"Rounded source value."
+age_under_16,15410,people,2024-12-31,pdf_page_8,"Rounded to nearest 10 by source."
+age_16_to_64,68530,people,2024-12-31,pdf_page_8,"Rounded to nearest 10 by source."
+age_65_plus,20600,people,2024-12-31,pdf_page_8,"Rounded to nearest 10 by source."
+sex_male,52150,people,2024-12-31,pdf_page_19,"Rounded to nearest 10 by source."
+sex_female,52390,people,2024-12-31,pdf_page_19,"Rounded to nearest 10 by source."

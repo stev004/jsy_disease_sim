@@ -1,0 +1,273 @@
+{
+  "schema_version": "1.0",
+  "tables": [
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "measure",
+        "value",
+        "unit"
+      ],
+      "path": "data/processed/population_totals.csv",
+      "rows": 9,
+      "sha256": "51c7c9a0c9d2ff72339f365f5e2094936d84170064e1938bdd09ed76540325dc"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "age_band",
+        "sex",
+        "count"
+      ],
+      "path": "data/processed/age_sex.csv",
+      "rows": 293,
+      "sha256": "5d5feccead68e94c2e49b86c563e17075c17f94233857b2a74684fd9c917db58"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "parish",
+        "population",
+        "density_person_km2"
+      ],
+      "path": "data/processed/parish_population.csv",
+      "rows": 12,
+      "sha256": "87f95bd5de4b4fa378813ead05e276017f0538371eeb7ce3b22d8033575f8ac2"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "parish",
+        "age_band",
+        "sex",
+        "count"
+      ],
+      "path": "data/processed/parish_age_sex.csv",
+      "rows": 702,
+      "sha256": "8cdfe7676462740285679a98d66708097e38b9b06b1c5b5bd8e712a4129831be"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "household_type",
+        "households"
+      ],
+      "path": "data/processed/household_types.csv",
+      "rows": 11,
+      "sha256": "a5addfd1587d94d5450e65c2df677ca860be6d6841d5fa186769223873f95a71"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "measure",
+        "category",
+        "subcategory",
+        "value",
+        "unit"
+      ],
+      "path": "data/processed/housing_controls.csv",
+      "rows": 166,
+      "sha256": "d1b3f077e7ed240038682245d37b27b6b8b3e1a28e20823badb8f917dd35a0fb"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "measure",
+        "sector",
+        "sex",
+        "value",
+        "unit"
+      ],
+      "path": "data/processed/employment_sectors.csv",
+      "rows": 48,
+      "sha256": "3deac4b00bb8852dc3af7c3dc880082f5d943000fadd399e3dd78125af8c3e1f"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "sector",
+        "size_band",
+        "count",
+        "upper_bound",
+        "censoring",
+        "unit"
+      ],
+      "path": "data/processed/workplace_sizes.csv",
+      "rows": 66,
+      "sha256": "faae918d31273d6f7016ea1a97d58f5f96e4e6ca0c82726f97bf9761d456750b"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "measure",
+        "category",
+        "subcategory",
+        "value",
+        "unit"
+      ],
+      "path": "data/processed/workplace_destination.csv",
+      "rows": 8,
+      "sha256": "d07a9f9c96480ca52919e88ca1f71aaeab4a65c6d0b413166ca21314b49e5df2"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "parish",
+        "mode",
+        "workers",
+        "upper_bound",
+        "censoring"
+      ],
+      "path": "data/processed/commute_modes.csv",
+      "rows": 91,
+      "sha256": "e3d239f843a7966f163dc72bfd11e707dee0d0c901d8c2ac9acade4ee910e5c9"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "year",
+        "school_type",
+        "students"
+      ],
+      "path": "data/processed/school_students.csv",
+      "rows": 6,
+      "sha256": "1eb7ff460c93c3d9c5b2bf5460ba60a18abd2d23a5c93e130739086b321f746f"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "measure",
+        "setting",
+        "value",
+        "unit"
+      ],
+      "path": "data/processed/communal_settings.csv",
+      "rows": 17,
+      "sha256": "6001fa22ccd27a975c1611aa946fe7fcdb8292c4401d9cc75ffb5a12fc81cb23"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "year",
+        "mode",
+        "passengers"
+      ],
+      "path": "data/processed/passenger_arrivals.csv",
+      "rows": 3,
+      "sha256": "92ad95faf52b969ad168f1d59001a4a2de56c9e250d3ee503e05c1a870517c4c"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "measure",
+        "category",
+        "value",
+        "unit",
+        "reference",
+        "source_table",
+        "check_status"
+      ],
+      "path": "data/processed/derived_controls.csv",
+      "rows": 37,
+      "sha256": "7681d0dca40a84cc2850fa9c147a780bf179a984c65b96c40f9c5c433684d135"
+    }
+  ]
+}

@@ -199,6 +199,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
+    { name = "pyyaml" },
     { name = "starsim" },
     { name = "typer" },
 ]
@@ -212,6 +213,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "pydantic", specifier = ">=2.11,<3" },
+    { name = "pyyaml", specifier = ">=6,<7" },
     { name = "starsim", specifier = "==3.5.2" },
     { name = "typer", specifier = ">=0.16,<1" },
 ]

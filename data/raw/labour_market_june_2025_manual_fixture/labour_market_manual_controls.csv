@@ -1,0 +1,79 @@
+measure,sector,size_band,value,upper_bound,censoring,unit,reference_period,source_locator,notes
+sector_jobs,Agriculture and fishing,,1200,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Manufacturing,,940,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Construction and quarrying,,6130,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Utilities and waste,,800,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Wholesale and retail,,6780,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Hotels restaurants and bars,,6020,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Transport and storage,,2160,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Information and communication,,1740,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Financial and legal activities,,13900,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Miscellaneous business activities,,6330,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Private education health and other services,,9360,,,jobs,2025-06,pdf_page_13,Private-sector jobs.
+sector_jobs,Private sector,,55370,,,jobs,2025-06,pdf_page_13,Private-sector total.
+workplace_size,Agriculture and fishing,1,90,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Agriculture and fishing,2-5,40,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Agriculture and fishing,6-9,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Agriculture and fishing,10-19,20,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Agriculture and fishing,20-49,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Agriculture and fishing,50+,,5,positive_less_than,undertakings,2025-06,pdf_page_11,Published as +: non-zero less than 5.
+workplace_size,Manufacturing utilities and waste,1,190,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Manufacturing utilities and waste,2-5,70,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Manufacturing utilities and waste,6-9,20,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Manufacturing utilities and waste,10-19,20,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Manufacturing utilities and waste,20-49,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Manufacturing utilities and waste,50+,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Construction and quarrying,1,870,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Construction and quarrying,2-5,430,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Construction and quarrying,6-9,110,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Construction and quarrying,10-19,70,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Construction and quarrying,20-49,40,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Construction and quarrying,50+,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Wholesale and retail,1,410,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Wholesale and retail,2-5,240,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Wholesale and retail,6-9,80,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Wholesale and retail,10-19,60,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Wholesale and retail,20-49,30,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Wholesale and retail,50+,20,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Hotels restaurants and bars,1,120,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Hotels restaurants and bars,2-5,180,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Hotels restaurants and bars,6-9,70,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Hotels restaurants and bars,10-19,70,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Hotels restaurants and bars,20-49,40,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Hotels restaurants and bars,50+,20,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Transport and storage,1,230,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Transport and storage,2-5,40,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Transport and storage,6-9,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Transport and storage,10-19,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Transport and storage,20-49,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Transport and storage,50+,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Information and communication,1,280,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Information and communication,2-5,80,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Information and communication,6-9,20,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Information and communication,10-19,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Information and communication,20-49,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Information and communication,50+,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Financial and legal activities,1,300,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Financial and legal activities,2-5,200,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Financial and legal activities,6-9,60,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Financial and legal activities,10-19,50,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Financial and legal activities,20-49,40,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Financial and legal activities,50+,70,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Miscellaneous business activities,1,1240,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Miscellaneous business activities,2-5,420,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Miscellaneous business activities,6-9,80,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Miscellaneous business activities,10-19,70,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Miscellaneous business activities,20-49,40,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Miscellaneous business activities,50+,10,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Private education health and other services,1,1300,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Private education health and other services,2-5,320,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Private education health and other services,6-9,90,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Private education health and other services,10-19,70,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Private education health and other services,20-49,70,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Private education health and other services,50+,30,,,undertakings,2025-06,pdf_page_11,Private-sector undertakings.
+workplace_size,Total private sector undertakings,1,5020,,,undertakings,2025-06,pdf_page_11,Private-sector total.
+workplace_size,Total private sector undertakings,2-5,2020,,,undertakings,2025-06,pdf_page_11,Private-sector total.
+workplace_size,Total private sector undertakings,6-9,550,,,undertakings,2025-06,pdf_page_11,Private-sector total.
+workplace_size,Total private sector undertakings,10-19,440,,,undertakings,2025-06,pdf_page_11,Private-sector total.
+workplace_size,Total private sector undertakings,20-49,280,,,undertakings,2025-06,pdf_page_11,Private-sector total.
+workplace_size,Total private sector undertakings,50+,190,,,undertakings,2025-06,pdf_page_11,Private-sector total.

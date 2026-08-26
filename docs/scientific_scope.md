@@ -11,6 +11,12 @@ epidemiological model of Jersey and does not use Jersey residents, addresses,
 schools, workplaces, parishes, surveillance data or disease-specific Jersey
 parameters.
 
+Milestone 1 adds official Jersey aggregate controls from registered 2021,
+2024 and 2025 source snapshots. These are evidence inputs for later work, not
+synthetic residents and not a validated outbreak reconstruction. Reference
+periods, universes, rounding, suppression and source conflicts remain visible
+in the canonical tables and quality report.
+
 ## Scientific rules
 
 - Use synthetic people only; never imply that an agent represents a real

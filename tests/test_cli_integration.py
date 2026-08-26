@@ -24,3 +24,10 @@ def test_demo_cli_writes_machine_readable_summary_and_manifest(tmp_path) -> None
         "summary.time_series",
         "summary.final",
     ]
+
+
+def test_data_build_cli_writes_quality_report(tmp_path) -> None:
+    result = CliRunner().invoke(app, ["data", "build", "--output-dir", str(tmp_path)])
+    assert result.exit_code == 0, result.stdout
+    assert (tmp_path / "quality_report.json").exists()
+    assert (tmp_path / "quality_report.md").exists()

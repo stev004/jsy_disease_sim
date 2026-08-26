@@ -1,0 +1,13 @@
+Household type,Owner Occupied,Social Rental,Qualified Rental,Staff or service accom.,Registered lodging house,Private lodging,Other non-qualified accom.,All
+Single adult,2780,1120,3070,440,330,330,530,8600
+Couple (adult),3710,230,2070,210,140,180,340,6880
+Single parent (with dependent children),380,700,490,10,20,30,60,1700
+Single parent (all children 16 years or above),930,580,390,20,10,10,40,1980
+Couple with dependent children,4580,690,1920,160,100,140,290,7890
+Couple with children (all children 16 years or above),2530,410,550,60,10,30,30,3610
+Couple (one pensioner),980,120,200,10,,,10,1330
+Single pensioner,3090,1440,820,30,20,30,30,5460
+Two or more pensioners,3430,330,330,10,,10,30,4140
+Two or more unrelated persons,280,20,320,80,20,30,40,790
+Other,1170,190,580,70,30,60,100,2190
+All,23870,5830,10740,1100,700,860,1500,44580
