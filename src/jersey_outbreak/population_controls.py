@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -45,7 +45,7 @@ class PopulationControls:
     assumptions: tuple[str, ...]
 
 
-def allocate_proportional(total: int, weights: dict[str, int | float]) -> dict[str, int]:
+def allocate_proportional(total: int, weights: Mapping[str, int | float]) -> dict[str, int]:
     """Allocate an integer total by Hamilton/largest-remainder allocation.
 
     Ties use the supplied insertion order, so aggregate allocation is stable

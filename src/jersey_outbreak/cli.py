@@ -1,4 +1,4 @@
-"""Command-line interface for the bounded Milestone 0 and 1 workflows."""
+"""Command-line interface for the bounded Milestone 0–3 workflows."""
 
 from __future__ import annotations
 
@@ -13,12 +13,17 @@ from .demo import run_demo
 from .population_artifacts import write_population_artifact
 from .population_generator import generate_population
 from .population_schemas import PopulationGenerationConfig, PopulationMode
+from .population_structure_artifacts import load_m2_population_artifact, write_structure_artifact
+from .population_structure_generator import generate_structure
+from .population_structure_schemas import StructureGenerationConfig
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 data_app = typer.Typer(add_completion=False, no_args_is_help=True)
 population_app = typer.Typer(add_completion=False, no_args_is_help=True)
+structure_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(data_app, name="data")
 app.add_typer(population_app, name="population")
+app.add_typer(structure_app, name="structure")
 
 
 @app.callback()
@@ -107,6 +112,60 @@ def population_generate(
                 "target_population": artifact.manifest.target_population,
                 "households": artifact.manifest.household_count,
                 "communal_residents": artifact.manifest.communal_resident_count,
+                "runtime_seconds": artifact.manifest.runtime_seconds,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@structure_app.command("generate")
+def structure_generate(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Structure scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Non-negative structure seed.")] = 123,
+    population_artifact: Annotated[
+        Path | None,
+        typer.Option(help="Existing validated Milestone 2 artifact directory."),
+    ] = None,
+    output_dir: Annotated[
+        Path, typer.Option(help="Directory for versioned Milestone 3 artifacts.")
+    ] = Path("outputs/structures"),
+) -> None:
+    """Generate disease-agnostic schools, workplaces and movement structure."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    config = StructureGenerationConfig(mode=mode, seed=seed)
+    if population_artifact is None:
+        m2_output = destination.parent / "populations"
+        m2_config = PopulationGenerationConfig(mode=mode, seed=seed)
+        m2_generated = generate_population(root, m2_config)
+        m2_artifact = write_population_artifact(m2_generated, root, m2_output)
+        m2_path = m2_artifact.artifact_directory
+    else:
+        m2_path = population_artifact
+        if not m2_path.is_absolute():
+            m2_path = root / m2_path
+    m2_input = load_m2_population_artifact(root, m2_path)
+    generated = generate_structure(root, config, m2_input)
+    artifact = write_structure_artifact(generated, root, destination, m2_input)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_id": artifact.manifest.artifact_id,
+                "artifact_directory": str(artifact.artifact_directory),
+                "diagnostics_status": artifact.manifest.diagnostics_status,
+                "logical_content_hash": artifact.manifest.logical_content_hash,
+                "mode": artifact.manifest.mode,
+                "target_population": artifact.manifest.target_population,
+                "m2_artifact_id": artifact.manifest.m2_artifact_id,
+                "schools": generated.diagnostics["schools"]["school_count"],
+                "workplaces": generated.diagnostics["workplaces"]["total"],
+                "primary_jobs": generated.diagnostics["employment"]["primary_jobs"],
+                "secondary_jobs": generated.diagnostics["employment"]["additional_jobs"],
                 "runtime_seconds": artifact.manifest.runtime_seconds,
             },
             ensure_ascii=False,

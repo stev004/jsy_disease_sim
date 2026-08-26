@@ -1,6 +1,6 @@
 # Architecture
 
-## Milestone 0–2 boundary
+## Milestone 0–3 boundaries
 
 The repository intentionally keeps the verified simulation spike isolated from
 the aggregate evidence and synthetic-population paths:
@@ -74,6 +74,44 @@ mobility, disease state or interventions. `population_artifacts.py` writes
 Parquet plus diagnostics and a manifest; logical content is hashed separately
 from volatile runtime metadata.
 
+## Milestone 3 daytime-structure boundary
+
+Milestone 3 consumes one validated, immutable Milestone 2 artifact and the
+registered Milestone 1 aggregate controls:
+
+```text
+M2 residents + canonical school/employment/workplace/commute controls
+                              |
+                              v
+              seeded structure generator
+                 /       |        \
+                v        v         v
+       schools/classes  jobs    workplaces/teams
+                              |
+                              v
+              work parishes + commute metadata
+                              |
+                              v
+                diagnostics + provenance manifest
+```
+
+`population_structure_*` owns synthetic membership and daytime structure only.
+It preserves the M2 resident IDs, validates school age compatibility, links
+jobs to synthetic workplaces and teams, records bounded secondary jobs and
+checks car/WFH schedule consistency. The published 66/13/21 workplace
+destination split is applied at aggregate control level; it is not an
+institutional or address-level observation. No Starsim network, contact edge,
+disease state, intervention or visitor model is created here. M4 owns those
+simulation-facing layers.
+
+The M3 artifact contains separate Parquet tables for resident structure,
+schools, classes, school assignments, workplaces, workplace teams and job
+assignments. Its manifest records the M2 artifact ID and hashes, all canonical
+input hashes, configuration and logical-content hashes, diagnostics status,
+runtime metadata and dirty-worktree state. Logical content is hashed from
+stable identifier order, independently of Parquet metadata and volatile run
+measurements.
+
 ## Stable boundaries for later milestones
 
 - **Contracts:** versioned Pydantic v2 models describe inputs, provenance and
@@ -82,8 +120,9 @@ from volatile runtime metadata.
   simulation runtime state; each row retains source hash, reference period,
   locator and transformation metadata.
 - **Population:** synthetic residents and settings remain disease-agnostic.
-  Milestone 2 implements only the bounded resident, household and communal-
-  setting layer; contact structures are deferred.
+  Milestone 2 implements the bounded resident, household and communal-setting
+  layer. Milestone 3 adds synthetic school and daytime-structure metadata;
+  contact structures are still deferred.
 - **Simulation adapter:** the only deep Starsim integration point.
 - **Disease:** future disease modules own natural history and transmission
   parameters; they do not create Jersey households or geography.
@@ -99,7 +138,10 @@ They are contracts in the documentation only until a milestone requires them.
 
 The demo's deterministic declaration covers the JSON summary's fixed
 configuration, time series and final counts for a seed under Starsim 3.5.2.
-The manifest records volatile execution metadata separately: creation time,
-runtime, dirty-worktree state and artifact hashes. A future milestone may add
-more declared outputs, but it must state which outputs are expected to be
-stable and test them explicitly.
+The M2 and M3 manifests make the same distinction for their logical population
+and structure content hashes. Each manifest records volatile execution metadata
+separately: creation time, runtime, dirty-worktree state and artifact hashes.
+The current M3 CI run with seed 123 reproduced the same logical structure hash
+across independent processes. A future milestone may add more declared outputs,
+but it must state which outputs are expected to be stable and test them
+explicitly.

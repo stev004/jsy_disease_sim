@@ -26,6 +26,28 @@ individual-level observations. Diagnostics preserve input hashes and list the
 assumptions and transformations. This layer has no contacts and makes no claim
 to reproduce actual household identities, addresses or movements.
 
+Milestone 3 adds a synthetic daytime-structure layer linked to the immutable
+Milestone 2 resident IDs. School types, classes, employment sectors, workplace
+size bands, synthetic work parishes and commute modes are generated from the
+registered aggregate controls. A small bounded secondary-job rate is an
+explicit scenario assumption, not an observed individual-level statistic.
+School, workplace and team identities are synthetic. The COVID-period
+work-from-home measure is retained as a baseline assumption with provenance,
+and the right-censored 50+ workplace band receives a structural range rather
+than invented exact employer sizes. The 2021 resident-worker universe is kept
+separate from 2025 filled-job and private-undertaking controls; the generator
+does not claim to link those different statistical universes at individual
+level. The published sector-by-size workplace rows do not exactly reconcile to
+the total size-band row, so the implementation does not invent that missing
+cross-tab. This layer still has no transmission routes, contact edges, disease
+states, visitors or inference about named people or institutions.
+
+The full M3 benchmark has 104,540 synthetic residents, 13,991 school
+assignments, 8,500 workplaces and 62,108 job assignments. These counts show
+that the generated artifact reconciles to the selected controls; they do not
+validate the underlying behavioural mechanisms or establish a Jersey contact
+network.
+
 ## Scientific rules
 
 - Use synthetic people only; never imply that an agent represents a real
