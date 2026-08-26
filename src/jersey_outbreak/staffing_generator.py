@@ -162,6 +162,7 @@ def _school_staff(
     staff_by_school_year: dict[tuple[str, str], list[str]] = defaultdict(list)
     selected: set[str] = set()
     school_type_by_id = {row["school_id"]: row["school_type"] for row in schools}
+    school_parish_by_id = {row["school_id"]: row["school_parish"] for row in schools}
 
     for role in ("teacher", "teaching_assistant", "head_deputy"):
         target = role_targets.get(role, 0)
@@ -191,6 +192,7 @@ def _school_staff(
                     "role": role,
                     "school_id": school_id,
                     "school_type": school_type_by_id[school_id],
+                    "institution_parish": school_parish_by_id[school_id],
                     "school_year": school_year,
                     "class_id": class_id,
                     "assignment_status": "synthetic",
@@ -374,6 +376,7 @@ def _care_staff(
                         "role": role,
                         "setting_id": setting_id,
                         "setting_type": setting_type,
+                        "institution_parish": settings[setting_id]["home_parish"],
                         "assignment_status": "synthetic",
                         "provenance_status": "synthetic",
                         "regulatory_status": evidence.provenance_status,

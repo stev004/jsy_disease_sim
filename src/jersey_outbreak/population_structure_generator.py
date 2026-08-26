@@ -29,7 +29,7 @@ from .population_structure_schemas import (
     WorkplaceTeamRecord,
 )
 
-SEMI_URBAN_PARISHES = {"St Saviour", "St Clement", "St Brelade"}
+SEMI_URBAN_PARISHES = {"St Saviour", "St Clement"}
 DESTINATION_CATEGORIES = ("St Helier", "Semi-urban parishes", "Rural parishes")
 SCHOOL_NOMINAL_CAPACITY = {"primary": 240, "secondary": 500, "special": 90}
 SCHOOL_CLASS_SIZE = {"primary": 25, "secondary": 25, "special": 10}
@@ -165,6 +165,14 @@ def _build_schools(
                 "nominal_capacity": SCHOOL_NOMINAL_CAPACITY[kind],
                 "pupil_count": pupil_count,
             }
+            pupil_parish_counts: dict[str, int] = {}
+            for agent_id in school_agents:
+                parish = residents_by_id[agent_id]["home_parish"]
+                pupil_parish_counts[parish] = pupil_parish_counts.get(parish, 0) + 1
+            school["school_parish"] = min(
+                pupil_parish_counts,
+                key=lambda parish: (-pupil_parish_counts[parish], parish),
+            )
             schools.append(school)
             by_year: dict[str, list[str]] = {}
             for agent_id in school_agents:
@@ -197,6 +205,7 @@ def _build_schools(
                             "school_year": year,
                             "class_id": class_id,
                             "age": age,
+                            "school_parish": school["school_parish"],
                         }
                         assignments.append(assignment)
                         assignment_by_agent[agent_id] = assignment
@@ -210,7 +219,9 @@ def _build_schools(
     return schools, classes, assignments, assignment_by_agent
 
 
-def _allocate_sizes(workplace_targets: dict[str, int], total_jobs: int) -> list[tuple[str, int]]:
+def _allocate_sizes(
+    workplace_targets: dict[str, int], total_jobs: int, rng: np.random.Generator
+) -> list[tuple[str, int]]:
     """Allocate exact total-band workplace sizes to the filled-job universe."""
 
     minimum = sum(workplace_targets[band] * BAND_LIMITS[band][0] for band in workplace_targets)
@@ -229,16 +240,33 @@ def _allocate_sizes(workplace_targets: dict[str, int], total_jobs: int) -> list[
     for band, count in workplace_targets.items():
         low, high = BAND_LIMITS[band]
         extra_for_band = band_extra[band]
-        per_workplace = (
-            allocate_proportional(
-                extra_for_band,
-                {str(index): high - low for index in range(count)},
-            )
-            if extra_for_band
-            else dict.fromkeys((str(index) for index in range(count)), 0)
-        )
-        sizes.extend((band, low + per_workplace[str(index)]) for index in range(count))
+        values = [low] * count
+        remaining = extra_for_band
+        capacity_remaining = np.full(count, high - low, dtype=float)
+        # The 50+ source band is right-censored.  A seeded capacity-weighted
+        # allocation preserves the exact filled-job total while avoiding an
+        # artificial plateau of identically sized large workplaces.
+        while remaining:
+            eligible = np.flatnonzero(capacity_remaining > 0)
+            if len(eligible) == 0:
+                raise DataBuildError(f"workplace size allocation exceeded {band} capacity")
+            weights = capacity_remaining[eligible] / capacity_remaining[eligible].sum()
+            take = int(rng.choice(eligible, p=weights))
+            values[take] += 1
+            capacity_remaining[take] -= 1
+            remaining -= 1
+        sizes.extend((band, size) for size in values)
     return sizes
+
+
+def _allocate_sector_sex_targets(
+    total: int, weights: dict[tuple[str, str], int]
+) -> dict[tuple[str, str], int]:
+    """Use the shared allocator while retaining the canonical two-dimensional keys."""
+
+    encoded = {f"{sector}\x1f{sex}": weight for (sector, sex), weight in weights.items()}
+    allocated = allocate_proportional(total, encoded)
+    return {key: allocated[f"{key[0]}\x1f{key[1]}"] for key in weights}
 
 
 def _assign_workplace_sectors(
@@ -448,13 +476,40 @@ def _build_diagnostics(
     unassigned_eligible = eligible_pupils - len(assigned_school_ids)
 
     sector_rows = []
+    scaled_sector_sex_targets = _allocate_sector_sex_targets(
+        target_workers, controls.employment_sector_sex_targets
+    )
+    scaled_sector_targets = {
+        sector: sum(
+            count
+            for (cell_sector, _sex), count in scaled_sector_sex_targets.items()
+            if cell_sector == sector
+        )
+        for sector in controls.employment_worker_targets
+    }
     for sector, _target in controls.employment_worker_targets.items():
         actual = sum(row["employment_sector"] == sector for row in worker_rows)
-        scaled_target = allocate_proportional(target_workers, controls.employment_worker_targets)[
-            sector
-        ]
+        scaled_target = scaled_sector_targets[sector]
         check(f"worker_sector_{sector}", actual, scaled_target)
         sector_rows.append({"sector": sector, "target": scaled_target, "generated": actual})
+
+    sector_sex_rows = []
+    for (sector, sex), target in scaled_sector_sex_targets.items():
+        actual = sum(
+            row["employment_sector"] == sector and row["sex"] == sex for row in worker_rows
+        )
+        check(f"worker_sector_sex_{sector}_{sex}", actual, target)
+        sector_sex_rows.append(
+            {"sector": sector, "sex": sex, "target": target, "generated": actual}
+        )
+
+    worker_age_bands = {
+        "18_to_24": sum(18 <= row["age"] <= 24 for row in worker_rows),
+        "25_to_34": sum(25 <= row["age"] <= 34 for row in worker_rows),
+        "35_to_54": sum(35 <= row["age"] <= 54 for row in worker_rows),
+        "55_to_64": sum(55 <= row["age"] <= 64 for row in worker_rows),
+        "65_to_74": sum(65 <= row["age"] <= 74 for row in worker_rows),
+    }
 
     band_rows = []
     for band, target in target_workplaces.items():
@@ -583,6 +638,22 @@ def _build_diagnostics(
                 "a 7% structural assumption"
             ),
             "sector_rows": sector_rows,
+            "sector_sex_rows": sector_sex_rows,
+            "age_bands": worker_age_bands,
+            "age_assumption": {
+                "status": "structural_assumption",
+                "weights": {
+                    "18_to_24": 0.45,
+                    "25_to_34": 0.90,
+                    "35_to_54": 1.00,
+                    "55_to_64": 0.80,
+                    "65_to_74": 0.18,
+                },
+                "source": (
+                    "no compatible authoritative Jersey employment-by-age headcount table "
+                    "identified"
+                ),
+            },
         },
         "workplaces": {
             "total": len(workplaces),
@@ -596,6 +667,18 @@ def _build_diagnostics(
             "sector_distribution": {
                 sector: sum(row["sector"] == sector for row in workplaces)
                 for sector in sorted({row["sector"] for row in workplaces})
+            },
+            "public_private_classification": {
+                value: sum(row["public_private"] == value for row in workplaces)
+                for value in sorted({row["public_private"] for row in workplaces})
+            },
+            "universe": {
+                "workplaces": "private_undertaking_control",
+                "workplace_count_control": controls.full_workplace_target,
+                "primary_jobs": "resident_worker_primary",
+                "secondary_jobs": "synthetic_secondary",
+                "private_filled_job_control": controls.full_private_job_target,
+                "status": "separate_controls_no_unsupported_employer_crosswalk",
             },
             "size_assumption": (
                 "50+ undertakings use a structural 50-500 employee range because the source "
@@ -613,6 +696,7 @@ def _build_diagnostics(
                 "synthetic work-parish categories weighted by canonical 66/13/21 destination "
                 "controls"
             ),
+            "semi_urban_parishes": sorted(SEMI_URBAN_PARISHES),
         },
         "commute": {
             "target": commute_target,
@@ -637,8 +721,9 @@ def _build_diagnostics(
                 "school_type_counts_scaled_v1",
                 "synthetic_school_and_class_allocation_v1",
                 "resident_worker_selection_scaled_v1",
-                "resident_worker_sector_allocation_v1",
-                "synthetic_workplace_size_band_allocation_v2",
+                "resident_worker_selection_age_propensity_v2",
+                "resident_worker_sector_sex_allocation_v2",
+                "synthetic_workplace_size_band_allocation_v3",
                 "workplace_destination_category_allocation_v1",
                 "conditional_commute_mode_allocation_v1",
                 "bounded_secondary_job_allocation_v1",
@@ -679,19 +764,63 @@ def generate_structure(
     ]
     if len(workers_eligible) < target_workers:
         raise DataBuildError("worker target exceeds age-eligible non-pupil residents")
-    rng.shuffle(workers_eligible)
-    selected_workers = workers_eligible[:target_workers]
+    sector_sex_targets = _allocate_sector_sex_targets(
+        target_workers, controls.employment_sector_sex_targets
+    )
+    worker_sex_targets = {
+        sex: sum(
+            count for (sector, cell_sex), count in sector_sex_targets.items() if cell_sex == sex
+        )
+        for sex in ("male", "female")
+    }
+
+    def employment_age_weight(age: int) -> float:
+        # No compatible Jersey employment-by-age headcount control is frozen.
+        # This is a documented structural propensity used only to avoid the
+        # pre-C1 uniform 18-74 draw and its excessive 65+ employment.
+        if age < 25:
+            return 0.45
+        if age < 35:
+            return 0.90
+        if age < 55:
+            return 1.00
+        if age < 65:
+            return 0.80
+        return 0.18
+
+    selected_workers: list[dict[str, Any]] = []
+    for sex, sex_target in worker_sex_targets.items():
+        candidates = [row for row in workers_eligible if row["sex"] == sex]
+        if len(candidates) < sex_target:
+            raise DataBuildError(f"worker sex target exceeds eligible {sex} residents")
+        weights = np.asarray([employment_age_weight(row["age"]) for row in candidates])
+        probabilities = weights / weights.sum()
+        selected_indices = rng.choice(len(candidates), sex_target, replace=False, p=probabilities)
+        selected_workers.extend(candidates[int(index)] for index in selected_indices)
+    rng.shuffle(selected_workers)
     worker_ids = [row["agent_id"] for row in selected_workers]
     worker_by_id = {row["agent_id"]: dict(row) for row in selected_workers}
-    sector_targets = allocate_proportional(target_workers, controls.employment_worker_targets)
-    shuffled_workers = list(worker_ids)
-    rng.shuffle(shuffled_workers)
+    sector_targets = {
+        sector: sum(
+            count
+            for (cell_sector, _sex), count in sector_sex_targets.items()
+            if cell_sector == sector
+        )
+        for sector in controls.employment_worker_targets
+    }
     worker_sector: dict[str, str] = {}
-    offset = 0
-    for sector, count in sector_targets.items():
-        for agent_id in shuffled_workers[offset : offset + count]:
+    unassigned_workers_by_sex = {
+        sex: {agent_id for agent_id in worker_ids if worker_by_id[agent_id]["sex"] == sex}
+        for sex in ("male", "female")
+    }
+    for (sector, sex), count in sector_sex_targets.items():
+        ids = sorted(unassigned_workers_by_sex[sex])
+        if len(ids) < count:
+            raise DataBuildError(f"sector-by-sex worker allocation exceeded {sex} pool")
+        rng.shuffle(ids)
+        for agent_id in ids[:count]:
             worker_sector[agent_id] = sector
-        offset += count
+            unassigned_workers_by_sex[sex].remove(agent_id)
     secondary_count = min(target_secondary_jobs, target_workers)
     wfh_target = int(
         round(
@@ -709,7 +838,7 @@ def generate_structure(
         sector: count + secondary_sector_targets[sector] for sector, count in sector_targets.items()
     }
     workplace_targets = target_workplaces
-    workplace_sizes = _allocate_sizes(workplace_targets, sum(sector_job_targets.values()))
+    workplace_sizes = _allocate_sizes(workplace_targets, sum(sector_job_targets.values()), rng)
     workplaces: list[dict[str, Any]] = []
     workplace_index = 0
     for band, size in workplace_sizes:
@@ -723,7 +852,8 @@ def generate_structure(
                 "work_parish": "St Helier",
                 "size_band": band,
                 "employee_count": size,
-                "public_private": "private",
+                "public_private": "unknown",
+                "workplace_universe": "private_undertaking_control",
                 "team_count": team_count,
             }
         )
@@ -779,6 +909,7 @@ def generate_structure(
                     "days_per_week": 5,
                     "remote_days_per_week": remote_days,
                     "team_id": slot_team_id,
+                    "job_universe": "resident_worker_primary",
                 }
             )
         slots_by_sector[sector] = slots[len(sector_workers) :]
@@ -828,6 +959,7 @@ def generate_structure(
                 "days_per_week": 1,
                 "remote_days_per_week": 0,
                 "team_id": slot_team_id,
+                "job_universe": "synthetic_secondary",
             }
         )
     if any(slots_by_sector.values()):
@@ -885,6 +1017,7 @@ def generate_structure(
             "school_type": school["school_type"] if school else None,
             "school_year": school["school_year"] if school else None,
             "class_id": school["class_id"] if school else None,
+            "school_parish": school["school_parish"] if school else None,
             "commute_mode": (
                 "work_from_home"
                 if agent_id in wfh_workers
@@ -914,7 +1047,10 @@ def generate_structure(
         target_secondary_jobs,
     )
     if diagnostics["status"] != "passed":
-        raise DataBuildError("Milestone 3 diagnostics did not pass")
+        failed_checks = [
+            check["name"] for check in diagnostics["checks"] if check["status"] != "passed"
+        ]
+        raise DataBuildError(f"Milestone 3 diagnostics did not pass: {failed_checks}")
     runtime_seconds = time.perf_counter() - started
     after_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     peak_memory_bytes = max(before_memory, after_memory)

@@ -500,7 +500,11 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
                 ),
             ),
         )
-    return specs
+    return {
+        route_id: spec
+        for route_id, spec in specs.items()
+        if route_id not in config.disabled_route_ids
+    }
 
 
 def _build_group_memberships(
@@ -747,6 +751,41 @@ def _occupational_staffing_audit(
     }
 
 
+def _institutional_staff_commute_metadata(
+    m3_input: M3StructureInput, staffing: StaffingAllocation
+) -> dict[str, dict[str, Any]]:
+    """Build the effective institutional destination overlay for transport routes.
+
+    M3 job rows remain unchanged.  At the M4 route boundary, an institutional
+    assignment supplies the physical school/care destination; a full M3
+    work-from-home assignment is replaced by ``other`` because a staff endpoint
+    must be physically present for its institutional contact route.
+    """
+
+    m3_by_agent = {row["agent_id"]: row for row in m3_input.resident_structure}
+    metadata: dict[str, dict[str, Any]] = {}
+    for assignment in [*staffing.school_assignments, *staffing.care_assignments]:
+        agent_id = assignment["agent_id"]
+        if agent_id in metadata:
+            raise DataBuildError("institutional staff has more than one effective assignment")
+        source = m3_by_agent[agent_id]
+        source_mode = source.get("commute_mode")
+        metadata[agent_id] = {
+            "institution_type": "school" if "school_id" in assignment else "care",
+            "institution_id": assignment.get("school_id", assignment.get("setting_id")),
+            "institution_parish": assignment["institution_parish"],
+            "source_work_parish": source.get("work_parish"),
+            "source_commute_mode": source_mode,
+            "effective_work_parish": assignment["institution_parish"],
+            "effective_commute_mode": "other" if source_mode == "work_from_home" else source_mode,
+            "work_from_home_days_per_week": 0
+            if source_mode == "work_from_home"
+            else source.get("work_from_home_days_per_week", 0),
+            "status": "synthetic_institutional_overlay",
+        }
+    return metadata
+
+
 def generate_networks(
     config: NetworkGenerationConfig,
     m2_input: M2PopulationInput,
@@ -881,6 +920,8 @@ def generate_networks(
             work_route_jobs_by_workplace[job["workplace_id"]].append(job)
             if job.get("team_id") is not None:
                 work_route_jobs_by_team[job["team_id"]].append(job)
+
+    institutional_staff_commute = _institutional_staff_commute_metadata(m3_input, staffing)
     if "workplace_team" in route_specs:
         structural_edges["workplace_team"] = _deduplicate_edges(
             edge
@@ -1033,11 +1074,18 @@ def generate_networks(
         if primary is None:
             continue
         resident = m3_by_agent[agent_id]
-        mode = resident.get("commute_mode")
+        institutional = institutional_staff_commute.get(agent_id)
+        mode = (
+            institutional["effective_commute_mode"]
+            if institutional
+            else resident.get("commute_mode")
+        )
         if mode not in {"car", "bus"}:
             continue
         home = resident["home_parish"]
-        work_parish = primary["work_parish"]
+        work_parish = (
+            institutional["effective_work_parish"] if institutional else primary["work_parish"]
+        )
         time_band = _stable_int(config.seed, "time-band", agent_id) % 3
         if mode == "car":
             transport_groups[(home, work_parish, int(time_band))].append(agent_id)
@@ -1300,6 +1348,7 @@ def generate_networks(
             ),
             "household_community_transport_preserved": True,
             "unintended_occupational_double_counting": 0,
+            "institutional_staff_commute_metadata": institutional_staff_commute,
         },
     }
     generated.staffing_diagnostics = staffing_diagnostics

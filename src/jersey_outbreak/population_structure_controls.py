@@ -15,6 +15,7 @@ class StructureControls:
     population: PopulationControls
     school_targets: dict[str, int]
     employment_worker_targets: dict[str, int]
+    employment_sector_sex_targets: dict[tuple[str, str], int]
     workplace_cell_counts: dict[tuple[str, str], int]
     workplace_band_counts: dict[str, int]
     commute_by_parish: dict[str, dict[str, int]]
@@ -22,6 +23,7 @@ class StructureControls:
     conditional_destination_modes: dict[str, dict[str, float]]
     all_commute_targets: dict[str, int]
     full_worker_target: int
+    full_private_job_target: int
     full_school_target: int
     full_workplace_target: int
     additional_job_rate: float
@@ -76,6 +78,23 @@ def load_structure_controls(root: Path) -> StructureControls:
     full_worker_target = sum(employment_worker_targets.values())
     if full_worker_target != 57_338:
         raise DataBuildError("resident-worker controls do not reconcile to 57,338")
+    employment_sector_sex_targets = {
+        (row["sector"], row["sex"]): _integer(row, "value")
+        for row in employment_rows
+        if row["measure"] == "resident_workers"
+        and row["sex"] in {"male", "female"}
+        and row["sector"] != "All"
+    }
+    if sum(employment_sector_sex_targets.values()) != full_worker_target:
+        raise DataBuildError("sector-by-sex resident-worker controls do not reconcile")
+    private_job_rows = [
+        row
+        for row in employment_rows
+        if row["measure"] == "jobs" and row["sector"] == "Private sector"
+    ]
+    if len(private_job_rows) != 1:
+        raise DataBuildError("private filled-job control is missing")
+    full_private_job_target = _integer(private_job_rows[0], "value")
 
     workplace_rows = read_csv_rows(
         processed / "workplace_sizes.csv",
@@ -141,7 +160,8 @@ def load_structure_controls(root: Path) -> StructureControls:
         "sector controls; the published sector-by-size rows do not exactly reconcile "
         "to the total row, so no unsupported cross-tab is imposed. The right-censored "
         "50+ band uses a structural 50-500 employee range.",
-        "Semi-urban parishes are represented by St Saviour, St Clement and St Brelade; "
+        "Semi-urban parishes are represented by St Saviour and St Clement only; St Brelade "
+        "is retained in the rural destination category in accordance with the C1 geography rule. "
         "the remaining non-St-Helier parishes are rural for destination allocation.",
         "The 66/13/21 workplace destination split is applied to synthetic workers; "
         "it is not presented as a contemporary observed count.",
@@ -152,11 +172,21 @@ def load_structure_controls(root: Path) -> StructureControls:
         "Car mode is conservatively disallowed for residents without household car "
         "access; the canonical aggregate car category does not distinguish drivers "
         "from passengers.",
+        "Resident-worker employment controls are observed by sector and sex from the 2021 "
+        "industry/sex table; no compatible Jersey employment-by-age headcount table is frozen. "
+        "Age selection therefore uses an explicit structural labour-force propensity, with "
+        "65+ employment capped by that scenario weight rather than treated as observed.",
+        "The 8,500 workplace size controls describe private undertakings, while the 57,338 "
+        "resident-worker controls describe unique resident workers and the 2025 private-job "
+        "control describes filled jobs. These universes remain separate metadata fields; "
+        "no whole-economy employer crosswalk is claimed, so synthetic workplace public/private "
+        "classification remains unknown.",
     )
     return StructureControls(
         population=population,
         school_targets=school_targets,
         employment_worker_targets=employment_worker_targets,
+        employment_sector_sex_targets=employment_sector_sex_targets,
         workplace_cell_counts=workplace_cell_counts,
         workplace_band_counts=workplace_band_counts,
         commute_by_parish=dict(commute_by_parish),
@@ -166,6 +196,7 @@ def load_structure_controls(root: Path) -> StructureControls:
         },
         all_commute_targets=all_commute_targets,
         full_worker_target=full_worker_target,
+        full_private_job_target=full_private_job_target,
         full_school_target=school_total,
         full_workplace_target=full_workplace_target,
         additional_job_rate=0.07,

@@ -36,6 +36,33 @@ def agent_uid_mapping(generated: GeneratedNetworks) -> dict[str, int]:
     return {agent_id: index for index, agent_id in enumerate(generated.agent_ids)}
 
 
+def _jos_demographics(generated: GeneratedNetworks) -> tuple[np.ndarray, np.ndarray]:
+    """Return exact JOS age and female-state arrays in Starsim UID order."""
+
+    m2_by_agent = {row["agent_id"]: row for row in generated.m2_input.residents}
+    if set(m2_by_agent) != set(generated.agent_ids):
+        raise ValueError("JOS demographic and agent ID universes do not match")
+    ages = np.asarray(
+        [m2_by_agent[agent_id]["age"] for agent_id in generated.agent_ids], dtype=float
+    )
+    female = np.asarray(
+        [m2_by_agent[agent_id]["sex"] == "female" for agent_id in generated.agent_ids], dtype=bool
+    )
+    return ages, female
+
+
+def _apply_jos_demographics(sim: Any, generated: GeneratedNetworks) -> None:
+    """Replace Starsim's stochastic defaults with the exact synthetic JOS identities."""
+
+    ages, female = _jos_demographics(generated)
+    sim.people.age[:] = ages
+    sim.people.female[:] = female
+    if not np.array_equal(np.asarray(sim.people.age), ages):
+        raise RuntimeError("Starsim ages do not match the JOS population")
+    if not np.array_equal(np.asarray(sim.people.female), female):
+        raise RuntimeError("Starsim sex state does not match the JOS population")
+
+
 def _edge_arrays(
     ss: Any,
     edges: tuple[dict[str, Any], ...] | list[dict[str, Any]],
@@ -148,7 +175,7 @@ def build_starsim_sim(
     start = start_date or generated.config.start_date
     stop = start + timedelta(days=duration_days)
     sim = ss.Sim(
-        n_agents=len(generated.agent_ids),
+        people=ss.People(len(generated.agent_ids)),
         start=start.isoformat(),
         stop=stop.isoformat(),
         dt=ss.days(1),
@@ -158,6 +185,7 @@ def build_starsim_sim(
         copy_inputs=False,
     )
     sim.init()
+    _apply_jos_demographics(sim, generated)
     return sim
 
 
@@ -177,7 +205,7 @@ def build_starsim_disease_sim(
     start = start_date or generated.config.start_date
     stop = start + timedelta(days=duration_days)
     sim = ss.Sim(
-        n_agents=len(generated.agent_ids),
+        people=ss.People(len(generated.agent_ids)),
         start=start.isoformat(),
         stop=stop.isoformat(),
         dt=ss.days(1),
@@ -188,6 +216,7 @@ def build_starsim_disease_sim(
         copy_inputs=False,
     )
     sim.init()
+    _apply_jos_demographics(sim, generated)
     return sim
 
 

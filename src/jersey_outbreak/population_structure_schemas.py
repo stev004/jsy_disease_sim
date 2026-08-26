@@ -22,6 +22,8 @@ EconomicStatus = Literal[
 CommuteMode = Literal["car", "motorbike", "walk", "bus", "cycle", "work_from_home", "other"]
 JobRole = Literal["primary", "secondary"]
 SizeBand = Literal["1", "2-5", "6-9", "10-19", "20-49", "50+"]
+WorkplaceUniverse = Literal["private_undertaking_control", "synthetic_nonprivate"]
+JobUniverse = Literal["resident_worker_primary", "synthetic_secondary"]
 
 
 class StructureGenerationConfig(StrictModel):
@@ -70,6 +72,7 @@ class SchoolRecord(StrictModel):
     school_type: NonEmptyString
     nominal_capacity: StrictInt = Field(gt=0)
     pupil_count: StrictInt = Field(gt=0)
+    school_parish: NonEmptyString
 
 
 class SchoolClassRecord(StrictModel):
@@ -87,6 +90,7 @@ class SchoolAssignmentRecord(StrictModel):
     school_year: NonEmptyString
     class_id: NonEmptyString
     age: StrictInt = Field(ge=0, le=95)
+    school_parish: NonEmptyString
 
 
 class WorkplaceRecord(StrictModel):
@@ -95,7 +99,8 @@ class WorkplaceRecord(StrictModel):
     work_parish: NonEmptyString
     size_band: SizeBand
     employee_count: StrictInt = Field(gt=0)
-    public_private: Literal["private"] = "private"
+    public_private: Literal["private", "public", "unknown"] = "unknown"
+    workplace_universe: WorkplaceUniverse = "private_undertaking_control"
     team_count: StrictInt = Field(ge=0)
 
 
@@ -115,6 +120,7 @@ class JobAssignmentRecord(StrictModel):
     team_id: NonEmptyString | None = None
     days_per_week: StrictInt = Field(gt=0, le=7)
     remote_days_per_week: StrictInt = Field(ge=0, le=7)
+    job_universe: JobUniverse
 
     @model_validator(mode="after")
     def validate_schedule(self) -> JobAssignmentRecord:
@@ -140,6 +146,7 @@ class ResidentStructureRecord(StrictModel):
     school_type: NonEmptyString | None = None
     school_year: NonEmptyString | None = None
     class_id: NonEmptyString | None = None
+    school_parish: NonEmptyString | None = None
     commute_mode: CommuteMode | None = None
     work_from_home_days_per_week: StrictInt = Field(ge=0, le=5)
     primary_work_days_per_week: StrictInt = Field(ge=0, le=5)
@@ -153,8 +160,12 @@ class ResidentStructureRecord(StrictModel):
             raise ValueError("school assignment fields must be complete or empty")
         if self.economic_status == "student" and self.school_id is None:
             raise ValueError("student status requires a school assignment")
+        if self.economic_status == "student" and self.school_parish is None:
+            raise ValueError("student status requires a school parish")
         if self.economic_status != "student" and self.school_id is not None:
             raise ValueError("only students may carry a school assignment")
+        if self.economic_status != "student" and self.school_parish is not None:
+            raise ValueError("only students may carry a school parish")
         if self.economic_status == "employed":
             if self.primary_workplace_id is None or self.employment_sector is None:
                 raise ValueError("employed status requires a primary job")

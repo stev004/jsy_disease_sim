@@ -51,7 +51,7 @@ class NetworkGenerationConfig(StrictModel):
     """Stable configuration for seeded route and network construction."""
 
     schema_version: Literal["1.0"] = "1.0"
-    generator_version: NonEmptyString = "4.1.0"
+    generator_version: NonEmptyString = "4.1.1"
     mode: PopulationMode
     seed: StrictInt
     start_date: date = date(2025, 1, 6)
@@ -61,6 +61,7 @@ class NetworkGenerationConfig(StrictModel):
         date(2025, 8, 11),
     )
     enabled_route_families: tuple[RouteFamily, ...] = ROUTE_FAMILIES
+    disabled_route_ids: tuple[RouteKind, ...] = ()
     school_cross_class_contacts: StrictInt = Field(default=3, ge=0, le=20)
     workplace_transient_contacts: StrictInt = Field(default=3, ge=0, le=20)
     community_indoor_contacts: StrictInt = Field(default=3, ge=0, le=20)
@@ -90,6 +91,13 @@ class NetworkGenerationConfig(StrictModel):
         if len(set(value)) != len(value):
             raise ValueError("enabled_route_families must not contain duplicates")
         return tuple(family for family in ROUTE_FAMILIES if family in value)
+
+    @field_validator("disabled_route_ids")
+    @classmethod
+    def validate_disabled_route_ids(cls, value: tuple[RouteKind, ...]) -> tuple[RouteKind, ...]:
+        if len(set(value)) != len(value):
+            raise ValueError("disabled_route_ids must not contain duplicates")
+        return tuple(sorted(value))
 
     @field_validator("snapshot_dates")
     @classmethod
