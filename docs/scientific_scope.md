@@ -42,6 +42,25 @@ the total size-band row, so the implementation does not invent that missing
 cross-tab. This layer still has no transmission routes, contact edges, disease
 states, visitors or inference about named people or institutions.
 
+Milestone 4 adds a disease-agnostic contact-structure layer. It generates
+separable household, school class/cross-class, workplace team/transient, care,
+shared-vehicle, synthetic transit, indoor-community and outdoor-community
+routes from M2/M3 memberships. Household, class, team and bounded care cohorts
+are repeated structures; sampled routes refresh on their declared daily or
+periodic schedule. Calendar rules distinguish weekdays, weekends, school term
+and physical work from WFH-only days. All edges are canonical undirected pairs
+with finite relative contact-opportunity weights, not pathogen-specific beta
+values.
+
+There are no observed teacher rosters, care staff rosters, bus routes/stops,
+real carpools, named community venues or GPS paths in the available evidence.
+M4 therefore leaves school-staff and care-staff routes explicitly empty and
+labels cross-class, workplace-transient, transport and community mechanisms as
+scenario assumptions. The route generator is Starsim-independent; only the
+adapter constructs Starsim 3.5.2 `ss.Network` and `ss.DynamicNetwork` objects.
+M4 is not an outbreak model and does not implement a disease, intervention,
+visitor or observation process.
+
 The full M3 benchmark has 104,540 synthetic residents, 13,991 school
 assignments, 8,500 workplaces and 62,108 job assignments. These counts show
 that the generated artifact reconciles to the selected controls; they do not

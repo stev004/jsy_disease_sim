@@ -23,7 +23,16 @@ from .population_schemas import (
     PopulationArtifactManifest,
     ResidentRecord,
 )
-from .population_structure_schemas import StructureArtifactManifest
+from .population_structure_schemas import (
+    JobAssignmentRecord,
+    ResidentStructureRecord,
+    SchoolAssignmentRecord,
+    SchoolClassRecord,
+    SchoolRecord,
+    StructureArtifactManifest,
+    WorkplaceRecord,
+    WorkplaceTeamRecord,
+)
 
 if TYPE_CHECKING:
     from .population_structure_generator import GeneratedStructure
@@ -43,6 +52,22 @@ class M2PopulationInput:
 class StructureArtifact:
     artifact_directory: Path
     manifest: StructureArtifactManifest
+
+
+@dataclass(frozen=True)
+class M3StructureInput:
+    """Validated Milestone 3 tables consumed by the Starsim-independent M4 layer."""
+
+    artifact_directory: Path
+    manifest: StructureArtifactManifest
+    manifest_hash: str
+    resident_structure: list[dict[str, Any]]
+    schools: list[dict[str, Any]]
+    classes: list[dict[str, Any]]
+    school_assignments: list[dict[str, Any]]
+    workplaces: list[dict[str, Any]]
+    workplace_teams: list[dict[str, Any]]
+    job_assignments: list[dict[str, Any]]
 
 
 def _manifest_file(path_value: str, root: Path) -> Path:
@@ -122,6 +147,71 @@ def logical_structure_hash(generated: GeneratedStructure) -> str:
         "job_assignments": sorted(generated.job_assignments, key=lambda row: row["job_id"]),
     }
     return sha256_bytes(canonical_json_bytes(payload))
+
+
+def load_m3_structure_artifact(root: Path, artifact_directory: Path) -> M3StructureInput:
+    """Load and fail closed on a missing, tampered or malformed M3 artifact."""
+
+    artifact_directory = artifact_directory.resolve()
+    manifest_path = artifact_directory / "manifest.json"
+    if not manifest_path.is_file():
+        raise DataBuildError(f"Milestone 3 manifest is missing: {manifest_path}")
+    try:
+        manifest = StructureArtifactManifest.model_validate_json(
+            manifest_path.read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError) as exc:
+        raise DataBuildError(f"invalid Milestone 3 manifest: {manifest_path}: {exc}") from exc
+
+    required = {
+        "resident_structure.parquet",
+        "schools.parquet",
+        "classes.parquet",
+        "school_assignments.parquet",
+        "workplaces.parquet",
+        "workplace_teams.parquet",
+        "job_assignments.parquet",
+    }
+    by_name: dict[str, Path] = {}
+    for record in manifest.output_artifacts:
+        path = _manifest_file(record.path, root)
+        if path.is_file() and path.name in required:
+            if sha256_file(path) != record.sha256:
+                raise DataBuildError(f"Milestone 3 output artifact hash mismatch: {path}")
+            by_name[path.name] = path
+    if set(by_name) != required:
+        missing = sorted(required - set(by_name))
+        raise DataBuildError(f"Milestone 3 artifact is missing tables: {missing}")
+
+    tables = {name: _read_parquet(path) for name, path in by_name.items()}
+    try:
+        [
+            ResidentStructureRecord.model_validate(row)
+            for row in tables["resident_structure.parquet"]
+        ]
+        [SchoolRecord.model_validate(row) for row in tables["schools.parquet"]]
+        [SchoolClassRecord.model_validate(row) for row in tables["classes.parquet"]]
+        [SchoolAssignmentRecord.model_validate(row) for row in tables["school_assignments.parquet"]]
+        [WorkplaceRecord.model_validate(row) for row in tables["workplaces.parquet"]]
+        [WorkplaceTeamRecord.model_validate(row) for row in tables["workplace_teams.parquet"]]
+        [JobAssignmentRecord.model_validate(row) for row in tables["job_assignments.parquet"]]
+    except ValueError as exc:
+        raise DataBuildError(f"Milestone 3 Parquet schema validation failed: {exc}") from exc
+    if len(tables["resident_structure.parquet"]) != manifest.actual_population:
+        raise DataBuildError("Milestone 3 resident structure row count does not match manifest")
+
+    return M3StructureInput(
+        artifact_directory=artifact_directory,
+        manifest=manifest,
+        manifest_hash=sha256_file(manifest_path),
+        resident_structure=tables["resident_structure.parquet"],
+        schools=tables["schools.parquet"],
+        classes=tables["classes.parquet"],
+        school_assignments=tables["school_assignments.parquet"],
+        workplaces=tables["workplaces.parquet"],
+        workplace_teams=tables["workplace_teams.parquet"],
+        job_assignments=tables["job_assignments.parquet"],
+    )
 
 
 def _write_parquet(path: Path, rows: list[dict[str, Any]]) -> None:

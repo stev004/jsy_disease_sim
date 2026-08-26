@@ -1,6 +1,6 @@
 # Architecture
 
-## Milestone 0–3 boundaries
+## Milestone 0–4 boundaries
 
 The repository intentionally keeps the verified simulation spike isolated from
 the aggregate evidence and synthetic-population paths:
@@ -56,10 +56,12 @@ canonical aggregate tables + source/table hashes
        Parquet artifacts + manifest
 ```
 
-`src/jersey_outbreak/starsim_compat.py` is the only application module allowed
-to import Starsim. It owns the exact 3.5.2 API calls used by the spike and
-converts Starsim result arrays into plain Python values. The rest of the
-application does not depend on Starsim's internal object graph.
+`src/jersey_outbreak/starsim_compat.py` and the M4
+`src/jersey_outbreak/starsim_adapter.py` are the only application modules
+allowed to import Starsim. They own the exact 3.5.2 API calls used by the
+spike and route adapter and convert Starsim result arrays into plain Python
+values. The rest of the application does not depend on Starsim's internal
+object graph.
 
 `src/jersey_outbreak/data_pipeline.py` is deliberately independent of Starsim.
 It validates local snapshot hashes before parsing, keeps observed and derived
@@ -112,6 +114,43 @@ runtime metadata and dirty-worktree state. Logical content is hashed from
 stable identifier order, independently of Parquet metadata and volatile run
 measurements.
 
+## Milestone 4 route boundary
+
+Milestone 4 consumes validated M2/M3 artifacts and builds route tables without
+importing Starsim into population or structure generation:
+
+```text
+M2 residents/households/settings + M3 memberships/jobs
+                              |
+                              v
+                  plain JOS route generator
+       fixed edges + memberships + deterministic daily snapshots
+                              |
+                              v
+                     route diagnostics
+                              |
+                              v
+              Starsim 3.5.2 adapter boundary
+              ss.Network / ss.DynamicNetwork
+```
+
+The separable route IDs are `household`, `school_class`,
+`school_cross_class`, `workplace_team`, `workplace_transient`,
+`care_resident`, `care_staff`, `shared_vehicle`, `bus`, `community_indoor`
+and `community_outdoor`. Household, class core, team core and care resident
+edges preserve repeated membership. Cross-class, broader workplace, transport
+and community edges are bounded deterministic samples, with daily or periodic
+refreshes declared in each route specification.
+
+The adapter maps sorted synthetic `agent_id` values to Starsim's zero-based
+UIDs, passes the canonical undirected pair as `p1`/`p2`, and passes JOS's
+relative contact-opportunity weight through Starsim's required `beta` edge
+field. That field is explicitly not a disease-specific transmission parameter.
+Calendar-aware routes use the supported `DynamicNetwork.step()` lifecycle to
+replace the current daily snapshot; fixed always-active routes use a static
+Starsim network with a no-op step hook. No custom disease or transmission
+engine is present in M4.
+
 ## Stable boundaries for later milestones
 
 - **Contracts:** versioned Pydantic v2 models describe inputs, provenance and
@@ -122,8 +161,9 @@ measurements.
 - **Population:** synthetic residents and settings remain disease-agnostic.
   Milestone 2 implements the bounded resident, household and communal-setting
   layer. Milestone 3 adds synthetic school and daytime-structure metadata;
-  contact structures are still deferred.
-- **Simulation adapter:** the only deep Starsim integration point.
+  Milestone 4 adds route structure without disease biology.
+- **Simulation adapter:** `starsim_adapter.py` is the deep Starsim integration
+  point; all M4 route generation and diagnostics remain plain Python.
 - **Disease:** future disease modules own natural history and transmission
   parameters; they do not create Jersey households or geography.
 - **Observation:** future observed-case generation remains separate from latent
@@ -138,10 +178,13 @@ They are contracts in the documentation only until a milestone requires them.
 
 The demo's deterministic declaration covers the JSON summary's fixed
 configuration, time series and final counts for a seed under Starsim 3.5.2.
-The M2 and M3 manifests make the same distinction for their logical population
-and structure content hashes. Each manifest records volatile execution metadata
-separately: creation time, runtime, dirty-worktree state and artifact hashes.
+The M2, M3 and M4 manifests make the same distinction for their logical
+population, structure and route content hashes. Each manifest records volatile
+execution metadata separately: creation time, runtime, dirty-worktree state and
+artifact hashes. M4 also stores per-route hashes and selected daily snapshots,
+so fixed membership and refreshed route states can be compared independently.
 The current M3 CI run with seed 123 reproduced the same logical structure hash
-across independent processes. A future milestone may add more declared outputs,
-but it must state which outputs are expected to be stable and test them
-explicitly.
+across independent processes, and M4 tests reproduce the same route hash while
+showing a changed seed changes sampled community edges. A future milestone may
+add more declared outputs, but it must state which outputs are expected to be
+stable and test them explicitly.

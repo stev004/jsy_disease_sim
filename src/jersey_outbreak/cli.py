@@ -1,4 +1,4 @@
-"""Command-line interface for the bounded Milestone 0–3 workflows."""
+"""Command-line interface for the bounded Milestone 0–4 workflows."""
 
 from __future__ import annotations
 
@@ -10,10 +10,17 @@ import typer
 
 from .data_pipeline import build_canonical
 from .demo import run_demo
+from .network_artifacts import write_network_artifact
+from .network_generator import generate_networks
+from .network_schemas import NetworkGenerationConfig
 from .population_artifacts import write_population_artifact
 from .population_generator import generate_population
 from .population_schemas import PopulationGenerationConfig, PopulationMode
-from .population_structure_artifacts import load_m2_population_artifact, write_structure_artifact
+from .population_structure_artifacts import (
+    load_m2_population_artifact,
+    load_m3_structure_artifact,
+    write_structure_artifact,
+)
 from .population_structure_generator import generate_structure
 from .population_structure_schemas import StructureGenerationConfig
 
@@ -21,9 +28,11 @@ app = typer.Typer(add_completion=False, no_args_is_help=True)
 data_app = typer.Typer(add_completion=False, no_args_is_help=True)
 population_app = typer.Typer(add_completion=False, no_args_is_help=True)
 structure_app = typer.Typer(add_completion=False, no_args_is_help=True)
+network_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(data_app, name="data")
 app.add_typer(population_app, name="population")
 app.add_typer(structure_app, name="structure")
+app.add_typer(network_app, name="network")
 
 
 @app.callback()
@@ -167,6 +176,86 @@ def structure_generate(
                 "primary_jobs": generated.diagnostics["employment"]["primary_jobs"],
                 "secondary_jobs": generated.diagnostics["employment"]["additional_jobs"],
                 "runtime_seconds": artifact.manifest.runtime_seconds,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@network_app.command("generate")
+def network_generate(
+    mode: Annotated[PopulationMode, typer.Option(help="Network scale: ci, scaled or full.")] = "ci",
+    seed: Annotated[int, typer.Option(help="Non-negative network seed.")] = 123,
+    population_artifact: Annotated[
+        Path | None,
+        typer.Option(help="Existing validated Milestone 2 artifact directory."),
+    ] = None,
+    structure_artifact: Annotated[
+        Path | None,
+        typer.Option(help="Existing validated Milestone 3 artifact directory."),
+    ] = None,
+    output_dir: Annotated[
+        Path, typer.Option(help="Directory for versioned Milestone 4 route artifacts.")
+    ] = Path("outputs/networks"),
+) -> None:
+    """Generate disease-agnostic Jersey routes and selected dynamic snapshots."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    config = NetworkGenerationConfig(mode=mode, seed=seed)
+    if population_artifact is None and structure_artifact is not None:
+        raise typer.BadParameter(
+            "--structure-artifact requires --population-artifact so the "
+            "M2 hash boundary is explicit"
+        )
+    if population_artifact is None:
+        m2_output = destination.parent / "populations"
+        m3_output = destination.parent / "structures"
+        m2_generated = generate_population(root, PopulationGenerationConfig(mode=mode, seed=seed))
+        m2_artifact = write_population_artifact(m2_generated, root, m2_output)
+        m2_path = m2_artifact.artifact_directory
+        m2_input = load_m2_population_artifact(root, m2_path)
+        m3_generated = generate_structure(
+            root,
+            StructureGenerationConfig(mode=mode, seed=seed),
+            m2_input,
+        )
+        m3_artifact = write_structure_artifact(m3_generated, root, m3_output, m2_input)
+        m3_path = m3_artifact.artifact_directory
+    else:
+        m2_path = population_artifact
+        if not m2_path.is_absolute():
+            m2_path = root / m2_path
+        m2_input = load_m2_population_artifact(root, m2_path)
+        if structure_artifact is None:
+            m3_output = destination.parent / "structures"
+            m3_generated = generate_structure(
+                root,
+                StructureGenerationConfig(mode=mode, seed=seed),
+                m2_input,
+            )
+            m3_artifact = write_structure_artifact(m3_generated, root, m3_output, m2_input)
+            m3_path = m3_artifact.artifact_directory
+        else:
+            m3_path = structure_artifact
+            if not m3_path.is_absolute():
+                m3_path = root / m3_path
+    m3_input = load_m3_structure_artifact(root, m3_path)
+    generated = generate_networks(config, m2_input, m3_input)
+    artifact = write_network_artifact(generated, root, destination)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_id": artifact.manifest.artifact_id,
+                "artifact_directory": str(artifact.artifact_directory),
+                "diagnostics_status": artifact.manifest.diagnostics_status,
+                "logical_content_hash": artifact.manifest.logical_content_hash,
+                "mode": artifact.manifest.mode,
+                "target_population": artifact.manifest.target_population,
+                "routes": len(generated.route_specs),
+                "baseline_edges": generated.diagnostics["benchmark"]["total_baseline_edges"],
+                "runtime_seconds": generated.runtime_seconds,
             },
             ensure_ascii=False,
             sort_keys=True,

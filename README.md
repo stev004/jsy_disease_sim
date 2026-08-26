@@ -7,10 +7,11 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–3**: repository contracts, a verified
+This repository contains **Milestones 0–4**: repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
-synthetic daytime structure for schools, employment, workplaces and commuting.
+synthetic daytime structure for schools, employment, workplaces and commuting,
+plus a disease-agnostic Jersey route layer adapted to Starsim 3.5.2.
 The Starsim demo is an official SIR example using Starsim's built-in
 `RandomNet`; it is not a Jersey outbreak reconstruction or a validated
 forecast. The Milestone 2 population is synthetic and control-driven; it is
@@ -42,6 +43,13 @@ The verified full M3 artifact contains 104,540 residents, 48 synthetic schools,
 structures and aggregate-control reconciliations, not observations about named
 people, real schools or real employers.
 
+Milestone 4 converts the validated M2/M3 artifacts into reproducible household,
+school, workplace, care, transport and community route tables. It keeps fixed,
+periodically refreshed and daily sampled contacts separate, applies weekday,
+weekend, school-term and WFH schedule rules, and adapts the plain route tables
+to Starsim `ss.Network`/`ss.DynamicNetwork` objects. It does not contain a
+custom disease, transmission calibration or intervention model.
+
 ## Quick start
 
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
@@ -52,6 +60,7 @@ uv run jos demo --seed 123
 uv run jos data build
 uv run jos population generate --mode ci --seed 123
 uv run jos structure generate --mode ci --seed 123
+uv run jos network generate --mode ci --seed 123
 ```
 
 The command prints a machine-readable JSON summary and writes:
@@ -86,6 +95,13 @@ benchmark metadata and a manifest. The logical structure hash is the declared
 same-seed comparison; timestamps, runtime and filesystem artifact hashes remain
 volatile.
 
+The network command validates both the M2 and M3 artifact boundaries and writes
+selected dynamic snapshots rather than a year's worth of daily edge states.
+Network edge weights are relative contact-opportunity weights only; they are not
+pathogen-specific transmission probabilities. The network artifact includes
+route diagnostics, cross-route diagnostics, assumptions, selected snapshots and
+M2/M3/config/Starsim provenance.
+
 ## Verification
 
 ```bash
@@ -97,9 +113,14 @@ uv run mypy --ignore-missing-imports \
   src/jersey_outbreak/population_structure_schemas.py \
   src/jersey_outbreak/population_structure_controls.py \
   src/jersey_outbreak/population_structure_artifacts.py \
-  src/jersey_outbreak/population_structure_generator.py
+  src/jersey_outbreak/population_structure_generator.py \
+  src/jersey_outbreak/network_schemas.py \
+  src/jersey_outbreak/network_generator.py \
+  src/jersey_outbreak/network_artifacts.py \
+  src/jersey_outbreak/starsim_adapter.py
 uv run jos demo --seed 123
 uv run jos structure generate --mode ci --seed 123
+uv run jos network generate --mode ci --seed 123
 ```
 
 Run the demo twice with the same seed and compare `summary.json` to verify the
@@ -110,8 +131,9 @@ The verified CI seed-123 logical structure hash is
 `18087772e7286f1b88e3e30ca325e53d97d4fcce3582cf2e8f2fe3ac6e198d2a`.
 
 The repository-wide legacy codebase still has pre-existing mypy errors, so CI
-currently type-checks the four M3 modules explicitly. This is an engineering
-cleanup item, not evidence that the M3 structure contracts are untyped.
+currently type-checks the four M3 modules and the M4 route/adapter modules
+explicitly. This is an engineering cleanup item, not evidence that the M3/M4
+contracts are untyped.
 
 ## Scientific scope
 

@@ -25,6 +25,11 @@ jobs:
           src/jersey_outbreak/population_structure_controls.py
           src/jersey_outbreak/population_structure_artifacts.py
           src/jersey_outbreak/population_structure_generator.py
+          src/jersey_outbreak/network_schemas.py
+          src/jersey_outbreak/network_generator.py
+          src/jersey_outbreak/network_artifacts.py
+          src/jersey_outbreak/starsim_adapter.py
       - run: uv run jos demo --seed 123
       - run: uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci
       - run: uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci
+      - run: uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci
