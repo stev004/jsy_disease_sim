@@ -194,8 +194,36 @@ values are `scenario_assumption`; unsupported symptom, severity, death and
 seasonality families are recorded as deferred rather than assigned fake
 observed values. The run manifest references the M2, M3 and M4.1 logical hashes,
 the parameter hash, Starsim version, seed, outputs, attribution totals and
-network immutability check. Observation, calibration, ensembles, interventions,
-visitors, API and UI remain later-milestone concerns.
+network immutability check. Interventions, visitors, API and UI remain
+later-milestone concerns.
+
+### Milestone 6 observation and ensemble boundary
+
+M6 adds a pure post-processing boundary over the immutable M5 result:
+
+```text
+immutable M5 latent run + observation config
+                    |
+                    v
+       detected/report-date observation tables
+                    |
+                    +--> explicit-seed replicate trajectories
+                    |        |
+                    |        +--> linear quantile summaries
+                    |        +--> matched-seed A/B differences
+                    |
+                    +--> synthetic-only Optuna recovery artifact
+```
+
+`observation.py` never writes back to M5 events or network state. Observation
+parameters carry their own statuses and source references; the included demo
+values are scenario assumptions. `ensemble.py` reruns the existing M4.1/M5
+stack for an explicit unique seed list, preserves failed replicates as failed,
+and summarizes successful results only. `compare_ensembles()` pairs seed
+identities before calculating differences. The recovery harness uses a hidden
+synthetic reporting delay and a fresh synthetic held-out seed; it is not a
+Jersey-data calibration or a model-validation claim. Ensemble, observation and
+calibration tables have immutable content-addressed directories and manifests.
 
 ## Stable boundaries for later milestones
 
@@ -212,10 +240,11 @@ visitors, API and UI remain later-milestone concerns.
   point; all M4 route generation and diagnostics remain plain Python.
 - **Disease:** future disease modules own natural history and transmission
   parameters; they do not create Jersey households or geography.
-- **Observation:** future observed-case generation remains separate from latent
-  infections.
-- **Results:** future summaries and ensembles carry their configuration,
-  sources, parameters, code state and seeds.
+- **Observation:** M6 observed-case generation remains separate from latent
+  infections and writes its own configuration, event table and manifest.
+- **Results:** M6 summaries and ensembles carry their configuration, sources,
+  parameters, code state and explicit seed list; matched comparisons preserve
+  seed pairing.
 
 Milestone 0 does not create placeholder packages for those future boundaries.
 They are contracts in the documentation only until a milestone requires them.

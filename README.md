@@ -7,7 +7,7 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–5**: repository contracts, a verified
+This repository contains **Milestones 0–6**: repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
 synthetic daytime structure for schools, employment, workplaces and commuting,
@@ -18,8 +18,10 @@ claim to reconstruct real staff rosters.
 Milestone 5 adds a generic, pathogen-neutral daily respiratory SEIRS
 demonstration. Its active states are susceptible, exposed, infectious and
 recovered, with configurable immunity waning; severity, disease deaths,
-symptom substates, observation, calibration and named-pathogen parameters are
-explicitly deferred. Starsim owns network transmission, while JOS records
+symptom substates and named-pathogen parameters are explicitly deferred.
+Milestone 6 adds a standalone observation layer, deterministic ensembles,
+matched-seed A/B comparisons and a synthetic-only Optuna recovery harness.
+Starsim owns network transmission, while JOS records
 route-attributed latent infections and writes tidy daily epidemic, parish, age
 and route tables. Demonstration values are scenario assumptions, not Jersey
 surveillance controls.
@@ -73,7 +75,16 @@ respiratory SEIRS module through Starsim 3.5.2. Seeded infections and optional
 generic exogenous imports are distinct from locally acquired infections. Local
 events retain the Starsim infector UID and route ID; no visitors, arrivals,
 airport/ferry process, observation model, calibration, interventions or API are
-implemented.
+implemented in M5.
+
+Milestone 6 keeps M5 latent outputs immutable and applies observation
+assumptions in a separate layer. `jos observe run` writes detected/reported
+case tables and event metadata without changing the latent hash. `jos ensemble
+run --seeds 101,102,103` retains explicit replicate seeds and writes tidy
+replicate trajectories with linear lower/median/upper quantiles. Matched-seed
+comparisons pair A/B outputs by seed. `jos calibrate synthetic` uses Optuna to
+recover a hidden observation parameter from synthetic truth only, retaining
+all trials and a held-out synthetic check; it is not Jersey calibration.
 
 ## Quick start
 
@@ -87,6 +98,9 @@ uv run jos population generate --mode ci --seed 123
 uv run jos structure generate --mode ci --seed 123
 uv run jos network generate --mode ci --seed 123
 uv run jos outbreak run --mode ci --seed 123
+uv run jos observe run --mode ci --seed 123
+uv run jos ensemble run --mode ci --seeds 101,102,103
+uv run jos calibrate synthetic --mode ci --seed 123
 ```
 
 The command prints a machine-readable JSON summary and writes:
@@ -135,6 +149,13 @@ respiratory module, and writes versioned M5 output artifacts containing
 diagnostics and a manifest. These are latent truth outputs; they are not
 detected or reported case counts.
 
+M6 outputs are written under `outputs/observations`, `outputs/ensembles` and
+`outputs/calibration` by the corresponding commands. Observation parameters
+retain explicit provenance statuses; the demo values are scenario assumptions,
+not Jersey surveillance controls. A constrained host may report
+`sequential_fallback` for an ensemble requested with multiple workers when its
+OS denies the process-pool semaphore check; this is recorded in diagnostics.
+
 ## Verification
 
 ```bash
@@ -157,10 +178,22 @@ uv run mypy --ignore-missing-imports \
   src/jersey_outbreak/respiratory.py \
   src/jersey_outbreak/outbreak_runner.py \
   src/jersey_outbreak/outbreak_artifacts.py \
+  src/jersey_outbreak/observation_schemas.py \
+  src/jersey_outbreak/observation.py \
+  src/jersey_outbreak/observation_artifacts.py \
+  src/jersey_outbreak/ensemble_schemas.py \
+  src/jersey_outbreak/ensemble.py \
+  src/jersey_outbreak/ensemble_artifacts.py \
+  src/jersey_outbreak/calibration_schemas.py \
+  src/jersey_outbreak/calibration.py \
+  src/jersey_outbreak/calibration_artifacts.py \
   src/jersey_outbreak/cli.py
 uv run jos demo --seed 123
 uv run jos structure generate --mode ci --seed 123
 uv run jos network generate --mode ci --seed 123
+uv run jos observe run --mode ci --seed 123
+uv run jos ensemble run --mode ci --seeds 101,102,103
+uv run jos calibrate synthetic --mode ci --seed 123
 ```
 
 Run the demo twice with the same seed and compare `summary.json` to verify the

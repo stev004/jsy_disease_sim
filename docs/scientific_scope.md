@@ -97,6 +97,29 @@ the M5 boundary. Consequently the `severe` and `dead` output columns remain
 zero by design, and M5 is a demonstration validation level rather than a
 forecast or clinical model.
 
+## Milestone 6 observation, ensembles and synthetic recovery
+
+M6 consumes an immutable M5 `OutbreakRunResult`. Its observation layer adds
+synthetic symptomatic classification, weekday effects, detection/ascertainment
+and non-negative reporting delays; it does not mutate M5 transmission events or
+latent hashes. The demonstration observation configuration is explicitly
+`scenario_assumption`. No Jersey surveillance series is treated as an observed
+calibration target.
+
+M6 ensembles require an explicit ordered list of unique replicate seeds. They
+retain each successful or failed replicate, summarize only successful outputs
+with declared linear quantiles, and preserve latent route/parish/age metrics
+alongside detected and reported metrics. Matched comparisons pair the same seed
+identities across A/B configurations. A process-pool request may be recorded as
+`sequential_fallback` when the host disallows its semaphore capability; this is
+an execution-environment diagnostic, not a claim of parallel execution.
+
+The Optuna harness is a synthetic recovery test, not parameter estimation for
+Jersey. It generates its own fully detected target from the generic M5 model,
+hides a declared reporting delay, retains every grid trial and checks recovery
+on a fresh synthetic seed. Its truth, candidate and held-out results are
+separate from official Jersey evidence and cannot establish model validity.
+
 The full M3 benchmark has 104,540 synthetic residents, 13,991 school
 assignments, 8,500 workplaces and 62,108 job assignments. These counts show
 that the generated artifact reconciles to the selected controls; they do not

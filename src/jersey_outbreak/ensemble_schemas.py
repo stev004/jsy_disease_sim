@@ -1,0 +1,154 @@
+"""Strict Milestone 6 ensemble and paired-comparison contracts."""
+
+from __future__ import annotations
+
+from typing import Literal
+
+from pydantic import Field, field_validator, model_validator
+from pydantic.types import StrictBool, StrictFloat, StrictInt
+
+from .contracts import ArtifactRecord, NonEmptyString, StrictModel
+from .observation_schemas import ObservationConfig
+from .outbreak_schemas import OutbreakRunConfig
+
+
+class EnsembleConfig(StrictModel):
+    """Explicit replicate seed ownership and quantile controls."""
+
+    schema_version: Literal["1.0"] = "1.0"
+    ensemble_id: NonEmptyString
+    generator_version: NonEmptyString = "6.0.0"
+    base_run_config: OutbreakRunConfig
+    observation_config: ObservationConfig
+    replicate_seeds: tuple[StrictInt, ...] = Field(min_length=1)
+    workers: StrictInt = Field(default=1, ge=1, le=32)
+    lower_quantile: StrictFloat = Field(default=0.025, ge=0, le=1)
+    upper_quantile: StrictFloat = Field(default=0.975, ge=0, le=1)
+
+    @field_validator("replicate_seeds", mode="before")
+    @classmethod
+    def normalize_seeds(cls, value: object) -> object:
+        return tuple(value) if isinstance(value, list) else value
+
+    @field_validator("replicate_seeds")
+    @classmethod
+    def validate_seeds(cls, value: tuple[int, ...]) -> tuple[int, ...]:
+        if any(seed < 0 for seed in value):
+            raise ValueError("replicate seeds must be non-negative")
+        if len(set(value)) != len(value):
+            raise ValueError("replicate seeds must be unique and explicitly ordered")
+        return value
+
+    @model_validator(mode="after")
+    def validate_quantiles(self) -> EnsembleConfig:
+        if self.lower_quantile > self.upper_quantile:
+            raise ValueError("lower_quantile must not exceed upper_quantile")
+        return self
+
+
+class EnsembleReplicateRecord(StrictModel):
+    """Truthful status and hashes for one replicate."""
+
+    seed: StrictInt
+    status: Literal["passed", "failed"]
+    latent_run_logical_content_hash: NonEmptyString | None = None
+    observation_logical_content_hash: NonEmptyString | None = None
+    m4_logical_content_hash: NonEmptyString | None = None
+    runtime_seconds: StrictFloat = 0.0
+    error: str | None = None
+
+    @model_validator(mode="after")
+    def validate_status(self) -> EnsembleReplicateRecord:
+        if self.seed < 0 or self.runtime_seconds < 0:
+            raise ValueError("replicate seed and runtime must be non-negative")
+        if self.status == "passed" and (
+            self.latent_run_logical_content_hash is None
+            or self.observation_logical_content_hash is None
+        ):
+            raise ValueError("passed replicate must retain latent and observation hashes")
+        if self.status == "failed" and not self.error:
+            raise ValueError("failed replicate must record an error")
+        return self
+
+
+class EnsembleArtifactManifest(StrictModel):
+    """Manifest for a complete or explicitly partial ensemble."""
+
+    manifest_schema_version: Literal["1.0"] = "1.0"
+    artifact_id: NonEmptyString
+    logical_content_hash: NonEmptyString
+    generator_version: NonEmptyString = "6.0.0"
+    ensemble_id: NonEmptyString
+    status: Literal["passed", "partial", "failed"]
+    diagnostics_status: Literal["passed", "failed"]
+    replicate_seeds: tuple[StrictInt, ...]
+    replicate_count: StrictInt
+    successful_replicates: StrictInt
+    failed_replicates: StrictInt
+    m2_logical_content_hash: NonEmptyString
+    m3_logical_content_hash: NonEmptyString
+    m4_logical_content_hashes: dict[str, NonEmptyString]
+    m5_logical_content_hashes: dict[str, NonEmptyString]
+    disease_parameter_hash: NonEmptyString
+    observation_parameter_hash: NonEmptyString
+    base_config_hash: NonEmptyString
+    quantile_configuration: dict[str, StrictFloat]
+    replicate_records: list[EnsembleReplicateRecord]
+    created_at: NonEmptyString
+    git_commit: str | None = None
+    dirty_worktree_flag: StrictBool
+    runtime_seconds: StrictFloat
+    peak_memory_bytes: StrictInt | None = None
+    output_artifacts: list[ArtifactRecord]
+
+    @field_validator(
+        "m2_logical_content_hash",
+        "m3_logical_content_hash",
+        "disease_parameter_hash",
+        "observation_parameter_hash",
+        "base_config_hash",
+        "logical_content_hash",
+    )
+    @classmethod
+    def validate_hash(cls, value: str) -> str:
+        if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise ValueError("ensemble hashes must be lowercase 64-character hex digests")
+        return value
+
+    @model_validator(mode="after")
+    def validate_counts(self) -> EnsembleArtifactManifest:
+        if self.replicate_count != len(self.replicate_seeds):
+            raise ValueError("replicate_count must match the explicit seed list")
+        if self.successful_replicates + self.failed_replicates != self.replicate_count:
+            raise ValueError("replicate status counts do not reconcile")
+        if self.runtime_seconds < 0:
+            raise ValueError("ensemble runtime must be non-negative")
+        return self
+
+
+class ComparisonArtifactManifest(StrictModel):
+    """Manifest for a matched-seed A/B comparison."""
+
+    manifest_schema_version: Literal["1.0"] = "1.0"
+    artifact_id: NonEmptyString
+    logical_content_hash: NonEmptyString
+    generator_version: NonEmptyString = "6.0.0"
+    comparison_id: NonEmptyString
+    status: Literal["passed", "partial", "failed"]
+    config_a_hash: NonEmptyString
+    config_b_hash: NonEmptyString
+    matched_seed_list: tuple[StrictInt, ...]
+    paired_count: StrictInt
+    missing_or_failed_pairs: StrictInt
+    created_at: NonEmptyString
+    git_commit: str | None = None
+    dirty_worktree_flag: StrictBool
+    runtime_seconds: StrictFloat
+    output_artifacts: list[ArtifactRecord]
+
+    @field_validator("config_a_hash", "config_b_hash", "logical_content_hash")
+    @classmethod
+    def validate_hash(cls, value: str) -> str:
+        if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise ValueError("comparison hashes must be lowercase 64-character hex digests")
+        return value

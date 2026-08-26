@@ -1,0 +1,38 @@
+schema_version: "1.0"
+observation_config_id: observation-demo-v0.1
+parameters:
+  symptomatic_probability:
+    parameter_id: symptomatic_probability
+    value: 0.6
+    distribution: fixed Bernoulli classification for observation only
+    units: probability per latent infection
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: Synthetic observation classification; it does not add a disease symptom state to M5.
+  symptomatic_detection_probability:
+    parameter_id: symptomatic_detection_probability
+    value: 0.75
+    distribution: fixed Bernoulli detection probability
+    units: probability per symptomatic infection
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: Demonstration ascertainment assumption, not Jersey surveillance evidence.
+  asymptomatic_detection_probability:
+    parameter_id: asymptomatic_detection_probability
+    value: 0.05
+    distribution: fixed Bernoulli detection probability
+    units: probability per asymptomatic infection
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: Demonstration ascertainment assumption, not Jersey surveillance evidence.
+reporting_delay:
+  kind: fixed
+  days: [2]
+  status: scenario_assumption
+  source_ids: []
+  notes: Synthetic non-negative delay from the infection/testing anchor to reporting.
+day_of_week_effect: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+observation_seed: 123

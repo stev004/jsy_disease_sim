@@ -1,4 +1,4 @@
-"""Command-line interface for the bounded Milestone 0–5 workflows."""
+"""Command-line interface for the bounded Milestone 0–6 workflows."""
 
 from __future__ import annotations
 
@@ -8,11 +8,17 @@ from typing import Annotated
 
 import typer
 
+from .calibration import run_synthetic_recovery
+from .calibration_artifacts import write_calibration_artifact
 from .data_pipeline import build_canonical
 from .demo import run_demo
+from .ensemble import run_ensemble
+from .ensemble_artifacts import write_ensemble_artifact
 from .network_artifacts import write_network_artifact
 from .network_generator import generate_networks
 from .network_schemas import NetworkGenerationConfig
+from .observation import load_observation_config, observe_latent_run
+from .observation_artifacts import write_observation_artifact
 from .outbreak_artifacts import write_outbreak_artifact
 from .outbreak_runner import default_run_config, load_parameter_set, run_outbreak
 from .population_artifacts import write_population_artifact
@@ -32,11 +38,17 @@ population_app = typer.Typer(add_completion=False, no_args_is_help=True)
 structure_app = typer.Typer(add_completion=False, no_args_is_help=True)
 network_app = typer.Typer(add_completion=False, no_args_is_help=True)
 outbreak_app = typer.Typer(add_completion=False, no_args_is_help=True)
+observe_app = typer.Typer(add_completion=False, no_args_is_help=True)
+ensemble_app = typer.Typer(add_completion=False, no_args_is_help=True)
+calibration_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(data_app, name="data")
 app.add_typer(population_app, name="population")
 app.add_typer(structure_app, name="structure")
 app.add_typer(network_app, name="network")
 app.add_typer(outbreak_app, name="outbreak")
+app.add_typer(observe_app, name="observe")
+app.add_typer(ensemble_app, name="ensemble")
+app.add_typer(calibration_app, name="calibrate")
 
 
 @app.callback()
@@ -70,6 +82,24 @@ def _display_path(path: Path, root: Path) -> str:
         return str(path.relative_to(root))
     except ValueError:
         return str(path)
+
+
+def _build_m4_for_m6(root: Path, mode: PopulationMode, seed: int, destination: Path):
+    """Build the existing M2/M3/M4.1 stack for an M6 command."""
+
+    m2_output = destination.parent / "populations"
+    m3_output = destination.parent / "structures"
+    m2_generated = generate_population(root, PopulationGenerationConfig(mode=mode, seed=seed))
+    m2_artifact = write_population_artifact(m2_generated, root, m2_output)
+    m2_input = load_m2_population_artifact(root, m2_artifact.artifact_directory)
+    m3_generated = generate_structure(
+        root, StructureGenerationConfig(mode=mode, seed=seed), m2_input
+    )
+    m3_artifact = write_structure_artifact(m3_generated, root, m3_output, m2_input)
+    m3_input = load_m3_structure_artifact(root, m3_artifact.artifact_directory)
+    return generate_networks(
+        NetworkGenerationConfig(mode=mode, seed=seed), m2_input, m3_input, root
+    )
 
 
 @data_app.command("build")
@@ -295,7 +325,6 @@ def outbreak_run(
         parameters,
         duration_days=duration_days,
     )
-
     m2_output = destination.parent / "populations"
     m3_output = destination.parent / "structures"
     m4_output = destination.parent / "networks"
@@ -325,6 +354,203 @@ def outbreak_run(
                 "m4_artifact_id": m4_artifact.manifest.artifact_id,
                 "starsim_version": artifact.manifest.starsim_version,
                 "attribution_totals": artifact.manifest.attribution_totals,
+                "runtime_seconds": result.runtime_seconds,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@observe_app.command("run")
+def observe_run(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Observation scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Non-negative latent-run seed.")] = 123,
+    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    observation_config: Annotated[
+        Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    output_dir: Annotated[
+        Path, typer.Option(help="Directory for versioned M6 observation artifacts.")
+    ] = Path("outputs/observations"),
+) -> None:
+    """Run M5 once and apply the standalone M6 observation transformation."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    parameter_path = (
+        parameter_set
+        if parameter_set is None or parameter_set.is_absolute()
+        else root / parameter_set
+    )
+    observation_path = (
+        observation_config
+        if observation_config is None or observation_config.is_absolute()
+        else root / observation_config
+    )
+    parameters = load_parameter_set(root, parameter_path)
+    run_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
+    generated = _build_m4_for_m6(root, mode, seed, destination)
+    latent = run_outbreak(generated, run_config, parameters)
+    observed = observe_latent_run(latent, load_observation_config(root, observation_path))
+    artifact = write_observation_artifact(observed, root, destination)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_id": artifact.manifest.artifact_id,
+                "artifact_directory": str(artifact.artifact_directory),
+                "diagnostics_status": artifact.manifest.diagnostics_status,
+                "latent_run_logical_content_hash": (
+                    artifact.manifest.latent_run_logical_content_hash
+                ),
+                "observation_config_id": artifact.manifest.observation_config_id,
+                "runtime_seconds": observed.runtime_seconds,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+def _parse_seeds(value: str) -> tuple[int, ...]:
+    try:
+        seeds = tuple(int(item.strip()) for item in value.split(",") if item.strip())
+    except ValueError as exc:
+        raise typer.BadParameter("--seeds must be a comma-separated list of integers") from exc
+    if not seeds:
+        raise typer.BadParameter("--seeds must contain at least one integer")
+    return seeds
+
+
+@ensemble_app.command("run")
+def ensemble_run(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Ensemble scale: ci, scaled or full.")
+    ] = "ci",
+    seeds: Annotated[
+        str, typer.Option(help="Explicit comma-separated unique replicate seeds.")
+    ] = "101,102,103",
+    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    workers: Annotated[int, typer.Option(help="Bounded process workers; 1 is sequential.")] = 1,
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    observation_config: Annotated[
+        Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    ensemble_id: Annotated[
+        str, typer.Option(help="Stable identifier for this ensemble.")
+    ] = "m6-demo",
+    output_dir: Annotated[
+        Path, typer.Option(help="Directory for versioned M6 ensemble artifacts.")
+    ] = Path("outputs/ensembles"),
+) -> None:
+    """Run explicit M5 seeds and summarize latent and observed trajectories."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    parameter_path = (
+        parameter_set
+        if parameter_set is None or parameter_set.is_absolute()
+        else root / parameter_set
+    )
+    observation_path = (
+        observation_config
+        if observation_config is None or observation_config.is_absolute()
+        else root / observation_config
+    )
+    parameters = load_parameter_set(root, parameter_path)
+    replicate_seeds = _parse_seeds(seeds)
+    base_config = default_run_config(
+        mode, replicate_seeds[0], parameters, duration_days=duration_days
+    )
+    generated = _build_m4_for_m6(root, mode, replicate_seeds[0], destination)
+    result = run_ensemble(
+        root,
+        generated,
+        parameters,
+        base_config,
+        load_observation_config(root, observation_path),
+        replicate_seeds,
+        ensemble_id=ensemble_id,
+        workers=workers,
+    )
+    artifact = write_ensemble_artifact(result, root, destination)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_id": artifact.manifest.artifact_id,
+                "artifact_directory": str(artifact.artifact_directory),
+                "diagnostics_status": artifact.manifest.diagnostics_status,
+                "status": result.diagnostics["status"],
+                "replicate_count": len(result.replicate_records),
+                "successful_replicates": result.diagnostics["successful_replicates"],
+                "logical_content_hash": result.logical_content_hash,
+                "runtime_seconds": result.runtime_seconds,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@calibration_app.command("synthetic")
+def calibration_synthetic(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Calibration harness scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Seed for the target synthetic latent run.")] = 123,
+    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    observation_config: Annotated[
+        Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    output_dir: Annotated[
+        Path, typer.Option(help="Directory for versioned M6 calibration artifacts.")
+    ] = Path("outputs/calibration"),
+) -> None:
+    """Recover a hidden observation parameter from synthetic data only."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    parameter_path = (
+        parameter_set
+        if parameter_set is None or parameter_set.is_absolute()
+        else root / parameter_set
+    )
+    observation_path = (
+        observation_config
+        if observation_config is None or observation_config.is_absolute()
+        else root / observation_config
+    )
+    parameters = load_parameter_set(root, parameter_path)
+    base_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
+    generated = _build_m4_for_m6(root, mode, seed, destination)
+    result = run_synthetic_recovery(
+        root,
+        generated,
+        parameters,
+        base_config,
+        load_observation_config(root, observation_path),
+    )
+    artifact = write_calibration_artifact(result, root, destination)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_id": artifact.manifest.artifact_id,
+                "artifact_directory": str(artifact.artifact_directory),
+                "status": result.diagnostics["status"],
+                "recovered_parameter": result.best_parameters,
+                "synthetic_truth": result.diagnostics["synthetic_truth"],
+                "heldout": result.diagnostics["heldout"],
+                "logical_content_hash": result.logical_content_hash,
                 "runtime_seconds": result.runtime_seconds,
             },
             ensure_ascii=False,
