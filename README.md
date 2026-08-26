@@ -54,8 +54,11 @@ to Starsim `ss.Network`/`ss.DynamicNetwork` objects. M4.1 layers synthetic
 teacher/TA/leadership and supported care-home staff memberships onto existing
 M4 routes, preserving M3 worker/job accounting. School FTE controls remain
 observed CYPES controls with a documented FTE-to-endpoint conversion; Care
-Commission ratios are regulatory minima, not observed rosters. It does not
-contain a custom disease, transmission calibration or intervention model.
+Commission ratios are regulatory minima, not observed rosters. Institutional
+staff primary jobs are reinterpreted for ordinary workplace routes, while
+explicit secondary jobs remain; household, community and transport contacts are
+preserved. It does not contain a custom disease, transmission calibration or
+intervention model.
 
 ## Quick start
 

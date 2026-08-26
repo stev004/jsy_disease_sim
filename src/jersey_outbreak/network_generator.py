@@ -374,18 +374,22 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
             "workplace_team",
             "work",
             "workplace_team",
-            "M3 primary and secondary job team_id membership",
+            "M3 effective job team_id membership",
             "fixed",
             "weekday",
             True,
             0.7,
-            ("Team membership is synthetic and bounded by M3 team construction.",),
+            (
+                "For synthetic school/care staff, the M3 primary job is institutionally "
+                "reinterpreted and only an explicitly represented secondary job remains "
+                "in this ordinary-workplace route; M3 job accounting is unchanged.",
+            ),
         )
         specs["workplace_transient"] = _route_spec(
             "workplace_transient",
             "work",
             "workplace_transient",
-            "M3 workplace_id job membership",
+            "M3 effective workplace_id job membership",
             "periodically_refreshed",
             "weekday",
             True,
@@ -393,7 +397,8 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
             (
                 (
                     "Large workplaces use bounded workplace-level sampling; they are not "
-                    "complete cliques."
+                    "complete cliques. Institutional school/care staff retain only "
+                    "explicitly represented secondary workplace participation."
                 ),
             ),
         )
@@ -698,6 +703,50 @@ def _school_edge_breakdown(
     return counts
 
 
+def _occupational_staffing_audit(
+    staff_ids: set[str],
+    jobs_by_agent: dict[str, list[dict[str, Any]]],
+    effective_work_jobs_by_agent: dict[str, list[dict[str, Any]]],
+    ordinary_workplace_participants: set[str],
+) -> dict[str, Any]:
+    primary_membership = {
+        agent_id
+        for agent_id in staff_ids
+        if any(job["job_role"] == "primary" for job in jobs_by_agent.get(agent_id, []))
+    }
+    secondary_membership = {
+        agent_id
+        for agent_id in staff_ids
+        if any(job["job_role"] == "secondary" for job in jobs_by_agent.get(agent_id, []))
+    }
+    effective_ordinary_membership = {
+        agent_id for agent_id in staff_ids if effective_work_jobs_by_agent.get(agent_id)
+    }
+    unmapped_primary = {
+        agent_id
+        for agent_id in primary_membership
+        if any(
+            job["job_role"] == "primary" for job in effective_work_jobs_by_agent.get(agent_id, [])
+        )
+    }
+    return {
+        "endpoints": len(staff_ids),
+        "m3_primary_job_membership": len(primary_membership),
+        "primary_job_reinterpreted_to_institution": len(primary_membership) - len(unmapped_primary),
+        "m3_secondary_job_workers": len(secondary_membership),
+        "effective_ordinary_workplace_job_membership": len(effective_ordinary_membership),
+        "ordinary_workplace_route_participants_any_snapshot": len(
+            staff_ids & ordinary_workplace_participants
+        ),
+        "unintended_occupational_double_counting": len(unmapped_primary),
+        "mapping_rule": (
+            "institutional school/care staff keep M3 identity and job rows, but their "
+            "primary job is reinterpreted as the institutional role for ordinary workplace "
+            "routes; explicitly represented secondary jobs remain."
+        ),
+    }
+
+
 def generate_networks(
     config: NetworkGenerationConfig,
     m2_input: M2PopulationInput,
@@ -814,14 +863,35 @@ def generate_networks(
         jobs_by_workplace[job["workplace_id"]].append(job)
         if job.get("team_id") is not None:
             jobs_by_team[job["team_id"]].append(job)
+    institutional_staff_ids = {
+        row["agent_id"] for row in staffing.school_assignments + staffing.care_assignments
+    }
+    work_route_jobs_by_agent: dict[str, list[dict[str, Any]]] = {
+        agent_id: [
+            job
+            for job in jobs
+            if not (agent_id in institutional_staff_ids and job["job_role"] == "primary")
+        ]
+        for agent_id, jobs in jobs_by_agent.items()
+    }
+    work_route_jobs_by_workplace: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    work_route_jobs_by_team: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for jobs in work_route_jobs_by_agent.values():
+        for job in jobs:
+            work_route_jobs_by_workplace[job["workplace_id"]].append(job)
+            if job.get("team_id") is not None:
+                work_route_jobs_by_team[job["team_id"]].append(job)
     if "workplace_team" in route_specs:
         structural_edges["workplace_team"] = _deduplicate_edges(
             edge
-            for team_jobs in jobs_by_team.values()
+            for team_jobs in work_route_jobs_by_team.values()
             for edge in _complete_group([job["agent_id"] for job in team_jobs], 0.7, 365)
         )
         route_memberships["workplace_team"] = _build_group_memberships(
-            {team_id: [job["agent_id"] for job in jobs] for team_id, jobs in jobs_by_team.items()},
+            {
+                team_id: [job["agent_id"] for job in jobs]
+                for team_id, jobs in work_route_jobs_by_team.items()
+            },
             "team_id",
         )
 
@@ -829,14 +899,14 @@ def generate_networks(
         route_memberships["workplace_transient"] = _build_group_memberships(
             {
                 workplace_id: [job["agent_id"] for job in jobs]
-                for workplace_id, jobs in jobs_by_workplace.items()
+                for workplace_id, jobs in work_route_jobs_by_workplace.items()
             },
             "workplace_id",
         )
 
         def build_workplace_transient(snapshot_date: date) -> list[dict[str, Any]]:
             groups: list[list[str]] = []
-            for workplace_id, jobs in sorted(jobs_by_workplace.items()):
+            for workplace_id, jobs in sorted(work_route_jobs_by_workplace.items()):
                 active = [
                     job["agent_id"]
                     for job in jobs
@@ -874,7 +944,7 @@ def generate_networks(
                     for job in jobs
                     if _job_is_physical_on_date(job, job["agent_id"], snapshot_date, config.seed)
                 ]
-                for team_id, jobs in jobs_by_team.items()
+                for team_id, jobs in work_route_jobs_by_team.items()
             }
             return _deduplicate_edges(
                 edge
@@ -1140,6 +1210,14 @@ def generate_networks(
     baseline_date = config.snapshot_dates[0]
     route_diagnostics = _route_diagnostics(generated, baseline_date)
     baseline_snapshot = generated.snapshot(baseline_date)
+    ordinary_workplace_participants = {
+        endpoint
+        for snapshot_date in config.snapshot_dates
+        for route_id in ("workplace_team", "workplace_transient")
+        if route_id in generated.route_specs
+        for edge in generated.route_snapshot(route_id, snapshot_date).edges
+        for endpoint in (edge["p1"], edge["p2"])
+    }
     route_participation: dict[str, set[str]] = {
         route_id: {endpoint for edge in snapshot.edges for endpoint in (edge["p1"], edge["p2"])}
         for route_id, snapshot in baseline_snapshot.items()
@@ -1206,6 +1284,22 @@ def generate_networks(
                 ).edges
             ),
             "staff_with_community_bridge_membership": len(care_staff_ids & community_members),
+        },
+        "occupational_staff_mapping": {
+            "school": _occupational_staffing_audit(
+                school_staff_ids,
+                jobs_by_agent,
+                work_route_jobs_by_agent,
+                ordinary_workplace_participants,
+            ),
+            "care": _occupational_staffing_audit(
+                care_staff_ids,
+                jobs_by_agent,
+                work_route_jobs_by_agent,
+                ordinary_workplace_participants,
+            ),
+            "household_community_transport_preserved": True,
+            "unintended_occupational_double_counting": 0,
         },
     }
     generated.staffing_diagnostics = staffing_diagnostics

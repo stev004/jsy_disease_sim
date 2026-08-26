@@ -154,6 +154,12 @@ household/community and M3 job identity, and do not mutate M3 job accounting or
 claim an observed individual roster. Other communal categories are not silently
 treated as care homes.
 
+For ordinary workplace routes, an institutional staff member's M3 primary job
+is reinterpreted as the synthetic school/care institutional role. An explicitly
+represented M3 secondary job remains eligible for ordinary workplace contacts.
+This prevents a full unrelated primary workplace environment from being added
+on top of the school/care role while preserving legitimate multi-job structure.
+
 The school class route contains repeated pupil-pupil, pupil-staff and bounded
 staff-staff contacts for assigned classes; the school cross-class route includes
 lower-frequency school/year contacts for staff assigned to the relevant school.

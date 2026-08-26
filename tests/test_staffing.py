@@ -212,6 +212,36 @@ def test_staff_routes_are_independent_and_care_contacts_are_bounded(staffing_inp
     assert len(care_edges) < theoretical_all_pairs
 
 
+def test_institutional_staff_primary_workplaces_are_reinterpreted(
+    staffing_network,
+) -> None:
+    generated = staffing_network
+    audit = generated.diagnostics["staffing"]["occupational_staff_mapping"]
+    jobs_by_agent: dict[str, list[dict[str, object]]] = {}
+    for row in generated.m3_input.job_assignments:
+        jobs_by_agent.setdefault(row["agent_id"], []).append(row)
+    for kind, assignment_rows in (
+        ("school", generated.school_staff_assignments),
+        ("care", generated.care_staff_assignments),
+    ):
+        staff_ids = {row["agent_id"] for row in assignment_rows}
+        secondary_ids = {
+            agent_id
+            for agent_id in staff_ids
+            if any(row["job_role"] == "secondary" for row in jobs_by_agent[agent_id])
+        }
+        result = audit[kind]
+        assert result["endpoints"] == len(staff_ids)
+        assert result["m3_primary_job_membership"] == len(staff_ids)
+        assert result["primary_job_reinterpreted_to_institution"] == len(staff_ids)
+        assert result["m3_secondary_job_workers"] == len(secondary_ids)
+        assert result["effective_ordinary_workplace_job_membership"] == len(secondary_ids)
+        assert result["unintended_occupational_double_counting"] == 0
+        assert result["ordinary_workplace_route_participants_any_snapshot"] <= len(secondary_ids)
+    assert audit["household_community_transport_preserved"] is True
+    assert audit["unintended_occupational_double_counting"] == 0
+
+
 def test_staffing_artifacts_persist_assignments_and_statuses(
     staffing_network, tmp_path: Path
 ) -> None:

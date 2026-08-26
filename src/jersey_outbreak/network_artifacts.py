@@ -112,6 +112,7 @@ def _markdown_report(generated: GeneratedNetworks) -> str:
     )
     school = generated.diagnostics["staffing"]["school"]
     care = generated.diagnostics["staffing"]["care"]
+    occupational = generated.diagnostics["staffing"]["occupational_staff_mapping"]
     lines.extend(
         [
             "",
@@ -142,6 +143,25 @@ def _markdown_report(generated: GeneratedNetworks) -> str:
             "- Staff with household/community bridge membership: "
             f"`{care['staff_household_community_bridge_membership']}`.",
             "- Ratios are regulatory minimums; actual staff rosters remain unknown.",
+            "",
+            "## Occupational staff mapping",
+            "",
+            (
+                f"- School staff with reinterpreted M3 primary workplace: "
+                f"`{occupational['school']['primary_job_reinterpreted_to_institution']}`; "
+                f"secondary-job workers retained: "
+                f"`{occupational['school']['m3_secondary_job_workers']}`."
+            ),
+            (
+                f"- Care staff with reinterpreted M3 primary workplace: "
+                f"`{occupational['care']['primary_job_reinterpreted_to_institution']}`; "
+                f"secondary-job workers retained: "
+                f"`{occupational['care']['m3_secondary_job_workers']}`."
+            ),
+            (
+                "- Unintended occupational double-counting after mapping: "
+                f"`{occupational['unintended_occupational_double_counting']}`."
+            ),
         ]
     )
     lines.append("")

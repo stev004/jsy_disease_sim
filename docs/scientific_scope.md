@@ -66,6 +66,12 @@ Starsim-independent; only the adapter constructs Starsim 3.5.2 `ss.Network` and
 `ss.DynamicNetwork` objects. M4.1 is not an outbreak model and does not
 implement a disease, intervention, visitor or observation process.
 
+M4.1 also prevents occupational double-counting: for institutional staff, the
+existing M3 primary job is reinterpreted as the synthetic school/care role for
+ordinary workplace routes, while declared M3 secondary jobs remain eligible.
+M3 job rows and counts are unchanged, and household, community and transport
+participation is retained.
+
 The full M3 benchmark has 104,540 synthetic residents, 13,991 school
 assignments, 8,500 workplaces and 62,108 job assignments. These counts show
 that the generated artifact reconciles to the selected controls; they do not
