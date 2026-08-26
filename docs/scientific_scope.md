@@ -54,12 +54,17 @@ values.
 
 There are no observed teacher rosters, care staff rosters, bus routes/stops,
 real carpools, named community venues or GPS paths in the available evidence.
-M4 therefore leaves school-staff and care-staff routes explicitly empty and
-labels cross-class, workplace-transient, transport and community mechanisms as
-scenario assumptions. The route generator is Starsim-independent; only the
-adapter constructs Starsim 3.5.2 `ss.Network` and `ss.DynamicNetwork` objects.
-M4 is not an outbreak model and does not implement a disease, intervention,
-visitor or observation process.
+M4.1 therefore uses official CYPES FTE controls plus a documented
+FTE-to-synthetic-endpoint conversion for school staff, and the 2026 Care
+Commission regulatory minimums plus a configurable shift-coverage assumption
+for supported care homes. Neither source is treated as a real staff roster:
+school placement, class assignment, care roster construction and all staff
+contacts are synthetic/structural. Other communal settings remain outside this
+care-home closure. Cross-class, workplace-transient, transport and community
+mechanisms remain scenario assumptions. The route generator is
+Starsim-independent; only the adapter constructs Starsim 3.5.2 `ss.Network` and
+`ss.DynamicNetwork` objects. M4.1 is not an outbreak model and does not
+implement a disease, intervention, visitor or observation process.
 
 The full M3 benchmark has 104,540 synthetic residents, 13,991 school
 assignments, 8,500 workplaces and 62,108 job assignments. These counts show
@@ -74,8 +79,9 @@ network.
 - Keep population, contacts, disease biology, interventions and observation
   mechanisms separate.
 - Distinguish latent infections from reported observations.
-- Label inputs as `observed`, `derived`, `literature_prior`, `calibrated` or
-  `scenario_assumption`.
+- Label inputs and transformations with their actual status, including
+  `observed`, `regulatory_minimum`, `derived`, `synthetic`,
+  `structural_assumption` or `unknown` where applicable.
 - Do not expose synthetic household coordinates as real addresses or imply
   household/GPS precision that the evidence cannot support.
 - Use ensembles and uncertainty intervals for stochastic scenario comparisons.

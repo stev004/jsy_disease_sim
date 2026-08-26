@@ -65,7 +65,7 @@ def _relative_path(path: Path, root: Path) -> str:
 
 def _markdown_report(generated: GeneratedNetworks) -> str:
     lines = [
-        "# Milestone 4 Jersey route diagnostics",
+        "# Milestone 4.1 Jersey route diagnostics",
         "",
         f"Status: **{generated.diagnostics['status']}**",
         f"Mode: `{generated.config.mode}`",
@@ -109,6 +109,40 @@ def _markdown_report(generated: GeneratedNetworks) -> str:
     )
     lines.extend(
         f"- {assumption}" for assumption in generated.diagnostics["provenance"]["assumptions"]
+    )
+    school = generated.diagnostics["staffing"]["school"]
+    care = generated.diagnostics["staffing"]["care"]
+    lines.extend(
+        [
+            "",
+            "## School staffing diagnostics",
+            "",
+            (
+                f"- Observed 2025 CYPES FTE controls: teachers/lecturers "
+                f"`{school['observed_fte_controls']['2025']['teachers_and_lecturers']}`, "
+                f"teaching assistants "
+                f"`{school['observed_fte_controls']['2025']['teaching_assistants']}`, "
+                f"heads/deputies `{school['observed_fte_controls']['2025']['heads_and_deputies']}`."
+            ),
+            f"- Synthetic school staff endpoints: `{school['synthetic_staff_endpoints']}`.",
+            "- Staff with household bridge membership: "
+            f"`{school['staff_with_household_bridge_membership']}`.",
+            f"- Staff assigned to zero schools: `{school['staff_assigned_to_zero_schools']}`.",
+            f"- Duplicate staff assignments: `{school['duplicate_staff_assignments']}`.",
+            "",
+            "## Care staffing diagnostics",
+            "",
+            (
+                f"- Supported establishments: nursing `{care['nursing_establishments']}`, "
+                f"non-nursing `{care['non_nursing_establishments']}`."
+            ),
+            f"- Synthetic care/support workers: `{care['synthetic_care_support_workers']}`.",
+            f"- Synthetic nurses: `{care['synthetic_nurses']}`.",
+            f"- Settings failing structural minimums: `{care['settings_failing_minimum']}`.",
+            "- Staff with household/community bridge membership: "
+            f"`{care['staff_household_community_bridge_membership']}`.",
+            "- Ratios are regulatory minimums; actual staff rosters remain unknown.",
+        ]
     )
     lines.append("")
     return "\n".join(lines)
@@ -170,6 +204,40 @@ def write_network_artifact(
     structural_edges_path = artifact_directory / "structural_edges.parquet"
     _write_table(memberships_path, memberships, membership_schema)
     _write_table(structural_edges_path, structural_edges, edge_schema)
+
+    school_staff_path = artifact_directory / "school_staff_assignments.parquet"
+    school_staff_schema = pa.schema(
+        [
+            ("agent_id", pa.string()),
+            ("role", pa.string()),
+            ("school_id", pa.string()),
+            ("school_type", pa.string()),
+            ("school_year", pa.string()),
+            ("class_id", pa.string()),
+            ("assignment_status", pa.string()),
+            ("provenance_status", pa.string()),
+        ]
+    )
+    _write_table(school_staff_path, generated.school_staff_assignments, school_staff_schema)
+    care_staff_path = artifact_directory / "care_staff_assignments.parquet"
+    care_staff_schema = pa.schema(
+        [
+            ("agent_id", pa.string()),
+            ("role", pa.string()),
+            ("setting_id", pa.string()),
+            ("setting_type", pa.string()),
+            ("assignment_status", pa.string()),
+            ("provenance_status", pa.string()),
+            ("regulatory_status", pa.string()),
+            ("shift_pattern", pa.string()),
+        ]
+    )
+    _write_table(care_staff_path, generated.care_staff_assignments, care_staff_schema)
+    staffing_provenance_path = artifact_directory / "staffing_provenance.json"
+    staffing_provenance_path.write_text(
+        json.dumps(generated.staffing_provenance, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
     snapshots = [
         {
@@ -243,6 +311,9 @@ def write_network_artifact(
         route_specs_path,
         memberships_path,
         structural_edges_path,
+        school_staff_path,
+        care_staff_path,
+        staffing_provenance_path,
         snapshots_path,
         diagnostics_path,
         diagnostics_md_path,

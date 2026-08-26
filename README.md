@@ -7,11 +7,14 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–4**: repository contracts, a verified
+This repository contains **Milestones 0–4.1**: repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
 synthetic daytime structure for schools, employment, workplaces and commuting,
-plus a disease-agnostic Jersey route layer adapted to Starsim 3.5.2.
+plus a disease-agnostic Jersey route layer adapted to Starsim 3.5.2. M4.1
+closes the school-staff and supported care-home staffing overlays using frozen
+official evidence and explicit synthetic allocation assumptions; it does not
+claim to reconstruct real staff rosters.
 The Starsim demo is an official SIR example using Starsim's built-in
 `RandomNet`; it is not a Jersey outbreak reconstruction or a validated
 forecast. The Milestone 2 population is synthetic and control-driven; it is
@@ -47,8 +50,12 @@ Milestone 4 converts the validated M2/M3 artifacts into reproducible household,
 school, workplace, care, transport and community route tables. It keeps fixed,
 periodically refreshed and daily sampled contacts separate, applies weekday,
 weekend, school-term and WFH schedule rules, and adapts the plain route tables
-to Starsim `ss.Network`/`ss.DynamicNetwork` objects. It does not contain a
-custom disease, transmission calibration or intervention model.
+to Starsim `ss.Network`/`ss.DynamicNetwork` objects. M4.1 layers synthetic
+teacher/TA/leadership and supported care-home staff memberships onto existing
+M4 routes, preserving M3 worker/job accounting. School FTE controls remain
+observed CYPES controls with a documented FTE-to-endpoint conversion; Care
+Commission ratios are regulatory minima, not observed rosters. It does not
+contain a custom disease, transmission calibration or intervention model.
 
 ## Quick start
 
@@ -99,8 +106,8 @@ The network command validates both the M2 and M3 artifact boundaries and writes
 selected dynamic snapshots rather than a year's worth of daily edge states.
 Network edge weights are relative contact-opportunity weights only; they are not
 pathogen-specific transmission probabilities. The network artifact includes
-route diagnostics, cross-route diagnostics, assumptions, selected snapshots and
-M2/M3/config/Starsim provenance.
+route and staffing diagnostics, cross-route diagnostics, assumptions, selected
+snapshots and M2/M3/config/Starsim/source provenance.
 
 ## Verification
 
@@ -117,6 +124,8 @@ uv run mypy --ignore-missing-imports \
   src/jersey_outbreak/network_schemas.py \
   src/jersey_outbreak/network_generator.py \
   src/jersey_outbreak/network_artifacts.py \
+  src/jersey_outbreak/staffing_evidence.py \
+  src/jersey_outbreak/staffing_generator.py \
   src/jersey_outbreak/starsim_adapter.py
 uv run jos demo --seed 123
 uv run jos structure generate --mode ci --seed 123
@@ -131,7 +140,7 @@ The verified CI seed-123 logical structure hash is
 `18087772e7286f1b88e3e30ca325e53d97d4fcce3582cf2e8f2fe3ac6e198d2a`.
 
 The repository-wide legacy codebase still has pre-existing mypy errors, so CI
-currently type-checks the four M3 modules and the M4 route/adapter modules
+currently type-checks the four M3 modules and the M4/M4.1 route, staffing and adapter modules
 explicitly. This is an engineering cleanup item, not evidence that the M3/M4
 contracts are untyped.
 

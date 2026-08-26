@@ -242,7 +242,7 @@ def network_generate(
             if not m3_path.is_absolute():
                 m3_path = root / m3_path
     m3_input = load_m3_structure_artifact(root, m3_path)
-    generated = generate_networks(config, m2_input, m3_input)
+    generated = generate_networks(config, m2_input, m3_input, root)
     artifact = write_network_artifact(generated, root, destination)
     typer.echo(
         json.dumps(

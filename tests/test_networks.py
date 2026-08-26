@@ -70,6 +70,7 @@ def test_edge_invariants_and_route_membership_boundaries(generated) -> None:
     m2_by_agent = {row["agent_id"]: row for row in generated.m2_input.residents}
     m3_by_agent = {row["agent_id"]: row for row in generated.m3_input.resident_structure}
     class_by_agent = {row["agent_id"]: row for row in generated.m3_input.school_assignments}
+    school_staff_by_agent = {row["agent_id"]: row for row in generated.school_staff_assignments}
     job_by_agent = {}
     for row in generated.m3_input.job_assignments:
         job_by_agent.setdefault(row["agent_id"], []).append(row)
@@ -90,9 +91,29 @@ def test_edge_invariants_and_route_membership_boundaries(generated) -> None:
             )
             assert m2_by_agent[edge["p1"]]["household_id"] is not None
         for edge in generated.route_snapshot("school_class", when).edges:
-            assert class_by_agent[edge["p1"]]["class_id"] == class_by_agent[edge["p2"]]["class_id"]
+            if edge["p1"] in school_staff_by_agent and edge["p2"] in school_staff_by_agent:
+                assert (
+                    school_staff_by_agent[edge["p1"]]["class_id"]
+                    == school_staff_by_agent[edge["p2"]]["class_id"]
+                )
+            elif edge["p1"] in school_staff_by_agent:
+                assert (
+                    school_staff_by_agent[edge["p1"]]["class_id"]
+                    == class_by_agent[edge["p2"]]["class_id"]
+                )
+            elif edge["p2"] in school_staff_by_agent:
+                assert (
+                    school_staff_by_agent[edge["p2"]]["class_id"]
+                    == class_by_agent[edge["p1"]]["class_id"]
+                )
+            else:
+                assert (
+                    class_by_agent[edge["p1"]]["class_id"] == class_by_agent[edge["p2"]]["class_id"]
+                )
         for edge in generated.route_snapshot("school_cross_class", when).edges:
-            left, right = class_by_agent[edge["p1"]], class_by_agent[edge["p2"]]
+            left = school_staff_by_agent.get(edge["p1"], class_by_agent.get(edge["p1"]))
+            right = school_staff_by_agent.get(edge["p2"], class_by_agent.get(edge["p2"]))
+            assert left is not None and right is not None
             assert (left["school_id"], left["school_year"]) == (
                 right["school_id"],
                 right["school_year"],

@@ -210,6 +210,27 @@
     },
     {
       "acquisition_method": "automated",
+      "local_snapshot": "data/raw/education_staff_2024_foi_html/official_page.html",
+      "sha256": "59f3fa721f96400fc380125fe3adaf629228d73067e6ddbfdb5560328a8b1f1c",
+      "source_id": "education_staff_2024_foi_html",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/education_staff_2025_foi_html/official_page.html",
+      "sha256": "e789838a2a378b54e2bd171780d078f743e9a82b44b42f43dff42303e2b07a2f",
+      "source_id": "education_staff_2025_foi_html",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/care_commission_accommodation_standards_2026_pdf/official_standard.pdf",
+      "sha256": "6965c37f45b1a90b92aa99e88bcd6e5bf2e07baa7abec35b00d3e0945ca40d0e",
+      "source_id": "care_commission_accommodation_standards_2026_pdf",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
       "local_snapshot": "data/raw/passenger_arrivals_total_csv/total-arrivals.csv",
       "sha256": "da0fc97a508256ad44c88637573d5ff69de4b612f3a7702cde97a21602a8d194",
       "source_id": "passenger_arrivals_total_csv",

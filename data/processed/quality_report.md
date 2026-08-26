@@ -19,6 +19,9 @@ Build status: **passed**
 | census_2021_industry_sex_csv | passed | automated | fa5771d6a2b5ab80e8764d20596d3d0cf1f5b66b2da02dac82e00bd208850dbb | data/raw/census_2021_industry_sex_csv/industry-by-sex-2021-census.csv |
 | labour_market_june_2025_pdf | passed | automated | 647cdf53997f66faa36f41036ec9fd904ae729d8bbccc01a97eb23cb5e398fe0 | data/raw/labour_market_june_2025_pdf/R-Labour-Market-June-2025.pdf |
 | education_students_by_school_type_csv | passed | automated | 922812ce877bb573a6e5164c11d80d30a274ced1c6a571e2d3c0076497fea35e | data/raw/education_students_by_school_type_csv/total-students-by-school-type.csv |
+| education_staff_2024_foi_html | passed | automated | 59f3fa721f96400fc380125fe3adaf629228d73067e6ddbfdb5560328a8b1f1c | data/raw/education_staff_2024_foi_html/official_page.html |
+| education_staff_2025_foi_html | passed | automated | e789838a2a378b54e2bd171780d078f743e9a82b44b42f43dff42303e2b07a2f | data/raw/education_staff_2025_foi_html/official_page.html |
+| care_commission_accommodation_standards_2026_pdf | passed | automated | 6965c37f45b1a90b92aa99e88bcd6e5bf2e07baa7abec35b00d3e0945ca40d0e | data/raw/care_commission_accommodation_standards_2026_pdf/official_standard.pdf |
 | passenger_arrivals_total_csv | passed | automated | da0fc97a508256ad44c88637573d5ff69de4b612f3a7702cde97a21602a8d194 | data/raw/passenger_arrivals_total_csv/total-arrivals.csv |
 | jersey_population_2024_manual_fixture | passed | manual | a9590787131d349f18392243f11c0082944289b0473782428b3714f2b966d3fa | data/raw/jersey_population_2024_manual_fixture/population_2024_summary.csv |
 | census_2021_report_manual_fixture | passed | manual | 7a1e567cccc81a3814ef1020ad954e6caf51fe980066937917bdfb8d6b16af05 | data/raw/census_2021_report_manual_fixture/census_2021_manual_controls.csv |

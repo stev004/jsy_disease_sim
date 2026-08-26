@@ -168,6 +168,45 @@ sources:
     sha256: 922812ce877bb573a6e5164c11d80d30a274ced1c6a571e2d3c0076497fea35e
     notes: Pupil census totals by school type; 2024 row is the Milestone 1 control.
 
+  - source_id: education_staff_2024_foi_html
+    title: Number of staff and children in education system
+    publisher: Children, Young People, Education and Skills / Government of Jersey
+    url: https://www.gov.je/Government/FreedomOfInformation/pages/foi.aspx?ReportID=7227
+    retrieved_at: 2026-08-26
+    reference_period: "2024-02-14; January 2024 school census"
+    license: Government of Jersey public FOI release
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/education_staff_2024_foi_html/official_page.html
+    sha256: 59f3fa721f96400fc380125fe3adaf629228d73067e6ddbfdb5560328a8b1f1c
+    notes: Reports 14,061 children, 1,052.45 teacher FTE and 457.82 teaching-assistant FTE; its education universe includes Government, non-provided, Highlands College and EHE categories and is not identical to the M1 pupil control.
+
+  - source_id: education_staff_2025_foi_html
+    title: Number of teachers currently employed in Jersey
+    publisher: People Services / Government of Jersey
+    url: https://www.gov.je/government/freedomofinformation/pages/foi.aspx?ReportID=8773
+    retrieved_at: 2026-08-26
+    reference_period: "2025-07-16"
+    license: Government of Jersey public FOI release
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/education_staff_2025_foi_html/official_page.html
+    sha256: e789838a2a378b54e2bd171780d078f743e9a82b44b42f43dff42303e2b07a2f
+    notes: "CYPES FTE table: heads/deputies 86.00, teachers/lecturers 983.30 and teaching assistants 507.15; CYPES workforce universe is not a whole-island education-staff headcount."
+
+  - source_id: care_commission_accommodation_standards_2026_pdf
+    title: Jersey Care Commission standards for care and support services with accommodation 2026
+    publisher: Jersey Care Commission
+    url: https://carecommission.je/wp-content/uploads/2026/01/STD_Care-and-support-services-with-accommodation_20251212_v1.pdf
+    retrieved_at: 2026-08-26
+    reference_period: "2026 standard; Appendix 4 minimum staffing requirements"
+    license: Jersey Care Commission public standard
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/care_commission_accommodation_standards_2026_pdf/official_standard.pdf
+    sha256: 6965c37f45b1a90b92aa99e88bcd6e5bf2e07baa7abec35b00d3e0945ca40d0e
+    notes: Appendix 4 supplies regulatory minimum day/night ratios and nursing thresholds for care and support services with accommodation; these are not observed rosters or measured contact rates.
+
   - source_id: passenger_arrivals_total_csv
     title: Passenger and freight statistics - Total arrivals
     publisher: Ports of Jersey / Government of Jersey Open Data

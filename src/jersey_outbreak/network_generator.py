@@ -15,6 +15,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 from .data_pipeline import DataBuildError
@@ -28,6 +29,7 @@ from .network_schemas import (
     RouteSpec,
 )
 from .population_structure_artifacts import M2PopulationInput, M3StructureInput
+from .staffing_generator import StaffingAllocation, build_staffing_allocation
 
 PRIVATE_ROUTE_FAMILIES = {
     "household",
@@ -65,6 +67,10 @@ class GeneratedNetworks:
     route_specs: dict[str, dict[str, Any]]
     structural_edges: dict[str, list[dict[str, Any]]]
     route_memberships: dict[str, list[dict[str, Any]]]
+    school_staff_assignments: list[dict[str, Any]]
+    care_staff_assignments: list[dict[str, Any]]
+    staffing_diagnostics: dict[str, Any]
+    staffing_provenance: dict[str, Any]
     diagnostics: dict[str, Any]
     logical_content_hash: str
     runtime_seconds: float
@@ -178,6 +184,50 @@ def _grouped_ring_edges(
     for group_index, group in enumerate(groups):
         ordered = _ordered_ids(group, seed, route_id, snapshot_date.isoformat(), group_index)
         edges.extend(_ring_edges(ordered, contacts_per_participant, weight, persistence_days))
+    return _deduplicate_edges(edges)
+
+
+def _school_staff_cross_edges(
+    school_year_groups: dict[tuple[str, str], list[str]],
+    school_staff_by_school_year: dict[tuple[str, str], list[str]],
+    seed: int,
+    snapshot_date: date,
+    contacts_per_staff: int,
+    weight: float,
+    persistence_days: int,
+) -> list[dict[str, Any]]:
+    """Add bounded staff/year contacts without changing pupil-only ring edges."""
+
+    edges: list[dict[str, Any]] = []
+    for school_year, pupil_group in sorted(school_year_groups.items()):
+        pupils = _ordered_ids(
+            pupil_group,
+            seed,
+            "school_cross_class-pupils",
+            snapshot_date.isoformat(),
+            school_year,
+        )
+        staff_ids = sorted(set(school_staff_by_school_year.get(school_year, [])))
+        if not pupils or not staff_ids or contacts_per_staff <= 0:
+            continue
+        contact_count = min(contacts_per_staff, len(pupils))
+        for staff_id in staff_ids:
+            start = _stable_int(
+                seed,
+                "school_cross_class-staff",
+                snapshot_date.isoformat(),
+                school_year,
+                staff_id,
+            ) % len(pupils)
+            for offset in range(contact_count):
+                edge = _canonical_edge(
+                    staff_id,
+                    pupils[(start + offset) % len(pupils)],
+                    weight,
+                    persistence_days,
+                )
+                if edge is not None:
+                    edges.append(edge)
     return _deduplicate_edges(edges)
 
 
@@ -298,8 +348,8 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
             0.85,
             (
                 (
-                    "M3 has pupil memberships but no observed teacher rosters; "
-                    "this route is pupil-only."
+                    "M3 has pupil memberships but no observed teacher rosters; synthetic "
+                    "teacher/TA class membership is a structural overlay."
                 ),
             ),
         )
@@ -370,13 +420,13 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
             "care_staff",
             "No M3 staff roster available",
             "fixed",
-            "weekday_or_weekend",
+            "always",
             True,
             0.65,
             (
                 (
-                    "Resident-staff contacts are not fabricated; this route is an explicit "
-                    "empty limitation."
+                    "Staff endpoints are existing synthetic workers assigned by regulatory "
+                    "minimum structure; no real care-home roster is claimed."
                 ),
             ),
         )
@@ -629,10 +679,30 @@ def _is_care_setting(setting_type: str) -> bool:
     return "care" in lowered or "medical" in lowered
 
 
+def _school_edge_breakdown(
+    edges: tuple[dict[str, Any], ...], pupil_ids: set[str], staff_ids: set[str]
+) -> dict[str, int]:
+    counts = {"pupil_pupil": 0, "pupil_staff": 0, "staff_staff": 0, "other": 0}
+    for edge in edges:
+        left, right = edge["p1"], edge["p2"]
+        left_staff, right_staff = left in staff_ids, right in staff_ids
+        left_pupil, right_pupil = left in pupil_ids, right in pupil_ids
+        if left_staff and right_staff:
+            counts["staff_staff"] += 1
+        elif (left_staff and right_pupil) or (right_staff and left_pupil):
+            counts["pupil_staff"] += 1
+        elif left_pupil and right_pupil:
+            counts["pupil_pupil"] += 1
+        else:
+            counts["other"] += 1
+    return counts
+
+
 def generate_networks(
     config: NetworkGenerationConfig,
     m2_input: M2PopulationInput,
     m3_input: M3StructureInput,
+    root: Path | None = None,
 ) -> GeneratedNetworks:
     """Generate reproducible M4 route structure from validated M2/M3 artifacts."""
 
@@ -649,6 +719,15 @@ def generate_networks(
         raise DataBuildError("M2 and M3 agent ID universes do not match")
     agent_ids = sorted(m2_by_agent)
     route_specs = _build_route_specs(config)
+    staffing: StaffingAllocation = build_staffing_allocation(
+        root or Path(__file__).resolve().parents[2],
+        m2_input,
+        m3_input,
+        seed=config.seed,
+        fte_per_endpoint=config.school_fte_per_synthetic_endpoint,
+        care_coverage_multiplier=config.care_shift_coverage_multiplier,
+        include_leadership=config.include_school_leadership,
+    )
     structural_edges: dict[str, list[dict[str, Any]]] = {}
     route_memberships: dict[str, list[dict[str, Any]]] = {}
     dynamic_builders: dict[str, Callable[[date], list[dict[str, Any]]]] = {}
@@ -671,11 +750,28 @@ def generate_networks(
     for row in m3_input.school_assignments:
         class_groups[row["class_id"]].append(row["agent_id"])
         school_year_groups[(row["school_id"], row["school_year"])].append(row["agent_id"])
+    school_year_route_groups = {
+        key: list(group) + staffing.school_staff_by_school_year.get(key, [])
+        for key, group in school_year_groups.items()
+    }
     if "school_class" in route_specs:
         structural_edges["school_class"] = _deduplicate_edges(
-            edge for group in class_groups.values() for edge in _complete_group(group, 0.85, 180)
+            edge
+            for class_id, group in class_groups.items()
+            for edge in _complete_group(
+                group + staffing.school_staff_by_class.get(class_id, []), 0.85, 180
+            )
         )
         route_memberships["school_class"] = _build_group_memberships(class_groups, "class_id")
+        route_memberships["school_class"].extend(
+            {
+                "membership": "school_staff_class",
+                "group_id": class_id,
+                "agent_id": agent_id,
+            }
+            for class_id, staff_ids in staffing.school_staff_by_class.items()
+            for agent_id in sorted(staff_ids)
+        )
     if "school_cross_class" in route_specs:
         route_memberships["school_cross_class"] = [
             {
@@ -683,12 +779,12 @@ def generate_networks(
                 "group_id": f"{school_id}|{school_year}",
                 "agent_id": agent_id,
             }
-            for (school_id, school_year), group in sorted(school_year_groups.items())
+            for (school_id, school_year), group in sorted(school_year_route_groups.items())
             for agent_id in sorted(set(group))
         ]
 
         def build_school_cross(snapshot_date: date) -> list[dict[str, Any]]:
-            return _grouped_ring_edges(
+            pupil_edges = _grouped_ring_edges(
                 school_year_groups.values(),
                 config.seed,
                 "school_cross_class",
@@ -697,6 +793,16 @@ def generate_networks(
                 0.5,
                 14,
             )
+            staff_edges = _school_staff_cross_edges(
+                school_year_groups,
+                staffing.school_staff_by_school_year,
+                config.seed,
+                snapshot_date,
+                config.school_cross_class_contacts,
+                0.5,
+                14,
+            )
+            return _deduplicate_edges([*pupil_edges, *staff_edges])
 
         dynamic_builders["school_cross_class"] = build_school_cross
 
@@ -808,8 +914,42 @@ def generate_networks(
             care_groups, "care_setting_id"
         )
     if "care_staff" in route_specs:
-        structural_edges["care_staff"] = []
-        route_memberships["care_staff"] = []
+        care_staff_edges: list[dict[str, Any]] = []
+        for setting_id, staff_ids in sorted(staffing.care_staff_by_setting.items()):
+            residents = _ordered_ids(
+                care_groups.get(setting_id, []), config.seed, "care-staff", setting_id
+            )
+            cohorts = [
+                residents[index : index + config.care_cohort_capacity]
+                for index in range(0, len(residents), config.care_cohort_capacity)
+            ]
+            if not cohorts:
+                continue
+            for staff_index, staff_id in enumerate(sorted(staff_ids)):
+                cohort = cohorts[staff_index % len(cohorts)]
+                care_staff_edges.extend(
+                    edge
+                    for resident_id in cohort
+                    if (
+                        edge := _canonical_edge(
+                            staff_id,
+                            resident_id,
+                            0.65,
+                            1,
+                        )
+                    )
+                    is not None
+                )
+        structural_edges["care_staff"] = _deduplicate_edges(care_staff_edges)
+        route_memberships["care_staff"] = [
+            {
+                "membership": "care_staff_setting",
+                "group_id": setting_id,
+                "agent_id": agent_id,
+            }
+            for setting_id, staff_ids in sorted(staffing.care_staff_by_setting.items())
+            for agent_id in sorted(staff_ids)
+        ]
 
     worker_jobs = {
         agent_id: jobs
@@ -987,6 +1127,10 @@ def generate_networks(
             route_id: _deduplicate_edges(edges) for route_id, edges in structural_edges.items()
         },
         route_memberships=route_memberships,
+        school_staff_assignments=staffing.school_assignments,
+        care_staff_assignments=staffing.care_assignments,
+        staffing_diagnostics=staffing.diagnostics,
+        staffing_provenance=staffing.provenance,
         diagnostics={},
         logical_content_hash="",
         runtime_seconds=0.0,
@@ -1024,6 +1168,14 @@ def generate_networks(
         if len({job["workplace_id"] for job in jobs}) > 1
     }
     school_agents = {row["agent_id"] for row in m3_input.school_assignments}
+    school_staff_ids = {row["agent_id"] for row in staffing.school_assignments}
+    care_staff_ids = {row["agent_id"] for row in staffing.care_assignments}
+    community_members = {
+        agent_id
+        for route_id in ("community_indoor", "community_outdoor")
+        for membership in route_memberships.get(route_id, [])
+        for agent_id in (membership["agent_id"],)
+    }
     worker_agents = set(worker_jobs)
     household_school_connectivity = sum(
         bool(set(group) & school_agents) for group in households.values()
@@ -1031,6 +1183,32 @@ def generate_networks(
     household_work_connectivity = sum(
         bool(set(group) & worker_agents) for group in households.values()
     )
+    staffing_diagnostics = {
+        **staffing.diagnostics,
+        "school": {
+            **staffing.diagnostics["school"],
+            "route_edge_breakdown": {
+                route_id: _school_edge_breakdown(
+                    baseline_snapshot[route_id].edges,
+                    school_agents,
+                    school_staff_ids,
+                )
+                for route_id in ("school_class", "school_cross_class")
+                if route_id in baseline_snapshot
+            },
+            "staff_with_community_bridge_membership": len(school_staff_ids & community_members),
+        },
+        "care": {
+            **staffing.diagnostics["care"],
+            "resident_staff_edge_count": len(
+                baseline_snapshot.get(
+                    "care_staff", RouteSnapshot("care_staff", baseline_date, ())
+                ).edges
+            ),
+            "staff_with_community_bridge_membership": len(care_staff_ids & community_members),
+        },
+    }
+    generated.staffing_diagnostics = staffing_diagnostics
     diagnostics = {
         "schema_version": "1.0",
         "status": "passed",
@@ -1047,7 +1225,7 @@ def generate_networks(
             "multi_job_workplace_bridges": len(bridge_agents),
             "households_with_school_connectivity": household_school_connectivity,
             "households_with_work_connectivity": household_work_connectivity,
-            "care_staff_community_bridges": 0,
+            "care_staff_community_bridges": len(care_staff_ids & community_members),
         },
         "calendars": {
             "school_term_months": list(config.school_term_months),
@@ -1058,19 +1236,21 @@ def generate_networks(
             ),
             "time_step": "daily; no hourly event simulation",
         },
+        "staffing": staffing_diagnostics,
         "provenance": {
             "m2_artifact_id": m2_input.manifest.artifact_id,
             "m2_logical_content_hash": m2_input.manifest.logical_content_hash,
             "m3_artifact_id": m3_input.manifest.artifact_id,
             "m3_logical_content_hash": m3_input.manifest.logical_content_hash,
+            "staffing": staffing.provenance,
             "assumptions": [
                 (
-                    "School staff contacts are omitted because M3 has no staff roster and "
-                    "no official staff control was ingested."
+                    "School staff endpoints are synthetic allocations from the existing "
+                    "M3 education-health worker pool; no real school roster is claimed."
                 ),
                 (
-                    "Care staff contacts are omitted because no Jersey staffing ratio or "
-                    "cross-facility staff roster was ingested."
+                    "Care staff endpoints apply Care Commission regulatory minima with a "
+                    "configurable shift-coverage multiplier; no actual roster is claimed."
                 ),
                 (
                     "Cross-class, cross-team, bus, carpool and community contacts are "
@@ -1091,6 +1271,9 @@ def generate_networks(
                 "route_specs": generated.route_specs,
                 "structural_edges": generated.structural_edges,
                 "memberships": generated.route_memberships,
+                "school_staff_assignments": generated.school_staff_assignments,
+                "care_staff_assignments": generated.care_staff_assignments,
+                "staffing_provenance": generated.staffing_provenance,
                 "snapshots": {
                     route_id: [
                         {

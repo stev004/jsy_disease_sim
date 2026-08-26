@@ -28,6 +28,13 @@ tables. Their different reference periods and statistical universes remain
 visible in the generated provenance and diagnostics; they are not silently
 treated as one individual-level dataset.
 
+M4.1 also freezes the official Government of Jersey education-staff FOI pages
+and the 2026 Jersey Care Commission accommodation standard under
+`data/raw/`. These sources are consumed through the same registry and hash
+validation boundary. Education values are CYPES FTE controls with explicit
+universe caveats; the Care Commission values are regulatory minimum staffing
+requirements, not observed Jersey rosters or contact rates.
+
 Raw downloads are not cleaned in place. Every source is registered in
 [`sources.yaml`](sources.yaml), including its official URL, reference period,
 acquisition method, local snapshot and SHA-256. Manual fixtures are explicitly

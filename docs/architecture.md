@@ -142,6 +142,26 @@ edges preserve repeated membership. Cross-class, broader workplace, transport
 and community edges are bounded deterministic samples, with daily or periodic
 refreshes declared in each route specification.
 
+M4.1 adds a separate staffing-evidence and allocation layer before route
+construction. Frozen Government of Jersey education FOI snapshots provide
+observed CYPES FTE controls; the allocator converts those controls into
+synthetic staff endpoints and assigns them to existing synthetic schools and
+classes. The Care Commission accommodation standard provides regulatory
+minimums for supported nursing and non-nursing care homes; a configurable
+structural shift-coverage multiplier derives a minimal unique synthetic roster.
+Both overlays select existing employed adult M2/M3 agents, preserve their
+household/community and M3 job identity, and do not mutate M3 job accounting or
+claim an observed individual roster. Other communal categories are not silently
+treated as care homes.
+
+The school class route contains repeated pupil-pupil, pupil-staff and bounded
+staff-staff contacts for assigned classes; the school cross-class route includes
+lower-frequency school/year contacts for staff assigned to the relevant school.
+The independent care-staff route creates bounded resident-cohort to assigned
+staff contacts while `care_resident` remains resident-only. Staffing
+assignments, statuses, source hashes and diagnostics are persisted separately
+from the route edge table.
+
 The adapter maps sorted synthetic `agent_id` values to Starsim's zero-based
 UIDs, passes the canonical undirected pair as `p1`/`p2`, and passes JOS's
 relative contact-opportunity weight through Starsim's required `beta` edge

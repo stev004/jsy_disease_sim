@@ -51,7 +51,7 @@ class NetworkGenerationConfig(StrictModel):
     """Stable configuration for seeded route and network construction."""
 
     schema_version: Literal["1.0"] = "1.0"
-    generator_version: NonEmptyString = "4.0.0"
+    generator_version: NonEmptyString = "4.1.0"
     mode: PopulationMode
     seed: StrictInt
     start_date: date = date(2025, 1, 6)
@@ -71,6 +71,9 @@ class NetworkGenerationConfig(StrictModel):
     school_term_months: tuple[StrictInt, ...] = (1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12)
     indoor_weight: StrictFloat = Field(default=0.35, ge=0, le=1)
     outdoor_weight: StrictFloat = Field(default=0.15, ge=0, le=1)
+    school_fte_per_synthetic_endpoint: StrictFloat = Field(default=0.8, gt=0, le=2)
+    care_shift_coverage_multiplier: StrictFloat = Field(default=2.0, ge=1, le=4)
+    include_school_leadership: StrictBool = True
 
     @field_validator("seed")
     @classmethod
