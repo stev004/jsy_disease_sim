@@ -2,7 +2,7 @@
 
 **Last verified:** 27 August 2026
 **Current branch:** `codex/c2-network-semantics`
-**Current commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
+**C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
 **Scope:** C3 only; M7 remains closed and no C4 or M7 implementation has begun.
 
 This ledger records the current implementation and verification state. The

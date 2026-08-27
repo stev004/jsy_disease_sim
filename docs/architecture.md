@@ -2,11 +2,12 @@
 
 ## Current verified implementation status
 
-As of 27 August 2026, M0–M6 and corrective closures C1–C3 are PASS. The
-current tip is `658364c7f02cf44f9392116e7db44c94bdb3175a`; the C3 implementation
-commit is `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`, followed by verification
-manifest-integrity hardening. M7 is CLOSED and no C4 or intervention work has
-started. Quantitative evidence is maintained in
+As of 27 August 2026, M0–M6 and corrective closures C1–C3 are PASS. The C3
+verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`; the C3
+implementation commit is `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`, followed
+by verification manifest-integrity hardening and documentation-only commits.
+M7 is CLOSED and no C4 or intervention work has started. Quantitative evidence
+is maintained in
 [`progress.md`](progress.md).
 
 The full corrected stack produces 104,540 agents, 522,388 structural edges,

@@ -2,7 +2,7 @@
 
 ## Current verified status
 
-The current repository tip is `658364c7f02cf44f9392116e7db44c94bdb3175a`.
+The C3 verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`.
 M0–M6 and corrective closures C1–C3 are PASS; M7 is CLOSED. The full
 104,540-agent corrected stack constructs and executes through Starsim 3.5.2,
 and the quantitative evidence is recorded in
