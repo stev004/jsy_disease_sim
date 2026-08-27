@@ -1,5 +1,14 @@
 # Scientific scope and limitations
 
+## Current verified status
+
+The current repository tip is `658364c7f02cf44f9392116e7db44c94bdb3175a`.
+M0–M6 and corrective closures C1–C3 are PASS; M7 is CLOSED. The full
+104,540-agent corrected stack constructs and executes through Starsim 3.5.2,
+and the quantitative evidence is recorded in
+[`progress.md`](progress.md). No C4, intervention, API/UI or visitor work has
+been implemented.
+
 ## What this repository demonstrates
 
 Milestone 0 demonstrates that the pinned Starsim 3.5.2 API can execute a small
@@ -164,7 +173,10 @@ The verification archive is a separate retained index for ignored/generated
 outputs. It records the clean Git commit, parent logical hashes, source-manifest
 hashes, command results, benchmark metadata and hashes of retained summary
 files. It does not turn local generated outputs into Git-tracked source, so the
-archive and its external output bundle must be retained together.
+archive and its external output bundle must be retained together for
+reproducibility. The final C3 archive was independently hash-checked against
+the current commit and parent logical hashes; its archive logical hash is
+`32627c432c65e89250ee40d68a9382bb9b463f5076015dd6be5e62acab70bba4`.
 
 The full M3 benchmark has 104,540 synthetic residents, 13,991 school
 assignments, 8,500 workplaces and 62,108 job assignments. These counts show

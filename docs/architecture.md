@@ -1,5 +1,21 @@
 # Architecture
 
+## Current verified implementation status
+
+As of 27 August 2026, M0–M6 and corrective closures C1–C3 are PASS. The
+current tip is `658364c7f02cf44f9392116e7db44c94bdb3175a`; the C3 implementation
+commit is `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`, followed by verification
+manifest-integrity hardening. M7 is CLOSED and no C4 or intervention work has
+started. Quantitative evidence is maintained in
+[`progress.md`](progress.md).
+
+The full corrected stack produces 104,540 agents, 522,388 structural edges,
+856,050 baseline edges and 1,906,144 selected snapshot edges. A full Starsim
+3.5.2 network-only execution succeeds. C3 additionally verifies causal
+observation timing, independent observation streams, complete ensemble grids,
+memory-bounded worker selection, synthetic train/held-out beta recovery and a
+hash-checked external verification archive.
+
 ## Milestone 0–4 boundaries
 
 The repository intentionally keeps the verified simulation spike isolated from
@@ -248,9 +264,10 @@ values are scenario assumptions. `ensemble.py` reruns the existing M4.1/M5
 stack for an explicit unique seed list, preserves failed replicates as failed,
 and summarizes successful results only. `compare_ensembles()` pairs seed
 identities before calculating differences. The recovery harness uses a hidden
-synthetic reporting delay and a fresh synthetic held-out seed; it is not a
-Jersey-data calibration or a model-validation claim. Ensemble, observation and
-calibration tables have immutable content-addressed directories and manifests.
+synthetic reporting delay or generic beta and a fresh synthetic held-out seed;
+it is not a Jersey-data calibration or a model-validation claim. Ensemble,
+observation and calibration tables have immutable content-addressed directories
+and manifests.
 
 ## Stable boundaries for later milestones
 

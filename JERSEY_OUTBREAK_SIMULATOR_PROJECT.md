@@ -3,7 +3,8 @@
 ## Codex-ready project charter, architecture and implementation plan
 
 **Working title:** Jersey Outbreak Simulator (JOS)  
-**Status:** Pre-implementation specification  
+**Status:** Implementation through M6 complete; C1, C2 and C3 corrective
+closures PASS; M7 CLOSED
 **Prepared:** 25 August 2026  
 **Primary engine:** Starsim 3.5.2 or the latest verified compatible 3.5.x release  
 **Initial disease family:** Human respiratory infection  
@@ -17,6 +18,15 @@
 Build a scientifically defensible, visually compelling agent-based simulator of infectious-disease spread through Jersey. The simulator will create a wholly synthetic population matching Jersey's aggregate demography and habits, place synthetic residents into households, schools, workplaces, care settings and parishes, move them through realistic daily contact layers, and run disease-specific transmission and intervention scenarios using Starsim. The first complete model will be a respiratory SEIRS-style infection. The architecture must later accommodate measles-like infections, food/waterborne transmission, vector-borne disease, sexual/bloodborne transmission and zoonotic spillover without rewriting the population, scenario, provenance or results systems.
 
 This is achievable as a strong research prototype in roughly a week of concentrated AI-assisted development. It will not become a validated public-health forecasting system merely because the code runs. Scientific validation, parameter inference and comparison with real outbreaks are separate workstreams and must be described honestly.
+
+### Current implementation status
+
+As of 27 August 2026, M0–M6 are implemented and verified, with the C1
+employment/population closure, C2 network-semantics closure and C3
+observation/verification closure all passing. M7 remains deliberately closed:
+interventions have not been implemented. No C4 work has begun. The current
+commit, gate evidence, hashes, benchmarks and limitations are maintained in
+[`docs/progress.md`](docs/progress.md).
 
 ---
 
@@ -61,7 +71,10 @@ These are project rules, not optional refinements.
 1. **Synthetic people only.** Use aggregate official data to generate statistically similar fictional residents.
 2. **Separate mechanisms.** Population, contact behaviour, disease biology, interventions and observations must remain separate modules.
 3. **Separate truth from observation.** True infections are not reported cases. Testing, reporting delay and ascertainment belong in an observation model.
-4. **Separate measured from assumed.** Every input is labelled `observed`, `derived`, `literature_prior`, `calibrated` or `scenario_assumption`.
+4. **Separate measured from assumed.** Every input is labelled with its actual
+   provenance, including `observed`, `derived`, `literature_prior`,
+   `calibrated`, `regulatory_minimum`, `synthetic`,
+   `structural_assumption` or `unknown` where applicable.
 5. **No fake precision.** Parish-level evidence must not be presented as exact household or GPS-level knowledge.
 6. **Stochastic outputs require ensembles.** Default comparisons use repeated seeded runs and uncertainty intervals.
 7. **Calibration is not validation.** Fitting one epidemic curve does not prove the model's mechanisms are correct.
@@ -1284,4 +1297,3 @@ The first portfolio-worthy release succeeds when it can:
 10. Make it straightforward to add a second disease without rewriting the Jersey population.
 
 The system is not finished when it produces an attractive epidemic curve. It is finished at this stage when the population, networks, disease, observation process and provenance are all inspectable and the limitations are impossible to miss.
-

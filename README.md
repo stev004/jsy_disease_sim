@@ -7,7 +7,8 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–6**: repository contracts, a verified
+This repository contains **Milestones 0–6 plus corrective closures C1–C3**:
+repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
 synthetic daytime structure for schools, employment, workplaces and commuting,
@@ -25,6 +26,12 @@ Starsim owns network transmission, while JOS records
 route-attributed latent infections and writes tidy daily epidemic, parish, age
 and route tables. Demonstration values are scenario assumptions, not Jersey
 surveillance controls.
+The C3 closure now separates latent infection, symptom, detection and report
+timing, exposes causal detection events, completes ensemble date grids,
+isolates observation randomness by replicate/configuration, bounds process
+workers by memory, and supports synthetic held-out beta recovery. C1, C2 and
+C3 are PASS; M7 is CLOSED and no intervention code has been started. The
+quantitative gate record is in [`docs/progress.md`](docs/progress.md).
 The Starsim demo is an official SIR example using Starsim's built-in
 `RandomNet`; it is not a Jersey outbreak reconstruction or a validated
 forecast. The Milestone 2 population is synthetic and control-driven; it is
@@ -51,7 +58,7 @@ networks or contact edges, disease states, interventions, visitors, an API or a
 UI; it is not a Jersey outbreak model.
 
 The verified full M3 artifact contains 104,540 residents, 48 synthetic schools,
-699 classes, 13,991 school assignments, 8,500 workplaces, 4,387 teams and
+703 classes, 13,991 school assignments, 8,500 workplaces, 4,387 teams and
 62,108 job assignments. All 50 M3 diagnostics checks pass. These are synthetic
 structures and aggregate-control reconciliations, not observations about named
 people, real schools or real employers.
@@ -82,9 +89,10 @@ assumptions in a separate layer. `jos observe run` writes detected/reported
 case tables and event metadata without changing the latent hash. `jos ensemble
 run --seeds 101,102,103` retains explicit replicate seeds and writes tidy
 replicate trajectories with linear lower/median/upper quantiles. Matched-seed
-comparisons pair A/B outputs by seed. `jos calibrate synthetic` uses Optuna to
-recover a hidden observation parameter from synthetic truth only, retaining
-all trials and a held-out synthetic check; it is not Jersey calibration.
+comparisons pair A/B outputs by seed. `jos calibrate synthetic` and
+`jos calibrate beta` use Optuna to recover a hidden observation or generic beta
+parameter from synthetic truth only, retaining all trials and a held-out
+synthetic check; neither is Jersey calibration.
 
 ## Quick start
 
@@ -101,6 +109,7 @@ uv run jos outbreak run --mode ci --seed 123
 uv run jos observe run --mode ci --seed 123
 uv run jos ensemble run --mode ci --seeds 101,102,103
 uv run jos calibrate synthetic --mode ci --seed 123
+uv run jos calibrate beta --mode ci --seed 123
 ```
 
 The command prints a machine-readable JSON summary and writes:
@@ -152,9 +161,13 @@ detected or reported case counts.
 M6 outputs are written under `outputs/observations`, `outputs/ensembles` and
 `outputs/calibration` by the corresponding commands. Observation parameters
 retain explicit provenance statuses; the demo values are scenario assumptions,
-not Jersey surveillance controls. A constrained host may report
+not Jersey surveillance controls. `jos calibrate beta` is a synthetic
+train/held-out recovery diagnostic, not Jersey calibration. A constrained host may report
 `sequential_fallback` for an ensemble requested with multiple workers when its
 OS denies the process-pool semaphore check; this is recorded in diagnostics.
+The C3 verification archive is written to external retention rather than
+committed generated-output directories; see
+[`docs/verification_archive.md`](docs/verification_archive.md).
 
 ## Verification
 
@@ -194,6 +207,7 @@ uv run jos network generate --mode ci --seed 123
 uv run jos observe run --mode ci --seed 123
 uv run jos ensemble run --mode ci --seeds 101,102,103
 uv run jos calibrate synthetic --mode ci --seed 123
+uv run jos calibrate beta --mode ci --seed 123
 ```
 
 Run the demo twice with the same seed and compare `summary.json` to verify the
