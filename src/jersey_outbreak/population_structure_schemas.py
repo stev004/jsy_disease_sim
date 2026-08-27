@@ -121,6 +121,7 @@ class JobAssignmentRecord(StrictModel):
     days_per_week: StrictInt = Field(gt=0, le=7)
     remote_days_per_week: StrictInt = Field(ge=0, le=7)
     job_universe: JobUniverse
+    employment_universe: WorkplaceUniverse
 
     @model_validator(mode="after")
     def validate_schedule(self) -> JobAssignmentRecord:

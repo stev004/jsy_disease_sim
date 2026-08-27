@@ -16,6 +16,7 @@ from .population_structure_artifacts import M2PopulationInput, logical_structure
 from .population_structure_controls import (
     StructureControls,
     load_structure_controls,
+    scaled_private_job_target,
     scaled_structure_targets,
 )
 from .population_structure_schemas import (
@@ -259,6 +260,34 @@ def _allocate_sizes(
     return sizes
 
 
+def _allocate_nonprivate_sizes(total_jobs: int, maximum_size: int = 25) -> list[tuple[str, int]]:
+    """Create bounded operational workplaces for jobs outside the private control universe."""
+
+    if total_jobs <= 0:
+        return []
+    full_workplaces, remainder = divmod(total_jobs, maximum_size)
+    sizes = [maximum_size] * full_workplaces
+    if remainder:
+        sizes.append(remainder)
+    return [
+        (
+            "1"
+            if size == 1
+            else "2-5"
+            if size <= 5
+            else "6-9"
+            if size <= 9
+            else "10-19"
+            if size <= 19
+            else "20-49"
+            if size <= 49
+            else "50+",
+            size,
+        )
+        for size in sizes
+    ]
+
+
 def _allocate_sector_sex_targets(
     total: int, weights: dict[tuple[str, str], int]
 ) -> dict[tuple[str, str], int]:
@@ -459,7 +488,13 @@ def _build_diagnostics(
     check("primary_job_count", len(primary_jobs), target_workers)
     check("secondary_job_count", len(secondary_jobs), target_secondary_jobs)
     check("filled_job_count", len(jobs), target_workers + target_secondary_jobs)
-    check("workplace_count", len(workplaces), sum(target_workplaces.values()))
+    private_workplaces = [
+        row for row in workplaces if row["workplace_universe"] == "private_undertaking_control"
+    ]
+    nonprivate_workplaces = [
+        row for row in workplaces if row["workplace_universe"] == "synthetic_nonprivate"
+    ]
+    check("private_workplace_count", len(private_workplaces), sum(target_workplaces.values()))
 
     school_type_rows = []
     for school_type, target in target_school_types.items():
@@ -513,12 +548,14 @@ def _build_diagnostics(
 
     band_rows = []
     for band, target in target_workplaces.items():
-        actual = sum(row["size_band"] == band for row in workplaces)
+        actual = sum(row["size_band"] == band for row in private_workplaces)
         check(f"workplace_band_{band}", actual, target)
         band_rows.append({"size_band": band, "target": target, "generated": actual})
-    below_ten = sum(row["employee_count"] < 10 for row in workplaces) / len(workplaces)
-    single = sum(row["employee_count"] == 1 for row in workplaces)
-    large = sum(row["employee_count"] >= 50 for row in workplaces)
+    below_ten = sum(row["employee_count"] < 10 for row in private_workplaces) / max(
+        1, len(private_workplaces)
+    )
+    single = sum(row["employee_count"] == 1 for row in private_workplaces)
+    large = sum(row["employee_count"] >= 50 for row in private_workplaces)
 
     physical_workers = [row for row in worker_rows if row["commute_mode"] != "work_from_home"]
     destination_generated = {
@@ -583,6 +620,19 @@ def _build_diagnostics(
     check("job_team_references", invalid_job_teams, 0)
     check("duplicate_job_membership", duplicate_workplaces, 0)
     check("job_schedule_conflicts", schedule_conflicts, 0)
+    job_universe_counts = {
+        universe: sum(job["employment_universe"] == universe for job in jobs)
+        for universe in ("private_undertaking_control", "synthetic_nonprivate")
+    }
+    expected_private_jobs = min(
+        scaled_private_job_target(controls, config.resolved_target_population), len(jobs)
+    )
+    check("private_filled_job_control", job_universe_counts["private_undertaking_control"], expected_private_jobs)
+    check(
+        "synthetic_nonprivate_filled_jobs",
+        job_universe_counts["synthetic_nonprivate"],
+        len(jobs) - expected_private_jobs,
+    )
     generated_multi_share = len(secondary_jobs) / max(1, len(worker_rows))
     check(
         "multi_job_share",
@@ -657,6 +707,8 @@ def _build_diagnostics(
         },
         "workplaces": {
             "total": len(workplaces),
+            "private_undertakings": len(private_workplaces),
+            "synthetic_nonprivate_workplaces": len(nonprivate_workplaces),
             "size_band_rows": band_rows,
             "below_10_proportion": below_ten,
             "single_person": single,
@@ -673,12 +725,19 @@ def _build_diagnostics(
                 for value in sorted({row["public_private"] for row in workplaces})
             },
             "universe": {
-                "workplaces": "private_undertaking_control",
-                "workplace_count_control": controls.full_workplace_target,
+                "private_workplaces": "private_undertaking_control",
+                "private_workplace_count_control": controls.full_workplace_target,
+                "synthetic_nonprivate_workplaces": "derived_residual_filled_job_capacity",
                 "primary_jobs": "resident_worker_primary",
                 "secondary_jobs": "synthetic_secondary",
                 "private_filled_job_control": controls.full_private_job_target,
-                "status": "separate_controls_no_unsupported_employer_crosswalk",
+                "private_filled_jobs_generated": job_universe_counts[
+                    "private_undertaking_control"
+                ],
+                "synthetic_nonprivate_filled_jobs": job_universe_counts["synthetic_nonprivate"],
+                "public_sector_job_control": "unknown_not_available_in_frozen_controls",
+                "public_employer_identity": "unknown",
+                "status": "operational_private_nonprivate_universes_separated",
             },
             "size_assumption": (
                 "50+ undertakings use a structural 50-500 employee range because the source "
@@ -727,6 +786,7 @@ def _build_diagnostics(
                 "workplace_destination_category_allocation_v1",
                 "conditional_commute_mode_allocation_v1",
                 "bounded_secondary_job_allocation_v1",
+                "private_nonprivate_filled_job_universe_partition_c1_b2_v1",
             ],
         },
     }
@@ -838,10 +898,16 @@ def generate_structure(
         sector: count + secondary_sector_targets[sector] for sector, count in sector_targets.items()
     }
     workplace_targets = target_workplaces
-    workplace_sizes = _allocate_sizes(workplace_targets, sum(sector_job_targets.values()), rng)
+    total_jobs = sum(sector_job_targets.values())
+    private_job_target = min(
+        scaled_private_job_target(controls, config.resolved_target_population), total_jobs
+    )
+    nonprivate_job_target = total_jobs - private_job_target
+    private_workplace_sizes = _allocate_sizes(workplace_targets, private_job_target, rng)
+    nonprivate_workplace_sizes = _allocate_nonprivate_sizes(nonprivate_job_target)
     workplaces: list[dict[str, Any]] = []
     workplace_index = 0
-    for band, size in workplace_sizes:
+    for band, size in private_workplace_sizes:
         workplace_id = f"workplace-m3-{workplace_index:05d}"
         workplace_index += 1
         team_count = math.ceil(size / 12) if size >= 10 else 0
@@ -854,6 +920,22 @@ def generate_structure(
                 "employee_count": size,
                 "public_private": "unknown",
                 "workplace_universe": "private_undertaking_control",
+                "team_count": team_count,
+            }
+        )
+    for band, size in nonprivate_workplace_sizes:
+        workplace_id = f"workplace-m3-{workplace_index:05d}"
+        workplace_index += 1
+        team_count = math.ceil(size / 12) if size >= 10 else 0
+        workplaces.append(
+            {
+                "workplace_id": workplace_id,
+                "sector": "",
+                "work_parish": "St Helier",
+                "size_band": band,
+                "employee_count": size,
+                "public_private": "unknown",
+                "workplace_universe": "synthetic_nonprivate",
                 "team_count": team_count,
             }
         )
@@ -910,6 +992,7 @@ def generate_structure(
                     "remote_days_per_week": remote_days,
                     "team_id": slot_team_id,
                     "job_universe": "resident_worker_primary",
+                    "employment_universe": workplace["workplace_universe"],
                 }
             )
         slots_by_sector[sector] = slots[len(sector_workers) :]
@@ -960,6 +1043,7 @@ def generate_structure(
                 "remote_days_per_week": 0,
                 "team_id": slot_team_id,
                 "job_universe": "synthetic_secondary",
+                "employment_universe": workplace["workplace_universe"],
             }
         )
     if any(slots_by_sector.values()):

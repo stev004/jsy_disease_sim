@@ -176,11 +176,12 @@ def load_structure_controls(root: Path) -> StructureControls:
         "industry/sex table; no compatible Jersey employment-by-age headcount table is frozen. "
         "Age selection therefore uses an explicit structural labour-force propensity, with "
         "65+ employment capped by that scenario weight rather than treated as observed.",
-        "The 8,500 workplace size controls describe private undertakings, while the 57,338 "
-        "resident-worker controls describe unique resident workers and the 2025 private-job "
-        "control describes filled jobs. These universes remain separate metadata fields; "
-        "no whole-economy employer crosswalk is claimed, so synthetic workplace public/private "
-        "classification remains unknown.",
+        "The 8,500 workplace size controls describe private undertakings and the 55,370 "
+        "filled-job control is the operational private-job universe. Any generated filled jobs "
+        "remaining after that observed private control are placed in bounded synthetic_nonprivate "
+        "workplaces; this is a structural partition, not an observed public-sector headcount. "
+        "Actual employer identity and a compatible public-sector job control remain unknown, "
+        "while private versus non-private workplace membership is explicit for topology.",
     )
     return StructureControls(
         population=population,
@@ -233,3 +234,13 @@ def scaled_structure_targets(
     )
     secondary_jobs = int(round(workers * controls.additional_job_rate))
     return school, workers, workplaces, secondary_jobs
+
+
+def scaled_private_job_target(controls: StructureControls, target_population: int) -> int:
+    """Scale the observed private filled-job control for a generated population."""
+
+    return _scale(
+        controls.full_private_job_target,
+        controls.population.full_population_target,
+        target_population,
+    )
