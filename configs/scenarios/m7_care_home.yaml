@@ -1,0 +1,13 @@
+schema_version: "7.0"
+scenario_id: m7-care-home-protection
+scenario_version: "7.0.0"
+interventions:
+  - intervention_id: care-home-protection
+    type: care_home_protection
+    start_date: 2025-01-13
+    end_date: 2025-01-31
+    care_target: both
+    care_contact_multiplier: 0.5
+    care_external_resident_multiplier: 0.5
+    care_external_staff_multiplier: 0.75
+notes: Synthetic care-setting contact/protection multiplier; no PPE efficacy is claimed.

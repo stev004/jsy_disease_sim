@@ -8,6 +8,7 @@ from pydantic import Field, field_validator, model_validator
 from pydantic.types import StrictBool, StrictFloat, StrictInt
 
 from .contracts import ArtifactRecord, NonEmptyString, StrictModel
+from .intervention_schemas import ScenarioConfig
 from .observation_schemas import ObservationConfig
 from .outbreak_schemas import OutbreakRunConfig
 
@@ -20,6 +21,7 @@ class EnsembleConfig(StrictModel):
     generator_version: NonEmptyString = "6.1.0"
     base_run_config: OutbreakRunConfig
     observation_config: ObservationConfig
+    scenario: ScenarioConfig | None = None
     replicate_seeds: tuple[StrictInt, ...] = Field(min_length=1)
     workers: StrictInt = Field(default=1, ge=1, le=32)
     estimated_worker_memory_bytes: StrictInt = Field(default=1_100_000_000, gt=0)
@@ -57,6 +59,8 @@ class EnsembleReplicateRecord(StrictModel):
     latent_run_logical_content_hash: NonEmptyString | None = None
     observation_logical_content_hash: NonEmptyString | None = None
     m4_logical_content_hash: NonEmptyString | None = None
+    scenario_hash: NonEmptyString | None = None
+    intervention_config_hashes: dict[str, NonEmptyString] = Field(default_factory=dict)
     runtime_seconds: StrictFloat = 0.0
     error: str | None = None
 
@@ -100,6 +104,8 @@ class EnsembleArtifactManifest(StrictModel):
     disease_parameter_hash: NonEmptyString
     observation_parameter_hash: NonEmptyString
     base_config_hash: NonEmptyString
+    scenario_hash: NonEmptyString | None = None
+    intervention_config_hashes: dict[str, NonEmptyString] = Field(default_factory=dict)
     quantile_configuration: dict[str, StrictFloat]
     replicate_records: list[EnsembleReplicateRecord]
     created_at: NonEmptyString

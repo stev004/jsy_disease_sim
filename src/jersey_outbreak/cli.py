@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 from typing import Annotated
 
@@ -15,6 +16,11 @@ from .data_pipeline import build_canonical
 from .demo import run_demo
 from .ensemble import run_ensemble
 from .ensemble_artifacts import write_ensemble_artifact
+from .intervention_analysis import compare_intervention_runs
+from .intervention_artifacts import (
+    write_intervention_artifact,
+    write_intervention_comparison_artifact,
+)
 from .network_artifacts import write_network_artifact
 from .network_generator import generate_networks
 from .network_schemas import NetworkGenerationConfig
@@ -32,6 +38,7 @@ from .population_structure_artifacts import (
 )
 from .population_structure_generator import generate_structure
 from .population_structure_schemas import StructureGenerationConfig
+from .scenario import load_scenario_config
 from .verification_archive import verify_verification_archive
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
@@ -42,6 +49,8 @@ network_app = typer.Typer(add_completion=False, no_args_is_help=True)
 outbreak_app = typer.Typer(add_completion=False, no_args_is_help=True)
 observe_app = typer.Typer(add_completion=False, no_args_is_help=True)
 ensemble_app = typer.Typer(add_completion=False, no_args_is_help=True)
+scenario_app = typer.Typer(add_completion=False, no_args_is_help=True)
+intervention_app = typer.Typer(add_completion=False, no_args_is_help=True)
 calibration_app = typer.Typer(add_completion=False, no_args_is_help=True)
 verification_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(data_app, name="data")
@@ -51,6 +60,8 @@ app.add_typer(network_app, name="network")
 app.add_typer(outbreak_app, name="outbreak")
 app.add_typer(observe_app, name="observe")
 app.add_typer(ensemble_app, name="ensemble")
+app.add_typer(scenario_app, name="scenario")
+app.add_typer(intervention_app, name="intervention")
 app.add_typer(calibration_app, name="calibrate")
 app.add_typer(verification_app, name="verify")
 
@@ -502,6 +513,292 @@ def ensemble_run(
                 "successful_replicates": result.diagnostics["successful_replicates"],
                 "logical_content_hash": result.logical_content_hash,
                 "runtime_seconds": result.runtime_seconds,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+def _run_m7_scenario(
+    *,
+    mode: PopulationMode,
+    seed: int,
+    duration_days: int,
+    scenario_path: Path | None,
+    parameter_path: Path | None,
+    observation_path: Path | None,
+    output_dir: Path,
+) -> dict[str, object]:
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    parameter_path = (
+        parameter_path
+        if parameter_path is None or parameter_path.is_absolute()
+        else root / parameter_path
+    )
+    observation_path = (
+        observation_path
+        if observation_path is None or observation_path.is_absolute()
+        else root / observation_path
+    )
+    scenario_path = (
+        scenario_path
+        if scenario_path is None or scenario_path.is_absolute()
+        else root / scenario_path
+    )
+    parameters = load_parameter_set(root, parameter_path)
+    observation = load_observation_config(root, observation_path)
+    scenario = load_scenario_config(root, scenario_path)
+    if scenario.seed is not None and scenario.seed != seed:
+        raise typer.BadParameter("scenario seed must match --seed")
+    if scenario.start_date is not None and scenario.start_date != date(2025, 1, 6):
+        # The current M4 demo build has one explicit reference start date;
+        # run-level date overrides remain a library contract for later work.
+        raise typer.BadParameter("M7 CLI currently requires scenario start_date 2025-01-06")
+    run_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
+    generated = _build_m4_for_m6(root, mode, seed, destination)
+    result = run_outbreak(
+        generated,
+        run_config,
+        parameters,
+        observation_config=observation,
+        scenario=scenario.model_copy(
+            update={
+                "seed": seed,
+                "start_date": run_config.start_date,
+                "duration_days": duration_days,
+                "disease_config_id": parameters.parameter_set_id,
+                "observation_config_id": observation.observation_config_id,
+            }
+        ),
+    )
+    artifact = write_intervention_artifact(result, root, destination)
+    return {
+        "artifact_id": artifact.manifest.artifact_id,
+        "artifact_directory": str(artifact.artifact_directory),
+        "diagnostics_status": artifact.manifest.diagnostics_status,
+        "scenario_id": scenario.scenario_id,
+        "scenario_hash": result.scenario_hash,
+        "logical_content_hash": result.logical_content_hash,
+        "runtime_seconds": result.runtime_seconds,
+        "travel_controls": "DEFERRED TO M8",
+    }
+
+
+@scenario_app.command("run")
+def scenario_run(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Scenario scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Non-negative scenario seed.")] = 123,
+    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    scenario_config: Annotated[
+        Path | None, typer.Option(help="Versioned M7 scenario YAML.")
+    ] = None,
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    observation_config: Annotated[
+        Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    output_dir: Annotated[Path, typer.Option(help="Directory for versioned M7 artifacts.")] = Path(
+        "outputs/interventions"
+    ),
+) -> None:
+    """Run one synthetic intervention scenario through the prospective M7 layer."""
+
+    typer.echo(
+        json.dumps(
+            _run_m7_scenario(
+                mode=mode,
+                seed=seed,
+                duration_days=duration_days,
+                scenario_path=scenario_config,
+                parameter_path=parameter_set,
+                observation_path=observation_config,
+                output_dir=output_dir,
+            ),
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@intervention_app.command("run")
+def intervention_run(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Intervention scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Non-negative scenario seed.")] = 123,
+    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    scenario_config: Annotated[
+        Path | None, typer.Option(help="Versioned M7 scenario YAML.")
+    ] = None,
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    observation_config: Annotated[
+        Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    output_dir: Annotated[Path, typer.Option(help="Directory for versioned M7 artifacts.")] = Path(
+        "outputs/interventions"
+    ),
+) -> None:
+    """Alias for the M7 scenario runner."""
+
+    typer.echo(
+        json.dumps(
+            _run_m7_scenario(
+                mode=mode,
+                seed=seed,
+                duration_days=duration_days,
+                scenario_path=scenario_config,
+                parameter_path=parameter_set,
+                observation_path=observation_config,
+                output_dir=output_dir,
+            ),
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@intervention_app.command("compare")
+def intervention_compare(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Comparison scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Matched seed for baseline and scenario.")] = 123,
+    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    scenario_config: Annotated[
+        Path, typer.Option(help="M7 scenario YAML to compare with baseline.")
+    ] = Path("configs/scenarios/m7_school_closure.yaml"),
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    observation_config: Annotated[
+        Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    output_dir: Annotated[Path, typer.Option(help="Directory for comparison artifacts.")] = Path(
+        "outputs/intervention_comparisons"
+    ),
+) -> None:
+    """Run a matched-seed baseline/scenario comparison and route-shift analysis."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    parameter_path = (
+        parameter_set
+        if parameter_set is None or parameter_set.is_absolute()
+        else root / parameter_set
+    )
+    observation_path = (
+        observation_config
+        if observation_config is None or observation_config.is_absolute()
+        else root / observation_config
+    )
+    scenario_path = scenario_config if scenario_config.is_absolute() else root / scenario_config
+    parameters = load_parameter_set(root, parameter_path)
+    observation = load_observation_config(root, observation_path)
+    scenario = load_scenario_config(root, scenario_path).model_copy(
+        update={"seed": seed, "duration_days": duration_days}
+    )
+    run_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
+    generated = _build_m4_for_m6(root, mode, seed, destination)
+    baseline = run_outbreak(generated, run_config, parameters, observation_config=observation)
+    treated = run_outbreak(
+        generated,
+        run_config,
+        parameters,
+        observation_config=observation,
+        scenario=scenario,
+    )
+    comparison = compare_intervention_runs(baseline, treated, comparison_id=scenario.scenario_id)
+    artifact_directory = write_intervention_comparison_artifact(comparison, root, destination)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_directory": str(artifact_directory),
+                "comparison_id": comparison.comparison_id,
+                "scenario_hash": treated.scenario_hash,
+                "paired_seed": seed,
+                "cumulative_difference": comparison.scenario_comparison[0]["absolute_difference"],
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@intervention_app.command("ensemble")
+def intervention_ensemble(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Ensemble scale: ci, scaled or full.")
+    ] = "ci",
+    seeds: Annotated[
+        str, typer.Option(help="Explicit comma-separated unique replicate seeds.")
+    ] = "101,102,103",
+    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    workers: Annotated[int, typer.Option(help="Bounded process workers; 1 is sequential.")] = 1,
+    scenario_config: Annotated[Path, typer.Option(help="Versioned M7 scenario YAML.")] = Path(
+        "configs/scenarios/m7_school_closure.yaml"
+    ),
+    ensemble_id: Annotated[str, typer.Option(help="Stable ensemble identifier.")] = "m7-demo",
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    observation_config: Annotated[
+        Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    output_dir: Annotated[Path, typer.Option(help="Directory for ensemble artifacts.")] = Path(
+        "outputs/ensembles"
+    ),
+) -> None:
+    """Run a bounded matched-seed intervention ensemble."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    parameter_path = (
+        parameter_set
+        if parameter_set is None or parameter_set.is_absolute()
+        else root / parameter_set
+    )
+    observation_path = (
+        observation_config
+        if observation_config is None or observation_config.is_absolute()
+        else root / observation_config
+    )
+    scenario_path = scenario_config if scenario_config.is_absolute() else root / scenario_config
+    parameters = load_parameter_set(root, parameter_path)
+    observation = load_observation_config(root, observation_path)
+    replicate_seeds = _parse_seeds(seeds)
+    scenario = load_scenario_config(root, scenario_path)
+    base_config = default_run_config(
+        mode, replicate_seeds[0], parameters, duration_days=duration_days
+    )
+    generated = _build_m4_for_m6(root, mode, replicate_seeds[0], destination)
+    result = run_ensemble(
+        root,
+        generated,
+        parameters,
+        base_config,
+        observation,
+        replicate_seeds,
+        ensemble_id=ensemble_id,
+        workers=workers,
+        scenario=scenario,
+    )
+    artifact = write_ensemble_artifact(result, root, destination)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_id": artifact.manifest.artifact_id,
+                "artifact_directory": str(artifact.artifact_directory),
+                "status": result.diagnostics["status"],
+                "scenario_hash": result.scenario_hash,
+                "successful_replicates": result.diagnostics["successful_replicates"],
+                "logical_content_hash": result.logical_content_hash,
             },
             ensure_ascii=False,
             sort_keys=True,

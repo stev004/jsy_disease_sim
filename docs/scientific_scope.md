@@ -3,11 +3,11 @@
 ## Current verified status
 
 The C3 verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`.
-M0–M6 and corrective closures C1–C4 are PASS; M7 is CLOSED. The full
+M0–M7 and corrective closures C1–C4 are PASS. The full
 104,540-agent corrected stack constructs and executes through Starsim 3.5.2,
 and the quantitative evidence is recorded in
-[`progress.md`](progress.md). C4 remains a bounded M6 correction; no M7
-intervention, API/UI or visitor work has been implemented.
+[`progress.md`](progress.md). M7 adds intervention experiments; API/UI and
+visitor/travel work remain outside scope.
 
 ## What this repository demonstrates
 
@@ -156,12 +156,12 @@ C4 keeps the latent M5 event table intact while making the observation timeline
 runtime-causal: infection, optional generic symptom-onset anchor, testing/
 detection, and report dates are separate fields. Infection schedules are
 sampled when events occur and due notifications are delivered after that day's
-transmission. A future consumer can first affect the next timestep. The analysis horizon is the
+transmission. The M7 consumer can first affect the next timestep. The analysis horizon is the
 complete latent horizon plus either an explicitly configured delay tail or the
 maximum configured symptom, detection and reporting delays. Latent incidence is
 therefore conserved even when an event is never detected or reported. Detection
-notifications are exposed through a read-only interface for a future consumer;
-they do not implement isolation or any other intervention.
+notifications are exposed through a read-only interface for the M7
+intervention consumer; C4 itself does not implement intervention logic.
 
 Observation draws use a stream derived from latent replicate seed, observation
 seed and configuration identity, with stable event keys. Different latent
@@ -170,6 +170,35 @@ sequence. Ensemble summaries use explicit date grids: missing incidence is a
 structural zero, cumulative values carry forward, and state/prevalence is not
 fabricated beyond the latent horizon. Failed replicates are non-contributors.
 Requested, planned and actual process workers are recorded separately.
+
+## Milestone 7 intervention experiments
+
+M7 provides a typed, composable intervention framework over the synthetic M2–M4
+population and M5 generic respiratory module. It supports detection-triggered
+case isolation and household quarantine; school closure/reduction; workplace
+and commute reduction with deterministic WFH schedules; separate community
+indoor/outdoor reduction; care-home resident/staff protection; generic
+vaccination with delay, efficacy and waning; and generic masking/gathering
+route multipliers. Targets can use stable agent IDs, age bands, parishes,
+sectors, schools, workplaces, care settings and care roles.
+
+The runtime lifecycle is disease progression, M4 network refresh, intervention
+state/effective-route updates, transmission/imports, C4 detection delivery and
+next-timestep effect. A detection on day `t` cannot change transmission already
+completed that day. Route effects compose multiplicatively and operate on
+prospective Starsim views derived from immutable M4 snapshots. Care edges are
+retained with zero effective beta when suppressed so roster topology remains
+auditable. Vaccination affects susceptibility and infectiousness only; M5 does
+not implement severity or mortality.
+
+M7 experiments are matched-seed scenario comparisons and bounded ensembles.
+They retain explicit config/run/provenance hashes, daily intervention state,
+event logs, route-effect diagnostics, absolute route counts and relative route
+shares, and separate social/intervention burden metrics. Every included YAML
+value is a synthetic scenario assumption. These outputs do not estimate policy
+effectiveness, identify causal effects from Jersey data, or validate the
+contact mechanisms. Travel, arrivals, airports, ferries and visitor processes
+remain deferred to M8.
 
 The verification archive is a separate retained index for ignored/generated
 outputs. It records the clean Git commit, parent logical hashes, source-manifest

@@ -1,0 +1,11 @@
+schema_version: "7.0"
+scenario_id: m7-community-indoor-reduction
+scenario_version: "7.0.0"
+interventions:
+  - intervention_id: community-indoor-reduction
+    type: community_reduction
+    start_date: 2025-01-13
+    end_date: 2025-01-31
+    indoor_multiplier: 0.5
+    outdoor_multiplier: 1.0
+notes: Community indoor contact reduction only; no real hospitality venues are represented.

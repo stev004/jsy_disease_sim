@@ -1,0 +1,15 @@
+schema_version: "7.0"
+scenario_id: m7-generic-vaccination
+scenario_version: "7.0.0"
+interventions:
+  - intervention_id: generic-vaccination
+    type: vaccination
+    start_date: 2025-01-13
+    rollout_rate: 0.1
+    coverage_target: 0.7
+    uptake_probability: 0.8
+    protection_delay_days: 14
+    efficacy_susceptibility: 0.6
+    efficacy_infectiousness: 0.0
+    waning_days: 365
+notes: Generic vaccination scenario; values are illustrative assumptions and not clinical efficacy.

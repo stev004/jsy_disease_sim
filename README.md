@@ -7,7 +7,7 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–6 plus corrective closures C1–C4**:
+This repository contains **Milestones 0–7 plus corrective closures C1–C4**:
 repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
@@ -30,9 +30,12 @@ The C4 correction samples observation schedules when infections occur, delivers
 detections at their simulation timestep through a read-only consumer hook, and
 uses metric-aware ensemble grids. Observation randomness remains isolated by
 replicate/configuration, process execution records requested/planned/actual
-workers, and synthetic held-out beta recovery remains available. M7 is CLOSED:
-no isolation, quarantine or other intervention code has been started. The
-quantitative gate record is in [`docs/progress.md`](docs/progress.md).
+workers, and synthetic held-out beta recovery remains available. Milestone 7
+adds the typed composable intervention runtime, detection-triggered isolation
+and quarantine, calendar/contact families, vaccination, matched-seed
+comparisons, intervention ensembles and visualization-ready artifacts. M7
+does not implement travel/visitor controls, an API or a UI. The quantitative
+gate record is in [`docs/progress.md`](docs/progress.md).
 The Starsim demo is an official SIR example using Starsim's built-in
 `RandomNet`; it is not a Jersey outbreak reconstruction or a validated
 forecast. The Milestone 2 population is synthetic and control-driven; it is
@@ -112,6 +115,12 @@ uv run jos observe run --mode ci --seed 123
 uv run jos ensemble run --mode ci --seeds 101,102,103
 uv run jos calibrate synthetic --mode ci --seed 123
 uv run jos calibrate beta --mode ci --seed 123
+uv run jos scenario run --mode ci --seed 123 \
+  --scenario-config configs/scenarios/m7_combined.yaml
+uv run jos intervention compare --mode ci --seed 123 \
+  --scenario-config configs/scenarios/m7_school_closure.yaml
+uv run jos intervention ensemble --mode ci --seeds 101,102,103 \
+  --scenario-config configs/scenarios/m7_case_isolation.yaml
 ```
 
 The command prints a machine-readable JSON summary and writes:
@@ -170,6 +179,14 @@ OS denies the process-pool semaphore check; this is recorded in diagnostics.
 The C3 verification archive is written to external retention rather than
 committed generated-output directories; see
 [`docs/verification_archive.md`](docs/verification_archive.md).
+
+M7 outputs are written under `outputs/interventions`,
+`outputs/intervention_comparisons` and `outputs/ensembles` by the scenario,
+comparison and intervention-ensemble commands. All demonstration intervention
+values and route multipliers are synthetic assumptions. Travel, visitor,
+airport, ferry and arrival processes remain deferred to M8. See
+[`docs/interventions.md`](docs/interventions.md) for the runtime contract and
+artifact schema.
 
 ## Verification
 

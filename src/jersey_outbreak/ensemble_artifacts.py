@@ -217,6 +217,11 @@ def write_ensemble_artifact(
         for record in successful
         if record.latent_run_logical_content_hash is not None
     }
+    intervention_hashes = {
+        intervention_id: intervention_hash
+        for record in successful
+        for intervention_id, intervention_hash in record.intervention_config_hashes.items()
+    }
     observation_hash = sha256_bytes(
         canonical_json_bytes(result.config.observation_config.model_dump(mode="json"))
     )
@@ -242,6 +247,8 @@ def write_ensemble_artifact(
         disease_parameter_hash=result.disease_parameter_hash,
         observation_parameter_hash=observation_hash,
         base_config_hash=_config_hash(result),
+        scenario_hash=(result.scenario_hash if result.config.scenario is not None else None),
+        intervention_config_hashes=intervention_hashes,
         quantile_configuration={
             "lower": result.config.lower_quantile,
             "median": 0.5,

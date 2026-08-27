@@ -1,0 +1,33 @@
+schema_version: "7.0"
+scenario_id: m7-case-isolation-household-quarantine
+scenario_version: "7.0.0"
+interventions:
+  - intervention_id: case-isolation
+    type: case_isolation
+    duration_days: 5
+    adherence: 0.8
+    route_effects:
+      household: 1.0
+      school_class: 0.0
+      school_cross_class: 0.0
+      workplace_team: 0.0
+      workplace_transient: 0.0
+      shared_vehicle: 0.0
+      bus: 0.0
+      community_indoor: 0.0
+      community_outdoor: 0.0
+  - intervention_id: household-quarantine
+    type: household_quarantine
+    duration_days: 5
+    adherence: 0.7
+    route_effects:
+      household: 1.0
+      school_class: 0.0
+      school_cross_class: 0.0
+      workplace_team: 0.0
+      workplace_transient: 0.0
+      shared_vehicle: 0.0
+      bus: 0.0
+      community_indoor: 0.0
+      community_outdoor: 0.0
+notes: Synthetic isolation plus private-household quarantine; communal settings are excluded.

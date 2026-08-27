@@ -196,6 +196,7 @@ def build_starsim_disease_sim(
     start_date: date | None = None,
     duration_days: int = 2,
     seed: int | None = None,
+    interventions: list[Any] | tuple[Any, ...] | None = None,
 ) -> Any:
     """Build an initialized Starsim simulation using the existing JOS routes."""
 
@@ -212,6 +213,7 @@ def build_starsim_disease_sim(
         rand_seed=generated.config.seed if seed is None else seed,
         networks=build_starsim_networks(generated),
         diseases=disease,
+        interventions=list(interventions or []),
         verbose=0,
         copy_inputs=False,
     )

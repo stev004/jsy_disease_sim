@@ -2,11 +2,13 @@
 
 ## Current verified implementation status
 
-As of 27 August 2026, M0–M6 and corrective closures C1–C4 are PASS. The C3
+As of 27 August 2026, M0–M7 and corrective closures C1–C4 are PASS. The C3
 verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`; the C3
 implementation commit is `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`, followed
 by verification manifest-integrity hardening and documentation-only commits.
-M7 is CLOSED and the bounded C4 correction does not add interventions.
+M7 adds a prospective intervention layer while keeping the canonical M4
+routes and latent M5 outputs immutable. Travel/visitor controls, API and UI
+remain later boundaries.
 Quantitative evidence is maintained in
 [`progress.md`](progress.md).
 
@@ -75,12 +77,13 @@ canonical aggregate tables + source/table hashes
 ```
 
 `src/jersey_outbreak/starsim_compat.py`,
-`src/jersey_outbreak/starsim_adapter.py` and the M5
-`src/jersey_outbreak/respiratory.py` disease boundary are the only application
-modules allowed to import Starsim. They own the exact 3.5.2 API calls used by
-the spike, route adapter and generic disease, and the run layer converts
-Starsim result arrays into plain Python values. The rest of the application
-does not depend on Starsim's internal object graph.
+`src/jersey_outbreak/starsim_adapter.py`, the M5
+`src/jersey_outbreak/respiratory.py` disease boundary and the M7
+`src/jersey_outbreak/interventions.py` runtime are the application modules
+allowed to import Starsim. They own the exact 3.5.2 API calls used by the
+spike, route adapter, generic disease and intervention lifecycle; the run
+layer converts Starsim result arrays into plain Python values. The rest of the
+application does not depend on Starsim's internal object graph.
 
 `src/jersey_outbreak/data_pipeline.py` is deliberately independent of Starsim.
 It validates local snapshot hashes before parsing, keeps observed and derived
@@ -250,7 +253,7 @@ C4 integrates the observation scheduler without adding disease biology or
 interventions. Observation events retain separate infection, generic
 symptom-onset, detection and report dates. The daily lifecycle is disease-state
 progression, network refresh, existing intervention step, disease transmission
-and imports, detection delivery, then the future consumer hook. A future M7
+and imports, detection delivery, then the intervention consumer. The M7
 consumer can first change contact or intervention state for the next timestep;
 it cannot retroactively affect completed transmission. The observation horizon
 includes the full latent horizon and a documented maximum-delay tail.
@@ -286,6 +289,27 @@ it is not a Jersey-data calibration or a model-validation claim. Ensemble,
 observation and calibration tables have immutable content-addressed directories
 and manifests.
 
+### Milestone 7 intervention boundary
+
+M7 adds `intervention_schemas.py`, `interventions.py`,
+`intervention_analysis.py`, `intervention_artifacts.py` and `scenario.py`.
+`InterventionManager` is the single Starsim intervention module. It refreshes
+state after the M4 network refresh and before M5 transmission, applies a
+product of active route multipliers to prospective route views, and records
+state/events/effective-route diagnostics. Detection notifications arrive from
+the C4 scheduler after same-day transmission, so case isolation and household
+quarantine begin no earlier than the next timestep.
+
+The manager reads M2/M3 metadata for age, parish, school, job, workplace,
+household and care-setting targeting. It never mutates the generated M4 route
+snapshots. Care roster edges are retained with beta zero when a care
+protection multiplier suppresses them. Vaccination is represented by
+prospective susceptibility/infectiousness modifiers in the generic M5 disease
+module; severity and mortality pathways remain outside M5. Intervention
+artifacts carry parent logical hashes, config/provenance hashes, seed and
+matched-seed coupling diagnostics. The supported M7 CLI and demo YAMLs are
+documented in [`interventions.md`](interventions.md).
+
 ## Stable boundaries for later milestones
 
 - **Contracts:** versioned Pydantic v2 models describe inputs, provenance and
@@ -303,9 +327,12 @@ and manifests.
   parameters; they do not create Jersey households or geography.
 - **Observation:** M6 observed-case generation remains separate from latent
   infections and writes its own configuration, event table and manifest.
-- **Results:** M6 summaries and ensembles carry their configuration, sources,
-  parameters, code state and explicit seed list; matched comparisons preserve
-  seed pairing.
+- **Interventions:** M7 scenarios and experiments carry typed targets,
+  lifecycle controls, route composition, parameter provenance, sensitivity IDs
+  and parent hashes; no travel/visitor controls are included.
+- **Results:** M6/M7 summaries and ensembles carry their configuration,
+  sources, parameters, code state and explicit seed list; matched comparisons
+  preserve seed pairing and separate health outcomes from intervention burden.
 
 Milestone 0 does not create placeholder packages for those future boundaries.
 They are contracts in the documentation only until a milestone requires them.

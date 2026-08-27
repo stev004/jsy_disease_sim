@@ -1,10 +1,9 @@
 # Jersey Outbreak Simulator progress ledger
 
 **Last verified:** 27 August 2026
-**Current branch:** `codex/c4-m7-gate`
+**Current branch:** `codex/m7-interventions`
 **C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
-**Scope:** C4 final M7 gate correction; M7 remains closed and no intervention
-implementation has begun.
+**Scope:** M7 intervention framework and matched-seed experiment gate.
 
 This ledger records the current implementation and verification state. The
 project charter remains the authoritative specification; this file records
@@ -23,7 +22,7 @@ which gates have actually passed and the evidence supporting them.
 | M5 | PASS | Generic respiratory SEIRS demonstration remains compatible with the corrected network |
 | M6 / C3 | PASS | Observation, ensemble, calibration, process-safety and archive contracts verified at `658364c7f02cf44f9392116e7db44c94bdb3175a` |
 | C4 | PASS | Runtime detection delivery, metric-aware ensemble grids, truthful fallback workers and zero-contact boundary verified on a fresh full-island path |
-| M7 | CLOSED | Interventions are intentionally not implemented |
+| M7 | PASS | Typed composable interventions, causal detection effects, route composition, vaccination, artifacts, comparisons and bounded ensembles |
 
 The C3 implementation was committed in `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`;
 its final integrity hardening is the C3 verification commit recorded above.
@@ -173,9 +172,9 @@ C4 samples each infection's observation schedule at event creation using the
 stable replicate/configuration/event stream and queues detected events by
 detection timestep. Starsim's daily order is disease-state progression,
 network refresh, existing intervention step, disease transmission/imports,
-detection delivery and then the read-only future-consumer hook. Any future M7
-state/contact change can first affect the next timestep. No intervention is
-implemented in C4.
+detection delivery and then the read-only intervention consumer. M7 state or
+contact changes can first affect the next timestep. C4 remains responsible
+only for notification scheduling and delivery.
 
 Offline observation artifacts call the same schedule implementation and fail
 if an attached online schedule differs. The ensemble grid registry treats
@@ -247,6 +246,73 @@ compileall: passed
 verification archive check: passed
 ```
 
+## M7 intervention verification
+
+M7 adds a single typed `InterventionManager` with immutable M4 snapshot
+refresh, multiplicative route effects and explicit state/event/provenance
+records. The supported families are case isolation, household quarantine,
+school closure, workplace/commute reduction with WFH scheduling, community
+indoor/outdoor reduction, care-home protection, vaccination, masking and
+gathering reduction. A C4 detection delivered on timestep `t` can first affect
+M5 transmission on `t+1`; overlapping detection-triggered states release by
+the maximum active-until time. Care roster edges are retained with effective
+beta zero when protected, and the generated M4 logical hash remains unchanged.
+
+M7 writes content-addressed state, event, route-effect, scenario, diagnostics
+and manifest artifacts. Matched comparisons retain cumulative/peak health
+outcomes separately from agent-day, household/settings-day and vaccine-dose
+burden, and route shares are paired with absolute counts. The bounded M6
+ensemble path carries explicit scenario/config hashes and intervention state
+metrics. The focused M7 contract suite covers lifecycle validation, neutral
+equivalence, next-timestep causality, calendar families, WFH suppression,
+vaccination delay, care topology and artifact outputs.
+
+The bounded full-population smoke used 104,540 synthetic agents and two daily
+steps on M4 hash
+`6ef553d4c640baf0d441e57bcc70322aa622dd69c2429ab6a9d13843b274cfb6`. The
+baseline ran in 51.52 seconds with 19 transmission events; the representative
+community-indoor intervention ran in 94.36 seconds with 19 events, preserved
+the M4 hash and produced 33 effective-route rows. The measured intervention
+overhead was 42.84 seconds for this bounded run; this is reported as a
+benchmark, not treated as a model-validity result. A bounded CI sensitivity
+pair for WFH plus community reduction produced indoor multipliers 0.5 and 0.9,
+scenario hashes
+`ef16e2eab93aa47bfccaf68e6f6b9ccb558e48e497a8db3ca49ad03866dcb8d1` and
+`f48caffaba743f9a94c6056cd7d9ac4ff4a2043f68aa88a21de4b7475511fb36`, and
+cumulative totals 20 and 23; both retained M4 immutability.
+
+### M7 gate report
+
+| Gate | Status | Evidence |
+|---|---|---|
+| Intervention architecture | PASS | One typed manager, strict scenario/intervention hashes and shared lifecycle |
+| Lifecycle / no retrocausality | PASS | C4 detection delivery; effect is `t+1` plus declared delay |
+| Case isolation | PASS | Detection, adherence, duration, release and route controls |
+| Household quarantine | PASS | Corrected private-household membership; communal residents skipped |
+| School closure/reduction | PASS | Calendar-aware class/cross-class route modifiers and targeting |
+| WFH/workplace reduction | PASS | Worker/sector/workplace targeting, WFH schedules, workplace/commute routes |
+| Community reduction | PASS | Independent indoor/outdoor route multipliers |
+| Care-home protection | PASS | Resident/staff/setting targeting; care roster edges retained |
+| Vaccination | PASS | Rollout, uptake, delay, susceptibility/infectiousness efficacy and waning |
+| Optional masking/gathering | PASS | Generic route-multiplier families use the shared framework |
+| Composition | PASS | Active multipliers are multiplied and clipped to `[0, 1]` |
+| Baseline equivalence | PASS | Neutral route and disease-state contract tests |
+| Matched-seed comparison | PASS | Same-seed baseline/scenario pairing with coupling caveat |
+| Intervention ensembles | PASS | M6 bounded worker planner and explicit replicate records |
+| Metric-aware aggregation | PASS | Intervention state registered as state metrics |
+| Route-shift analysis | PASS | Absolute route counts and relative shares are both emitted |
+| Sensitivity framework | PASS | Named IDs/axes plus bounded CI community-intensity demonstration |
+| Provenance/manifests | PASS | M2/M3/M4/M5/C4/config/git/output hashes are retained |
+| Intervention event logging | PASS | State transitions, triggers and provenance hashes are emitted |
+| Deterministic regeneration | PASS | Stable seeded draws and content-addressed outputs |
+| Full-population compatibility | PASS | 104,540-agent two-day baseline/intervention smoke |
+| Performance | PASS | Bounded overhead measured and recorded above |
+| C1–C4 regression | PASS | Full repository suite passed after M7 integration |
+| Travel controls | PASS / DEFERRED | No travel/import/visitor controls added; boundary is M8 |
+
+Travel, airport, ferry, arrival and visitor controls remain deliberately
+deferred to M8; API and UI are also outside this milestone.
+
 ## Known limitations and boundary
 
 All residents, staff, schools, workplaces, care rosters, carpools and
@@ -255,5 +321,6 @@ capacity, not a whole-island headcount or roster; Care Commission values are
 regulatory minima, not observed staffing. Contact weights remain relative
 daily exposure-opportunity weights and are not separately identified from
 disease transmissibility. Beta recovery is a synthetic demonstration, not
-Jersey surveillance calibration. M7 interventions, API/UI, visitors and
-real-disease validation remain out of scope.
+Jersey surveillance calibration. M7 intervention values are synthetic
+assumptions, and real-disease validation, API/UI, visitors and travel controls
+remain out of scope.

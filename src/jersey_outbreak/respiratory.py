@@ -354,7 +354,24 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
         ordered = self._ordered_uids(
             available, "import", self._import_counter, self._current_date()
         )
-        return ordered[: min(count, len(ordered))]
+        # Exogenous imports are acquisitions too: a vaccine with relative
+        # susceptibility zero must block them, while a partial modifier is
+        # applied prospectively with a stable per-agent draw.  With the
+        # neutral modifier (1.0), this is exactly the prior M5 selection.
+        accepted = [
+            int(uid)
+            for uid in ordered
+            if _stable_key(
+                int(self.sim.pars.rand_seed),
+                "import-susceptibility",
+                self._import_counter,
+                self._current_date(),
+                int(uid),
+            )[0]
+            / 256
+            < max(0.0, min(1.0, float(self.rel_sus.raw[int(uid)])))
+        ]
+        return np.asarray(accepted[: min(count, len(accepted))], dtype=np.int64)
 
     def step(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Run Starsim network transmission and generic exogenous imports."""

@@ -1,0 +1,33 @@
+schema_version: "7.0"
+scenario_id: m7-combined-interventions
+scenario_version: "7.0.0"
+interventions:
+  - intervention_id: combined-school-closure
+    type: school_closure
+    start_date: 2025-01-13
+    end_date: 2025-01-24
+    class_multiplier: 0.0
+    cross_class_multiplier: 0.0
+  - intervention_id: combined-wfh
+    type: workplace_reduction
+    start_date: 2025-01-13
+    end_date: 2025-01-24
+    additional_wfh_fraction: 0.5
+    commute_multiplier: 0.0
+  - intervention_id: combined-case-isolation
+    type: case_isolation
+    duration_days: 5
+    adherence: 0.8
+    route_effects:
+      household: 1.0
+      community_indoor: 0.0
+      community_outdoor: 0.0
+      school_class: 0.0
+      school_cross_class: 0.0
+      workplace_team: 0.0
+      workplace_transient: 0.0
+      care_resident: 0.0
+      care_staff: 0.0
+      shared_vehicle: 0.0
+      bus: 0.0
+notes: Synthetic combined intervention scenario; no policy-authority claim is intended.

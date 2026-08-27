@@ -7,14 +7,16 @@ import resource
 import subprocess
 import time
 from collections import Counter, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml  # type: ignore[import-untyped]
 
 from .hashing import canonical_json_bytes, sha256_bytes
+from .intervention_schemas import ScenarioConfig
+from .interventions import InterventionManager
 from .network_generator import GeneratedNetworks
 from .observation_scheduler import (
     DetectionConsumer,
@@ -52,6 +54,13 @@ class OutbreakRunResult:
     runtime_seconds: float
     peak_memory_bytes: int | None
     observation_schedule: ObservationScheduleSnapshot | None = None
+    observation_config: ObservationConfig | None = None
+    intervention_state: list[dict[str, Any]] = field(default_factory=list)
+    intervention_events: list[dict[str, Any]] = field(default_factory=list)
+    intervention_route_effects: list[dict[str, Any]] = field(default_factory=list)
+    intervention_diagnostics: dict[str, Any] = field(default_factory=dict)
+    scenario_hash: str | None = None
+    scenario_config: ScenarioConfig | None = None
 
 
 def load_parameter_set(root: Path, path: Path | None = None) -> RespiratoryParameterSet:
@@ -148,8 +157,10 @@ def run_outbreak(
     *,
     observation_config: ObservationConfig | None = None,
     detection_consumer: DetectionConsumer | None = None,
+    scenario: ScenarioConfig | None = None,
+    interventions: tuple[Any, ...] | list[Any] | None = None,
 ) -> OutbreakRunResult:
-    """Run the generic respiratory disease through the unchanged M4 route stack."""
+    """Run the generic respiratory disease with optional prospective interventions."""
 
     if generated.config.mode != config.mode or generated.config.seed != config.seed:
         raise ValueError("M5 run controls must match the M4 route artifact mode and seed")
@@ -157,6 +168,45 @@ def run_outbreak(
         raise ValueError("run parameter_set_id does not match the loaded parameter set")
     if config.dt_days != 1.0:
         raise ValueError("M5 currently supports only the verified daily Starsim timestep")
+    if scenario is not None and interventions is not None:
+        raise ValueError("pass either scenario or interventions, not both")
+    scenario_for_run = scenario
+    intervention_configs = (
+        tuple(scenario.interventions) if scenario is not None else tuple(interventions or ())
+    )
+    if scenario is None and intervention_configs:
+        scenario_for_run = ScenarioConfig(
+            scenario_id="inline-interventions",
+            interventions=intervention_configs,
+            seed=config.seed,
+            start_date=config.start_date,
+            duration_days=config.duration_days,
+            disease_config_id=parameters.parameter_set_id,
+            observation_config_id=(
+                observation_config.observation_config_id if observation_config else None
+            ),
+        )
+    if scenario_for_run is not None:
+        if scenario_for_run.seed is not None and scenario_for_run.seed != config.seed:
+            raise ValueError("scenario seed must match the outbreak seed")
+        if (
+            scenario_for_run.start_date is not None
+            and scenario_for_run.start_date != config.start_date
+        ):
+            raise ValueError("scenario start_date must match the outbreak start_date")
+        if (
+            scenario_for_run.duration_days is not None
+            and scenario_for_run.duration_days != config.duration_days
+        ):
+            raise ValueError("scenario duration_days must match the outbreak duration_days")
+        if (
+            any(
+                item.type in {"case_isolation", "household_quarantine"}
+                for item in intervention_configs
+            )
+            and observation_config is None
+        ):
+            raise ValueError("detection-triggered interventions require an observation_config")
     route_betas = {
         route_id: config.beta * float(config.route_multipliers[route_id])
         for route_id in generated.route_specs
@@ -181,6 +231,32 @@ def run_outbreak(
         if observation_config is not None
         else None
     )
+    manager = (
+        InterventionManager(
+            generated,
+            intervention_configs,
+            run_seed=config.seed,
+            start_date=config.start_date,
+            duration_days=config.duration_days,
+            scenario=scenario_for_run,
+        )
+        if intervention_configs
+        else None
+    )
+    if manager is not None and scheduler is not None:
+        scheduler.consumer = manager
+        if detection_consumer is not None:
+            # Preserve the C4 probe while making the intervention manager the
+            # causal consumer.  Both see the same immutable notification.
+            manager_consumer = cast(InterventionManager, manager)
+            probe_consumer = cast(DetectionConsumer, detection_consumer)
+
+            class _FanoutConsumer:
+                def consume_detection(self, event: Any) -> None:
+                    manager_consumer.consume_detection(event)
+                    probe_consumer.consume_detection(event)
+
+            scheduler.consumer = _FanoutConsumer()
     disease = RespiratorySEIRS(
         route_betas=route_betas,
         initial_seed_count=config.initial_seed_count,
@@ -200,6 +276,7 @@ def run_outbreak(
         start_date=config.start_date,
         duration_days=config.duration_days,
         seed=config.seed,
+        interventions=[manager] if manager is not None else None,
     )
     if scheduler is not None:
 
@@ -441,6 +518,15 @@ def run_outbreak(
             if observation_schedule is not None
             else {"attached": False}
         ),
+        "intervention": (
+            manager.diagnostics()
+            if manager is not None
+            else {
+                "attached": False,
+                "framework_version": "7.0.0",
+                "travel_controls": "DEFERRED TO M8",
+            }
+        ),
         "benchmark": {
             "n_agents": len(agent_ids),
             "n_points": n_points,
@@ -451,20 +537,48 @@ def run_outbreak(
             "python_version": platform.python_version(),
         },
     }
-    logical_content_hash = sha256_bytes(
-        canonical_json_bytes(
-            {
-                "config": config.model_dump(mode="json"),
-                "parameters": parameters.model_dump(mode="json"),
-                "daily_epidemic": daily_epidemic,
-                "daily_parish": daily_parish,
-                "daily_route": daily_route,
-                "daily_age": daily_age,
-                "transmission_events": events,
-                "network_logical_content_hash": generated.logical_content_hash,
-            }
+    logical_payload: dict[str, Any] = {
+        "config": config.model_dump(mode="json"),
+        "parameters": parameters.model_dump(mode="json"),
+        "daily_epidemic": daily_epidemic,
+        "daily_parish": daily_parish,
+        "daily_route": daily_route,
+        "daily_age": daily_age,
+        "transmission_events": events,
+        "network_logical_content_hash": generated.logical_content_hash,
+    }
+    if manager is not None and scenario_for_run is not None:
+        intervention_config_digest = sha256_bytes(
+            canonical_json_bytes(
+                {
+                    key: value.model_dump(mode="json")
+                    for key, value in sorted(
+                        (item.intervention_id, item) for item in intervention_configs
+                    )
+                }
+            )
         )
-    )
+        logical_payload["interventions"] = {
+            "scenario_hash": scenario_for_run.run_hash(
+                disease_config_hash=sha256_bytes(
+                    canonical_json_bytes(parameters.model_dump(mode="json"))
+                ),
+                network_hash=generated.logical_content_hash,
+                observation_config_hash=(
+                    sha256_bytes(canonical_json_bytes(observation_config.model_dump(mode="json")))
+                    if observation_config is not None
+                    else None
+                ),
+                seed=config.seed,
+                start_date=config.start_date,
+                duration_days=config.duration_days,
+            ),
+            "config_hash": intervention_config_digest,
+            "daily_state": manager.daily_state,
+            "events": manager.event_log,
+            "route_effects": manager.route_effects,
+        }
+    logical_content_hash = sha256_bytes(canonical_json_bytes(logical_payload))
     runtime_seconds = time.perf_counter() - started
     peak_memory_bytes = max(before_memory, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
     diagnostics["benchmark"]["runtime_seconds"] = runtime_seconds
@@ -483,4 +597,28 @@ def run_outbreak(
         runtime_seconds=runtime_seconds,
         peak_memory_bytes=peak_memory_bytes,
         observation_schedule=observation_schedule,
+        observation_config=observation_config,
+        intervention_state=[] if manager is None else list(manager.daily_state),
+        intervention_events=[] if manager is None else list(manager.event_log),
+        intervention_route_effects=[] if manager is None else list(manager.route_effects),
+        intervention_diagnostics={} if manager is None else manager.diagnostics(),
+        scenario_hash=(
+            None
+            if scenario_for_run is None
+            else scenario_for_run.run_hash(
+                disease_config_hash=sha256_bytes(
+                    canonical_json_bytes(parameters.model_dump(mode="json"))
+                ),
+                network_hash=generated.logical_content_hash,
+                observation_config_hash=(
+                    sha256_bytes(canonical_json_bytes(observation_config.model_dump(mode="json")))
+                    if observation_config is not None
+                    else None
+                ),
+                seed=config.seed,
+                start_date=config.start_date,
+                duration_days=config.duration_days,
+            )
+        ),
+        scenario_config=scenario_for_run,
     )

@@ -8,7 +8,7 @@ import platform
 import resource
 import time
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
@@ -16,6 +16,7 @@ import numpy as np
 
 from .ensemble_schemas import EnsembleConfig, EnsembleReplicateRecord
 from .hashing import canonical_json_bytes, sha256_bytes
+from .intervention_schemas import ScenarioConfig
 from .network_generator import GeneratedNetworks, generate_networks
 from .observation import ObservationRunResult, observe_latent_run
 from .observation_schemas import ObservationConfig
@@ -40,6 +41,9 @@ METRIC_SEMANTICS: dict[str, MetricSemantic] = {
     "latent_cumulative_infections": "cumulative",
     "latent_attack_rate": "cumulative",
     "latent_prevalence": "state",
+    "intervention_active_agents": "state",
+    "intervention_active_households": "state",
+    "intervention_active_settings": "state",
 }
 
 
@@ -55,6 +59,8 @@ class ReplicateOutput:
     runtime_seconds: float
     trajectories: tuple[dict[str, Any], ...]
     error: str | None
+    scenario_hash: str | None = None
+    intervention_config_hashes: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -73,6 +79,7 @@ class EnsembleResult:
     m2_logical_content_hash: str
     m3_logical_content_hash: str
     disease_parameter_hash: str
+    scenario_hash: str | None = None
 
 
 @dataclass(frozen=True)
@@ -212,6 +219,35 @@ def _trajectory_rows(
                 "value": row["new_reported_cases"],
             }
         )
+    for row in latent.intervention_state:
+        rows.extend(
+            [
+                {
+                    "seed": seed,
+                    "scope": "intervention",
+                    "key": row["intervention_id"],
+                    "metric": "intervention_active_agents",
+                    "date": row["date"],
+                    "value": row["active_agents"],
+                },
+                {
+                    "seed": seed,
+                    "scope": "intervention",
+                    "key": row["intervention_id"],
+                    "metric": "intervention_active_households",
+                    "date": row["date"],
+                    "value": row["active_households"],
+                },
+                {
+                    "seed": seed,
+                    "scope": "intervention",
+                    "key": row["intervention_id"],
+                    "metric": "intervention_active_settings",
+                    "date": row["date"],
+                    "value": row["active_settings"],
+                },
+            ]
+        )
     return tuple(rows)
 
 
@@ -238,11 +274,17 @@ def _run_replicate_job(job: dict[str, Any]) -> ReplicateOutput:
         )
         parameters = RespiratoryParameterSet.model_validate(job["parameters"])
         observation_config = ObservationConfig.model_validate(job["observation_config"])
+        scenario = (
+            ScenarioConfig.model_validate(job["scenario"]).model_copy(update={"seed": seed})
+            if job.get("scenario") is not None
+            else None
+        )
         latent = run_outbreak(
             generated,
             run_config,
             parameters,
             observation_config=observation_config,
+            scenario=scenario,
         )
         observed = observe_latent_run(latent, observation_config)
         return ReplicateOutput(
@@ -251,6 +293,10 @@ def _run_replicate_job(job: dict[str, Any]) -> ReplicateOutput:
             latent_logical_content_hash=latent.logical_content_hash,
             observation_logical_content_hash=observed.logical_content_hash,
             m4_logical_content_hash=generated.logical_content_hash,
+            scenario_hash=latent.scenario_hash,
+            intervention_config_hashes=latent.intervention_diagnostics.get(
+                "intervention_config_hashes", {}
+            ),
             runtime_seconds=time.perf_counter() - started,
             trajectories=_trajectory_rows(latent, observed, seed),
             error=None,
@@ -486,6 +532,7 @@ def run_ensemble(
     estimated_worker_memory_bytes: int = 1_100_000_000,
     memory_safety_fraction: float = 0.6,
     allow_unsafe_workers: bool = False,
+    scenario: ScenarioConfig | None = None,
 ) -> EnsembleResult:
     """Run explicit seeds sequentially or in a bounded process pool."""
 
@@ -496,6 +543,7 @@ def run_ensemble(
         ensemble_id=ensemble_id,
         base_run_config=base_run_config,
         observation_config=observation_config,
+        scenario=scenario,
         replicate_seeds=replicate_seeds,
         workers=workers,
         estimated_worker_memory_bytes=estimated_worker_memory_bytes,
@@ -524,6 +572,7 @@ def run_ensemble(
         "base_run_config": base_run_config,
         "parameters": parameters,
         "observation_config": observation_config,
+        "scenario": scenario,
     }
     jobs = [{**job_base, "seed": seed} for seed in config.replicate_seeds]
     requested_workers = config.workers
@@ -568,6 +617,8 @@ def run_ensemble(
             latent_run_logical_content_hash=output.latent_logical_content_hash,
             observation_logical_content_hash=output.observation_logical_content_hash,
             m4_logical_content_hash=output.m4_logical_content_hash,
+            scenario_hash=output.scenario_hash,
+            intervention_config_hashes=output.intervention_config_hashes,
             runtime_seconds=output.runtime_seconds,
             error=output.error,
         )
@@ -687,6 +738,7 @@ def run_ensemble(
         disease_parameter_hash=sha256_bytes(
             canonical_json_bytes(parameters.model_dump(mode="json"))
         ),
+        scenario_hash=(scenario.config_hash if scenario is not None else None),
     )
 
 
