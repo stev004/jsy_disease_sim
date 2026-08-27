@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import hashlib
 import platform
 import resource
-import subprocess
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -13,17 +11,12 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import yaml  # type: ignore[import-untyped]
 
 from .hashing import canonical_json_bytes, sha256_bytes
+from .observation_scheduler import DetectionEvent, build_offline_schedule
 from .observation_schemas import ObservationConfig
 from .outbreak_runner import OutbreakRunResult
-
-
-def _stable_seed(seed: int, *parts: object) -> int:
-    digest = hashlib.sha256("|".join(str(part) for part in (seed, *parts)).encode()).digest()
-    return int.from_bytes(digest[:8], byteorder="little", signed=False)
 
 
 def load_observation_config(root: Path, path: Path | None = None) -> ObservationConfig:
@@ -71,104 +64,12 @@ class ObservationRunResult:
         return iter(self.detection_events)
 
 
-@dataclass(frozen=True)
-class DetectionEvent:
-    """A causal detection notification for a future intervention consumer.
-
-    This interface is intentionally observational: creating a detection event
-    does not mutate disease state or any contact route.
-    """
-
-    agent_uid: int
-    agent_id: str
-    detection_date: str
-    detection_time_index: int
-    detection_reason: str
-    symptomatic: bool
-    observation_config_id: str
-    provenance: dict[str, Any]
-
-
-def _age_band(age: int) -> str:
-    if age <= 4:
-        return "0-4"
-    if age <= 17:
-        return "5-17"
-    if age <= 64:
-        return "18-64"
-    return "65+"
-
-
 def _date_range(start: date, end: date) -> list[date]:
     return [start + timedelta(days=offset) for offset in range((end - start).days + 1)]
 
 
-def _probability(config: ObservationConfig, name: str) -> float:
-    value = config.numeric(name)
-    if not 0 <= value <= 1:
-        raise ValueError(f"observation probability {name!r} must be in [0, 1]")
-    return value
-
-
-def _delay_sampler(
-    config: ObservationConfig,
-    rng: np.random.Generator,
-    distribution: Any | None = None,
-) -> int:
-    delay = distribution or config.reporting_delay
-    if delay.kind == "fixed":
-        return int(delay.days[0])
-    probabilities = np.asarray(delay.probabilities, dtype=float)
-    return int(rng.choice(np.asarray(delay.days, dtype=np.int64), p=probabilities))
-
-
 def _maximum_delay(distribution: Any) -> int:
     return max(int(day) for day in distribution.days)
-
-
-def _observation_stream_seed(latent_run: OutbreakRunResult, config: ObservationConfig) -> int:
-    """Derive an observation stream from replicate, config and namespace identity."""
-
-    return _stable_seed(
-        latent_run.config.seed,
-        config.observation_seed,
-        config.observation_config_id,
-        "observation",
-    )
-
-
-def _event_stream_seed(stream_seed: int, event: dict[str, Any], event_rank: int) -> int:
-    """Make event draws replicate-specific without depending on rank alone."""
-
-    return _stable_seed(
-        stream_seed,
-        "infection-event",
-        event.get("infected_uid", event["infected_agent_id"]),
-        event["infected_agent_id"],
-        event["date"],
-        event_rank,
-    )
-
-
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        status = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        return commit.stdout.strip() or None, bool(status.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def observe_latent_run(
@@ -184,97 +85,35 @@ def observe_latent_run(
 
     started = time.perf_counter()
     before_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    symptomatic_probability = _probability(config, "symptomatic_probability")
-    symptomatic_detection_probability = _probability(config, "symptomatic_detection_probability")
-    asymptomatic_detection_probability = _probability(config, "asymptomatic_detection_probability")
-    stream_seed = _observation_stream_seed(latent_run, config)
     m3_by_agent = {row["agent_id"]: row for row in latent_run.generated.m3_input.resident_structure}
-    ordered_events = sorted(
+    agent_id_by_uid = {uid: agent_id for uid, agent_id in enumerate(latent_run.generated.agent_ids)}
+    offline_schedule = build_offline_schedule(
         latent_run.transmission_events,
-        key=lambda event: (event["date"], event["infected_agent_id"]),
+        latent_seed=latent_run.config.seed,
+        start_date=latent_run.config.start_date,
+        config=config,
+        agent_id_by_uid=agent_id_by_uid,
+        resident_by_agent_id=m3_by_agent,
     )
-    observation_events: list[dict[str, Any]] = []
-    detection_events: list[DetectionEvent] = []
-    for event in ordered_events:
-        agent_id = event["infected_agent_id"]
-        resident = m3_by_agent[agent_id]
-        infection_date = date.fromisoformat(event["date"])
-        event_rng = np.random.default_rng(
-            _event_stream_seed(stream_seed, event, len(observation_events))
+    observation_events = list(offline_schedule.observation_events)
+    detection_events = offline_schedule.detection_events
+    detection_payloads = [
+        {**event.__dict__, "provenance": dict(event.provenance)} for event in detection_events
+    ]
+    online_schedule = latent_run.observation_schedule
+    online_agreement = None
+    if online_schedule is not None:
+        online_payloads = [
+            {**event.__dict__, "provenance": dict(event.provenance)}
+            for event in online_schedule.detection_events
+        ]
+        online_agreement = (
+            online_schedule.observation_events == offline_schedule.observation_events
+            and online_payloads == detection_payloads
+            and online_schedule.stream_fingerprint == offline_schedule.stream_fingerprint
         )
-        symptomatic = bool(event_rng.random() < symptomatic_probability)
-        symptom_delay = (
-            _delay_sampler(config, event_rng, config.symptom_onset_delay) if symptomatic else None
-        )
-        symptom_date = (
-            infection_date + timedelta(days=symptom_delay) if symptom_delay is not None else None
-        )
-        detection_anchor = symptom_date or infection_date
-        day_effect = config.day_of_week_effect[detection_anchor.weekday()]
-        detection_probability = (
-            symptomatic_detection_probability if symptomatic else asymptomatic_detection_probability
-        ) * day_effect
-        tested = bool(event_rng.random() < detection_probability)
-        detection_delay = (
-            _delay_sampler(config, event_rng, config.detection_delay) if tested else None
-        )
-        detection_date = (
-            detection_anchor + timedelta(days=detection_delay)
-            if detection_delay is not None
-            else None
-        )
-        reporting_delay = (
-            _delay_sampler(config, event_rng, config.reporting_delay) if tested else None
-        )
-        report_date = (
-            detection_date + timedelta(days=reporting_delay)
-            if detection_date is not None and reporting_delay is not None
-            else None
-        )
-        detection_reason = (
-            "symptomatic_test"
-            if tested and symptomatic
-            else "asymptomatic_test"
-            if tested
-            else "not_detected"
-        )
-        row = {
-            "infected_agent_id": agent_id,
-            "infected_uid": int(event.get("infected_uid", -1)),
-            "infection_date": infection_date.isoformat(),
-            "symptom_onset_date": symptom_date.isoformat() if symptom_date else None,
-            "detection_date": detection_date.isoformat() if detection_date else None,
-            "report_date": report_date.isoformat() if report_date else None,
-            "symptom_onset_delay_days": symptom_delay,
-            "detection_delay_days": detection_delay,
-            "reporting_delay_days": reporting_delay,
-            "symptomatic": symptomatic,
-            "tested": tested,
-            "detected": tested,
-            "detection_reason": detection_reason,
-            "source_kind": event["source_kind"],
-            "route_id": event["route_id"],
-            "home_parish": resident["home_parish"],
-            "age_band": _age_band(int(resident["age"])),
-        }
-        observation_events.append(row)
-        if tested and detection_date is not None:
-            detection_events.append(
-                DetectionEvent(
-                    agent_uid=int(event.get("infected_uid", -1)),
-                    agent_id=agent_id,
-                    detection_date=detection_date.isoformat(),
-                    detection_time_index=(detection_date - latent_run.config.start_date).days,
-                    detection_reason=detection_reason,
-                    symptomatic=symptomatic,
-                    observation_config_id=config.observation_config_id,
-                    provenance={
-                        "observation_config_id": config.observation_config_id,
-                        "observation_config_status": "scenario_assumption",
-                        "intervention_consumed": False,
-                    },
-                )
-            )
+        if not online_agreement:
+            raise RuntimeError("offline observation schedule disagrees with runtime schedule")
 
     latent_start = date.fromisoformat(latent_run.daily_epidemic[0]["date"])
     latent_end = date.fromisoformat(latent_run.daily_epidemic[-1]["date"])
@@ -438,8 +277,10 @@ def observe_latent_run(
         },
         "detection_event_interface": {
             "event_count": len(detection_events),
-            "consumer": "none; interface only",
+            "consumer": "runtime consumer hook; none attached for offline aggregation",
             "mutates_latent_or_routes": False,
+            "runtime_delivery": online_schedule is not None,
+            "offline_online_agreement": online_agreement,
             "fields": [
                 "agent_uid",
                 "detection_date",
@@ -461,9 +302,11 @@ def observe_latent_run(
                 "infected_uid",
                 "infected_agent_id",
                 "infection_date",
-                "event_rank",
+                "source_kind",
+                "route_id",
+                "infector_uid",
             ],
-            "stream_fingerprint": hashlib.sha256(str(stream_seed).encode()).hexdigest(),
+            "stream_fingerprint": offline_schedule.stream_fingerprint,
         },
         "parish_semantics": "Grouped by synthetic resident home parish, not infection location.",
         "latent_outputs_untouched": True,
@@ -485,7 +328,7 @@ def observe_latent_run(
                 "daily_observed_parish": daily_observed_parish,
                 "daily_observed_age": daily_observed_age,
                 "observation_events": observation_events,
-                "detection_events": [event.__dict__ for event in detection_events],
+                "detection_events": detection_payloads,
             }
         )
     )

@@ -52,6 +52,7 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
         infectious_period_days: float = 5.0,
         immunity_duration_days: float = 30.0,
         waning_enabled: bool = True,
+        observation_scheduler: Any | None = None,
     ) -> None:
         ss = _load_starsim()
         super().__init__()
@@ -98,6 +99,7 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
         self._seed_uids: list[int] = []
         self._import_counter = 0
         self._last_attribution_evidence: dict[int, dict[str, Any]] = {}
+        self._observation_scheduler = observation_scheduler
         return
 
     @property
@@ -154,6 +156,8 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
                 event.update(evidence)
             self._events_by_ti[ti].append(event)
             self._all_events.append(event)
+            if self._observation_scheduler is not None:
+                self._observation_scheduler.schedule_infection(event)
 
     def _order_invariant_infect(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Run Starsim's network transmission kernel with order-invariant attribution.

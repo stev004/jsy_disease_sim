@@ -77,7 +77,7 @@ class EnsembleReplicateRecord(StrictModel):
 class EnsembleArtifactManifest(StrictModel):
     """Manifest for a complete or explicitly partial ensemble."""
 
-    manifest_schema_version: Literal["1.1"] = "1.1"
+    manifest_schema_version: Literal["1.2"] = "1.2"
     artifact_id: NonEmptyString
     logical_content_hash: NonEmptyString
     generator_version: NonEmptyString = "6.1.0"
@@ -88,6 +88,11 @@ class EnsembleArtifactManifest(StrictModel):
     replicate_count: StrictInt
     successful_replicates: StrictInt
     failed_replicates: StrictInt
+    requested_workers: StrictInt
+    planned_workers: StrictInt
+    actual_workers: StrictInt
+    execution_mode: NonEmptyString
+    fallback_reason: str | None = None
     m2_logical_content_hash: NonEmptyString
     m3_logical_content_hash: NonEmptyString
     m4_logical_content_hashes: dict[str, NonEmptyString]
@@ -126,6 +131,8 @@ class EnsembleArtifactManifest(StrictModel):
             raise ValueError("replicate status counts do not reconcile")
         if self.runtime_seconds < 0:
             raise ValueError("ensemble runtime must be non-negative")
+        if not 1 <= self.actual_workers <= self.planned_workers <= self.requested_workers:
+            raise ValueError("actual/planned/requested worker counts do not reconcile")
         return self
 
 

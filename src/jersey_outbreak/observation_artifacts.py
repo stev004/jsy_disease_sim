@@ -173,7 +173,7 @@ def write_observation_artifact(
     # Keep the event-interface provenance JSON-friendly in the persisted table.
     detection_table = pa.Table.from_pylist(
         [
-            {**event.__dict__, "provenance": json.dumps(event.provenance, sort_keys=True)}
+            {**event.__dict__, "provenance": json.dumps(dict(event.provenance), sort_keys=True)}
             for event in result.detection_events
         ],
         schema=pa.schema(

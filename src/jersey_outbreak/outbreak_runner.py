@@ -16,6 +16,12 @@ import yaml  # type: ignore[import-untyped]
 
 from .hashing import canonical_json_bytes, sha256_bytes
 from .network_generator import GeneratedNetworks
+from .observation_scheduler import (
+    DetectionConsumer,
+    ObservationScheduler,
+    ObservationScheduleSnapshot,
+)
+from .observation_schemas import ObservationConfig
 from .outbreak_schemas import ROUTE_IDS, OutbreakRunConfig, RespiratoryParameterSet
 from .population_schemas import PopulationMode
 from .respiratory import RespiratorySEIRS
@@ -45,6 +51,7 @@ class OutbreakRunResult:
     logical_content_hash: str
     runtime_seconds: float
     peak_memory_bytes: int | None
+    observation_schedule: ObservationScheduleSnapshot | None = None
 
 
 def load_parameter_set(root: Path, path: Path | None = None) -> RespiratoryParameterSet:
@@ -138,6 +145,9 @@ def run_outbreak(
     generated: GeneratedNetworks,
     config: OutbreakRunConfig,
     parameters: RespiratoryParameterSet,
+    *,
+    observation_config: ObservationConfig | None = None,
+    detection_consumer: DetectionConsumer | None = None,
 ) -> OutbreakRunResult:
     """Run the generic respiratory disease through the unchanged M4 route stack."""
 
@@ -156,6 +166,21 @@ def run_outbreak(
 
     started = time.perf_counter()
     before_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    agent_ids = generated.agent_ids
+    agent_id_by_uid = {uid: agent_id for uid, agent_id in enumerate(agent_ids)}
+    m3_by_agent = {row["agent_id"]: row for row in generated.m3_input.resident_structure}
+    scheduler = (
+        ObservationScheduler(
+            latent_seed=config.seed,
+            start_date=config.start_date,
+            config=observation_config,
+            agent_id_by_uid=agent_id_by_uid,
+            resident_by_agent_id=m3_by_agent,
+            consumer=detection_consumer,
+        )
+        if observation_config is not None
+        else None
+    )
     disease = RespiratorySEIRS(
         route_betas=route_betas,
         initial_seed_count=config.initial_seed_count,
@@ -166,6 +191,7 @@ def run_outbreak(
         infectious_period_days=config.infectious_period_days,
         immunity_duration_days=config.immunity_duration_days,
         waning_enabled=config.waning_enabled,
+        observation_scheduler=scheduler,
     )
     network_hash_before = generated.logical_content_hash
     sim = build_starsim_disease_sim(
@@ -175,13 +201,17 @@ def run_outbreak(
         duration_days=config.duration_days,
         seed=config.seed,
     )
+    if scheduler is not None:
+
+        def deliver_detection_notifications(_sim: Any) -> None:
+            scheduler.deliver_due(int(disease.ti))
+
+        sim.loop.insert(deliver_detection_notifications, label=f"{disease.name}.step")
     sim.run(verbose=0)
     if generated.logical_content_hash != network_hash_before:
         raise RuntimeError("M5 mutated the M4 route artifact")
 
-    agent_ids = generated.agent_ids
-    agent_id_by_uid = {uid: agent_id for uid, agent_id in enumerate(agent_ids)}
-    m3_by_agent = {row["agent_id"]: row for row in generated.m3_input.resident_structure}
+    observation_schedule = scheduler.snapshot() if scheduler is not None else None
     events: list[dict[str, Any]] = []
     for event in disease._all_events:
         target_uid = int(event["infected_uid"])
@@ -390,6 +420,27 @@ def run_outbreak(
             "realized_imports": attribution_totals["imported"],
         },
         "parameter_provenance": parameters.model_dump(mode="json"),
+        "online_observation_scheduler": (
+            {
+                "attached": True,
+                "consumer_attached": detection_consumer is not None,
+                "scheduled_detection_count": len(observation_schedule.detection_events),
+                "delivered_detection_count": len(observation_schedule.delivered_detection_events),
+                "pending_after_latent_horizon": observation_schedule.pending_detection_count,
+                "lifecycle_order": [
+                    "disease_state_progression",
+                    "network_refresh",
+                    "existing_intervention_step",
+                    "disease_transmission_and_imports",
+                    "detection_delivery",
+                    "future_consumer_hook",
+                ],
+                "earliest_consumer_effect": "next_timestep",
+                "no_retroactive_transmission_effect": True,
+            }
+            if observation_schedule is not None
+            else {"attached": False}
+        ),
         "benchmark": {
             "n_agents": len(agent_ids),
             "n_points": n_points,
@@ -431,4 +482,5 @@ def run_outbreak(
         logical_content_hash=logical_content_hash,
         runtime_seconds=runtime_seconds,
         peak_memory_bytes=peak_memory_bytes,
+        observation_schedule=observation_schedule,
     )

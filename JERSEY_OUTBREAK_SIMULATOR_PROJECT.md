@@ -3,7 +3,7 @@
 ## Codex-ready project charter, architecture and implementation plan
 
 **Working title:** Jersey Outbreak Simulator (JOS)  
-**Status:** Implementation through M6 complete; C1, C2 and C3 corrective
+**Status:** Implementation through M6 complete; C1, C2, C3 and C4 corrective
 closures PASS; M7 CLOSED
 **Prepared:** 25 August 2026  
 **Primary engine:** Starsim 3.5.2 or the latest verified compatible 3.5.x release  
@@ -23,9 +23,10 @@ This is achievable as a strong research prototype in roughly a week of concentra
 
 As of 27 August 2026, M0–M6 are implemented and verified, with the C1
 employment/population closure, C2 network-semantics closure and C3
-observation/verification closure all passing. M7 remains deliberately closed:
-interventions have not been implemented. No C4 work has begun. The current
-commit, gate evidence, hashes, benchmarks and limitations are maintained in
+observation/verification closure all passing. C4 is a bounded correction to
+runtime detection and ensemble semantics. M7 remains deliberately closed:
+interventions have not been implemented. The current commit, gate evidence,
+hashes, benchmarks and limitations are maintained in
 [`docs/progress.md`](docs/progress.md).
 
 ---

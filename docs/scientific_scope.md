@@ -3,11 +3,11 @@
 ## Current verified status
 
 The C3 verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`.
-M0–M6 and corrective closures C1–C3 are PASS; M7 is CLOSED. The full
+M0–M6 and corrective closures C1–C4 are PASS; M7 is CLOSED. The full
 104,540-agent corrected stack constructs and executes through Starsim 3.5.2,
 and the quantitative evidence is recorded in
-[`progress.md`](progress.md). No C4, intervention, API/UI or visitor work has
-been implemented.
+[`progress.md`](progress.md). C4 remains a bounded M6 correction; no M7
+intervention, API/UI or visitor work has been implemented.
 
 ## What this repository demonstrates
 
@@ -152,9 +152,11 @@ official Jersey evidence and cannot establish model validity.
 
 ### Milestone 6 / C3 observation semantics
 
-C3 keeps the latent M5 event table intact while making the causal observation
-timeline explicit: infection, optional generic symptom-onset anchor, testing/
-detection, and report dates are separate fields. The analysis horizon is the
+C4 keeps the latent M5 event table intact while making the observation timeline
+runtime-causal: infection, optional generic symptom-onset anchor, testing/
+detection, and report dates are separate fields. Infection schedules are
+sampled when events occur and due notifications are delivered after that day's
+transmission. A future consumer can first affect the next timestep. The analysis horizon is the
 complete latent horizon plus either an explicitly configured delay tail or the
 maximum configured symptom, detection and reporting delays. Latent incidence is
 therefore conserved even when an event is never detected or reported. Detection
@@ -164,10 +166,10 @@ they do not implement isolation or any other intervention.
 Observation draws use a stream derived from latent replicate seed, observation
 seed and configuration identity, with stable event keys. Different latent
 replicate seeds therefore do not silently reuse the same observation random
-sequence. Ensemble summaries use explicit date grids with zero-filled missing
-metric/date cells and retain failed replicate status separately from successful
-contributors. Requested process workers are bounded by available physical
-memory and CPU unless an explicit unsafe override is used.
+sequence. Ensemble summaries use explicit date grids: missing incidence is a
+structural zero, cumulative values carry forward, and state/prevalence is not
+fabricated beyond the latent horizon. Failed replicates are non-contributors.
+Requested, planned and actual process workers are recorded separately.
 
 The verification archive is a separate retained index for ignored/generated
 outputs. It records the clean Git commit, parent logical hashes, source-manifest
@@ -179,10 +181,11 @@ the current commit and parent logical hashes; its archive logical hash is
 `32627c432c65e89250ee40d68a9382bb9b463f5076015dd6be5e62acab70bba4`.
 
 The full M3 benchmark has 104,540 synthetic residents, 13,991 school
-assignments, 8,500 workplaces and 62,108 job assignments. These counts show
-that the generated artifact reconciles to the selected controls; they do not
-validate the underlying behavioural mechanisms or establish a Jersey contact
-network.
+assignments, 8,500 private undertakings, 270 synthetic non-private workplaces
+(8,770 operational workplaces) and 62,108 job assignments. Employer identity
+and ownership remain synthetic and unobserved. These counts show that the
+generated artifact reconciles to the selected controls; they do not validate
+the underlying behavioural mechanisms or establish a Jersey contact network.
 
 ## Scientific rules
 

@@ -7,7 +7,7 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–6 plus corrective closures C1–C3**:
+This repository contains **Milestones 0–6 plus corrective closures C1–C4**:
 repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
@@ -26,11 +26,12 @@ Starsim owns network transmission, while JOS records
 route-attributed latent infections and writes tidy daily epidemic, parish, age
 and route tables. Demonstration values are scenario assumptions, not Jersey
 surveillance controls.
-The C3 closure now separates latent infection, symptom, detection and report
-timing, exposes causal detection events, completes ensemble date grids,
-isolates observation randomness by replicate/configuration, bounds process
-workers by memory, and supports synthetic held-out beta recovery. C1, C2 and
-C3 are PASS; M7 is CLOSED and no intervention code has been started. The
+The C4 correction samples observation schedules when infections occur, delivers
+detections at their simulation timestep through a read-only consumer hook, and
+uses metric-aware ensemble grids. Observation randomness remains isolated by
+replicate/configuration, process execution records requested/planned/actual
+workers, and synthetic held-out beta recovery remains available. M7 is CLOSED:
+no isolation, quarantine or other intervention code has been started. The
 quantitative gate record is in [`docs/progress.md`](docs/progress.md).
 The Starsim demo is an official SIR example using Starsim's built-in
 `RandomNet`; it is not a Jersey outbreak reconstruction or a validated
@@ -58,10 +59,11 @@ networks or contact edges, disease states, interventions, visitors, an API or a
 UI; it is not a Jersey outbreak model.
 
 The verified full M3 artifact contains 104,540 residents, 48 synthetic schools,
-703 classes, 13,991 school assignments, 8,500 workplaces, 4,387 teams and
-62,108 job assignments. All 50 M3 diagnostics checks pass. These are synthetic
-structures and aggregate-control reconciliations, not observations about named
-people, real schools or real employers.
+703 classes, 13,991 school assignments, 8,500 private undertakings plus 270
+synthetic non-private workplaces (8,770 operational workplaces), 4,387 teams
+and 62,108 job assignments. All 50 M3 diagnostics checks pass. These are
+synthetic structures and aggregate-control reconciliations, not observations
+about named people, real schools, employer identities or workplace ownership.
 
 Milestone 4 converts the validated M2/M3 artifacts into reproducible household,
 school, workplace, care, transport and community route tables. It keeps fixed,

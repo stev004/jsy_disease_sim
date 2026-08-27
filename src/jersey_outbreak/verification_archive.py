@@ -103,6 +103,7 @@ def write_verification_archive(
     output_dir: Path,
     *,
     verification_id: str,
+    milestone: str = "C3",
     parent_hashes: dict[str, str],
     layer_hashes: dict[str, str],
     source_manifest_hashes: dict[str, str] | None = None,
@@ -135,7 +136,7 @@ def write_verification_archive(
     }
     payload = {
         "verification_id": verification_id,
-        "milestone": "C3",
+        "milestone": milestone,
         "git_commit": git_commit,
         "dirty_worktree_flag": dirty_worktree,
         "parent_hashes": parent_hashes,
@@ -160,6 +161,7 @@ def write_verification_archive(
     artifacts = _artifact_records(archive_directory, (summary_path,))
     manifest = VerificationManifest(
         verification_id=verification_id,
+        milestone=milestone,
         status="passed",
         git_commit=git_commit,
         dirty_worktree_flag=dirty_worktree,

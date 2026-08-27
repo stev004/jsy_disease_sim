@@ -25,8 +25,24 @@ def test_ensemble_config_requires_explicit_unique_seeds(
 
 def test_ensemble_summary_quantiles_use_declared_linear_definition() -> None:
     trajectories = {
-        1: ({"scope": "epidemic", "key": "all", "metric": "x", "date": "2025-01-01", "value": 1},),
-        2: ({"scope": "epidemic", "key": "all", "metric": "x", "date": "2025-01-01", "value": 3},),
+        1: (
+            {
+                "scope": "epidemic",
+                "key": "all",
+                "metric": "latent_new_infections",
+                "date": "2025-01-01",
+                "value": 1,
+            },
+        ),
+        2: (
+            {
+                "scope": "epidemic",
+                "key": "all",
+                "metric": "latent_new_infections",
+                "date": "2025-01-01",
+                "value": 3,
+            },
+        ),
     }
     rows = _summary_rows(trajectories, 0.25, 0.75)
     assert rows[0]["lower_value"] == 1.5

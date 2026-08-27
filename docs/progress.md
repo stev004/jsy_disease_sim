@@ -1,9 +1,10 @@
 # Jersey Outbreak Simulator progress ledger
 
 **Last verified:** 27 August 2026
-**Current branch:** `codex/c2-network-semantics`
+**Current branch:** `codex/c4-m7-gate`
 **C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
-**Scope:** C3 only; M7 remains closed and no C4 or M7 implementation has begun.
+**Scope:** C4 final M7 gate correction; M7 remains closed and no intervention
+implementation has begun.
 
 This ledger records the current implementation and verification state. The
 project charter remains the authoritative specification; this file records
@@ -21,11 +22,11 @@ which gates have actually passed and the evidence supporting them.
 | C2 | PASS | Nested-route, overlap-policy, shared-vehicle, age-mixing, persistence, calendar and attribution blockers closed in `4dade853dda9c9f7e63df3fc80df10297b41db06` |
 | M5 | PASS | Generic respiratory SEIRS demonstration remains compatible with the corrected network |
 | M6 / C3 | PASS | Observation, ensemble, calibration, process-safety and archive contracts verified at `658364c7f02cf44f9392116e7db44c94bdb3175a` |
+| C4 | PASS | Runtime detection delivery, metric-aware ensemble grids, truthful fallback workers and zero-contact boundary verified on a fresh full-island path |
 | M7 | CLOSED | Interventions are intentionally not implemented |
 
 The C3 implementation was committed in `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`;
-the final integrity hardening is the current commit above. The worktree is
-clean.
+its final integrity hardening is the C3 verification commit recorded above.
 
 ## C1 evidence summary
 
@@ -131,19 +132,22 @@ representative term weekdays; institution-specific inset days are not
 modelled. Route attribution uses the successful multi-route hazard mixture,
 with a stable target/timestep draw independent of route insertion order.
 
-## C3 implementation and verification
+## C3 implementation and C4 correction
 
 C3 keeps M5 latent events immutable and adds:
 
 - separate infection, generic symptom-onset, detection/testing and report
   dates, with a full latent horizon plus explicit/derived delay tail;
-- a read-only `DetectionEvent` interface without isolation or interventions;
+- separate observation schedules and a post-processing `DetectionEvent`
+  structure, subsequently made runtime-causal by C4 without isolation or
+  interventions;
 - observation RNG keyed by latent replicate seed, observation seed,
   configuration identity and stable event identity;
-- complete ensemble date grids with explicit zeroes for missing values and
-  truthful failed-replicate records;
-- memory-aware process-worker bounds and diagnostics distinguishing requested
-  from actual workers;
+- explicit ensemble date grids, subsequently corrected by C4 to use incidence,
+  cumulative and state/prevalence semantics with truthful failed-replicate
+  records;
+- memory-aware process-worker bounds, subsequently corrected by C4 to
+  distinguish requested, planned and actual workers after fallback;
 - synthetic train/held-out beta recovery, reporting-delay recovery and
   ascertainment/route-weight sensitivity diagnostics;
 - content-addressed observation, ensemble and calibration artifacts; and
@@ -154,13 +158,64 @@ The final retained archive was verified with logical hash
 recorded the current Git commit, parent logical hashes, source-manifest hash,
 command results and benchmark metadata.
 
-The C3 sub-gates are all PASS: observation horizon and latent-incidence
-conservation; infection/symptom/detection/report chronology; causal detection
-event exposure; replicate/configuration RNG separation; complete ensemble
-date grids and failed-replicate semantics; truthful matched-seed diagnostics;
-memory-safe process execution; synthetic beta recovery and confounding
-profiles; indexed observation aggregation; immutable archive integrity; and
-M5/M6 forward compatibility.
+The C3 sub-gates remain PASS for observation horizon and latent-incidence
+conservation; infection/symptom/detection/report chronology;
+replicate/configuration RNG separation; matched-seed diagnostics; memory-safe
+process planning; synthetic beta recovery and confounding profiles; indexed
+observation aggregation; immutable archive integrity; and M5/M6 forward
+compatibility. C4 supplies the later runtime-causality and metric-grid
+corrections rather than retroactively describing C3's post-processing objects
+as runtime-causal.
+
+## C4 corrective verification
+
+C4 samples each infection's observation schedule at event creation using the
+stable replicate/configuration/event stream and queues detected events by
+detection timestep. Starsim's daily order is disease-state progression,
+network refresh, existing intervention step, disease transmission/imports,
+detection delivery and then the read-only future-consumer hook. Any future M7
+state/contact change can first affect the next timestep. No intervention is
+implemented in C4.
+
+Offline observation artifacts call the same schedule implementation and fail
+if an attached online schedule differs. The ensemble grid registry treats
+incidence gaps as structural zeroes, carries cumulative values forward and
+marks state/prevalence after actual evolution as outside the metric horizon.
+Per-cell semantics and requested/successful/failed/contributing replicate
+counts are retained; failed replicates never become zero observations.
+
+The controlled cumulative counterexample now has median cumulative infections
+`27.5 -> 27.5 -> 27.5`; attack rate also carries forward, incidence may become
+zero, and prevalence has zero contributors outside its horizon. A controlled
+process-pool failure records requested/planned/actual workers as `2/2/1` with
+`execution_mode=sequential_fallback`. Configuring either community contact
+component to zero produces zero edges for that component.
+
+Fresh verification results were:
+
+```text
+9 targeted C4 tests passed in 6.29s
+44 combined C2-C4/M5/M6 tests passed in 114.22s
+89 full pytest tests passed in 113.85s
+ruff check: passed
+ruff format --check: passed (63 files already formatted)
+targeted mypy: Success, no issues found in 14 source files
+uv lock --check: passed (67 packages resolved)
+git diff --check: passed
+```
+
+The fresh representative full-island path produced 104,540 agents and executed
+all 11 route families through Starsim 3.5.2. Its hashes were M2
+`bc1e30281edc211dd860cd515450029e2e549cf2b33297d679b9c4b6b975296a`, M3
+`b445ee6eb8f366bd07157a1ca8d3f5757892609a5067bf33d5df061b86aad9b7`,
+M4/C2 `6ef553d4c640baf0d441e57bcc70322aa622dd69c2429ab6a9d13843b274cfb6`,
+M5 `4130f943eb2a2839caeaa083b9f19d21dcd86997234095d90ddf02bbdc79307c`,
+observation `bfea37ddab85bd756ee186554d6f03abdb2b24c8a5d2d4b752b0a12add419af1`
+and ensemble aggregation
+`cecc9127508cb75292d9914502a6a7bd347842ecc799ea92569a6c46d5c871fb`.
+The run recorded 19 latent events and 12 runtime-delivered detections with exact
+online/offline agreement. Its cumulative tail was `19 -> 19 -> 19`; later
+prevalence cells were `outside_metric_horizon` with zero contributors.
 
 ## Full-population verification
 
@@ -200,5 +255,5 @@ capacity, not a whole-island headcount or roster; Care Commission values are
 regulatory minima, not observed staffing. Contact weights remain relative
 daily exposure-opportunity weights and are not separately identified from
 disease transmissibility. Beta recovery is a synthetic demonstration, not
-Jersey surveillance calibration. M7 interventions, C4 work, API/UI, visitors,
-and real-disease validation remain out of scope.
+Jersey surveillance calibration. M7 interventions, API/UI, visitors and
+real-disease validation remain out of scope.

@@ -2,20 +2,21 @@
 
 ## Current verified implementation status
 
-As of 27 August 2026, M0–M6 and corrective closures C1–C3 are PASS. The C3
+As of 27 August 2026, M0–M6 and corrective closures C1–C4 are PASS. The C3
 verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`; the C3
 implementation commit is `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`, followed
 by verification manifest-integrity hardening and documentation-only commits.
-M7 is CLOSED and no C4 or intervention work has started. Quantitative evidence
-is maintained in
+M7 is CLOSED and the bounded C4 correction does not add interventions.
+Quantitative evidence is maintained in
 [`progress.md`](progress.md).
 
 The full corrected stack produces 104,540 agents, 522,388 structural edges,
 856,050 baseline edges and 1,906,144 selected snapshot edges. A full Starsim
-3.5.2 network-only execution succeeds. C3 additionally verifies causal
-observation timing, independent observation streams, complete ensemble grids,
-memory-bounded worker selection, synthetic train/held-out beta recovery and a
-hash-checked external verification archive.
+3.5.2 network-only execution succeeds. C4 verifies runtime-causal observation
+delivery, independent observation streams, metric-aware ensemble grids,
+truthful fallback worker reporting and a zero-community-contact boundary. The
+synthetic train/held-out beta recovery and hash-checked external archive
+contracts remain intact.
 
 ## Milestone 0–4 boundaries
 
@@ -220,13 +221,22 @@ later-milestone concerns.
 
 ### Milestone 6 observation and ensemble boundary
 
-M6 adds a pure post-processing boundary over the immutable M5 result:
+M6/C4 keeps the immutable M5 result boundary while sampling observation
+schedules during the Starsim run:
 
 ```text
-immutable M5 latent run + observation config
+infection recorded during M5 + observation config
                     |
                     v
-       detected/report-date observation tables
+       stable event-specific schedule sampler
+                    |
+                    +--> detection-time priority queue
+                    |        |
+                    |        +--> delivery after disease transmission
+                    |        +--> read-only future-consumer hook
+                    |
+                    v
+       offline detected/report-date tables
                     |
                     +--> explicit-seed replicate trajectories
                     |        |
@@ -236,19 +246,25 @@ immutable M5 latent run + observation config
        +--> synthetic-only Optuna recovery artifact
 ```
 
-C3 closes the remaining observation and verification contracts without adding
-disease biology or interventions. Observation events retain separate infection,
-generic symptom-onset, detection and report dates, and a causal detection-event
-interface is exposed without mutating M5 state. The observation horizon includes
-the full latent horizon and a documented maximum-delay tail. Observation RNG is
-keyed by latent replicate seed, observation seed, configuration ID and stable
-event identity, so matched seeds are reported as matched starts rather than
-unqualified common random numbers.
+C4 integrates the observation scheduler without adding disease biology or
+interventions. Observation events retain separate infection, generic
+symptom-onset, detection and report dates. The daily lifecycle is disease-state
+progression, network refresh, existing intervention step, disease transmission
+and imports, detection delivery, then the future consumer hook. A future M7
+consumer can first change contact or intervention state for the next timestep;
+it cannot retroactively affect completed transmission. The observation horizon
+includes the full latent horizon and a documented maximum-delay tail.
+Observation RNG is keyed by latent replicate seed, observation seed,
+configuration ID and stable event identity. Offline artifacts use the same
+sampler as the online queue.
 
-Ensemble summaries are complete over the declared date grid; missing values in a
-successful replicate are explicit zeroes and failed replicates remain failed
-records. Process-pool worker counts are bounded by a configurable memory
-estimate, physical-memory safety fraction and CPU count. Beta recovery is a
+Ensemble summaries are complete over the declared date grid using an explicit
+metric registry. Missing incidence is a structural zero, cumulative values
+carry forward, and state/prevalence cells beyond actual evolution are marked
+outside the metric horizon and excluded from quantiles. Failed replicates remain
+non-contributors rather than zeroes. Process-pool worker counts distinguish
+requested, planned and actual execution and are bounded by a configurable
+memory estimate, physical-memory safety fraction and CPU count. Beta recovery is a
 synthetic train/held-out profile over generic M5 beta values, with explicit
 ascertainment and route-weight sensitivity checks. It is not Jersey surveillance
 calibration and does not identify beta separately from contact intensity.

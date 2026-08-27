@@ -112,6 +112,7 @@ def write_ensemble_artifact(
 
     summary_path = artifact_directory / "ensemble_summary.parquet"
     trajectories_path = artifact_directory / "replicate_trajectories.parquet"
+    grid_path = artifact_directory / "replicate_grid.parquet"
     records_path = artifact_directory / "replicate_records.json"
     config_path = artifact_directory / "ensemble_config.json"
     diagnostics_path = artifact_directory / "diagnostics.json"
@@ -123,7 +124,9 @@ def write_ensemble_artifact(
                 ("scope", pa.string()),
                 ("key", pa.string()),
                 ("metric", pa.string()),
+                ("metric_semantic", pa.string()),
                 ("date", pa.string()),
+                ("cell_semantic", pa.string()),
                 ("lower_quantile", pa.float64()),
                 ("median", pa.float64()),
                 ("upper_quantile", pa.float64()),
@@ -132,7 +135,13 @@ def write_ensemble_artifact(
                 ("replicate_count", pa.int64()),
                 ("requested_replicates", pa.int64()),
                 ("successful_replicates", pa.int64()),
+                ("failed_replicates", pa.int64()),
                 ("contributing_replicates", pa.int64()),
+                ("observed_replicates", pa.int64()),
+                ("structural_zero_replicates", pa.int64()),
+                ("carried_forward_replicates", pa.int64()),
+                ("outside_metric_horizon_replicates", pa.int64()),
+                ("non_contributing_replicates", pa.int64()),
             ]
         ),
     )
@@ -155,6 +164,23 @@ def write_ensemble_artifact(
             ]
         ),
     )
+    _write_table(
+        grid_path,
+        result.replicate_grid,
+        pa.schema(
+            [
+                ("seed", pa.int64()),
+                ("scope", pa.string()),
+                ("key", pa.string()),
+                ("metric", pa.string()),
+                ("metric_semantic", pa.string()),
+                ("date", pa.string()),
+                ("value", pa.float64()),
+                ("cell_semantic", pa.string()),
+                ("contributes", pa.bool_()),
+            ]
+        ),
+    )
     records_path.write_text(
         json.dumps(
             [record.model_dump(mode="json") for record in result.replicate_records],
@@ -171,7 +197,14 @@ def write_ensemble_artifact(
     diagnostics_path.write_text(
         json.dumps(result.diagnostics, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    output_paths = (summary_path, trajectories_path, records_path, config_path, diagnostics_path)
+    output_paths = (
+        summary_path,
+        trajectories_path,
+        grid_path,
+        records_path,
+        config_path,
+        diagnostics_path,
+    )
     git_commit, dirty_worktree = _git_metadata(root)
     successful = [record for record in result.replicate_records if record.status == "passed"]
     m4_hashes = {
@@ -197,6 +230,11 @@ def write_ensemble_artifact(
         replicate_count=len(result.replicate_records),
         successful_replicates=len(successful),
         failed_replicates=len(result.replicate_records) - len(successful),
+        requested_workers=result.diagnostics["requested_workers"],
+        planned_workers=result.diagnostics["planned_workers"],
+        actual_workers=result.diagnostics["actual_workers"],
+        execution_mode=result.diagnostics["execution_mode"],
+        fallback_reason=result.diagnostics["fallback_reason"],
         m2_logical_content_hash=result.m2_logical_content_hash,
         m3_logical_content_hash=result.m3_logical_content_hash,
         m4_logical_content_hashes=m4_hashes,

@@ -1366,8 +1366,8 @@ def generate_networks(
     def community_builder(
         route_id: str, contacts: int, weight: float
     ) -> Callable[[date], list[dict[str, Any]]]:
-        regular_contacts = max(1, round(contacts * float(config.community_regular_edge_fraction)))
-        daily_contacts = max(1, contacts - regular_contacts)
+        regular_contacts = round(contacts * float(config.community_regular_edge_fraction))
+        daily_contacts = max(0, contacts - regular_contacts)
 
         def mixed_edges(
             participants: dict[str, list[str]],

@@ -1,7 +1,7 @@
 # Verification archive
 
-The repository keeps generated simulation outputs outside Git. A C3 verification
-archive is the compact index that makes that policy auditable. It records:
+The repository keeps generated simulation outputs outside Git. A milestone
+verification archive is the compact index that makes that policy auditable. It records:
 
 - the Git commit and whether the worktree was dirty;
 - parent M2, M3 and M4/C2 logical hashes;
@@ -10,7 +10,8 @@ archive is the compact index that makes that policy auditable. It records:
 - an external-retention policy; and
 - SHA-256/size records for retained archive summaries.
 
-`write_verification_archive()` requires a clean worktree by default. It writes
+`write_verification_archive()` requires a clean worktree by default and records
+the declared milestone (`C3`, `C4`, or a later bounded gate). It writes
 `manifest.json` plus `verification_summary.json` under an archive ID and refuses
 to reuse that ID for different content. `verify_verification_archive()` checks
 the retained files and can enforce expected parent hashes and an expected Git

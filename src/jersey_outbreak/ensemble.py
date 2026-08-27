@@ -22,6 +22,26 @@ from .observation_schemas import ObservationConfig
 from .outbreak_runner import OutbreakRunResult, run_outbreak
 from .outbreak_schemas import RespiratoryParameterSet
 
+MetricSemantic = Literal["incidence", "cumulative", "state"]
+CellSemantic = Literal[
+    "observed",
+    "structural_zero",
+    "carried_forward",
+    "outside_metric_horizon",
+    "failed_replicate",
+    "non_contributor",
+]
+
+METRIC_SEMANTICS: dict[str, MetricSemantic] = {
+    "latent_new_infections": "incidence",
+    "latent_local_infections": "incidence",
+    "observed_detected_infections": "incidence",
+    "observed_reported_cases": "incidence",
+    "latent_cumulative_infections": "cumulative",
+    "latent_attack_rate": "cumulative",
+    "latent_prevalence": "state",
+}
+
 
 @dataclass(frozen=True)
 class ReplicateOutput:
@@ -44,6 +64,7 @@ class EnsembleResult:
     config: EnsembleConfig
     replicate_records: tuple[EnsembleReplicateRecord, ...]
     replicate_trajectories: dict[int, tuple[dict[str, Any], ...]]
+    replicate_grid: tuple[dict[str, Any], ...]
     summary: tuple[dict[str, Any], ...]
     diagnostics: dict[str, Any]
     logical_content_hash: str
@@ -217,7 +238,12 @@ def _run_replicate_job(job: dict[str, Any]) -> ReplicateOutput:
         )
         parameters = RespiratoryParameterSet.model_validate(job["parameters"])
         observation_config = ObservationConfig.model_validate(job["observation_config"])
-        latent = run_outbreak(generated, run_config, parameters)
+        latent = run_outbreak(
+            generated,
+            run_config,
+            parameters,
+            observation_config=observation_config,
+        )
         observed = observe_latent_run(latent, observation_config)
         return ReplicateOutput(
             seed=seed,
@@ -252,13 +278,81 @@ def _summary_rows(
 ) -> tuple[dict[str, Any], ...]:
     successful_replicates = len(trajectories)
     requested = requested_replicates if requested_replicates is not None else successful_replicates
-    indexed = {
-        seed: {
-            (row["scope"], row["key"], row["metric"], row["date"]): float(row["value"])
-            for row in rows
+    failed_replicates = max(0, requested - successful_replicates)
+    grid = _completed_grid_rows(
+        trajectories,
+        successful_seeds=tuple(sorted(trajectories)),
+        failed_seeds=(),
+        horizon=horizon,
+    )
+    grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
+    for row in grid:
+        group_key = (row["scope"], row["key"], row["metric"], row["date"])
+        grouped.setdefault(group_key, []).append(row)
+    summary: list[dict[str, Any]] = []
+    for (scope, key, metric, when), cells in sorted(grouped.items()):
+        values = [float(cell["value"]) for cell in cells if cell["contributes"]]
+        semantics = {
+            semantic: sum(cell["cell_semantic"] == semantic for cell in cells)
+            for semantic in (
+                "observed",
+                "structural_zero",
+                "carried_forward",
+                "outside_metric_horizon",
+                "non_contributor",
+            )
         }
-        for seed, rows in trajectories.items()
-    }
+        present_semantics = [name for name, count in semantics.items() if count]
+        cell_semantic = present_semantics[0] if len(present_semantics) == 1 else "mixed"
+        lower_value = median = upper_value = None
+        if values:
+            quantiles = np.quantile(
+                np.asarray(values, dtype=float),
+                [lower_quantile, 0.5, upper_quantile],
+                method="linear",
+            )
+            lower_value, median, upper_value = (float(value) for value in quantiles)
+        summary.append(
+            {
+                "scope": scope,
+                "key": key,
+                "metric": metric,
+                "metric_semantic": METRIC_SEMANTICS[metric],
+                "date": when,
+                "cell_semantic": cell_semantic,
+                "lower_quantile": lower_quantile,
+                "median": median,
+                "upper_quantile": upper_quantile,
+                "lower_value": lower_value,
+                "upper_value": upper_value,
+                "replicate_count": len(values),
+                "requested_replicates": requested,
+                "successful_replicates": successful_replicates,
+                "failed_replicates": failed_replicates,
+                "contributing_replicates": len(values),
+                "observed_replicates": semantics["observed"],
+                "structural_zero_replicates": semantics["structural_zero"],
+                "carried_forward_replicates": semantics["carried_forward"],
+                "outside_metric_horizon_replicates": semantics["outside_metric_horizon"],
+                "non_contributing_replicates": (
+                    semantics["outside_metric_horizon"]
+                    + semantics["non_contributor"]
+                    + failed_replicates
+                ),
+            }
+        )
+    return tuple(summary)
+
+
+def _completed_grid_rows(
+    trajectories: dict[int, tuple[dict[str, Any], ...]],
+    *,
+    successful_seeds: tuple[int, ...],
+    failed_seeds: tuple[int, ...],
+    horizon: tuple[str, ...] | None = None,
+) -> tuple[dict[str, Any], ...]:
+    """Complete the replicate/date grid according to explicit metric semantics."""
+
     metric_keys = sorted(
         {
             (row["scope"], row["key"], row["metric"])
@@ -266,40 +360,74 @@ def _summary_rows(
             for row in rows
         }
     )
+    unknown = sorted({metric for _scope, _key, metric in metric_keys} - METRIC_SEMANTICS.keys())
+    if unknown:
+        raise ValueError(f"metrics are missing semantic registration: {unknown}")
     dates = tuple(
         horizon or sorted({row["date"] for rows in trajectories.values() for row in rows})
     )
-    summary: list[dict[str, Any]] = []
-    for scope, key, metric in metric_keys:
-        for when in dates:
-            values = [
-                indexed[seed].get((scope, key, metric, when), 0.0) for seed in sorted(indexed)
-            ]
-            if not values:
-                continue
-            quantiles = np.quantile(
-                np.asarray(values, dtype=float),
-                [lower_quantile, 0.5, upper_quantile],
-                method="linear",
+    indexed = {
+        seed: {
+            (row["scope"], row["key"], row["metric"], row["date"]): float(row["value"])
+            for row in rows
+        }
+        for seed, rows in trajectories.items()
+    }
+    rows: list[dict[str, Any]] = []
+    for seed in (*successful_seeds, *failed_seeds):
+        failed = seed in failed_seeds
+        seed_index = indexed.get(seed, {})
+        for scope, key, metric in metric_keys:
+            semantic = METRIC_SEMANTICS[metric]
+            observations = sorted(
+                (date_key, value)
+                for (row_scope, row_key, row_metric, date_key), value in seed_index.items()
+                if (row_scope, row_key, row_metric) == (scope, key, metric)
             )
-            summary.append(
-                {
-                    "scope": scope,
-                    "key": key,
-                    "metric": metric,
-                    "date": when,
-                    "lower_quantile": lower_quantile,
-                    "median": float(quantiles[1]),
-                    "upper_quantile": upper_quantile,
-                    "lower_value": float(quantiles[0]),
-                    "upper_value": float(quantiles[2]),
-                    "replicate_count": len(values),
-                    "requested_replicates": requested,
-                    "successful_replicates": successful_replicates,
-                    "contributing_replicates": len(values),
-                }
-            )
-    return tuple(summary)
+            observation_map = dict(observations)
+            for when in dates:
+                value: float | None = None
+                cell_semantic: CellSemantic
+                contributes = False
+                if failed:
+                    cell_semantic = "failed_replicate"
+                elif when in observation_map:
+                    value = observation_map[when]
+                    cell_semantic = "observed"
+                    contributes = True
+                elif not observations:
+                    cell_semantic = "non_contributor"
+                elif semantic == "incidence":
+                    value = 0.0
+                    cell_semantic = "structural_zero"
+                    contributes = True
+                elif semantic == "cumulative":
+                    previous = [item for item in observations if item[0] < when]
+                    if previous:
+                        value = previous[-1][1]
+                        cell_semantic = "carried_forward"
+                    else:
+                        value = 0.0
+                        cell_semantic = "structural_zero"
+                    contributes = True
+                elif when < observations[0][0] or when > observations[-1][0]:
+                    cell_semantic = "outside_metric_horizon"
+                else:
+                    cell_semantic = "non_contributor"
+                rows.append(
+                    {
+                        "seed": seed,
+                        "scope": scope,
+                        "key": key,
+                        "metric": metric,
+                        "metric_semantic": semantic,
+                        "date": when,
+                        "value": value,
+                        "cell_semantic": cell_semantic,
+                        "contributes": contributes,
+                    }
+                )
+    return tuple(rows)
 
 
 def available_physical_memory_bytes() -> int | None:
@@ -408,28 +536,30 @@ def run_ensemble(
             memory_safety_fraction=config.memory_safety_fraction,
         )
     )
-    actual_workers = min(requested_workers, safe_bound)
-    parallelism = "sequential"
-    parallelism_fallback_reason: str | None = None
-    if actual_workers == 1:
+    planned_workers = min(requested_workers, safe_bound)
+    actual_workers = planned_workers
+    execution_mode = "sequential"
+    fallback_reason: str | None = None
+    if planned_workers == 1:
         outputs = [_run_replicate_job(job) for job in jobs]
         if requested_workers > 1:
-            parallelism = "sequential_memory_bound"
+            execution_mode = "sequential_memory_bound"
     else:
         try:
             context = mp.get_context("spawn")
-            with ProcessPoolExecutor(max_workers=actual_workers, mp_context=context) as pool:
+            with ProcessPoolExecutor(max_workers=planned_workers, mp_context=context) as pool:
                 futures = [pool.submit(_run_replicate_job, job) for job in jobs]
                 outputs = [future.result() for future in futures]
-            parallelism = "process_pool_spawn"
+            execution_mode = "process_pool_spawn"
         except (NotImplementedError, OSError, PermissionError, RuntimeError) as exc:
             # Some constrained macOS runners deny the semaphore limit probe
             # used by ProcessPoolExecutor.  This is an execution-environment
             # limitation, not a replicate result; preserve deterministic
             # semantics with an explicit, diagnostic sequential fallback.
             outputs = [_run_replicate_job(job) for job in jobs]
-            parallelism = "sequential_fallback"
-            parallelism_fallback_reason = f"{type(exc).__name__}: {exc}"
+            actual_workers = 1
+            execution_mode = "sequential_fallback"
+            fallback_reason = f"{type(exc).__name__}: {exc}"
 
     records = tuple(
         EnsembleReplicateRecord(
@@ -446,6 +576,13 @@ def run_ensemble(
     successful_trajectories = {
         output.seed: output.trajectories for output in outputs if output.status == "passed"
     }
+    successful_seeds = tuple(output.seed for output in outputs if output.status == "passed")
+    failed_seeds = tuple(output.seed for output in outputs if output.status == "failed")
+    replicate_grid = _completed_grid_rows(
+        successful_trajectories,
+        successful_seeds=successful_seeds,
+        failed_seeds=failed_seeds,
+    )
     summary = _summary_rows(
         successful_trajectories,
         config.lower_quantile,
@@ -463,8 +600,11 @@ def run_ensemble(
         "successful_replicates": successful,
         "failed_replicates": failed,
         "requested_workers": requested_workers,
+        "planned_workers": planned_workers,
         "actual_workers": actual_workers,
-        "parallelism": parallelism,
+        "execution_mode": execution_mode,
+        "fallback_reason": fallback_reason,
+        "parallelism": execution_mode,
         "worker_bound": {
             "safe_upper_bound": safe_bound,
             "estimated_worker_memory_bytes": config.estimated_worker_memory_bytes,
@@ -484,10 +624,12 @@ def run_ensemble(
             str(output.seed): output.error for output in outputs if output.error
         },
         "date_grid": {
-            "complete": failed == 0,
-            "zero_fill_semantics": (
-                "absent metric/date rows in successful replicates are explicit zeroes"
-            ),
+            "complete": True,
+            "metric_semantics": dict(sorted(METRIC_SEMANTICS.items())),
+            "incidence": "missing valid cells are structural zeroes",
+            "cumulative": "missing later cells carry the most recent value forward",
+            "state": "cells beyond actual state evolution are outside_metric_horizon",
+            "failures": "failed replicate cells are non-contributing, never zero",
         },
         "stream_ownership": {
             "population": "fixed parent M2 artifact; coupled across matched scenarios",
@@ -504,8 +646,8 @@ def run_ensemble(
             ),
         },
     }
-    if parallelism_fallback_reason is not None:
-        diagnostics["parallelism_fallback_reason"] = parallelism_fallback_reason
+    if fallback_reason is not None:
+        diagnostics["parallelism_fallback_reason"] = fallback_reason
     logical_content_hash = sha256_bytes(
         canonical_json_bytes(
             {
@@ -519,6 +661,7 @@ def run_ensemble(
                 ],
                 "summary": summary,
                 "trajectories": successful_trajectories,
+                "replicate_grid": replicate_grid,
             }
         )
     )
@@ -533,6 +676,7 @@ def run_ensemble(
         config=config,
         replicate_records=records,
         replicate_trajectories=successful_trajectories,
+        replicate_grid=replicate_grid,
         summary=summary,
         diagnostics=diagnostics,
         logical_content_hash=logical_content_hash,

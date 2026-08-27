@@ -125,10 +125,26 @@ def test_observation_stream_is_replicate_specific(m6_latent_run, m6_observation_
     )
 
 
-def test_ensemble_summary_zero_fills_complete_horizon_and_reports_contributors() -> None:
+def test_ensemble_summary_structurally_fills_incidence_and_reports_contributors() -> None:
     trajectories = {
-        1: ({"scope": "epidemic", "key": "all", "metric": "x", "date": "2025-01-01", "value": 1},),
-        2: ({"scope": "epidemic", "key": "all", "metric": "x", "date": "2025-01-02", "value": 3},),
+        1: (
+            {
+                "scope": "epidemic",
+                "key": "all",
+                "metric": "latent_new_infections",
+                "date": "2025-01-01",
+                "value": 1,
+            },
+        ),
+        2: (
+            {
+                "scope": "epidemic",
+                "key": "all",
+                "metric": "latent_new_infections",
+                "date": "2025-01-02",
+                "value": 3,
+            },
+        ),
     }
     rows = _summary_rows(
         trajectories,
@@ -142,6 +158,7 @@ def test_ensemble_summary_zero_fills_complete_horizon_and_reports_contributors()
     assert all(row["requested_replicates"] == 3 for row in rows)
     assert all(row["successful_replicates"] == 2 for row in rows)
     assert all(row["contributing_replicates"] == 2 for row in rows)
+    assert all(row["failed_replicates"] == 1 for row in rows)
 
 
 def test_worker_bound_is_memory_safe_and_deterministic() -> None:

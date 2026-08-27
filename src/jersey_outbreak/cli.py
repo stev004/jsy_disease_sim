@@ -398,10 +398,16 @@ def observe_run(
         else root / observation_config
     )
     parameters = load_parameter_set(root, parameter_path)
+    observation = load_observation_config(root, observation_path)
     run_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
     generated = _build_m4_for_m6(root, mode, seed, destination)
-    latent = run_outbreak(generated, run_config, parameters)
-    observed = observe_latent_run(latent, load_observation_config(root, observation_path))
+    latent = run_outbreak(
+        generated,
+        run_config,
+        parameters,
+        observation_config=observation,
+    )
+    observed = observe_latent_run(latent, observation)
     artifact = write_observation_artifact(observed, root, destination)
     typer.echo(
         json.dumps(
