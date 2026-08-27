@@ -7,7 +7,9 @@ import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+
+from pydantic import field_validator
 
 from .contracts import ArtifactRecord, NonEmptyString, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
@@ -19,7 +21,7 @@ class VerificationManifest(StrictModel):
     schema_version: NonEmptyString = "1.0"
     verification_id: NonEmptyString
     milestone: NonEmptyString = "C3"
-    status: str
+    status: Literal["passed", "failed"]
     git_commit: str | None = None
     dirty_worktree_flag: bool
     parent_hashes: dict[str, NonEmptyString]
@@ -31,6 +33,21 @@ class VerificationManifest(StrictModel):
     logical_content_hash: NonEmptyString
     created_at: NonEmptyString
     output_artifacts: list[ArtifactRecord]
+
+    @field_validator("layer_hashes", "source_manifest_hashes")
+    @classmethod
+    def validate_artifact_hashes(cls, value: dict[str, str]) -> dict[str, str]:
+        for name, digest in value.items():
+            if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
+                raise ValueError(f"verification hash for {name} must be a 64-character hex digest")
+        return value
+
+    @field_validator("logical_content_hash")
+    @classmethod
+    def validate_logical_hash(cls, value: str) -> str:
+        if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise ValueError("verification logical_content_hash must be a 64-character hex digest")
+        return value
 
 
 @dataclass(frozen=True)
@@ -173,6 +190,20 @@ def verify_verification_archive(
 
     manifest_path = manifest_path.resolve()
     manifest = VerificationManifest.model_validate_json(manifest_path.read_text(encoding="utf-8"))
+    payload = {
+        "verification_id": manifest.verification_id,
+        "milestone": manifest.milestone,
+        "git_commit": manifest.git_commit,
+        "dirty_worktree_flag": manifest.dirty_worktree_flag,
+        "parent_hashes": manifest.parent_hashes,
+        "layer_hashes": manifest.layer_hashes,
+        "source_manifest_hashes": manifest.source_manifest_hashes,
+        "command_results": manifest.command_results,
+        "benchmarks": manifest.benchmarks,
+        "retention_policy": manifest.retention_policy,
+    }
+    if sha256_bytes(canonical_json_bytes(payload)) != manifest.logical_content_hash:
+        raise ValueError("verification manifest logical content hash mismatch")
     _validate_expected_hashes(manifest.parent_hashes, expected_parent_hashes)
     if expected_git_commit is not None and manifest.git_commit != expected_git_commit:
         raise ValueError("verification archive Git commit does not match expected commit")
