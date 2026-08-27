@@ -64,6 +64,16 @@ def _relative_path(path: Path, root: Path) -> str:
 
 
 def _markdown_report(generated: GeneratedNetworks) -> str:
+    cross_route = generated.diagnostics["cross_route"]
+    calendar = generated.diagnostics["calendars"]
+    route_diagnostics = generated.diagnostics["routes"]
+    nested_overlap = sum(
+        row["overlapping_agent_pairs"]
+        for row in cross_route["route_overlap_matrix"]
+        if row["policy"] == "FORBIDDEN"
+    )
+    shared_vehicle = cross_route["shared_vehicle"]
+    calendar_provenance = calendar["school_calendar_provenance"]
     lines = [
         "# Milestone 4.1 Jersey route diagnostics",
         "",
@@ -102,6 +112,18 @@ def _markdown_report(generated: GeneratedNetworks) -> str:
                 "- Care staff/community bridges: "
                 f"`{generated.diagnostics['cross_route']['care_staff_community_bridges']}`"
             ),
+            (f"- Forbidden nested-route overlaps: `{nested_overlap}`."),
+            (
+                "- Route-overlap policy: forbidden nested layers are "
+                "`school_class/school_cross_class` and "
+                "`workplace_team/workplace_transient`; distinct physical settings "
+                "remain diagnostically visible."
+            ),
+            (
+                "- Shared-vehicle participants / unmatched aggregate-car commuters: "
+                f"`{shared_vehicle['shared_vehicle_participants']}` / "
+                f"`{shared_vehicle['unmatched_car_commuters']}`."
+            ),
             "",
             "## Assumptions and limitations",
             "",
@@ -130,6 +152,16 @@ def _markdown_report(generated: GeneratedNetworks) -> str:
             f"`{school['staff_with_household_bridge_membership']}`.",
             f"- Staff assigned to zero schools: `{school['staff_assigned_to_zero_schools']}`.",
             f"- Duplicate staff assignments: `{school['duplicate_staff_assignments']}`.",
+            (
+                "- School calendar source: "
+                f"`{calendar_provenance['source_id']}` "
+                f"(SHA-256 `{calendar_provenance['source_sha256']}`)."
+            ),
+            (
+                "- Community indoor/outdoor cross-day Jaccard: "
+                f"`{route_diagnostics['community_indoor']['cross_day_jaccard']}` / "
+                f"`{route_diagnostics['community_outdoor']['cross_day_jaccard']}`."
+            ),
             "",
             "## Care staffing diagnostics",
             "",

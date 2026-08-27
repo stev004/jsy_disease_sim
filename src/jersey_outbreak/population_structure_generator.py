@@ -627,7 +627,11 @@ def _build_diagnostics(
     expected_private_jobs = min(
         scaled_private_job_target(controls, config.resolved_target_population), len(jobs)
     )
-    check("private_filled_job_control", job_universe_counts["private_undertaking_control"], expected_private_jobs)
+    check(
+        "private_filled_job_control",
+        job_universe_counts["private_undertaking_control"],
+        expected_private_jobs,
+    )
     check(
         "synthetic_nonprivate_filled_jobs",
         job_universe_counts["synthetic_nonprivate"],
@@ -731,9 +735,7 @@ def _build_diagnostics(
                 "primary_jobs": "resident_worker_primary",
                 "secondary_jobs": "synthetic_secondary",
                 "private_filled_job_control": controls.full_private_job_target,
-                "private_filled_jobs_generated": job_universe_counts[
-                    "private_undertaking_control"
-                ],
+                "private_filled_jobs_generated": job_universe_counts["private_undertaking_control"],
                 "synthetic_nonprivate_filled_jobs": job_universe_counts["synthetic_nonprivate"],
                 "public_sector_job_control": "unknown_not_available_in_frozen_controls",
                 "public_employer_identity": "unknown",

@@ -11,7 +11,7 @@ import hashlib
 import math
 import resource
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import date
@@ -42,9 +42,29 @@ PRIVATE_ROUTE_FAMILIES = {
 }
 
 ROUTE_WEIGHT_MEANING = (
-    "relative contact/exposure opportunity weight in [0, 1]; not a pathogen beta or "
-    "probability of transmission"
+    "relative daily exposure/transmission opportunity weight in [0, 1]; not an observed "
+    "contact count or a measured pathogen transmission probability"
 )
+
+AGE_BANDS = ("0-4", "5-17", "18-34", "35-64", "65+")
+SCHOOL_CALENDAR_PROVENANCE = {
+    "2025": {
+        "source_id": "states_assembly_r119_2024_school_terms",
+        "source_sha256": "7826d1877b40e10895cb784c3291546b5dd6133f3918f163df06f085c5219abd",
+        "status": "official",
+        "coverage": "common Jersey term and half-term dates; no institution-specific inset days",
+    },
+    "2026": {
+        "source_id": "school_term_dates_govje_2026",
+        "source_sha256": "307a9168a62cfef40e4912fe429b6d5aa2bbfad85636be3e44552e64bbd93c6e",
+        "status": "official",
+        "coverage": "common Jersey term and half-term dates; no institution-specific inset days",
+    },
+}
+ROUTE_OVERLAP_POLICIES = {
+    frozenset(("school_class", "school_cross_class")): "FORBIDDEN",
+    frozenset(("workplace_team", "workplace_transient")): "FORBIDDEN",
+}
 
 
 @dataclass(frozen=True)
@@ -155,7 +175,11 @@ def _complete_group(
 
 
 def _ring_edges(
-    ids: Iterable[str], contacts_per_participant: int, weight: float, persistence_days: int
+    ids: Iterable[str],
+    contacts_per_participant: int,
+    weight: float,
+    persistence_days: int,
+    excluded_pairs: set[tuple[str, str]] | None = None,
 ) -> list[dict[str, Any]]:
     ordered = list(ids)
     if len(ordered) < 2 or contacts_per_participant <= 0:
@@ -165,6 +189,9 @@ def _ring_edges(
     for index, left in enumerate(ordered):
         for offset in range(1, min(contacts_per_participant, n - 1) + 1):
             right = ordered[(index + offset) % n]
+            pair = tuple(sorted((left, right)))
+            if excluded_pairs is not None and pair in excluded_pairs:
+                continue
             edge = _canonical_edge(left, right, weight, persistence_days)
             if edge is not None:
                 edges.append(edge)
@@ -179,11 +206,20 @@ def _grouped_ring_edges(
     contacts_per_participant: int,
     weight: float,
     persistence_days: int,
+    excluded_pairs: set[tuple[str, str]] | None = None,
 ) -> list[dict[str, Any]]:
     edges: list[dict[str, Any]] = []
     for group_index, group in enumerate(groups):
         ordered = _ordered_ids(group, seed, route_id, snapshot_date.isoformat(), group_index)
-        edges.extend(_ring_edges(ordered, contacts_per_participant, weight, persistence_days))
+        edges.extend(
+            _ring_edges(
+                ordered,
+                contacts_per_participant,
+                weight,
+                persistence_days,
+                excluded_pairs,
+            )
+        )
     return _deduplicate_edges(edges)
 
 
@@ -195,6 +231,7 @@ def _school_staff_cross_edges(
     contacts_per_staff: int,
     weight: float,
     persistence_days: int,
+    excluded_pairs: set[tuple[str, str]] | None = None,
 ) -> list[dict[str, Any]]:
     """Add bounded staff/year contacts without changing pupil-only ring edges."""
 
@@ -226,7 +263,9 @@ def _school_staff_cross_edges(
                     weight,
                     persistence_days,
                 )
-                if edge is not None:
+                if edge is not None and (
+                    excluded_pairs is None or (edge["p1"], edge["p2"]) not in excluded_pairs
+                ):
                     edges.append(edge)
     return _deduplicate_edges(edges)
 
@@ -244,7 +283,13 @@ def _age_band(age: int) -> str:
 
 
 def _is_school_term(snapshot_date: date, config: NetworkGenerationConfig) -> bool:
-    return snapshot_date.month in config.school_term_months and snapshot_date.month != 8
+    if snapshot_date.year != config.school_calendar_year:
+        raise ValueError(
+            "school route date is outside the configured authoritative reference calendar year"
+        )
+    if not any(start <= snapshot_date <= end for start, end in config.school_term_periods):
+        return False
+    return not any(start <= snapshot_date <= end for start, end in config.school_holiday_periods)
 
 
 def _route_active(calendar: str, snapshot_date: date, config: NetworkGenerationConfig) -> bool:
@@ -357,7 +402,7 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
             "school_cross_class",
             "school",
             "school_cross_class",
-            "M3 school_id and school_year membership",
+            "M3 school_id and school_year membership after class/core exclusion",
             "periodically_refreshed",
             "weekday_term",
             True,
@@ -365,7 +410,7 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
             (
                 (
                     "Cross-class contacts are bounded daily samples within school/year, "
-                    "not real venue histories."
+                    "not real venue histories; pairs already in school_class are excluded."
                 ),
             ),
         )
@@ -436,22 +481,23 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
             ),
         )
     if config.route_family_enabled("transport"):
-        specs["shared_vehicle"] = _route_spec(
-            "shared_vehicle",
-            "transport",
-            "shared_vehicle",
-            "M3 physical car commuters grouped by parish/destination/time band",
-            "periodically_refreshed",
-            "weekday",
-            True,
-            0.7,
-            (
+        if config.shared_vehicle_enabled:
+            specs["shared_vehicle"] = _route_spec(
+                "shared_vehicle",
+                "transport",
+                "shared_vehicle",
+                "M3 constrained household car-commuter groups; car-alone commuters excluded",
+                "periodically_refreshed",
+                "weekday",
+                True,
+                0.7,
                 (
-                    "Carpool groups are synthetic bounded cohorts and do not claim "
-                    "observed relationships."
+                    (
+                        "Only same-household car commuters with a common synthetic work parish "
+                        "are matched; driver/passenger roles are structural, not observed."
+                    ),
                 ),
-            ),
-        )
+            )
         specs["bus"] = _route_spec(
             "bus",
             "transport",
@@ -471,15 +517,15 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
             "community_indoor",
             "indoor_community",
             "community_indoor",
-            "M2 age/parish attributes with seeded activity propensity",
-            "daily_sampled",
+            "M2 age/parish attributes with seeded activity propensity and configured age mixing",
+            "periodically_refreshed",
             "weekday_or_weekend",
             True,
             config.indoor_weight,
             (
                 (
-                    "Indoor participation is a scenario assumption informed by broad "
-                    "age/parish attributes."
+                    "Indoor participation and the age-mixing matrix are structural assumptions; "
+                    "regular contacts persist while a daily component refreshes."
                 ),
             ),
         )
@@ -488,15 +534,15 @@ def _build_route_specs(config: NetworkGenerationConfig) -> dict[str, dict[str, A
             "community_outdoor",
             "outdoor_community",
             "community_outdoor",
-            "M2 age/parish attributes with seeded activity propensity",
-            "daily_sampled",
+            "M2 age/parish attributes with seeded activity propensity and configured age mixing",
+            "periodically_refreshed",
             "weekday_or_weekend",
             False,
             config.outdoor_weight,
             (
                 (
-                    "Outdoor participation is a scenario assumption; no fake GPS paths "
-                    "or venues are created."
+                    "Outdoor participation and the age-mixing matrix are structural assumptions; "
+                    "regular contacts persist while a daily component refreshes."
                 ),
             ),
         )
@@ -618,6 +664,77 @@ def _analyse_edges(
     }
 
 
+def _edge_keys(edges: Iterable[dict[str, Any]]) -> set[tuple[str, str]]:
+    return {(edge["p1"], edge["p2"]) for edge in edges}
+
+
+def _age_mixing_matrix(
+    edges: Iterable[dict[str, Any]], agent_info: dict[str, dict[str, Any]]
+) -> dict[str, dict[str, int]]:
+    matrix = {left: {right: 0 for right in AGE_BANDS} for left in AGE_BANDS}
+    for edge in edges:
+        left = agent_info.get(edge["p1"])
+        right = agent_info.get(edge["p2"])
+        if left is None or right is None:
+            continue
+        left_band = _age_band(int(left["age"]))
+        right_band = _age_band(int(right["age"]))
+        matrix[left_band][right_band] += 1
+        if left_band != right_band:
+            matrix[right_band][left_band] += 1
+    return matrix
+
+
+def _route_overlap_matrix(
+    generated: GeneratedNetworks,
+    baseline_date: date,
+) -> list[dict[str, Any]]:
+    route_ids = sorted(generated.route_specs)
+    edge_sets = {
+        route_id: _edge_keys(generated.route_snapshot(route_id, baseline_date).edges)
+        for route_id in route_ids
+    }
+    rows: list[dict[str, Any]] = []
+    for left_index, left in enumerate(route_ids):
+        for right in route_ids[left_index + 1 :]:
+            overlap = len(edge_sets[left] & edge_sets[right])
+            policy = ROUTE_OVERLAP_POLICIES.get(
+                frozenset((left, right)),
+                "ALLOWED_DISTINCT_SETTING"
+                if generated.route_specs[left]["route_family"]
+                != generated.route_specs[right]["route_family"]
+                else "DIAGNOSTIC_ONLY",
+            )
+            status = "passed"
+            if policy == "FORBIDDEN":
+                status = "passed" if overlap == 0 else "failed"
+            elif policy == "DIAGNOSTIC_ONLY" and overlap:
+                status = "warning"
+            smaller = min(len(edge_sets[left]), len(edge_sets[right]))
+            rows.append(
+                {
+                    "route_a": left,
+                    "route_b": right,
+                    "overlapping_agent_pairs": overlap,
+                    "percentage_of_smaller_route": overlap / max(1, smaller),
+                    "policy": policy,
+                    "status": status,
+                    "interpretation": (
+                        "Distinct physical settings may create multiple exposure opportunities; "
+                        "this is not duplicate storage of one encounter."
+                        if policy == "ALLOWED_DISTINCT_SETTING"
+                        else "Nested same-setting route layers must not repeat the same pair."
+                        if policy == "FORBIDDEN"
+                        else (
+                            "Overlap is retained as a diagnostic because route semantics "
+                            "need review."
+                        )
+                    ),
+                }
+            )
+    return rows
+
+
 def _quantile(values: list[float] | list[int], q: float) -> float:
     if not values:
         return 0.0
@@ -660,6 +777,7 @@ def _route_diagnostics(
         route["active_calendar"] = spec["active_calendar"]
         route["indoor"] = spec["indoor"]
         route["baseline_date"] = baseline_date.isoformat()
+        route["age_mixing_matrix"] = _age_mixing_matrix(snapshot.edges, agent_info)
         if spec["persistence"] != "fixed":
             dynamic_dates = generated.config.snapshot_dates
             snapshots = [generated.route_snapshot(route_id, when) for when in dynamic_dates]
@@ -669,12 +787,18 @@ def _route_diagnostics(
             if len(edge_sets) > 1:
                 previous = edge_sets[0]
                 overlaps = []
+                new_edge_rates = []
                 for current in edge_sets[1:]:
                     overlaps.append(len(previous & current) / max(1, len(previous | current)))
+                    new_edge_rates.append(len(current - previous) / max(1, len(current)))
                     previous = current
                 route["repeated_edge_rate"] = sum(overlaps) / len(overlaps)
+                route["cross_day_jaccard"] = overlaps
+                route["new_edge_rate"] = new_edge_rates
             else:
                 route["repeated_edge_rate"] = 0.0
+                route["cross_day_jaccard"] = []
+                route["new_edge_rate"] = []
             route["diagnostic_snapshot_dates"] = [when.isoformat() for when in dynamic_dates]
         else:
             route["repeated_edge_rate"] = 1.0
@@ -842,6 +966,13 @@ def generate_networks(
         key: list(group) + staffing.school_staff_by_school_year.get(key, [])
         for key, group in school_year_groups.items()
     }
+    school_core_pairs = {
+        (edge["p1"], edge["p2"])
+        for class_id, group in class_groups.items()
+        for edge in _complete_group(
+            group + staffing.school_staff_by_class.get(class_id, []), 0.85, 180
+        )
+    }
     if "school_class" in route_specs:
         structural_edges["school_class"] = _deduplicate_edges(
             edge
@@ -880,6 +1011,7 @@ def generate_networks(
                 config.school_cross_class_contacts,
                 0.5,
                 14,
+                school_core_pairs,
             )
             staff_edges = _school_staff_cross_edges(
                 school_year_groups,
@@ -889,6 +1021,7 @@ def generate_networks(
                 config.school_cross_class_contacts,
                 0.5,
                 14,
+                school_core_pairs,
             )
             return _deduplicate_edges([*pupil_edges, *staff_edges])
 
@@ -920,6 +1053,11 @@ def generate_networks(
             work_route_jobs_by_workplace[job["workplace_id"]].append(job)
             if job.get("team_id") is not None:
                 work_route_jobs_by_team[job["team_id"]].append(job)
+    workplace_team_pairs = {
+        (edge["p1"], edge["p2"])
+        for team_jobs in work_route_jobs_by_team.values()
+        for edge in _complete_group([job["agent_id"] for job in team_jobs], 0.7, 365)
+    }
 
     institutional_staff_commute = _institutional_staff_commute_metadata(m3_input, staffing)
     if "workplace_team" in route_specs:
@@ -970,6 +1108,7 @@ def generate_networks(
                 config.workplace_transient_contacts,
                 0.3,
                 7,
+                workplace_team_pairs,
             )
 
         dynamic_builders["workplace_transient"] = build_workplace_transient
@@ -1067,8 +1206,9 @@ def generate_networks(
         for agent_id, jobs in jobs_by_agent.items()
         if agent_id in m3_by_agent and m3_by_agent[agent_id]["economic_status"] == "employed"
     }
-    transport_groups: dict[tuple[str, str, int], list[str]] = defaultdict(list)
+    car_commuters_by_household_destination: dict[tuple[str, str], list[str]] = defaultdict(list)
     bus_groups: dict[tuple[str, str, int], list[str]] = defaultdict(list)
+    car_commuter_ids: set[str] = set()
     for agent_id, jobs in worker_jobs.items():
         primary = next((job for job in jobs if job["job_role"] == "primary"), None)
         if primary is None:
@@ -1088,17 +1228,60 @@ def generate_networks(
         )
         time_band = _stable_int(config.seed, "time-band", agent_id) % 3
         if mode == "car":
-            transport_groups[(home, work_parish, int(time_band))].append(agent_id)
+            household_id = m2_by_agent[agent_id].get("household_id")
+            if household_id is not None:
+                car_commuters_by_household_destination[(household_id, work_parish)].append(agent_id)
+            car_commuter_ids.add(agent_id)
         else:
             bus_groups[(home, work_parish, int(time_band))].append(agent_id)
+    shared_vehicle_groups: dict[str, list[str]] = {}
+    for (household_id, work_parish), group in sorted(
+        car_commuters_by_household_destination.items()
+    ):
+        ordered = _ordered_ids(
+            group,
+            config.seed,
+            "carpool-household",
+            household_id,
+            work_parish,
+        )
+        for vehicle_number, start in enumerate(
+            range(0, len(ordered), config.shared_vehicle_capacity), start=1
+        ):
+            vehicle = ordered[start : start + config.shared_vehicle_capacity]
+            if len(vehicle) >= 2:
+                shared_vehicle_groups[f"{household_id}|{work_parish}|{vehicle_number:02d}"] = (
+                    vehicle
+                )
+    shared_vehicle_participants = (
+        set().union(*shared_vehicle_groups.values()) if shared_vehicle_groups else set()
+    )
+    shared_vehicle_diagnostics = {
+        "car_alone_commuters": len(car_commuter_ids - shared_vehicle_participants),
+        "drivers_with_passengers": len(shared_vehicle_groups),
+        "passengers": sum(max(0, len(group) - 1) for group in shared_vehicle_groups.values()),
+        "shared_vehicle_participants": len(shared_vehicle_participants),
+        "synthetic_vehicles": len(shared_vehicle_groups),
+        "occupancy_distribution": dict(
+            sorted(Counter(len(group) for group in shared_vehicle_groups.values()).items())
+        ),
+        "household_only_shared_rides": len(shared_vehicle_groups),
+        "non_household_shared_rides": 0,
+        "unmatched_car_commuters": len(car_commuter_ids - shared_vehicle_participants),
+        "eligibility_assumption": (
+            "Only same-household car commuters with the same synthetic work parish are matched; "
+            "the canonical commute table has no driver/passenger split, so unmatched car "
+            "commuters remain outside the shared-vehicle route."
+        ),
+    }
     if "shared_vehicle" in route_specs:
         route_memberships["shared_vehicle"] = [
             {
                 "membership": "synthetic_vehicle_cohort",
-                "group_id": "|".join(map(str, key)),
+                "group_id": key,
                 "agent_id": agent_id,
             }
-            for key, group in sorted(transport_groups.items())
+            for key, group in sorted(shared_vehicle_groups.items())
             for agent_id in sorted(group)
         ]
 
@@ -1106,7 +1289,7 @@ def generate_networks(
             if snapshot_date.weekday() >= 5:
                 return []
             edges: list[dict[str, Any]] = []
-            for key, group in sorted(transport_groups.items()):
+            for key, group in sorted(shared_vehicle_groups.items()):
                 active = [
                     agent_id
                     for agent_id in group
@@ -1121,7 +1304,7 @@ def generate_networks(
                     active,
                     config.seed,
                     "vehicle",
-                    *key,
+                    key,
                     snapshot_date.isocalendar().week // 4,
                 )
                 for index in range(0, len(ordered), config.shared_vehicle_capacity):
@@ -1183,8 +1366,94 @@ def generate_networks(
     def community_builder(
         route_id: str, contacts: int, weight: float
     ) -> Callable[[date], list[dict[str, Any]]]:
+        regular_contacts = max(1, round(contacts * float(config.community_regular_edge_fraction)))
+        daily_contacts = max(1, contacts - regular_contacts)
+
+        def mixed_edges(
+            participants: dict[str, list[str]],
+            token: object,
+            contact_count: int,
+            persistence_days: int,
+        ) -> list[dict[str, Any]]:
+            by_band = {
+                parish: {
+                    band: sorted(
+                        agent_id
+                        for agent_id in ids
+                        if _age_band(m3_by_agent[agent_id]["age"]) == band
+                    )
+                    for band in AGE_BANDS
+                }
+                for parish, ids in participants.items()
+            }
+            edges: list[dict[str, Any]] = []
+            for _parish, band_groups in sorted(by_band.items()):
+                for source_band_index, source_band in enumerate(AGE_BANDS):
+                    sources = band_groups[source_band]
+                    for source in sources:
+                        probabilities = config.community_age_mixing[source_band_index]
+                        for contact_index in range(contact_count):
+                            draw = (
+                                _stable_int(
+                                    config.seed,
+                                    "community-age-target",
+                                    route_id,
+                                    token,
+                                    source,
+                                    contact_index,
+                                )
+                                % 1_000_000
+                                / 1_000_000
+                            )
+                            cumulative = 0.0
+                            target_band = AGE_BANDS[-1]
+                            for candidate_band, probability in zip(
+                                AGE_BANDS, probabilities, strict=True
+                            ):
+                                cumulative += float(probability)
+                                if draw < cumulative:
+                                    target_band = candidate_band
+                                    break
+                            candidates = [
+                                agent_id
+                                for agent_id in band_groups[target_band]
+                                if agent_id != source
+                            ]
+                            if not candidates:
+                                continue
+                            target = candidates[
+                                _stable_int(
+                                    config.seed,
+                                    "community-age-choice",
+                                    route_id,
+                                    token,
+                                    source,
+                                    contact_index,
+                                )
+                                % len(candidates)
+                            ]
+                            edge = _canonical_edge(source, target, weight, persistence_days)
+                            if edge is not None:
+                                edges.append(edge)
+            return _deduplicate_edges(edges)
+
+        regular_groups: dict[str, list[str]] = defaultdict(list)
+        regular_probability = 65 if route_id == "community_indoor" else 45
+        for agent_id in agent_ids:
+            if (
+                _stable_int(config.seed, "community-regular", route_id, agent_id) % 100
+                < regular_probability
+            ):
+                regular_groups[m3_by_agent[agent_id]["home_parish"]].append(agent_id)
+        regular_edges = mixed_edges(
+            regular_groups,
+            "regular",
+            regular_contacts,
+            int(max(7, config.community_regular_edge_fraction * 30)),
+        )
+
         def build(snapshot_date: date) -> list[dict[str, Any]]:
-            groups: dict[tuple[str, str], list[str]] = defaultdict(list)
+            groups: dict[str, list[str]] = defaultdict(list)
             for agent_id in agent_ids:
                 info = m3_by_agent[agent_id]
                 if route_id == "community_indoor":
@@ -1202,15 +1471,13 @@ def generate_networks(
                     weekend_probability,
                     weekday_probability,
                 ):
-                    groups[(info["home_parish"], _age_band(info["age"]))].append(agent_id)
-            return _grouped_ring_edges(
-                groups.values(),
-                config.seed,
-                route_id,
-                snapshot_date,
-                contacts,
-                weight,
-                1,
+                    groups[info["home_parish"]].append(agent_id)
+            daily_edges = mixed_edges(groups, snapshot_date.isoformat(), daily_contacts, 1)
+            return _deduplicate_edges(
+                [
+                    *regular_edges,
+                    *daily_edges,
+                ]
             )
 
         return build
@@ -1258,6 +1525,7 @@ def generate_networks(
     baseline_date = config.snapshot_dates[0]
     route_diagnostics = _route_diagnostics(generated, baseline_date)
     baseline_snapshot = generated.snapshot(baseline_date)
+    route_overlap_matrix = _route_overlap_matrix(generated, baseline_date)
     ordinary_workplace_participants = {
         endpoint
         for snapshot_date in config.snapshot_dates
@@ -1354,7 +1622,9 @@ def generate_networks(
     generated.staffing_diagnostics = staffing_diagnostics
     diagnostics = {
         "schema_version": "1.0",
-        "status": "passed",
+        "status": (
+            "failed" if any(row["status"] == "failed" for row in route_overlap_matrix) else "passed"
+        ),
         "mode": config.mode,
         "generated_population": len(agent_ids),
         "route_count": len(route_specs),
@@ -1369,14 +1639,39 @@ def generate_networks(
             "households_with_school_connectivity": household_school_connectivity,
             "households_with_work_connectivity": household_work_connectivity,
             "care_staff_community_bridges": len(care_staff_ids & community_members),
+            "route_overlap_matrix": route_overlap_matrix,
+            "shared_vehicle": shared_vehicle_diagnostics,
         },
         "calendars": {
-            "school_term_months": list(config.school_term_months),
-            "school_term_rule": "weekdays in configured term months; August is inactive",
+            "school_calendar_year": config.school_calendar_year,
+            "school_calendar_provenance": SCHOOL_CALENDAR_PROVENANCE.get(
+                str(config.school_calendar_year),
+                {
+                    "source_id": None,
+                    "source_sha256": None,
+                    "status": "configuration_only",
+                    "coverage": "caller-supplied reference calendar",
+                },
+            ),
+            "school_term_periods": [
+                [start.isoformat(), end.isoformat()] for start, end in config.school_term_periods
+            ],
+            "school_holiday_periods": [
+                [start.isoformat(), end.isoformat()] for start, end in config.school_holiday_periods
+            ],
+            "school_term_rule": (
+                "weekdays inside the frozen common Jersey reference-year term periods, "
+                "excluding official half-term holiday periods; institution-specific inset "
+                "days are not modelled"
+            ),
             "work_rule": "synthetic deterministic weekday schedules from M3 days/remote days",
             "community_rule": (
-                "seeded age/parish participation probabilities with daily cohort refresh"
+                "structural broad-age mixing matrix with a configured regular-contact pool "
+                "plus a daily refreshed component"
             ),
+            "community_regular_edge_fraction": config.community_regular_edge_fraction,
+            "community_age_bands": list(AGE_BANDS),
+            "community_age_mixing": [list(row) for row in config.community_age_mixing],
             "time_step": "daily; no hourly event simulation",
         },
         "staffing": staffing_diagnostics,

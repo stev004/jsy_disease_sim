@@ -194,6 +194,32 @@ sources:
     sha256: e789838a2a378b54e2bd171780d078f743e9a82b44b42f43dff42303e2b07a2f
     notes: "CYPES FTE table: heads/deputies 86.00, teachers/lecturers 983.30 and teaching assistants 507.15; CYPES workforce universe is not a whole-island education-staff headcount."
 
+  - source_id: school_term_dates_govje_2026
+    title: School term dates and holidays
+    publisher: Government of Jersey - Children, Young People, Education and Skills
+    url: https://www.gov.je/Education/Schools/SchoolLife/Pages/TermDates.aspx
+    retrieved_at: 2026-08-27
+    reference_period: "2026 school year"
+    license: Government of Jersey public information
+    status: official
+    acquisition_method: manual
+    local_snapshot: data/raw/school_term_dates_govje_2026/term_dates.csv
+    sha256: 307a9168a62cfef40e4912fe429b6d5aa2bbfad85636be3e44552e64bbd93c6e
+    notes: Minimum normalized snapshot of the official Government of Jersey page, preserving common term and half-term periods; school-specific inset days are not included.
+
+  - source_id: states_assembly_r119_2024_school_terms
+    title: Meetings of the States in 2025 - school term dates cited for scheduling
+    publisher: States of Jersey - Privileges and Procedures Committee
+    url: https://statesassembly.gov.je/assemblyreports/2024/r.119-2024.pdf
+    retrieved_at: 2026-08-27
+    reference_period: "2025 school year"
+    license: States of Jersey public report
+    status: official
+    acquisition_method: manual
+    local_snapshot: data/raw/states_assembly_r119_2024_school_terms/term_dates.csv
+    sha256: 7826d1877b40e10895cb784c3291546b5dd6133f3918f163df06f085c5219abd
+    notes: Official States of Jersey report preserves the 2025 common term and half-term dates used by the model's 2025 reference calendar; it is not presented as a school-specific calendar.
+
   - source_id: care_commission_accommodation_standards_2026_pdf
     title: Jersey Care Commission standards for care and support services with accommodation 2026
     publisher: Jersey Care Commission

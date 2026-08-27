@@ -1,0 +1,7 @@
+schema_version,source_id,reference_year,period_type,start_date,end_date,source_locator,observation_status,transformation_id
+1.0,school_term_dates_govje_2026,2026,term,2026-01-05,2026-04-01,govje-term-dates-lines-30-39,official,manual_normalized_snapshot_v1
+1.0,school_term_dates_govje_2026,2026,term,2026-04-20,2026-07-17,govje-term-dates-lines-41-54,official,manual_normalized_snapshot_v1
+1.0,school_term_dates_govje_2026,2026,term,2026-09-07,2026-12-18,govje-term-dates-lines-55-67,official,manual_normalized_snapshot_v1
+1.0,school_term_dates_govje_2026,2026,holiday,2026-02-16,2026-02-20,govje-term-dates-lines-34-39,official,manual_normalized_snapshot_v1
+1.0,school_term_dates_govje_2026,2026,holiday,2026-05-26,2026-05-29,govje-term-dates-lines-43-46,official,manual_normalized_snapshot_v1
+1.0,school_term_dates_govje_2026,2026,holiday,2026-10-26,2026-10-30,govje-term-dates-lines-57-67,official,manual_normalized_snapshot_v1

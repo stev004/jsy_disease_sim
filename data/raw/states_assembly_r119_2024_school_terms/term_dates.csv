@@ -1,0 +1,7 @@
+schema_version,source_id,reference_year,period_type,start_date,end_date,source_locator,observation_status,transformation_id
+1.0,states_assembly_r119_2024_school_terms,2025,term,2025-01-06,2025-03-27,R119-2024-school-term-dates,official,manual_normalized_snapshot_v1
+1.0,states_assembly_r119_2024_school_terms,2025,term,2025-04-15,2025-07-19,R119-2024-school-term-dates,official,manual_normalized_snapshot_v1
+1.0,states_assembly_r119_2024_school_terms,2025,term,2025-09-03,2025-12-18,R119-2024-school-term-dates,official,manual_normalized_snapshot_v1
+1.0,states_assembly_r119_2024_school_terms,2025,holiday,2025-02-17,2025-02-21,R119-2024-school-term-dates,official,manual_normalized_snapshot_v1
+1.0,states_assembly_r119_2024_school_terms,2025,holiday,2025-05-27,2025-05-30,R119-2024-school-term-dates,official,manual_normalized_snapshot_v1
+1.0,states_assembly_r119_2024_school_terms,2025,holiday,2025-10-27,2025-10-31,R119-2024-school-term-dates,official,manual_normalized_snapshot_v1

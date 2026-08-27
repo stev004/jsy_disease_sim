@@ -182,6 +182,12 @@ def write_outbreak_artifact(
                 ("imported", pa.bool_()),
                 ("seeded", pa.bool_()),
                 ("state", pa.string()),
+                ("successful_candidate_route_count", pa.int64()),
+                ("successful_candidate_routes", pa.list_(pa.string())),
+                ("successful_candidate_edge_count", pa.int64()),
+                ("successful_candidate_edge_routes", pa.list_(pa.string())),
+                ("successful_candidate_hazards", pa.list_(pa.float64())),
+                ("attributed_route_id", pa.string()),
             ]
         ),
     )

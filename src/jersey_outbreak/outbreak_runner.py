@@ -309,6 +309,12 @@ def run_outbreak(
         for row in daily_epidemic
     ]
     route_counts = Counter(event["route_id"] for event in events if event["source_kind"] == "local")
+    multi_route_events = [
+        event
+        for event in events
+        if event["source_kind"] == "local"
+        and int(event.get("successful_candidate_route_count", 1)) > 1
+    ]
     attribution_totals = {
         "seeded": sum(event["seeded"] for event in events),
         "imported": sum(event["imported"] for event in events),
@@ -357,6 +363,21 @@ def run_outbreak(
                 + attribution_totals["imported"]
                 + attribution_totals["local"]
             ),
+            "multi_route_evidence": {
+                "events_with_multiple_successful_routes": len(multi_route_events),
+                "candidate_route_count_distribution": dict(
+                    sorted(
+                        Counter(
+                            int(event["successful_candidate_route_count"])
+                            for event in multi_route_events
+                        ).items()
+                    )
+                ),
+                "attribution_selection": (
+                    "stable target/timestep draw proportional to successful edge hazard; "
+                    "candidate occurrence is the unchanged union of Starsim edge successes"
+                ),
+            },
         },
         "seeding": {
             "requested_count": config.initial_seed_count,

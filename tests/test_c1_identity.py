@@ -85,14 +85,14 @@ def test_c1_m3_identity_controls_and_geography(m6_network) -> None:
         for workplace in m3.workplaces
     )
     nonprivate_workplaces = sum(
-        workplace["workplace_universe"] == "synthetic_nonprivate"
-        for workplace in m3.workplaces
+        workplace["workplace_universe"] == "synthetic_nonprivate" for workplace in m3.workplaces
     )
     assert private_workplaces > 0
     assert nonprivate_workplaces > 0
-    assert {
-        workplace["workplace_universe"] for workplace in m3.workplaces
-    } == {"private_undertaking_control", "synthetic_nonprivate"}
+    assert {workplace["workplace_universe"] for workplace in m3.workplaces} == {
+        "private_undertaking_control",
+        "synthetic_nonprivate",
+    }
     assert all(
         job["job_universe"] in {"resident_worker_primary", "synthetic_secondary"}
         for job in m3.job_assignments

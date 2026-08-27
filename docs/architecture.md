@@ -183,9 +183,13 @@ engine is present in M4.
 M5 consumes the M4.1 `GeneratedNetworks` object without modifying its route
 tables. `starsim_adapter.py` converts the existing 11 route families into
 Starsim networks and initializes the generic `RespiratorySEIRS` infection. The
-disease subclass uses Starsim's `Infection.infect()` and `Network.net_beta()`
-machinery; JOS adds only deterministic generic import selection, SEIRS state
-progression and event attribution. The run layer maps stable Starsim UIDs back
+disease subclass uses Starsim's edge-level `compute_transmission()` and
+`Network.net_beta()` machinery; JOS adds only deterministic generic import
+selection, SEIRS state progression and order-invariant event attribution. For a
+target with successful candidates on multiple routes, infection occurrence is
+the unchanged union of Starsim edge successes and attribution selects a route
+with probability proportional to its successful edge hazard, using a stable
+target/timestep draw independent of route insertion order. The run layer maps stable Starsim UIDs back
 to synthetic JOS agent IDs and writes daily latent-truth summaries by epidemic
 state, parish, age band and route.
 

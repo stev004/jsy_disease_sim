@@ -52,6 +52,24 @@ and physical work from WFH-only days. All edges are canonical undirected pairs
 with finite relative contact-opportunity weights, not pathogen-specific beta
 values.
 
+C2 makes nested route semantics explicit. The school cross-class and workplace
+transient candidate pools exclude pairs already represented by their respective
+class-core and team-core routes. Other cross-route overlap is retained only
+when it represents a distinct physical exposure opportunity, and is reported in
+the route-overlap matrix rather than silently treated as duplicate storage.
+Community routes use a configurable structural broad-age mixing matrix and a
+regular-contact pool plus daily refreshed contacts. The matrix is not Jersey
+contact-diary evidence, and persistence parameters are scenario assumptions.
+The common school calendar is a frozen official reference-year term/holiday
+calendar; institution-specific inset days are not modelled.
+
+The commute source available to the canonical M3 build provides an aggregate
+car category rather than a compatible individual driver/passenger roster. The
+shared-vehicle route therefore uses only bounded same-household car commuters
+with a common synthetic work parish, records unmatched car commuters, and
+does not represent car-alone commuters as shared rides by default. These are
+synthetic constraints, not inferred Jersey carpools.
+
 There are no observed teacher rosters, care staff rosters, bus routes/stops,
 real carpools, named community venues or GPS paths in the available evidence.
 M4.1 therefore uses official CYPES FTE controls plus a documented

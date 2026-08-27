@@ -1,8 +1,9 @@
 """Generic, pathogen-neutral respiratory SEIRS module for Milestone 5.
 
-The class deliberately delegates transmission probability calculation to
-Starsim's ``Infection.infect()`` implementation.  JOS supplies only route
-specific beta values and records the resulting attributable events.
+The class delegates edge-level transmission probability calculation to
+Starsim's ``compute_transmission`` and ``Network.net_beta`` primitives. JOS
+adds an order-invariant competing-candidate attribution layer and records the
+resulting attributable events.
 """
 
 from __future__ import annotations
@@ -96,6 +97,7 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
         self._all_events: list[dict[str, Any]] = []
         self._seed_uids: list[int] = []
         self._import_counter = 0
+        self._last_attribution_evidence: dict[int, dict[str, Any]] = {}
         return
 
     @property
@@ -147,8 +149,151 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
                 "seeded": kind == "seeded",
                 "state": "exposed",
             }
+            evidence = self._last_attribution_evidence.get(target_uid)
+            if evidence is not None:
+                event.update(evidence)
             self._events_by_ti[ti].append(event)
             self._all_events.append(event)
+
+    def _order_invariant_infect(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Run Starsim's network transmission kernel with order-invariant attribution.
+
+        Starsim evaluates each route independently and then retains the first successful
+        candidate for a target.  Candidate occurrence is therefore the union of all successful
+        directed edges, while first-route attribution is an insertion-order artefact.  This
+        method retains Starsim's ``compute_transmission`` calls and route beta calculation,
+        then selects one successful candidate per target with a stable draw proportional to its
+        successful edge probability.  The draw is keyed by seed, timestep and target, so route
+        insertion order cannot change it.
+        """
+
+        ss = _load_starsim()
+        betamap = self.validate_beta()
+        rel_trans = self.rel_trans.asnew(self.infectious.raw * self.rel_trans.raw, copy=False)
+        rel_sus = self.rel_sus.asnew(self.susceptible.raw * self.rel_sus.raw, copy=False)
+        route_items = sorted(self.sim.networks.items(), key=lambda item: str(item[0]))
+        route_index = {
+            str(key): index for index, (key, _route) in enumerate(self.sim.networks.items())
+        }
+        candidates_by_target: dict[int, list[dict[str, Any]]] = defaultdict(list)
+
+        for nkey, route in route_items:
+            route_id = str(nkey)
+            nk = ss.standardize_netkey(nkey)
+            if isinstance(route, ss.Network):
+                if not len(route):
+                    continue
+                edges = route.edges
+                directions = (
+                    (edges.p1, edges.p2, betamap[nk][0]),
+                    (edges.p2, edges.p1, betamap[nk][1]),
+                )
+                for src, trg, beta in directions:
+                    if not beta:
+                        continue
+                    disease_beta = (
+                        beta.to_prob(self.sim.t.dt) if isinstance(beta, ss.Rate) else beta
+                    )
+                    beta_per_dt = route.net_beta(disease_beta=disease_beta, disease=self)
+                    if np.ndim(beta_per_dt) == 0:
+                        beta_per_dt = np.full(len(src), beta_per_dt, dtype=float)
+                    randvals = self.trans_rng.rvs(src, trg)
+                    target_uids, source_uids = self.compute_transmission(
+                        src, trg, rel_trans, rel_sus, beta_per_dt, randvals
+                    )
+                    probability_by_pair: dict[tuple[int, int], list[float]] = defaultdict(list)
+                    for source, target, probability in zip(src, trg, beta_per_dt, strict=True):
+                        pair = (int(source), int(target))
+                        probability_by_pair[pair].append(
+                            float(rel_trans.raw[pair[0]] * rel_sus.raw[pair[1]] * probability)
+                        )
+                    for target, source in zip(target_uids, source_uids, strict=True):
+                        pair = (int(source), int(target))
+                        probabilities = probability_by_pair[pair]
+                        probability = probabilities.pop(0)
+                        candidates_by_target[pair[1]].append(
+                            {
+                                "route_id": route_id,
+                                "network_index": route_index[route_id],
+                                "source": pair[0],
+                                "hazard": max(0.0, min(1.0, probability)),
+                            }
+                        )
+            elif isinstance(route, ss.Route):
+                disease_beta = (
+                    betamap[nk][0].to_prob(self.sim.t.dt)
+                    if isinstance(betamap[nk][0], ss.Rate)
+                    else betamap[nk][0]
+                )
+                target_uids = route.compute_transmission(
+                    rel_sus, rel_trans, disease_beta, disease=self
+                )
+                for target in target_uids:
+                    candidates_by_target[int(target)].append(
+                        {
+                            "route_id": route_id,
+                            "network_index": route_index[route_id],
+                            "source": -1,
+                            "hazard": max(0.0, min(1.0, float(disease_beta))),
+                        }
+                    )
+            else:
+                raise TypeError(
+                    f"Cannot compute transmission via route {type(route)}; expected a "
+                    "Starsim network or route"
+                )
+
+        selected: list[dict[str, Any]] = []
+        self._last_attribution_evidence = {}
+        seed = int(self.sim.pars.rand_seed)
+        for target in sorted(candidates_by_target):
+            candidates = sorted(
+                candidates_by_target[target],
+                key=lambda candidate: (
+                    candidate["route_id"],
+                    candidate["source"],
+                    candidate["network_index"],
+                ),
+            )
+            candidate_route_types = sorted({candidate["route_id"] for candidate in candidates})
+            total_hazard = sum(float(candidate["hazard"]) for candidate in candidates)
+            draw = (
+                int.from_bytes(_stable_key(seed, "attribution", int(self.ti), target)[:8], "big")
+                / 2**64
+                * total_hazard
+            )
+            cumulative = 0.0
+            chosen = candidates[-1]
+            for candidate in candidates:
+                cumulative += float(candidate["hazard"])
+                if draw < cumulative:
+                    chosen = candidate
+                    break
+            selected.append(chosen | {"target": target})
+            self._last_attribution_evidence[target] = {
+                "successful_candidate_route_count": len(candidate_route_types),
+                "successful_candidate_routes": candidate_route_types,
+                "successful_candidate_edge_count": len(candidates),
+                "successful_candidate_edge_routes": [
+                    candidate["route_id"] for candidate in candidates
+                ],
+                "successful_candidate_hazards": [
+                    float(candidate["hazard"]) for candidate in candidates
+                ],
+                "attributed_route_id": chosen["route_id"],
+            }
+
+        if not selected:
+            return (
+                np.empty(0, dtype=np.int64),
+                np.empty(0, dtype=np.int64),
+                np.empty(0, dtype=np.int64),
+            )
+        return (
+            np.asarray([candidate["target"] for candidate in selected], dtype=np.int64),
+            np.asarray([candidate["source"] for candidate in selected], dtype=np.int64),
+            np.asarray([candidate["network_index"] for candidate in selected], dtype=np.int64),
+        )
 
     def init_post(self) -> np.ndarray:
         """Initialize deterministic seeds after Starsim state arrays exist."""
@@ -210,8 +355,7 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
     def step(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Run Starsim network transmission and generic exogenous imports."""
 
-        ss = _load_starsim()
-        local_cases, local_sources, local_networks = ss.Infection.infect(self)
+        local_cases, local_sources, local_networks = self._order_invariant_infect()
         local_cases = np.asarray(local_cases, dtype=np.int64)
         local_sources = np.asarray(local_sources, dtype=np.int64)
         local_networks = np.asarray(local_networks, dtype=np.int64)

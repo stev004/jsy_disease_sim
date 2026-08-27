@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_source_registry_is_strict_and_all_snapshots_match() -> None:
     context = load_source_registry(ROOT)
     checks = validate_source_snapshots(context)
-    assert len(context.registry.sources) == 20
+    assert len(context.registry.sources) == 22
     assert all(check["status"] == "passed" for check in checks)
     assert all(source.sha256 and source.local_snapshot for source in context.registry.sources)
     assert all(

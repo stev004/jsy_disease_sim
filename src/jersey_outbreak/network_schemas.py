@@ -69,9 +69,28 @@ class NetworkGenerationConfig(StrictModel):
     bus_cohort_capacity: StrictInt = Field(default=24, ge=2, le=60)
     shared_vehicle_capacity: StrictInt = Field(default=4, ge=2, le=8)
     care_cohort_capacity: StrictInt = Field(default=8, ge=2, le=20)
-    school_term_months: tuple[StrictInt, ...] = (1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12)
+    shared_vehicle_enabled: StrictBool = True
+    school_calendar_year: StrictInt = 2025
+    school_term_periods: tuple[tuple[date, date], ...] = (
+        (date(2025, 1, 6), date(2025, 3, 27)),
+        (date(2025, 4, 15), date(2025, 7, 19)),
+        (date(2025, 9, 3), date(2025, 12, 18)),
+    )
+    school_holiday_periods: tuple[tuple[date, date], ...] = (
+        (date(2025, 2, 17), date(2025, 2, 21)),
+        (date(2025, 5, 27), date(2025, 5, 30)),
+        (date(2025, 10, 27), date(2025, 10, 31)),
+    )
     indoor_weight: StrictFloat = Field(default=0.35, ge=0, le=1)
     outdoor_weight: StrictFloat = Field(default=0.15, ge=0, le=1)
+    community_regular_edge_fraction: StrictFloat = Field(default=0.6, ge=0, le=1)
+    community_age_mixing: tuple[tuple[StrictFloat, ...], ...] = (
+        (0.25, 0.30, 0.25, 0.15, 0.05),
+        (0.20, 0.35, 0.25, 0.15, 0.05),
+        (0.10, 0.15, 0.45, 0.25, 0.05),
+        (0.05, 0.10, 0.20, 0.50, 0.15),
+        (0.05, 0.05, 0.10, 0.30, 0.50),
+    )
     school_fte_per_synthetic_endpoint: StrictFloat = Field(default=0.8, gt=0, le=2)
     care_shift_coverage_multiplier: StrictFloat = Field(default=2.0, ge=1, le=4)
     include_school_leadership: StrictBool = True
@@ -108,12 +127,34 @@ class NetworkGenerationConfig(StrictModel):
             raise ValueError("snapshot_dates must not contain duplicates")
         return tuple(sorted(value))
 
-    @field_validator("school_term_months")
+    @field_validator("school_term_periods", "school_holiday_periods")
     @classmethod
-    def validate_school_term_months(cls, value: tuple[int, ...]) -> tuple[int, ...]:
-        if not value or any(month < 1 or month > 12 for month in value):
-            raise ValueError("school_term_months must contain months from 1 to 12")
-        return tuple(sorted(set(value)))
+    def validate_school_periods(
+        cls, value: tuple[tuple[date, date], ...]
+    ) -> tuple[tuple[date, date], ...]:
+        if not value or any(start > end for start, end in value):
+            raise ValueError("school calendar periods must contain ordered date ranges")
+        years = {start.year for start, _end in value} | {end.year for _start, end in value}
+        if len(years) != 1:
+            raise ValueError("school calendar periods must use one reference year")
+        return value
+
+    @field_validator("community_age_mixing")
+    @classmethod
+    def validate_community_age_mixing(
+        cls, value: tuple[tuple[float, ...], ...]
+    ) -> tuple[tuple[float, ...], ...]:
+        if len(value) != 5 or any(len(row) != 5 for row in value):
+            raise ValueError("community_age_mixing must be a 5x5 matrix")
+        if any(weight < 0 for row in value for weight in row):
+            raise ValueError("community_age_mixing weights must be non-negative")
+        if any(abs(sum(row) - 1.0) > 1e-6 for row in value):
+            raise ValueError("each community_age_mixing row must sum to 1")
+        if not any(
+            value[row][column] > 0 for row in range(5) for column in range(5) if row != column
+        ):
+            raise ValueError("community_age_mixing must permit cross-age contacts")
+        return value
 
     def route_family_enabled(self, family: RouteFamily) -> bool:
         return family in self.enabled_route_families
