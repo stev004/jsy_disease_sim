@@ -1,4 +1,4 @@
-"""Versioned artifacts for Milestone 6 synthetic calibration experiments."""
+"""Versioned artifacts for C3 synthetic calibration experiments."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-import pyarrow as pa
-import pyarrow.parquet as pq
+import pyarrow as pa  # type: ignore[import-untyped]
+import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 from .calibration import CalibrationResult
 from .calibration_schemas import CalibrationArtifactManifest
@@ -90,7 +90,11 @@ def write_calibration_artifact(
             "trial_number": row["trial_number"],
             "state": row["state"],
             "value": row["value"],
-            "reporting_delay_days": row["reporting_delay_days"],
+            "parameter_name": row.get("parameter_name", "reporting_delay_days"),
+            "parameter_value": row.get("parameter_value", row.get("reporting_delay_days")),
+            "reporting_delay_days": row.get("reporting_delay_days"),
+            "transmission_beta": row.get("transmission_beta"),
+            "training_replicates": row.get("training_replicates", 1),
             "objective_components": json.dumps(
                 row["objective_components"], sort_keys=True, separators=(",", ":")
             ),
@@ -105,7 +109,11 @@ def write_calibration_artifact(
                     ("trial_number", pa.int64()),
                     ("state", pa.string()),
                     ("value", pa.float64()),
+                    ("parameter_name", pa.string()),
+                    ("parameter_value", pa.float64()),
                     ("reporting_delay_days", pa.int64()),
+                    ("transmission_beta", pa.float64()),
+                    ("training_replicates", pa.int64()),
                     ("objective_components", pa.string()),
                 ]
             ),
@@ -120,7 +128,11 @@ def write_calibration_artifact(
             {
                 "synthetic_truth": result.diagnostics["synthetic_truth"],
                 "best_candidate": result.best_parameters,
-                "recovery_error_days": result.diagnostics["recovery_error_days"],
+                "recovery_error": (
+                    result.diagnostics["recovery_error"]
+                    if "recovery_error" in result.diagnostics
+                    else result.diagnostics["recovery_error_days"]
+                ),
                 "heldout": result.diagnostics["heldout"],
                 "target_latent_run_logical_content_hash": result.target_latent.logical_content_hash,
                 "heldout_latent_run_logical_content_hash": (
@@ -150,6 +162,22 @@ def write_calibration_artifact(
         )
         for path in output_paths
     ]
+    is_delay = result.config.hidden_parameter == "reporting_delay_days"
+    recovery_error = float(
+        result.diagnostics["recovery_error"]
+        if "recovery_error" in result.diagnostics
+        else result.diagnostics["recovery_error_days"]
+    )
+    recovery_tolerance = float(
+        result.diagnostics["recovery_tolerance"]
+        if "recovery_tolerance" in result.diagnostics
+        else result.config.recovery_tolerance_days
+    )
+    heldout_recovery_error = float(
+        result.diagnostics["heldout"].get("recovery_error")
+        if "recovery_error" in result.diagnostics["heldout"]
+        else result.diagnostics["heldout"]["recovery_error_days"]
+    )
     manifest = CalibrationArtifactManifest(
         artifact_id=artifact_id,
         study_id=result.config.study_id,
@@ -161,14 +189,26 @@ def write_calibration_artifact(
         observation_parameter_hash=observation_hash,
         logical_content_hash=result.logical_content_hash,
         trial_count=result.config.trial_count,
-        recovered_parameter_value=result.best_parameters["reporting_delay_days"],
-        synthetic_truth_value=result.config.synthetic_truth_delay_days,
-        recovery_error_days=result.diagnostics["recovery_error_days"],
-        recovery_tolerance_days=result.config.recovery_tolerance_days,
+        parameter_name=result.config.hidden_parameter,
+        recovered_parameter_value=float(next(iter(result.best_parameters.values()))),
+        synthetic_truth_value=float(
+            result.config.synthetic_truth_beta
+            if result.config.hidden_parameter == "transmission_beta"
+            else result.config.synthetic_truth_delay_days
+        ),
+        recovery_error=recovery_error,
+        recovery_tolerance=recovery_tolerance,
+        recovery_error_days=(result.diagnostics["recovery_error_days"] if is_delay else None),
+        recovery_tolerance_days=(result.config.recovery_tolerance_days if is_delay else None),
         heldout_objective=result.diagnostics["heldout"]["objective_components"][
             "reported_case_squared_error"
-        ],
-        heldout_recovery_error_days=result.diagnostics["heldout"]["recovery_error_days"],
+        ]
+        if is_delay
+        else result.diagnostics["heldout"]["objective_components"]["objective"],
+        heldout_recovery_error=heldout_recovery_error,
+        heldout_recovery_error_days=(
+            result.diagnostics["heldout"]["recovery_error_days"] if is_delay else None
+        ),
         heldout_passed=result.diagnostics["heldout"]["passed"],
         created_at=datetime.now(UTC).isoformat(),
         git_commit=git_commit,

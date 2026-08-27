@@ -59,10 +59,34 @@ class ObservationRunResult:
     daily_observed_parish: list[dict[str, Any]]
     daily_observed_age: list[dict[str, Any]]
     observation_events: list[dict[str, Any]]
+    detection_events: tuple[DetectionEvent, ...]
     diagnostics: dict[str, Any]
     logical_content_hash: str
     runtime_seconds: float
     peak_memory_bytes: int | None
+
+    def iter_detection_events(self):
+        """Expose detection notifications without exposing a route mutator."""
+
+        return iter(self.detection_events)
+
+
+@dataclass(frozen=True)
+class DetectionEvent:
+    """A causal detection notification for a future intervention consumer.
+
+    This interface is intentionally observational: creating a detection event
+    does not mutate disease state or any contact route.
+    """
+
+    agent_uid: int
+    agent_id: str
+    detection_date: str
+    detection_time_index: int
+    detection_reason: str
+    symptomatic: bool
+    observation_config_id: str
+    provenance: dict[str, Any]
 
 
 def _age_band(age: int) -> str:
@@ -86,12 +110,44 @@ def _probability(config: ObservationConfig, name: str) -> float:
     return value
 
 
-def _delay_sampler(config: ObservationConfig, rng: np.random.Generator) -> int:
-    delay = config.reporting_delay
+def _delay_sampler(
+    config: ObservationConfig,
+    rng: np.random.Generator,
+    distribution: Any | None = None,
+) -> int:
+    delay = distribution or config.reporting_delay
     if delay.kind == "fixed":
         return int(delay.days[0])
     probabilities = np.asarray(delay.probabilities, dtype=float)
     return int(rng.choice(np.asarray(delay.days, dtype=np.int64), p=probabilities))
+
+
+def _maximum_delay(distribution: Any) -> int:
+    return max(int(day) for day in distribution.days)
+
+
+def _observation_stream_seed(latent_run: OutbreakRunResult, config: ObservationConfig) -> int:
+    """Derive an observation stream from replicate, config and namespace identity."""
+
+    return _stable_seed(
+        latent_run.config.seed,
+        config.observation_seed,
+        config.observation_config_id,
+        "observation",
+    )
+
+
+def _event_stream_seed(stream_seed: int, event: dict[str, Any], event_rank: int) -> int:
+    """Make event draws replicate-specific without depending on rank alone."""
+
+    return _stable_seed(
+        stream_seed,
+        "infection-event",
+        event.get("infected_uid", event["infected_agent_id"]),
+        event["infected_agent_id"],
+        event["date"],
+        event_rank,
+    )
 
 
 def _git_metadata(root: Path) -> tuple[str | None, bool]:
@@ -119,62 +175,126 @@ def observe_latent_run(
     latent_run: OutbreakRunResult,
     config: ObservationConfig,
 ) -> ObservationRunResult:
-    """Apply observation-only randomness without touching the M5 result."""
+    """Apply observation-only randomness without touching the M5 result.
+
+    The output horizon is the complete latent horizon plus the configured or
+    derived maximum observation-delay tail. All aggregation is built from
+    pre-indexed event counters so zero-valued dates remain explicit.
+    """
 
     started = time.perf_counter()
     before_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     symptomatic_probability = _probability(config, "symptomatic_probability")
     symptomatic_detection_probability = _probability(config, "symptomatic_detection_probability")
     asymptomatic_detection_probability = _probability(config, "asymptomatic_detection_probability")
-    rng = np.random.default_rng(_stable_seed(config.observation_seed, config.observation_config_id))
+    stream_seed = _observation_stream_seed(latent_run, config)
     m3_by_agent = {row["agent_id"]: row for row in latent_run.generated.m3_input.resident_structure}
     ordered_events = sorted(
         latent_run.transmission_events,
         key=lambda event: (event["date"], event["infected_agent_id"]),
     )
     observation_events: list[dict[str, Any]] = []
+    detection_events: list[DetectionEvent] = []
     for event in ordered_events:
         agent_id = event["infected_agent_id"]
         resident = m3_by_agent[agent_id]
         infection_date = date.fromisoformat(event["date"])
-        delay = _delay_sampler(config, rng)
-        report_date = infection_date + timedelta(days=delay)
-        symptomatic = bool(rng.random() < symptomatic_probability)
-        day_effect = config.day_of_week_effect[report_date.weekday()]
+        event_rng = np.random.default_rng(
+            _event_stream_seed(stream_seed, event, len(observation_events))
+        )
+        symptomatic = bool(event_rng.random() < symptomatic_probability)
+        symptom_delay = (
+            _delay_sampler(config, event_rng, config.symptom_onset_delay) if symptomatic else None
+        )
+        symptom_date = (
+            infection_date + timedelta(days=symptom_delay) if symptom_delay is not None else None
+        )
+        detection_anchor = symptom_date or infection_date
+        day_effect = config.day_of_week_effect[detection_anchor.weekday()]
         detection_probability = (
             symptomatic_detection_probability if symptomatic else asymptomatic_detection_probability
         ) * day_effect
-        tested = bool(rng.random() < detection_probability)
-        observation_events.append(
-            {
-                "infected_agent_id": agent_id,
-                "infection_date": infection_date.isoformat(),
-                "detection_date": infection_date.isoformat() if tested else None,
-                "report_date": report_date.isoformat() if tested else None,
-                "reporting_delay_days": delay if tested else None,
-                "symptomatic": symptomatic,
-                "tested": tested,
-                "detected": tested,
-                "source_kind": event["source_kind"],
-                "route_id": event["route_id"],
-                "home_parish": resident["home_parish"],
-                "age_band": _age_band(int(resident["age"])),
-            }
+        tested = bool(event_rng.random() < detection_probability)
+        detection_delay = (
+            _delay_sampler(config, event_rng, config.detection_delay) if tested else None
         )
+        detection_date = (
+            detection_anchor + timedelta(days=detection_delay)
+            if detection_delay is not None
+            else None
+        )
+        reporting_delay = (
+            _delay_sampler(config, event_rng, config.reporting_delay) if tested else None
+        )
+        report_date = (
+            detection_date + timedelta(days=reporting_delay)
+            if detection_date is not None and reporting_delay is not None
+            else None
+        )
+        detection_reason = (
+            "symptomatic_test"
+            if tested and symptomatic
+            else "asymptomatic_test"
+            if tested
+            else "not_detected"
+        )
+        row = {
+            "infected_agent_id": agent_id,
+            "infected_uid": int(event.get("infected_uid", -1)),
+            "infection_date": infection_date.isoformat(),
+            "symptom_onset_date": symptom_date.isoformat() if symptom_date else None,
+            "detection_date": detection_date.isoformat() if detection_date else None,
+            "report_date": report_date.isoformat() if report_date else None,
+            "symptom_onset_delay_days": symptom_delay,
+            "detection_delay_days": detection_delay,
+            "reporting_delay_days": reporting_delay,
+            "symptomatic": symptomatic,
+            "tested": tested,
+            "detected": tested,
+            "detection_reason": detection_reason,
+            "source_kind": event["source_kind"],
+            "route_id": event["route_id"],
+            "home_parish": resident["home_parish"],
+            "age_band": _age_band(int(resident["age"])),
+        }
+        observation_events.append(row)
+        if tested and detection_date is not None:
+            detection_events.append(
+                DetectionEvent(
+                    agent_uid=int(event.get("infected_uid", -1)),
+                    agent_id=agent_id,
+                    detection_date=detection_date.isoformat(),
+                    detection_time_index=(detection_date - latent_run.config.start_date).days,
+                    detection_reason=detection_reason,
+                    symptomatic=symptomatic,
+                    observation_config_id=config.observation_config_id,
+                    provenance={
+                        "observation_config_id": config.observation_config_id,
+                        "observation_config_status": "scenario_assumption",
+                        "intervention_consumed": False,
+                    },
+                )
+            )
 
     latent_start = date.fromisoformat(latent_run.daily_epidemic[0]["date"])
-    latest_report = max(
-        [
-            date.fromisoformat(event["report_date"])
-            for event in observation_events
-            if event["report_date"] is not None
-        ]
-        or [date.fromisoformat(latent_run.daily_epidemic[-1]["date"])],
+    latent_end = date.fromisoformat(latent_run.daily_epidemic[-1]["date"])
+    derived_tail = sum(
+        _maximum_delay(distribution)
+        for distribution in (
+            config.symptom_onset_delay,
+            config.detection_delay,
+            config.reporting_delay,
+        )
     )
-    dates = _date_range(latent_start, latest_report)
+    horizon_tail = (
+        config.analysis_horizon_tail_days
+        if config.analysis_horizon_tail_days is not None
+        else derived_tail
+    )
+    dates = _date_range(latent_start, latent_end + timedelta(days=horizon_tail))
     latent_by_date = Counter(event["infection_date"] for event in observation_events)
-    detected_by_infection_date = Counter(
-        event["infection_date"] for event in observation_events if event["detected"]
+    detected_by_date = Counter(
+        event["detection_date"] for event in observation_events if event["detection_date"]
     )
     reported_by_date = Counter(
         event["report_date"] for event in observation_events if event["report_date"] is not None
@@ -183,19 +303,31 @@ def observe_latent_run(
     for event in observation_events:
         if event["report_date"] is not None:
             delays_by_report_date[event["report_date"]].append(event["reporting_delay_days"])
+    parish_by_date: dict[tuple[str, str], Counter[str]] = defaultdict(Counter)
+    age_by_date: dict[tuple[str, str], Counter[str]] = defaultdict(Counter)
+    for event in observation_events:
+        parish = event["home_parish"]
+        age_band = event["age_band"]
+        parish_by_date[(event["infection_date"], parish)]["latent"] += 1
+        age_by_date[(event["infection_date"], age_band)]["latent"] += 1
+        if event["detection_date"] is not None:
+            parish_by_date[(event["detection_date"], parish)]["detected"] += 1
+            age_by_date[(event["detection_date"], age_band)]["detected"] += 1
+        if event["report_date"] is not None:
+            parish_by_date[(event["report_date"], parish)]["reported"] += 1
+            age_by_date[(event["report_date"], age_band)]["reported"] += 1
     daily_observed_cases: list[dict[str, Any]] = []
     for when in dates:
         date_key = when.isoformat()
         latent = latent_by_date[date_key]
-        detected = detected_by_infection_date[date_key]
         delays = delays_by_report_date[date_key]
         daily_observed_cases.append(
             {
                 "date": date_key,
                 "latent_infections": latent,
-                "detected_infections": detected,
+                "detected_infections": detected_by_date[date_key],
                 "reported_cases": reported_by_date[date_key],
-                "ascertainment_fraction": detected / latent if latent else None,
+                "ascertainment_fraction": detected_by_date[date_key] / latent if latent else None,
                 "mean_reporting_delay_days": sum(delays) / len(delays) if delays else None,
             }
         )
@@ -209,39 +341,25 @@ def observe_latent_run(
     for when in dates:
         date_key = when.isoformat()
         for parish in parishes:
-            relevant = [event for event in observation_events if event["home_parish"] == parish]
+            counts = parish_by_date[(date_key, parish)]
             daily_observed_parish.append(
                 {
                     "date": date_key,
                     "parish": parish,
-                    "new_latent_infections": sum(
-                        event["infection_date"] == date_key for event in relevant
-                    ),
-                    "new_detected_infections": sum(
-                        event["infection_date"] == date_key and event["detected"]
-                        for event in relevant
-                    ),
-                    "new_reported_cases": sum(
-                        event["report_date"] == date_key for event in relevant
-                    ),
+                    "new_latent_infections": counts["latent"],
+                    "new_detected_infections": counts["detected"],
+                    "new_reported_cases": counts["reported"],
                 }
             )
         for age_band in age_bands:
-            relevant = [event for event in observation_events if event["age_band"] == age_band]
+            counts = age_by_date[(date_key, age_band)]
             daily_observed_age.append(
                 {
                     "date": date_key,
                     "age_band": age_band,
-                    "new_latent_infections": sum(
-                        event["infection_date"] == date_key for event in relevant
-                    ),
-                    "new_detected_infections": sum(
-                        event["infection_date"] == date_key and event["detected"]
-                        for event in relevant
-                    ),
-                    "new_reported_cases": sum(
-                        event["report_date"] == date_key for event in relevant
-                    ),
+                    "new_latent_infections": counts["latent"],
+                    "new_detected_infections": counts["detected"],
+                    "new_reported_cases": counts["reported"],
                 }
             )
 
@@ -251,10 +369,32 @@ def observe_latent_run(
         for event in observation_events
         if event["reporting_delay_days"] is not None
     ]
-    no_report_before_infection = all(
-        event["report_date"] is None or event["report_date"] >= event["infection_date"]
+    chronology_violations = [
+        event
         for event in observation_events
-    )
+        if (
+            event["symptom_onset_date"] is not None
+            and event["symptom_onset_date"] < event["infection_date"]
+        )
+        or (
+            event["detection_date"] is not None
+            and (
+                event["detection_date"] < event["infection_date"]
+                or (
+                    event["symptom_onset_date"] is not None
+                    and event["detection_date"] < event["symptom_onset_date"]
+                )
+            )
+        )
+        or (
+            event["report_date"] is not None
+            and (event["detection_date"] is None or event["report_date"] < event["detection_date"])
+        )
+    ]
+    latent_conservation_difference = sum(
+        row["latent_infections"] for row in daily_observed_cases
+    ) - len(observation_events)
+    no_report_before_infection = not chronology_violations
     diagnostics: dict[str, Any] = {
         "status": "passed" if no_report_before_infection else "failed",
         "latent_run_logical_content_hash": latent_run.logical_content_hash,
@@ -272,12 +412,59 @@ def observe_latent_run(
             "mean_days": sum(delays) / len(delays) if delays else None,
         },
         "no_report_before_infection": no_report_before_infection,
+        "chronology_violations": len(chronology_violations),
+        "latent_incidence_conservation_difference": latent_conservation_difference,
+        "latent_incidence_conservation": latent_conservation_difference == 0,
         "infection_date_semantics": "Copied from immutable M5 latent event date.",
-        "detection_date_semantics": (
-            "For this bounded model, a detected infection is tested on its infection date; "
-            "the configured delay is from that anchor to report date."
+        "symptom_onset_date_semantics": (
+            "Optional infection date plus the configured generic symptom-onset delay; "
+            "not a named-pathogen natural-history claim."
         ),
-        "report_date_semantics": "Infection/detection date plus the non-negative reporting delay.",
+        "detection_date_semantics": (
+            "Optional symptom onset (or infection for asymptomatic cases) plus the configured "
+            "generic detection/testing delay."
+        ),
+        "report_date_semantics": "Detection date plus the configured non-negative reporting delay.",
+        "analysis_horizon": {
+            "latent_start": latent_start.isoformat(),
+            "latent_end": latent_end.isoformat(),
+            "observation_end": dates[-1].isoformat(),
+            "tail_days": horizon_tail,
+            "tail_source": (
+                "explicit_configured_tail"
+                if config.analysis_horizon_tail_days is not None
+                else "maximum_configured_delay_sum"
+            ),
+        },
+        "detection_event_interface": {
+            "event_count": len(detection_events),
+            "consumer": "none; interface only",
+            "mutates_latent_or_routes": False,
+            "fields": [
+                "agent_uid",
+                "detection_date",
+                "detection_time_index",
+                "detection_reason",
+                "symptomatic",
+                "observation_config_id",
+                "provenance",
+            ],
+        },
+        "observation_rng": {
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+                "latent_replicate_seed",
+                "observation_seed",
+                "observation_config_id",
+            ],
+            "event_key_inputs": [
+                "infected_uid",
+                "infected_agent_id",
+                "infection_date",
+                "event_rank",
+            ],
+            "stream_fingerprint": hashlib.sha256(str(stream_seed).encode()).hexdigest(),
+        },
         "parish_semantics": "Grouped by synthetic resident home parish, not infection location.",
         "latent_outputs_untouched": True,
         "parameter_provenance": config.model_dump(mode="json"),
@@ -298,6 +485,7 @@ def observe_latent_run(
                 "daily_observed_parish": daily_observed_parish,
                 "daily_observed_age": daily_observed_age,
                 "observation_events": observation_events,
+                "detection_events": [event.__dict__ for event in detection_events],
             }
         )
     )
@@ -312,6 +500,7 @@ def observe_latent_run(
         daily_observed_parish=daily_observed_parish,
         daily_observed_age=daily_observed_age,
         observation_events=observation_events,
+        detection_events=tuple(detection_events),
         diagnostics=diagnostics,
         logical_content_hash=logical_content_hash,
         runtime_seconds=runtime_seconds,

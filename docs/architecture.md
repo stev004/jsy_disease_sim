@@ -216,8 +216,31 @@ immutable M5 latent run + observation config
                     |        +--> linear quantile summaries
                     |        +--> matched-seed A/B differences
                     |
-                    +--> synthetic-only Optuna recovery artifact
+       +--> synthetic-only Optuna recovery artifact
 ```
+
+C3 closes the remaining observation and verification contracts without adding
+disease biology or interventions. Observation events retain separate infection,
+generic symptom-onset, detection and report dates, and a causal detection-event
+interface is exposed without mutating M5 state. The observation horizon includes
+the full latent horizon and a documented maximum-delay tail. Observation RNG is
+keyed by latent replicate seed, observation seed, configuration ID and stable
+event identity, so matched seeds are reported as matched starts rather than
+unqualified common random numbers.
+
+Ensemble summaries are complete over the declared date grid; missing values in a
+successful replicate are explicit zeroes and failed replicates remain failed
+records. Process-pool worker counts are bounded by a configurable memory
+estimate, physical-memory safety fraction and CPU count. Beta recovery is a
+synthetic train/held-out profile over generic M5 beta values, with explicit
+ascertainment and route-weight sensitivity checks. It is not Jersey surveillance
+calibration and does not identify beta separately from contact intensity.
+
+`verification_archive.py` writes an immutable, hash-checked index tying C3
+results to the Git commit, parent M2/M3/M4 logical hashes, source manifests,
+commands, benchmarks and externally retained output summaries. A stale parent
+artifact cannot be presented as a current verification archive without failing
+the parent-hash check.
 
 `observation.py` never writes back to M5 events or network state. Observation
 parameters carry their own statuses and source references; the included demo

@@ -1,4 +1,4 @@
-"""Strict Milestone 6 ensemble and paired-comparison contracts."""
+"""Strict ensemble and paired-comparison contracts for C3."""
 
 from __future__ import annotations
 
@@ -17,11 +17,14 @@ class EnsembleConfig(StrictModel):
 
     schema_version: Literal["1.0"] = "1.0"
     ensemble_id: NonEmptyString
-    generator_version: NonEmptyString = "6.0.0"
+    generator_version: NonEmptyString = "6.1.0"
     base_run_config: OutbreakRunConfig
     observation_config: ObservationConfig
     replicate_seeds: tuple[StrictInt, ...] = Field(min_length=1)
     workers: StrictInt = Field(default=1, ge=1, le=32)
+    estimated_worker_memory_bytes: StrictInt = Field(default=1_100_000_000, gt=0)
+    memory_safety_fraction: StrictFloat = Field(default=0.6, gt=0, le=1)
+    allow_unsafe_workers: StrictBool = False
     lower_quantile: StrictFloat = Field(default=0.025, ge=0, le=1)
     upper_quantile: StrictFloat = Field(default=0.975, ge=0, le=1)
 
@@ -74,10 +77,10 @@ class EnsembleReplicateRecord(StrictModel):
 class EnsembleArtifactManifest(StrictModel):
     """Manifest for a complete or explicitly partial ensemble."""
 
-    manifest_schema_version: Literal["1.0"] = "1.0"
+    manifest_schema_version: Literal["1.1"] = "1.1"
     artifact_id: NonEmptyString
     logical_content_hash: NonEmptyString
-    generator_version: NonEmptyString = "6.0.0"
+    generator_version: NonEmptyString = "6.1.0"
     ensemble_id: NonEmptyString
     status: Literal["passed", "partial", "failed"]
     diagnostics_status: Literal["passed", "failed"]

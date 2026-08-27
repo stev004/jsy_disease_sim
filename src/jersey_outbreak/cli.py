@@ -10,6 +10,7 @@ import typer
 
 from .calibration import run_synthetic_recovery
 from .calibration_artifacts import write_calibration_artifact
+from .calibration_schemas import CalibrationConfig
 from .data_pipeline import build_canonical
 from .demo import run_demo
 from .ensemble import run_ensemble
@@ -31,6 +32,7 @@ from .population_structure_artifacts import (
 )
 from .population_structure_generator import generate_structure
 from .population_structure_schemas import StructureGenerationConfig
+from .verification_archive import verify_verification_archive
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 data_app = typer.Typer(add_completion=False, no_args_is_help=True)
@@ -41,6 +43,7 @@ outbreak_app = typer.Typer(add_completion=False, no_args_is_help=True)
 observe_app = typer.Typer(add_completion=False, no_args_is_help=True)
 ensemble_app = typer.Typer(add_completion=False, no_args_is_help=True)
 calibration_app = typer.Typer(add_completion=False, no_args_is_help=True)
+verification_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(data_app, name="data")
 app.add_typer(population_app, name="population")
 app.add_typer(structure_app, name="structure")
@@ -49,6 +52,7 @@ app.add_typer(outbreak_app, name="outbreak")
 app.add_typer(observe_app, name="observe")
 app.add_typer(ensemble_app, name="ensemble")
 app.add_typer(calibration_app, name="calibrate")
+app.add_typer(verification_app, name="verify")
 
 
 @app.callback()
@@ -557,3 +561,79 @@ def calibration_synthetic(
             sort_keys=True,
         )
     )
+
+
+@calibration_app.command("beta")
+def calibration_beta(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Calibration harness scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Seed for the base synthetic network.")] = 123,
+    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 8,
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    observation_config: Annotated[
+        Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    output_dir: Annotated[
+        Path, typer.Option(help="Directory for versioned C3 calibration artifacts.")
+    ] = Path("outputs/calibration"),
+) -> None:
+    """Recover generic transmission beta on synthetic train and held-out runs."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    parameter_path = (
+        parameter_set
+        if parameter_set is None or parameter_set.is_absolute()
+        else root / parameter_set
+    )
+    observation_path = (
+        observation_config
+        if observation_config is None or observation_config.is_absolute()
+        else root / observation_config
+    )
+    parameters = load_parameter_set(root, parameter_path)
+    base_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
+    generated = _build_m4_for_m6(root, mode, seed, destination)
+    config = CalibrationConfig(
+        study_id="c3-beta-recovery",
+        hidden_parameter="transmission_beta",
+        trial_count=5,
+        synthetic_truth_beta=base_config.beta,
+    )
+    result = run_synthetic_recovery(
+        root,
+        generated,
+        parameters,
+        base_config,
+        load_observation_config(root, observation_path),
+        calibration_config=config,
+    )
+    artifact = write_calibration_artifact(result, root, destination)
+    typer.echo(
+        json.dumps(
+            {
+                "artifact_id": artifact.manifest.artifact_id,
+                "status": result.diagnostics["status"],
+                "recovered_parameter": result.best_parameters,
+                "synthetic_truth": result.diagnostics["synthetic_truth"],
+                "heldout": result.diagnostics["heldout"],
+                "logical_content_hash": result.logical_content_hash,
+                "runtime_seconds": result.runtime_seconds,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@verification_app.command("archive-check")
+def verification_archive_check(
+    manifest: Annotated[Path, typer.Argument(help="Verification manifest JSON path.")],
+) -> None:
+    """Verify an immutable verification archive's retained files."""
+
+    result = verify_verification_archive(manifest)
+    typer.echo(json.dumps(result, ensure_ascii=False, sort_keys=True))

@@ -1,4 +1,4 @@
-"""Parquet outputs and manifests for Milestone 6 observation runs."""
+"""Parquet outputs and manifests for corrected C3 observation runs."""
 
 from __future__ import annotations
 
@@ -101,6 +101,7 @@ def write_observation_artifact(
     parish_path = artifact_directory / "daily_observed_parish.parquet"
     age_path = artifact_directory / "daily_observed_age.parquet"
     events_path = artifact_directory / "observation_events.parquet"
+    detections_path = artifact_directory / "detection_events.parquet"
     config_path = artifact_directory / "observation_config.json"
     diagnostics_path = artifact_directory / "diagnostics.json"
 
@@ -150,19 +151,50 @@ def write_observation_artifact(
         pa.schema(
             [
                 ("infected_agent_id", pa.string()),
+                ("infected_uid", pa.int64()),
                 ("infection_date", pa.string()),
+                ("symptom_onset_date", pa.string()),
                 ("detection_date", pa.string()),
                 ("report_date", pa.string()),
+                ("symptom_onset_delay_days", pa.int64()),
+                ("detection_delay_days", pa.int64()),
                 ("reporting_delay_days", pa.int64()),
                 ("symptomatic", pa.bool_()),
                 ("tested", pa.bool_()),
                 ("detected", pa.bool_()),
+                ("detection_reason", pa.string()),
                 ("source_kind", pa.string()),
                 ("route_id", pa.string()),
                 ("home_parish", pa.string()),
                 ("age_band", pa.string()),
             ]
         ),
+    )
+    # Keep the event-interface provenance JSON-friendly in the persisted table.
+    detection_table = pa.Table.from_pylist(
+        [
+            {**event.__dict__, "provenance": json.dumps(event.provenance, sort_keys=True)}
+            for event in result.detection_events
+        ],
+        schema=pa.schema(
+            [
+                ("agent_uid", pa.int64()),
+                ("agent_id", pa.string()),
+                ("detection_date", pa.string()),
+                ("detection_time_index", pa.int64()),
+                ("detection_reason", pa.string()),
+                ("symptomatic", pa.bool_()),
+                ("observation_config_id", pa.string()),
+                ("provenance", pa.string()),
+            ]
+        ),
+    )
+    pq.write_table(
+        detection_table,
+        detections_path,
+        compression="zstd",
+        use_dictionary=True,
+        write_statistics=True,
     )
     config_path.write_text(
         json.dumps(result.config.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
@@ -172,7 +204,15 @@ def write_observation_artifact(
         json.dumps(result.diagnostics, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
 
-    output_paths = (cases_path, parish_path, age_path, events_path, config_path, diagnostics_path)
+    output_paths = (
+        cases_path,
+        parish_path,
+        age_path,
+        events_path,
+        detections_path,
+        config_path,
+        diagnostics_path,
+    )
     git_commit, dirty_worktree = _git_metadata(root)
     output_artifacts = [
         ArtifactRecord(

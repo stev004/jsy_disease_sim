@@ -1,4 +1,4 @@
-"""Strict Milestone 6 observation-model contracts."""
+"""Strict observation-model contracts for the C3 causal timeline."""
 
 from __future__ import annotations
 
@@ -47,16 +47,22 @@ class ObservationParameter(StrictModel):
 
 
 class ReportingDelayDistribution(StrictModel):
-    """A non-negative reporting-delay distribution in whole days."""
+    """A non-negative delay distribution in whole days.
+
+    The class name is retained for compatibility with the M6 public contract;
+    it is also used for symptom-onset and detection/testing delays.
+    """
 
     kind: Literal["fixed", "discrete"] = "fixed"
     days: tuple[StrictInt, ...] = (0,)
     probabilities: tuple[StrictFloat, ...] | None = None
+    units: NonEmptyString = "days"
+    valid_range: tuple[StrictInt, StrictInt] = (0, 366)
     status: ObservationStatus = "scenario_assumption"
     source_ids: list[NonEmptyString] = Field(default_factory=list)
     notes: NonEmptyString = "Synthetic reporting delay for the M6 demonstration."
 
-    @field_validator("days", "probabilities", mode="before")
+    @field_validator("days", "probabilities", "valid_range", mode="before")
     @classmethod
     def normalize_sequences(cls, value: object) -> object:
         return tuple(value) if isinstance(value, list) else value
@@ -70,6 +76,9 @@ class ReportingDelayDistribution(StrictModel):
 
     @model_validator(mode="after")
     def validate_distribution(self) -> ReportingDelayDistribution:
+        low, high = self.valid_range
+        if low < 0 or low > high or any(day < low or day > high for day in self.days):
+            raise ValueError("delay values must fall inside valid_range")
         if self.kind == "fixed":
             if len(self.days) != 1:
                 raise ValueError("fixed reporting delay requires exactly one day")
@@ -85,13 +94,33 @@ class ReportingDelayDistribution(StrictModel):
         return self
 
 
+DelayDistribution = ReportingDelayDistribution
+
+
 class ObservationConfig(StrictModel):
     """Immutable controls for transforming one latent M5 run into observations."""
 
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.1"] = "1.1"
     observation_config_id: NonEmptyString
     parameters: dict[NonEmptyString, ObservationParameter]
     reporting_delay: ReportingDelayDistribution
+    symptom_onset_delay: ReportingDelayDistribution = Field(
+        default_factory=lambda: ReportingDelayDistribution(
+            kind="fixed",
+            days=(0,),
+            status="scenario_assumption",
+            notes="Generic same-day symptom-onset anchor for the demonstration.",
+        )
+    )
+    detection_delay: ReportingDelayDistribution = Field(
+        default_factory=lambda: ReportingDelayDistribution(
+            kind="fixed",
+            days=(0,),
+            status="scenario_assumption",
+            notes="Generic same-day testing delay for the demonstration.",
+        )
+    )
+    analysis_horizon_tail_days: StrictInt | None = Field(default=None, ge=0)
     day_of_week_effect: tuple[StrictFloat, ...] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
     observation_seed: StrictInt = 0
 
@@ -130,6 +159,25 @@ class ObservationConfig(StrictModel):
                 raise ValueError("observation parameter_id must match its mapping key")
         return self
 
+    @model_validator(mode="after")
+    def validate_horizon_tail(self) -> ObservationConfig:
+        if self.analysis_horizon_tail_days is not None:
+            if self.analysis_horizon_tail_days < 0:
+                raise ValueError("analysis_horizon_tail_days must be non-negative")
+            maximum_delay = sum(
+                max(distribution.days)
+                for distribution in (
+                    self.symptom_onset_delay,
+                    self.detection_delay,
+                    self.reporting_delay,
+                )
+            )
+            if self.analysis_horizon_tail_days < maximum_delay:
+                raise ValueError(
+                    "analysis_horizon_tail_days must cover the maximum configured delay tail"
+                )
+        return self
+
     def numeric(self, name: str) -> float:
         """Return a required numeric observation parameter."""
 
@@ -142,9 +190,9 @@ class ObservationConfig(StrictModel):
 class ObservationArtifactManifest(StrictModel):
     """Manifest for a standalone latent-to-observed transformation."""
 
-    manifest_schema_version: Literal["1.0"] = "1.0"
+    manifest_schema_version: Literal["1.1"] = "1.1"
     artifact_id: NonEmptyString
-    generator_version: NonEmptyString = "6.0.0"
+    generator_version: NonEmptyString = "6.1.0"
     latent_run_logical_content_hash: NonEmptyString
     latent_m5_artifact_id: NonEmptyString | None = None
     observation_config_id: NonEmptyString

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import multiprocessing as mp
+import os
 import platform
 import resource
 import time
-from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -246,35 +246,101 @@ def _summary_rows(
     trajectories: dict[int, tuple[dict[str, Any], ...]],
     lower_quantile: float,
     upper_quantile: float,
+    *,
+    requested_replicates: int | None = None,
+    horizon: tuple[str, ...] | None = None,
 ) -> tuple[dict[str, Any], ...]:
-    grouped: dict[tuple[str, str, str, str], list[float]] = defaultdict(list)
-    for rows in trajectories.values():
-        for row in rows:
-            grouped[(row["scope"], row["key"], row["metric"], row["date"])].append(
-                float(row["value"])
-            )
+    successful_replicates = len(trajectories)
+    requested = requested_replicates if requested_replicates is not None else successful_replicates
+    indexed = {
+        seed: {
+            (row["scope"], row["key"], row["metric"], row["date"]): float(row["value"])
+            for row in rows
+        }
+        for seed, rows in trajectories.items()
+    }
+    metric_keys = sorted(
+        {
+            (row["scope"], row["key"], row["metric"])
+            for rows in trajectories.values()
+            for row in rows
+        }
+    )
+    dates = tuple(
+        horizon or sorted({row["date"] for rows in trajectories.values() for row in rows})
+    )
     summary: list[dict[str, Any]] = []
-    for (scope, key, metric, when), values in sorted(grouped.items()):
-        quantiles = np.quantile(
-            np.asarray(values, dtype=float),
-            [lower_quantile, 0.5, upper_quantile],
-            method="linear",
-        )
-        summary.append(
-            {
-                "scope": scope,
-                "key": key,
-                "metric": metric,
-                "date": when,
-                "lower_quantile": lower_quantile,
-                "median": float(quantiles[1]),
-                "upper_quantile": upper_quantile,
-                "lower_value": float(quantiles[0]),
-                "upper_value": float(quantiles[2]),
-                "replicate_count": len(values),
-            }
-        )
+    for scope, key, metric in metric_keys:
+        for when in dates:
+            values = [
+                indexed[seed].get((scope, key, metric, when), 0.0) for seed in sorted(indexed)
+            ]
+            if not values:
+                continue
+            quantiles = np.quantile(
+                np.asarray(values, dtype=float),
+                [lower_quantile, 0.5, upper_quantile],
+                method="linear",
+            )
+            summary.append(
+                {
+                    "scope": scope,
+                    "key": key,
+                    "metric": metric,
+                    "date": when,
+                    "lower_quantile": lower_quantile,
+                    "median": float(quantiles[1]),
+                    "upper_quantile": upper_quantile,
+                    "lower_value": float(quantiles[0]),
+                    "upper_value": float(quantiles[2]),
+                    "replicate_count": len(values),
+                    "requested_replicates": requested,
+                    "successful_replicates": successful_replicates,
+                    "contributing_replicates": len(values),
+                }
+            )
     return tuple(summary)
+
+
+def available_physical_memory_bytes() -> int | None:
+    """Return discoverable physical memory without adding a psutil dependency."""
+
+    try:
+        page_size = int(os.sysconf("SC_PAGE_SIZE"))
+        page_count = int(os.sysconf("SC_PHYS_PAGES"))
+    except (AttributeError, OSError, TypeError, ValueError):
+        return None
+    return page_size * page_count if page_size > 0 and page_count > 0 else None
+
+
+def safe_worker_bound(
+    requested_workers: int,
+    *,
+    estimated_worker_memory_bytes: int = 1_100_000_000,
+    memory_safety_fraction: float = 0.6,
+    available_memory_bytes: int | None = None,
+    cpu_count: int | None = None,
+) -> int:
+    """Bound workers by memory and CPU, retaining at least one worker."""
+
+    if requested_workers < 1 or estimated_worker_memory_bytes < 1:
+        raise ValueError("worker and memory estimates must be positive")
+    if not 0 < memory_safety_fraction <= 1:
+        raise ValueError("memory_safety_fraction must be in (0, 1]")
+    cpu_bound = max(1, cpu_count or (os.cpu_count() or 1))
+    memory = (
+        available_memory_bytes
+        if available_memory_bytes is not None
+        else available_physical_memory_bytes()
+    )
+    if memory is None:
+        memory_bound = requested_workers
+    else:
+        memory_bound = max(
+            1,
+            int(memory * memory_safety_fraction // estimated_worker_memory_bytes),
+        )
+    return max(1, min(requested_workers, cpu_bound, memory_bound))
 
 
 def run_ensemble(
@@ -289,6 +355,9 @@ def run_ensemble(
     workers: int = 1,
     lower_quantile: float = 0.025,
     upper_quantile: float = 0.975,
+    estimated_worker_memory_bytes: int = 1_100_000_000,
+    memory_safety_fraction: float = 0.6,
+    allow_unsafe_workers: bool = False,
 ) -> EnsembleResult:
     """Run explicit seeds sequentially or in a bounded process pool."""
 
@@ -301,6 +370,9 @@ def run_ensemble(
         observation_config=observation_config,
         replicate_seeds=replicate_seeds,
         workers=workers,
+        estimated_worker_memory_bytes=estimated_worker_memory_bytes,
+        memory_safety_fraction=memory_safety_fraction,
+        allow_unsafe_workers=allow_unsafe_workers,
         lower_quantile=lower_quantile,
         upper_quantile=upper_quantile,
     )
@@ -326,18 +398,31 @@ def run_ensemble(
         "observation_config": observation_config,
     }
     jobs = [{**job_base, "seed": seed} for seed in config.replicate_seeds]
+    requested_workers = config.workers
+    safe_bound = (
+        requested_workers
+        if config.allow_unsafe_workers
+        else safe_worker_bound(
+            requested_workers,
+            estimated_worker_memory_bytes=config.estimated_worker_memory_bytes,
+            memory_safety_fraction=config.memory_safety_fraction,
+        )
+    )
+    actual_workers = min(requested_workers, safe_bound)
     parallelism = "sequential"
     parallelism_fallback_reason: str | None = None
-    if config.workers == 1:
+    if actual_workers == 1:
         outputs = [_run_replicate_job(job) for job in jobs]
+        if requested_workers > 1:
+            parallelism = "sequential_memory_bound"
     else:
         try:
             context = mp.get_context("spawn")
-            with ProcessPoolExecutor(max_workers=config.workers, mp_context=context) as pool:
+            with ProcessPoolExecutor(max_workers=actual_workers, mp_context=context) as pool:
                 futures = [pool.submit(_run_replicate_job, job) for job in jobs]
                 outputs = [future.result() for future in futures]
             parallelism = "process_pool_spawn"
-        except (NotImplementedError, PermissionError) as exc:
+        except (NotImplementedError, OSError, PermissionError, RuntimeError) as exc:
             # Some constrained macOS runners deny the semaphore limit probe
             # used by ProcessPoolExecutor.  This is an execution-environment
             # limitation, not a replicate result; preserve deterministic
@@ -365,6 +450,7 @@ def run_ensemble(
         successful_trajectories,
         config.lower_quantile,
         config.upper_quantile,
+        requested_replicates=len(config.replicate_seeds),
     )
     successful = sum(output.status == "passed" for output in outputs)
     failed = len(outputs) - successful
@@ -376,8 +462,17 @@ def run_ensemble(
         "replicate_count": len(outputs),
         "successful_replicates": successful,
         "failed_replicates": failed,
-        "worker_count": config.workers,
+        "requested_workers": requested_workers,
+        "actual_workers": actual_workers,
         "parallelism": parallelism,
+        "worker_bound": {
+            "safe_upper_bound": safe_bound,
+            "estimated_worker_memory_bytes": config.estimated_worker_memory_bytes,
+            "memory_safety_fraction": config.memory_safety_fraction,
+            "available_physical_memory_bytes": available_physical_memory_bytes(),
+            "cpu_count": os.cpu_count(),
+            "override_used": config.allow_unsafe_workers,
+        },
         "quantile_method": "numpy.quantile(method='linear')",
         "quantile_configuration": {
             "lower": config.lower_quantile,
@@ -387,6 +482,26 @@ def run_ensemble(
         "platform": platform.platform(),
         "failed_replica_errors": {
             str(output.seed): output.error for output in outputs if output.error
+        },
+        "date_grid": {
+            "complete": failed == 0,
+            "zero_fill_semantics": (
+                "absent metric/date rows in successful replicates are explicit zeroes"
+            ),
+        },
+        "stream_ownership": {
+            "population": "fixed parent M2 artifact; coupled across matched scenarios",
+            "m2_m3_structure": "fixed parent M3 artifact; coupled across matched scenarios",
+            "network": "derived from replicate seed and network configuration",
+            "disease": "derived from replicate seed and disease/network path",
+            "observation": "derived from replicate seed, observation seed and config identity",
+            "attribution": "stable seed/timestep/target key inside the disease module",
+        },
+        "matched_seed_semantics": {
+            "matched_seed_means": "both scenarios start with the same declared integer seed",
+            "true_common_random_numbers": (
+                "only claimed for streams whose keys and event paths remain coupled"
+            ),
         },
     }
     if parallelism_fallback_reason is not None:
@@ -508,12 +623,54 @@ def compare_ensembles(
                 }
             )
     status = "passed" if missing == 0 else ("partial" if paired else "failed")
+    paired_records = [
+        (a_by_seed[seed], b_by_seed[seed])
+        for seed in seeds
+        if seed in a_by_seed
+        and seed in b_by_seed
+        and a_by_seed[seed].status == "passed"
+        and b_by_seed[seed].status == "passed"
+    ]
+    m2_coupled = ensemble_a.m2_logical_content_hash == ensemble_b.m2_logical_content_hash
+    m3_coupled = ensemble_a.m3_logical_content_hash == ensemble_b.m3_logical_content_hash
+    network_coupled = bool(paired_records) and all(
+        record_a.m4_logical_content_hash == record_b.m4_logical_content_hash
+        for record_a, record_b in paired_records
+    )
+    disease_coupled = bool(paired_records) and all(
+        record_a.latent_run_logical_content_hash == record_b.latent_run_logical_content_hash
+        for record_a, record_b in paired_records
+    )
+    observation_config_hash_a = sha256_bytes(
+        canonical_json_bytes(ensemble_a.config.observation_config.model_dump(mode="json"))
+    )
+    observation_config_hash_b = sha256_bytes(
+        canonical_json_bytes(ensemble_b.config.observation_config.model_dump(mode="json"))
+    )
+    observation_stream_key_coupled = observation_config_hash_a == observation_config_hash_b
+    observation_output_coupled = bool(paired_records) and all(
+        record_a.observation_logical_content_hash == record_b.observation_logical_content_hash
+        for record_a, record_b in paired_records
+    )
     diagnostics = {
         "status": status,
         "seed_order": list(seeds),
         "paired_seed_count": paired,
         "missing_or_failed_pair_count": missing,
         "pairing_preserved": True,
+        "stream_coupling": {
+            "population": m2_coupled,
+            "m2_m3_structure": m3_coupled,
+            "network": network_coupled,
+            "disease": disease_coupled,
+            "observation_stream_key": observation_stream_key_coupled,
+            "observation_outputs": observation_output_coupled,
+            "event_path_divergence_may_break_later_coupling": not disease_coupled,
+            "interpretation": (
+                "Equal seeds provide matched starts; true CRN coupling is claimed only "
+                "where stream keys and event paths remain equal."
+            ),
+        },
     }
     logical_content_hash = sha256_bytes(
         canonical_json_bytes(

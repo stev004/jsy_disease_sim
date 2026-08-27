@@ -103,9 +103,10 @@ COVID-19, RSV or another real pathogen.
 Initial seeds, generic exogenous imports and locally acquired infections are
 reported separately. Each local infection is attributed to one of the 11
 configured M4 route IDs and retains an infector UID when Starsim supplies one.
-Same-timestep multiple-route opportunities are resolved by Starsim's existing
-route iteration and the first retained event, rather than by a second JOS
-transmission engine. Daily tidy outputs are latent truth: no ascertainment,
+Same-timestep multiple-route opportunities preserve Starsim's union infection
+occurrence while attribution selects among successful route hazards with a
+stable target/timestep draw that does not depend on route insertion order.
+Daily tidy outputs are latent truth: no ascertainment,
 reporting delay, detected-case, calibration, ensemble or observation model is
 included.
 
@@ -132,11 +133,38 @@ identities across A/B configurations. A process-pool request may be recorded as
 `sequential_fallback` when the host disallows its semaphore capability; this is
 an execution-environment diagnostic, not a claim of parallel execution.
 
-The Optuna harness is a synthetic recovery test, not parameter estimation for
-Jersey. It generates its own fully detected target from the generic M5 model,
-hides a declared reporting delay, retains every grid trial and checks recovery
-on a fresh synthetic seed. Its truth, candidate and held-out results are
-separate from official Jersey evidence and cannot establish model validity.
+The calibration harness is a synthetic recovery test, not parameter estimation
+for Jersey. It can hide a reporting delay or generic transmission beta,
+generates fully detected truth from the generic M5 model, retains every grid
+trial, and checks recovery on fresh synthetic seeds. Beta recovery also emits
+profiles under altered ascertainment and route-weight assumptions to expose
+confounding. Its truth, candidate and held-out results are separate from
+official Jersey evidence and cannot establish model validity.
+
+### Milestone 6 / C3 observation semantics
+
+C3 keeps the latent M5 event table intact while making the causal observation
+timeline explicit: infection, optional generic symptom-onset anchor, testing/
+detection, and report dates are separate fields. The analysis horizon is the
+complete latent horizon plus either an explicitly configured delay tail or the
+maximum configured symptom, detection and reporting delays. Latent incidence is
+therefore conserved even when an event is never detected or reported. Detection
+notifications are exposed through a read-only interface for a future consumer;
+they do not implement isolation or any other intervention.
+
+Observation draws use a stream derived from latent replicate seed, observation
+seed and configuration identity, with stable event keys. Different latent
+replicate seeds therefore do not silently reuse the same observation random
+sequence. Ensemble summaries use explicit date grids with zero-filled missing
+metric/date cells and retain failed replicate status separately from successful
+contributors. Requested process workers are bounded by available physical
+memory and CPU unless an explicit unsafe override is used.
+
+The verification archive is a separate retained index for ignored/generated
+outputs. It records the clean Git commit, parent logical hashes, source-manifest
+hashes, command results, benchmark metadata and hashes of retained summary
+files. It does not turn local generated outputs into Git-tracked source, so the
+archive and its external output bundle must be retained together.
 
 The full M3 benchmark has 104,540 synthetic residents, 13,991 school
 assignments, 8,500 workplaces and 62,108 job assignments. These counts show

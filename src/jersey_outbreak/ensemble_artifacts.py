@@ -1,4 +1,4 @@
-"""Persisted tables and provenance manifests for M6 ensembles and comparisons."""
+"""Persisted tables and provenance manifests for C3 ensembles."""
 
 from __future__ import annotations
 
@@ -130,6 +130,9 @@ def write_ensemble_artifact(
                 ("lower_value", pa.float64()),
                 ("upper_value", pa.float64()),
                 ("replicate_count", pa.int64()),
+                ("requested_replicates", pa.int64()),
+                ("successful_replicates", pa.int64()),
+                ("contributing_replicates", pa.int64()),
             ]
         ),
     )
