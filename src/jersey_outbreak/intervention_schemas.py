@@ -156,6 +156,7 @@ class InterventionConfig(StrictModel):
     wfh_days_per_week: int | None = Field(default=None, ge=0, le=5)
     indoor_multiplier: float = Field(default=1.0, ge=0.0, le=1.0)
     outdoor_multiplier: float = Field(default=1.0, ge=0.0, le=1.0)
+    community_scope: Literal["residents_only", "everyone_present"] = "everyone_present"
     care_target: CareTarget = "both"
     care_contact_multiplier: float = Field(default=1.0, ge=0.0, le=1.0)
     care_external_resident_multiplier: float = Field(default=1.0, ge=0.0, le=1.0)

@@ -7,6 +7,7 @@ controls and carry provenance metadata.
 
 from __future__ import annotations
 
+from calendar import monthrange
 from datetime import date
 from math import isfinite
 from typing import Any, Literal
@@ -40,6 +41,7 @@ RiskStratum = Literal[
 
 TRAVEL_ROUTE_IDS: tuple[str, ...] = (
     "arrival_terminal",
+    "visitor_party",
     "visitor_accommodation",
     "visitor_host_household",
     "visitor_transit",
@@ -54,6 +56,16 @@ PARAMETER_STATUSES = Literal[
     "calibrated",
     "scenario_assumption",
 ]
+
+
+def _default_transport_probabilities() -> dict[LocalTransportType, float]:
+    return {
+        "BUS": 0.45,
+        "PRIVATE_RENTAL_CAR": 0.23,
+        "TAXI_RIDE": 0.12,
+        "HOST_PICKUP": 0.10,
+        "WALKING_OTHER": 0.10,
+    }
 
 
 class TravelParameter(StrictModel):
@@ -74,7 +86,9 @@ class SeasonalityProfile(StrictModel):
 
     profile_id: NonEmptyString
     monthly_multipliers: tuple[float, ...] = (1.0,) * 12
-    normalization: Literal["mean_one"] = "mean_one"
+    normalization: Literal["day_weighted_annual_mean_one", "mean_one"] = (
+        "day_weighted_annual_mean_one"
+    )
     minimum: float = Field(default=0.0, ge=0.0)
     maximum: float = Field(default=2.0, gt=0.0)
     status: PARAMETER_STATUSES = "scenario_assumption"
@@ -104,8 +118,13 @@ class SeasonalityProfile(StrictModel):
 
     def multiplier(self, when: date) -> float:
         value = float(self.monthly_multipliers[when.month - 1])
-        if self.normalization == "mean_one":
-            value /= sum(self.monthly_multipliers) / 12.0
+        # ``mean_one`` is retained as an input alias for M8 configuration
+        # compatibility, but M8.1 gives it the corrected day-weighted meaning.
+        days = [monthrange(when.year, month)[1] for month in range(1, 13)]
+        weighted_mean = sum(
+            multiplier * days[index] for index, multiplier in enumerate(self.monthly_multipliers)
+        ) / sum(days)
+        value /= weighted_mean
         return value
 
 
@@ -120,6 +139,7 @@ class TravelInterventionConfig(StrictModel):
     quarantine_positive_only: bool = True
     quarantine_all_arrivals: bool = False
     quarantine_duration_days: int = Field(default=0, ge=0, le=366)
+    quarantine_start_delay_days: int = Field(default=0, ge=0, le=30)
     quarantine_adherence: float = Field(default=0.0, ge=0.0, le=1.0)
     quarantine_external_route_multiplier: float = Field(default=0.0, ge=0.0, le=1.0)
     quarantine_accommodation_multiplier: float = Field(default=1.0, ge=0.0, le=1.0)
@@ -127,6 +147,9 @@ class TravelInterventionConfig(StrictModel):
     travel_acquisition_multiplier: float = Field(default=1.0, ge=0.0, le=1.0)
     traveller_vaccination_coverage: float = Field(default=0.0, ge=0.0, le=1.0)
     traveller_vaccination_efficacy: float = Field(default=0.0, ge=0.0, le=1.0)
+    traveller_vaccination_infectiousness_efficacy: float = Field(default=0.0, ge=0.0, le=1.0)
+    traveller_vaccination_protection_delay_days: int = Field(default=0, ge=0, le=366)
+    traveller_vaccination_waning_days: int | None = Field(default=None, ge=1, le=3650)
 
     @model_validator(mode="after")
     def validate_quarantine(self) -> TravelInterventionConfig:
@@ -134,6 +157,12 @@ class TravelInterventionConfig(StrictModel):
             raise ValueError(
                 "quarantine_positive_only and quarantine_all_arrivals are mutually exclusive"
             )
+        if (
+            self.traveller_vaccination_waning_days is not None
+            and self.traveller_vaccination_protection_delay_days
+            >= self.traveller_vaccination_waning_days
+        ):
+            raise ValueError("traveller vaccination waning must follow its protection delay")
         # Adherence=0 is intentionally valid: it is the exact neutral case for
         # a configured quarantine policy.
         return self
@@ -177,6 +206,7 @@ class TravelConfig(StrictModel):
     mode: TravelMode = "disabled"
     daily_arrivals: dict[str, int] = Field(default_factory=dict)
     daily_departures: dict[str, int] = Field(default_factory=dict)
+    departure_reconciliation_tolerance: int = Field(default=0, ge=0)
     annual_air_arrivals: int = Field(default=720_842, ge=0)
     annual_ferry_arrivals: int = Field(default=196_623, ge=0)
     stream_scale: float = Field(default=0.001, ge=0.0, le=1.0)
@@ -190,9 +220,16 @@ class TravelConfig(StrictModel):
     party_sizes: tuple[int, ...] = (1, 2, 4, 6)
     party_probabilities: tuple[float, ...] = (0.45, 0.30, 0.20, 0.05)
     accommodation_group_capacity: int = Field(default=8, ge=2, le=40)
+    visitor_accommodation_contacts: int = Field(default=3, ge=0, le=20)
     terminal_mixing_contacts: int = Field(default=4, ge=0, le=30)
     visitor_community_contacts: int = Field(default=3, ge=0, le=20)
     visitor_transit_contacts: int = Field(default=2, ge=0, le=20)
+    visitor_party_contacts: int = Field(default=3, ge=0, le=11)
+    taxi_capacity: int = Field(default=4, ge=1, le=8)
+    private_vehicle_capacity: int = Field(default=7, ge=1, le=12)
+    local_transport_probabilities: dict[LocalTransportType, float] = Field(
+        default_factory=_default_transport_probabilities
+    )
     visitor_community_indoor_probability: float = Field(default=0.65, ge=0.0, le=1.0)
     visitor_community_outdoor_probability: float = Field(default=0.45, ge=0.0, le=1.0)
     visitor_to_resident_multiplier: float = Field(default=1.0, ge=0.0, le=1.0)
@@ -202,9 +239,11 @@ class TravelConfig(StrictModel):
     arrival_infectious_fraction: float = Field(default=0.0, ge=0.0, le=1.0)
     arrival_exposed_fraction: float = Field(default=0.0, ge=0.0, le=1.0)
     arrival_recovered_fraction: float = Field(default=0.0, ge=0.0, le=1.0)
+    recovered_arrival_days_since_recovery: int = Field(default=0, ge=0, le=3650)
     returning_resident_external_acquisition_probability: float = Field(default=0.0, ge=0.0, le=1.0)
     visitor_capacity: int | None = Field(default=None, ge=0)
     visitor_capacity_headroom: float = Field(default=0.10, ge=0.0, le=2.0)
+    materialized_episode_limit: int = Field(default=200_000, ge=1)
     visitor_seasonality: SeasonalityProfile = Field(
         default_factory=lambda: SeasonalityProfile(profile_id="neutral-visitor-seasonality")
     )
@@ -240,6 +279,11 @@ class TravelConfig(StrictModel):
     def normalize_parties(cls, value: object) -> object:
         return tuple(value) if isinstance(value, list) else value
 
+    @field_validator("assumptions", mode="before")
+    @classmethod
+    def normalize_assumptions(cls, value: object) -> object:
+        return tuple(value) if isinstance(value, list) else value
+
     @field_validator("visitor_route_multipliers")
     @classmethod
     def validate_route_multipliers(cls, value: dict[str, float]) -> dict[str, float]:
@@ -247,6 +291,20 @@ class TravelConfig(StrictModel):
             raise ValueError("visitor_route_multipliers must cover exactly the M8 route IDs")
         if any(not isfinite(float(item)) or item < 0 or item > 1 for item in value.values()):
             raise ValueError("visitor route multipliers must be finite and in [0, 1]")
+        return value
+
+    @field_validator("local_transport_probabilities")
+    @classmethod
+    def validate_transport_probabilities(
+        cls, value: dict[LocalTransportType, float]
+    ) -> dict[LocalTransportType, float]:
+        expected = {"BUS", "PRIVATE_RENTAL_CAR", "TAXI_RIDE", "HOST_PICKUP", "WALKING_OTHER"}
+        if set(value) != expected:
+            raise ValueError("local transport probabilities must cover every declared mode")
+        if any(not isfinite(item) or item < 0 for item in value.values()):
+            raise ValueError("local transport probabilities must be finite and non-negative")
+        if abs(sum(value.values()) - 1.0) > 1e-9:
+            raise ValueError("local transport probabilities must sum to 1")
         return value
 
     @model_validator(mode="after")
@@ -259,8 +317,11 @@ class TravelConfig(StrictModel):
             raise ValueError("travel party probabilities must be non-negative")
         if abs(sum(self.party_probabilities) - 1.0) > 1e-6:
             raise ValueError("travel party probabilities must sum to 1")
-        if self.visitor_fraction + self.returning_resident_fraction > 1.0 + 1e-9:
-            raise ValueError("visitor_fraction plus returning_resident_fraction must not exceed 1")
+        if abs(self.visitor_fraction + self.returning_resident_fraction - 1.0) > 1e-9:
+            raise ValueError(
+                "visitor_fraction plus returning_resident_fraction must equal 1 because "
+                "they partition person movements"
+            )
         if (
             self.arrival_infectious_fraction
             + self.arrival_exposed_fraction
@@ -290,24 +351,6 @@ class TravelConfig(StrictModel):
     def intervention_hash(self) -> str:
         return self.interventions.config_hash
 
-    @property
-    def temporary_network_hash(self) -> str:
-        return sha256_bytes(
-            canonical_json_bytes(
-                {
-                    "routes": list(TRAVEL_ROUTE_IDS),
-                    "multipliers": self.visitor_route_multipliers,
-                    "contacts": {
-                        "terminal": self.terminal_mixing_contacts,
-                        "accommodation": self.accommodation_group_capacity,
-                        "transit": self.visitor_transit_contacts,
-                        "community": self.visitor_community_contacts,
-                    },
-                    "visitor_to_resident_multiplier": self.visitor_to_resident_multiplier,
-                }
-            )
-        )
-
     def resolved_parameter_provenance(self) -> dict[str, dict[str, Any]]:
         """Return explicit provenance for every scalar control used by M8."""
 
@@ -331,6 +374,17 @@ class TravelConfig(StrictModel):
                         "notes": "Synthetic M8 control; not a Jersey estimate.",
                     },
                 )
+        for key in ("annual_air_arrivals", "annual_ferry_arrivals"):
+            result[key] = {
+                "value": payload[key],
+                "distribution": "fixed",
+                "units": "passenger movements/year",
+                "status": "observed",
+                "source_ids": ["passenger_arrivals_total_csv"],
+                "derivation": "Frozen Ports of Jersey 2025 passenger-arrival total.",
+                "sensitivity_required": True,
+                "notes": "Passenger movements, not unique tourists.",
+            }
         return result
 
 
@@ -359,6 +413,12 @@ class TravelEpisode(StrictModel):
     absence_start_date: date | None = None
     return_date: date | None = None
     home_household_id: NonEmptyString | None = None
+
+    @property
+    def identity_hash(self) -> str:
+        """Immutable identity of this person-level trip episode."""
+
+        return sha256_bytes(canonical_json_bytes(self.model_dump(mode="json")))
 
     @model_validator(mode="after")
     def validate_episode(self) -> TravelEpisode:

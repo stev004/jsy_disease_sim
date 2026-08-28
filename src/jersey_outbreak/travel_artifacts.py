@@ -15,6 +15,7 @@ import pyarrow.parquet as pq
 from .contracts import ArtifactRecord, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .travel import TravelRunResult
+from .travel_schemas import TravelConfig
 
 M8_ARTIFACT_SCHEMA_VERSION = "2.0"
 
@@ -89,7 +90,11 @@ def _git_metadata(root: Path) -> tuple[str | None, bool]:
 
 def _write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
     if rows:
-        table = pa.Table.from_pylist(rows)
+        # Arrow infers a struct from the first row and otherwise drops keys
+        # introduced only by later heterogeneous events. Normalize the union
+        # explicitly so infector/candidate/episode identity is never lost.
+        columns = sorted({key for row in rows for key in row})
+        table = pa.Table.from_pylist([{key: row.get(key) for key in columns} for row in rows])
     else:
         table = pa.Table.from_pylist([{}]).slice(0, 0)
     pq.write_table(table, path, compression="zstd", use_dictionary=True, write_statistics=True)
@@ -106,6 +111,36 @@ def _relative(path: Path, root: Path) -> str:
         return str(path)
 
 
+def _without_null_fields(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _without_null_fields(item) for key, item in value.items() if item is not None}
+    if isinstance(value, list):
+        return [_without_null_fields(item) for item in value]
+    return value
+
+
+def _canonical_c5_events(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Undo Arrow union-schema null padding while retaining C5 nullable fields."""
+
+    base_fields = {
+        "time_index",
+        "date",
+        "infected_uid",
+        "infector_uid",
+        "route_id",
+        "source_kind",
+        "imported",
+        "seeded",
+        "state",
+        "infected_agent_id",
+        "infector_agent_id",
+    }
+    return [
+        {key: value for key, value in row.items() if key in base_fields or value is not None}
+        for row in rows
+    ]
+
+
 def _rows_for_result(result: TravelRunResult) -> dict[str, list[dict[str, Any]]]:
     return {
         "daily_travel_population.parquet": result.daily_travel_population,
@@ -113,6 +148,7 @@ def _rows_for_result(result: TravelRunResult) -> dict[str, list[dict[str, Any]]]
         "visitor_population.parquet": list(result.travel_plan.visitor_records),
         "visitor_events.parquet": result.visitor_events,
         "daily_travel_route.parquet": result.daily_travel_route,
+        "temporary_edges.parquet": result.temporary_edges,
         "travel_transmission_events.parquet": result.travel_transmission_events,
         "travel_intervention_events.parquet": result.travel_intervention_events,
         "daily_travel_intervention_state.parquet": result.daily_travel_intervention_state,
@@ -120,6 +156,9 @@ def _rows_for_result(result: TravelRunResult) -> dict[str, list[dict[str, Any]]]
         "high_risk_strata.parquet": result.high_risk_strata,
         "daily_high_risk.parquet": result.high_risk_epidemic,
         "daily_epidemic.parquet": result.daily_epidemic,
+        "daily_parish.parquet": result.daily_parish,
+        "daily_route.parquet": result.daily_route,
+        "daily_age.parquet": result.daily_age,
         "transmission_events.parquet": result.transmission_events,
     }
 
@@ -162,7 +201,9 @@ def write_travel_artifact(
     )
     _write_json(
         artifact_directory / "scenario_config.json",
-        result.diagnostics.get("scenario_config"),
+        result.scenario_config.model_dump(mode="json")
+        if result.scenario_config is not None
+        else None,
     )
     _write_json(artifact_directory / "diagnostics.json", result.diagnostics)
     _write_json(
@@ -252,6 +293,7 @@ def verify_travel_artifact(artifact_directory: Path) -> TravelArtifactManifest:
         "travel_episodes.parquet",
         "visitor_population.parquet",
         "daily_travel_route.parquet",
+        "temporary_edges.parquet",
         "seasonality_schedule.parquet",
         "daily_epidemic.parquet",
         "transmission_events.parquet",
@@ -272,6 +314,7 @@ def verify_travel_artifact(artifact_directory: Path) -> TravelArtifactManifest:
         "parent_reference.json",
         "diagnostics.json",
         "observation_config.json",
+        "scenario_config.json",
     ):
         if not (artifact_directory / filename).exists():
             raise ValueError(f"M8 artifact is missing {filename}")
@@ -279,6 +322,93 @@ def verify_travel_artifact(artifact_directory: Path) -> TravelArtifactManifest:
     travel_payload = json.loads(travel_config_path.read_text(encoding="utf-8"))
     if sha256_bytes(canonical_json_bytes(travel_payload)) != manifest.travel_config_hash:
         raise ValueError("M8 travel config hash does not match the manifest")
+    travel_config = TravelConfig.model_validate(travel_payload)
+    if travel_config.seasonality_hash != manifest.seasonality_hash:
+        raise ValueError("M8 seasonality identity does not match the persisted travel config")
+
+    def rows(filename: str) -> list[dict[str, Any]]:
+        return pq.read_table(artifact_directory / filename).to_pylist()
+
+    episode_rows = rows("travel_episodes.parquet")
+    episode_rows.sort(key=lambda row: (row["arrival_date"], row["person_id"]))
+    if sha256_bytes(canonical_json_bytes(episode_rows)) != manifest.visitor_episode_hash:
+        raise ValueError("M8 visitor episode logical hash mismatch")
+    visitor_rows = rows("visitor_population.parquet")
+    visitor_rows.sort(key=lambda row: row["visitor_uid"])
+    if sha256_bytes(canonical_json_bytes(visitor_rows)) != manifest.visitor_population_hash:
+        raise ValueError("M8 visitor population logical hash mismatch")
+    temporary_rows = rows("temporary_edges.parquet")
+    temporary_rows.sort(
+        key=lambda row: (
+            row["time_index"],
+            row["route_id"],
+            row["p1_runtime_slot_uid"],
+            row["p2_runtime_slot_uid"],
+        )
+    )
+    if sha256_bytes(canonical_json_bytes(temporary_rows)) != manifest.temporary_network_hash:
+        raise ValueError("M8 temporary network logical hash mismatch")
+
+    if not episode_rows:
+        latent_payload = {
+            "daily_epidemic": rows("daily_epidemic.parquet"),
+            "daily_parish": rows("daily_parish.parquet"),
+            "daily_route": rows("daily_route.parquet"),
+            "daily_age": rows("daily_age.parquet"),
+            "transmission_events": _canonical_c5_events(rows("transmission_events.parquet")),
+        }
+    else:
+        latent_payload = {
+            "daily_epidemic": rows("daily_epidemic.parquet"),
+            "transmission_events": rows("transmission_events.parquet"),
+            "daily_travel_population": rows("daily_travel_population.parquet"),
+            "daily_travel_route": rows("daily_travel_route.parquet"),
+            "travel_intervention_events": rows("travel_intervention_events.parquet"),
+            "seasonality_schedule": rows("seasonality_schedule.parquet"),
+        }
+    resolved_latent_payload = (
+        latent_payload if not episode_rows else _without_null_fields(latent_payload)
+    )
+    if sha256_bytes(canonical_json_bytes(resolved_latent_payload)) != manifest.latent_outcome_hash:
+        raise ValueError("M8 latent outcome logical hash mismatch")
+
+    scenario_config = json.loads(
+        (artifact_directory / "scenario_config.json").read_text(encoding="utf-8")
+    )
+    observation_config = json.loads(
+        (artifact_directory / "observation_config.json").read_text(encoding="utf-8")
+    )
+    if (
+        sha256_bytes(canonical_json_bytes(observation_config))
+        if observation_config is not None
+        else None
+    ) != manifest.observation_config_hash:
+        raise ValueError("M8 observation config logical hash mismatch")
+    run_payload = json.loads((artifact_directory / "run_config.json").read_text(encoding="utf-8"))
+    scenario_payload = {
+        "scenario": scenario_config,
+        "m4_parent_hash": manifest.m4_logical_content_hash,
+        "m2_hash": manifest.m2_logical_content_hash,
+        "m3_hash": manifest.m3_logical_content_hash,
+        "run_config": run_payload,
+        "travel_config_hash": manifest.travel_config_hash,
+        "visitor_episode_hash": manifest.visitor_episode_hash,
+        "temporary_network_hash": manifest.temporary_network_hash,
+        "seasonality_hash": manifest.seasonality_hash,
+        "starsim_version": manifest.starsim_version,
+        "scenario_config": scenario_config,
+        "m7_scenario_hash": manifest.m7_scenario_hash,
+        "observation_config_hash": manifest.observation_config_hash,
+    }
+    if sha256_bytes(canonical_json_bytes(scenario_payload)) != manifest.scenario_hash:
+        raise ValueError("M8 scenario logical hash mismatch")
+    artifact_payload = {
+        "scenario_hash": manifest.scenario_hash,
+        "latent_hash": manifest.latent_outcome_hash,
+        "episode_hash": manifest.visitor_episode_hash,
+    }
+    if sha256_bytes(canonical_json_bytes(artifact_payload)) != manifest.artifact_bundle_hash:
+        raise ValueError("M8 artifact bundle logical hash mismatch")
     diagnostics = json.loads((artifact_directory / "diagnostics.json").read_text(encoding="utf-8"))
     diagnostic_hashes = diagnostics.get("hashes", {})
     for manifest_name, diagnostic_name in (

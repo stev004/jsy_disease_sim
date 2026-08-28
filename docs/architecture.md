@@ -2,13 +2,16 @@
 
 ## Current verified implementation status
 
-As of 27 August 2026, M0–M7 and corrective closures C1–C4 are PASS. The C3
+As of 28 August 2026, M0–M7 and corrective closures C1–C5 are PASS. The C3
 verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`; the C3
 implementation commit is `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`, followed
 by verification manifest-integrity hardening and documentation-only commits.
 M7 adds a prospective intervention layer while keeping the canonical M4
-routes and latent M5 outputs immutable. M8 adds the explicit travel/visitor
-layer; API and UI remain later boundaries.
+routes and latent M5 outputs immutable. The original M8 implementation failed
+independent audit; M8.1 is the corrective travel-integrity layer. API and UI
+remain later boundaries. M8.1 passes with explicit non-blocking warnings for
+source-backed seasonality, structural transport detail and unbenchmarked
+literal annual source-scale disease execution.
 Quantitative evidence is maintained in
 [`progress.md`](progress.md).
 
@@ -25,11 +28,13 @@ activity. Starsim 3.5.2 population growth is append-only, so M8 does not append
 or delete agents during a run. Capacity is derived from peak concurrency plus
 declared headroom, not annual passenger volume.
 
-Canonical resident IDs and M4 routes are not rewritten. A route view adds six
+Canonical resident IDs and M4 routes are not rewritten. A route view adds seven
 M8 route families and filters resident routes to people present in Jersey when
 returning-resident episodes exist. Event attribution maps temporary slot UIDs
-back to stable visitor IDs and retains resident→resident, resident→visitor,
-visitor→resident and visitor→visitor directions. The travel lifecycle runs
+through the immutable active episode at the event timestep, never through a
+final slot occupant. It retains runtime UID, visitor/trip/party identity and
+resident→resident, resident→visitor, visitor→resident and visitor→visitor
+directions. The travel lifecycle runs
 before disease transmission; post-transmission state snapshots drive the
 date-specific present-population outputs.
 
@@ -37,15 +42,20 @@ Generic M5 exposure attempts and explicit visitor arrivals/returning-resident
 external acquisition are separate processes. The `both` mode is intentional
 and persisted to prevent silent double counting. Arrival testing, quarantine,
 traveller protection and travel-acquisition reduction are prospective controls.
-M7's resident-targeted manager can share the same run; temporary visitor slots
-are ignored by resident-only target selectors. Visitor intensity and optional
+M7 consumes the presence-valid route view rather than rebuilding canonical M4,
+so route intervention refreshes cannot reintroduce absent residents. Its
+vaccination modifier composes multiplicatively with traveller protection, and
+community interventions declare whether temporary visitor routes are in scope.
+Temporary slots remain ignored by resident-only target selectors. Visitor intensity and optional
 travel-route transmission seasonality are separate typed profiles, and the
 actual daily schedule is persisted. High-risk categories are targeting and
 stratification tags, not medical diagnoses or severity probabilities.
 
-M8 artifacts use schema version 2.0 and include required travel/epidemic
-Parquet tables, configurations, parent references, file hashes, scenario/run/
-episode/network/seasonality hashes and performance diagnostics. Comparisons
+M8 artifacts use schema version 2.0 and include exact sparse executed temporary
+edges plus travel/epidemic Parquet tables, complete configurations, parent
+references, file hashes, scenario/run/episode/network/seasonality hashes and
+performance diagnostics. Verification recomputes logical identities from
+contents, so replacing a table and updating only its raw checksum still fails. Comparisons
 retain matched seed and parent information while documenting coupling decay.
 The M8 CLI stops at travel runs, comparisons and small ensembles; M9 API/job
 architecture and M10 UI/map work are outside this milestone.

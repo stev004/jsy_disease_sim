@@ -1,0 +1,17 @@
+schema_version: "1.0"
+travel_config_id: m8.1-explicit-zero-travel
+mode: both
+daily_arrivals:
+  "2025-01-06:AIRPORT": 0
+  "2025-01-06:FERRY": 0
+visitor_fraction: 0.9
+returning_resident_fraction: 0.1
+visitor_seasonality:
+  profile_id: neutral-zero-travel
+  monthly_multipliers: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+  normalization: day_weighted_annual_mean_one
+  minimum: 0.0
+  maximum: 2.0
+  status: scenario_assumption
+  source_ids: []
+  notes: Explicit zero-travel C5-equivalence fixture; not an observed travel scenario.

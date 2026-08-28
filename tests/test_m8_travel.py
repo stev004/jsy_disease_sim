@@ -6,7 +6,7 @@ from datetime import date
 import pytest
 
 from jersey_outbreak.intervention_schemas import InterventionConfig, ScenarioConfig
-from jersey_outbreak.travel import generate_travel_episodes, run_travel_outbreak
+from jersey_outbreak.travel import TravelManager, generate_travel_episodes, run_travel_outbreak
 from jersey_outbreak.travel_artifacts import verify_travel_artifact, write_travel_artifact
 from jersey_outbreak.travel_schemas import TravelConfig, TravelInterventionConfig
 
@@ -67,43 +67,23 @@ def test_travel_episode_identity_and_air_ferry_separation() -> None:
 
 
 def test_zero_arrivals_are_a_real_noop_for_resident_outputs(
-    m6_network, m6_base_config, m6_parameters, m6_latent_run
+    tmp_path, m6_network, m6_base_config, m6_parameters, m6_latent_run
 ) -> None:
-    config = _small_travel_config(daily_arrivals={"2025-01-06:AIRPORT": 0})
+    config = _small_travel_config(mode="both", daily_arrivals={"2025-01-06:AIRPORT": 0})
     result = run_travel_outbreak(m6_network, m6_base_config, m6_parameters, config)
     assert result.travel_plan.visitor_records == ()
     assert all(row["active_visitors"] == 0 for row in result.daily_travel_population)
-    assert all(
-        row["present_population"] == row["resident_present"] for row in result.daily_epidemic
-    )
-    assert [
-        {
-            key: row[key]
-            for key in (
-                "date",
-                "susceptible",
-                "exposed",
-                "infectious",
-                "recovered",
-                "new_infections",
-            )
-        }
-        for row in result.daily_epidemic
-    ] == [
-        {
-            key: row[key]
-            for key in (
-                "date",
-                "susceptible",
-                "exposed",
-                "infectious",
-                "recovered",
-                "new_infections",
-            )
-        }
-        for row in m6_latent_run.daily_epidemic
-    ]
+    assert result.daily_epidemic == m6_latent_run.daily_epidemic
+    assert result.daily_route == m6_latent_run.daily_route
+    assert result.daily_age == m6_latent_run.daily_age
+    assert result.daily_parish == m6_latent_run.daily_parish
+    assert result.transmission_events == m6_latent_run.transmission_events
+    assert result.latent_outcome_hash == m6_latent_run.latent_outcome_hash
     assert not any(row["active_edges"] for row in result.daily_travel_route)
+    artifact = write_travel_artifact(result, tmp_path, tmp_path / "zero-artifact")
+    assert verify_travel_artifact(artifact.artifact_directory).latent_outcome_hash == (
+        m6_latent_run.latent_outcome_hash
+    )
 
 
 def test_departure_stops_active_visitor_routes(m6_network, m6_base_config, m6_parameters) -> None:
@@ -142,14 +122,23 @@ def test_infectious_arrival_testing_and_quarantine_are_prospective(
         m6_parameters,
         config,
     )
-    scheduled = [
-        event for event in result.visitor_events if event["action"] == "arrival_test_scheduled"
+    administered = [
+        event for event in result.visitor_events if event["action"] == "arrival_test_administered"
     ]
-    started = [event for event in result.visitor_events if event["action"] == "quarantine_started"]
-    assert len(scheduled) == 2
-    assert all(event["detected"] for event in scheduled)
+    scheduled = [
+        event
+        for event in result.visitor_events
+        if event["action"] == "arrival_test_result_scheduled"
+    ]
+    results = [event for event in result.visitor_events if event["action"] == "arrival_test_result"]
+    started = [
+        event for event in result.visitor_events if event["action"] == "quarantine_activated"
+    ]
+    assert len(administered) == len(scheduled) == len(results) == 2
+    assert all("detected" not in event for event in scheduled)
+    assert all(event["detected"] for event in results)
     assert len(started) == 2
-    assert all(event["time_index"] >= 0 for event in started)
+    assert all(event["time_index"] == 0 for event in started)
     assert result.diagnostics["interventions"]["prospective"] is True
 
 
@@ -240,6 +229,38 @@ def test_returning_resident_is_absent_from_routes_until_return(
     assert returned[0]["time_index"] == 2
     assert result.diagnostics["denominators"]["resident_attack_rate_denominator"] == 3000
 
+    plan = generate_travel_episodes(
+        config,
+        seed=123,
+        start_date=date(2025, 1, 6),
+        duration_days=4,
+        residents=m6_network.m2_input.residents,
+        households=m6_network.m2_input.households,
+    )
+    manager = TravelManager(
+        m6_network,
+        plan,
+        config,
+        seed=123,
+        start_date=date(2025, 1, 6),
+        duration_days=4,
+    )
+    view = manager.route_view()
+    away_id = str(plan.returning_resident_episodes[0].resident_agent_id)
+    for when in (date(2025, 1, 6), date(2025, 1, 7)):
+        for route_id in m6_network.route_specs:
+            assert all(
+                away_id not in {edge["p1"], edge["p2"]}
+                for edge in view.route_snapshot(route_id, when).edges
+            )
+    manager.present_resident_ids.add(away_id)
+    manager.away_resident_ids.discard(away_id)
+    view._snapshot_cache.clear()
+    assert any(
+        away_id in {edge["p1"], edge["p2"]}
+        for edge in view.route_snapshot("household", date(2025, 1, 8)).edges
+    )
+
 
 def test_m8_artifact_verification_detects_tampering(
     tmp_path, m6_network, m6_base_config, m6_parameters
@@ -296,3 +317,11 @@ def test_m7_intervention_composes_with_travel_layer(
     assert result.m7_intervention_diagnostics["intervention_ids"] == ["m8-community-reduction"]
     assert result.diagnostics["interventions"]["m7_composed"] is True
     assert result.base_generated.logical_content_hash == m6_network.logical_content_hash
+    visitor_effects = [
+        row
+        for row in result.m7_intervention_route_effects
+        if row["route_id"] in {"visitor_community_indoor", "visitor_community_outdoor"}
+        and row["base_edge_count"] > 0
+    ]
+    assert visitor_effects
+    assert all(row["mean_multiplier"] < 1.0 for row in visitor_effects)

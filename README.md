@@ -276,14 +276,22 @@ transport, arrival disease state and departure. Inactive slots have no
 contacts and are excluded from present-population denominators. Returning
 residents retain their identity but leave Jersey routes while away and may
 acquire infection through a separate synthetic external-travel pressure.
+M8.1 resolves every visitor event through the active `(slot UID, timestep)`
+episode interval; a final slot map is never used for historical attribution.
+Activation assigns episode age/sex/state/protection and departure resets all
+temporary state before reuse.
 
 Generic M5 import attempts and explicit arrivals are separate streams. Use
 `mode: generic_import_only`, `explicit_travel` or `both` deliberately; the M8
 manifest records the choice. Visitor terminal, accommodation, host-household,
-transit and community routes are temporary and route-attributed, while M7
+party, bounded transport-unit and community routes are temporary and
+route-attributed, while M7
 interventions can compose with M8 episodes. Visitor-volume seasonality and
 optional travel-contact seasonality are typed, bounded and persisted in
-`seasonality_schedule.parquet`. High-risk strata are targeting metadata only;
+`seasonality_schedule.parquet`; monthly profiles are normalized by modeled
+days so annual passenger-movement totals are preserved. Exact executed
+temporary edges are persisted in `temporary_edges.parquet` and logically
+rehash-verified with the episode, visitor, scenario and latent tables. High-risk strata are targeting metadata only;
 M5 has no validated severity pathway.
 
 ```bash
@@ -297,4 +305,9 @@ uv run jos scenario run --mode ci --seed 123 \
 
 M8 outputs describe only the declared synthetic travel scenario. They are not
 real visitor prevalence, airport/ferry transmission rates, policy-effectiveness
-estimates, tourism forecasts or traveller surveillance.
+estimates, tourism forecasts or traveller surveillance. At `stream_scale < 1`,
+simulated movements are a computational sample, not source-equivalent unique
+tourists, and epidemic results are not automatically inflated to source scale.
+Only the annual 2025 air/ferry passenger-movement totals are observed travel
+controls; monthly seasonality and all composition/contact/intervention values
+are assumptions unless a frozen source explicitly says otherwise.

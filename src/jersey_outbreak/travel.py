@@ -81,6 +81,14 @@ def _iso(when: date) -> str:
     return when.isoformat()
 
 
+def _without_null_fields(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _without_null_fields(item) for key, item in value.items() if item is not None}
+    if isinstance(value, list):
+        return [_without_null_fields(item) for item in value]
+    return value
+
+
 def _dates(start_date: date, duration_days: int) -> tuple[date, ...]:
     return tuple(start_date + timedelta(days=index) for index in range(duration_days))
 
@@ -104,6 +112,8 @@ class TravelPlan:
     visitor_slot_indices: tuple[tuple[str, int], ...]
     episode_hash: str
     visitor_hash: str
+    reconciliation: dict[str, Any] = field(default_factory=dict)
+    departure_reconciliation: dict[str, int] = field(default_factory=dict)
 
     @property
     def visitor_episodes(self) -> tuple[TravelEpisode, ...]:
@@ -161,6 +171,42 @@ def _profile_counts(
     cumulative = previous_expected + max(0.0, direct_float)
     count = int(cumulative)
     return count, cumulative - count
+
+
+def _scaled_annual_target(config: TravelConfig, mode: EntryMode) -> int:
+    """Return the declared integer simulated-movement target for one source stream."""
+
+    source = config.annual_air_arrivals if mode == "AIRPORT" else config.annual_ferry_arrivals
+    value = (
+        source
+        * config.stream_scale
+        * config.arrival_volume_multiplier
+        * config.interventions.arrival_volume_multiplier
+    )
+    # Half-up is explicit and stable; at stream_scale=1 with neutral volume
+    # controls this is exactly the frozen source passenger-movement total.
+    return int(np.floor(value + 0.5))
+
+
+def _annual_apportionment(config: TravelConfig, year: int, mode: EntryMode) -> dict[date, int]:
+    """Largest-remainder daily apportionment preserving the annual integer target."""
+
+    start = date(year, 1, 1)
+    n_days = (date(year + 1, 1, 1) - start).days
+    days = [start + timedelta(days=index) for index in range(n_days)]
+    target = _scaled_annual_target(config, mode)
+    weights = [config.visitor_seasonality.multiplier(day) for day in days]
+    total_weight = sum(weights)
+    exact = [target * weight / total_weight for weight in weights]
+    floors = [int(np.floor(value)) for value in exact]
+    remainder = target - sum(floors)
+    ranking = sorted(
+        range(n_days),
+        key=lambda index: (-(exact[index] - floors[index]), days[index].isoformat()),
+    )
+    for index in ranking[:remainder]:
+        floors[index] += 1
+    return dict(zip(days, floors, strict=True))
 
 
 def _explicit_stream_count(
@@ -252,16 +298,13 @@ def _visitor_accommodation(
     return parish, "HOTEL_GUEST", accommodation_id, None
 
 
-def _transport(seed: int, visitor_uid: str, host: bool) -> LocalTransportType:
+def _transport(config: TravelConfig, seed: int, visitor_uid: str, host: bool) -> LocalTransportType:
     draw = _stable_uniform(seed, "transport", visitor_uid)
-    if host and draw < 0.35:
-        return "HOST_PICKUP"
-    if draw < 0.55:
-        return "BUS"
-    if draw < 0.78:
-        return "PRIVATE_RENTAL_CAR"
-    if draw < 0.90:
-        return "TAXI_RIDE"
+    cumulative = 0.0
+    for mode in ("BUS", "PRIVATE_RENTAL_CAR", "TAXI_RIDE", "HOST_PICKUP", "WALKING_OTHER"):
+        cumulative += config.local_transport_probabilities[mode]
+        if draw < cumulative:
+            return "WALKING_OTHER" if mode == "HOST_PICKUP" and not host else mode
     return "WALKING_OTHER"
 
 
@@ -313,172 +356,232 @@ def generate_travel_episodes(
     episodes: list[TravelEpisode] = []
     visitor_records: list[dict[str, Any]] = []
     daily_counts: dict[str, dict[str, int]] = defaultdict(lambda: {"AIRPORT": 0, "FERRY": 0})
-    fractional = {"AIRPORT": 0.0, "FERRY": 0.0}
+    years = sorted({when.year for when in _dates(start_date, duration_days)})
+    annual_counts = {
+        (year, mode): _annual_apportionment(config, year, mode)
+        for year in years
+        for mode in entry_modes
+    }
+    if not config.daily_arrivals:
+        horizon_movements = sum(
+            annual_counts[(when.year, mode)][when]
+            for when in _dates(start_date, duration_days)
+            for mode in entry_modes
+        )
+        if horizon_movements > config.materialized_episode_limit:
+            raise ValueError(
+                "travel episode materialization limit exceeded; use "
+                "benchmark_travel_generation for literal annual source-scale "
+                "reconciliation/capacity and a declared scaled epidemic run"
+            )
     visitor_counter = 0
+    returning_expected = 0.0
+    returning_assigned = 0
     for when in _dates(start_date, duration_days):
         for mode in entry_modes:
-            count, fractional[mode] = _profile_counts(config, when, mode, fractional[mode])
-            daily_counts[_iso(when)][mode] = count
-            remaining = count
-            party_number = 0
-            while remaining:
-                party_size = _choose_party_size(config, seed, _iso(when), party_number, remaining)
-                party_number += 1
-                remaining -= party_size
-                trip_id = f"trip-{seed:010d}-{when:%Y%m%d}-{mode.lower()}-{party_number:04d}"
-                party_id = f"party-{trip_id}"
-                type_draw = _stable_uniform(seed, "traveller-type", trip_id)
-                is_returning = type_draw < config.returning_resident_fraction
-                is_visitor = (
-                    type_draw < config.returning_resident_fraction + config.visitor_fraction
+            explicit_count = _explicit_stream_count(config.daily_arrivals, config, when, mode)
+            count = (
+                annual_counts[(when.year, mode)][when]
+                if explicit_count is None
+                else int(
+                    np.floor(
+                        explicit_count
+                        * config.arrival_volume_multiplier
+                        * config.interventions.arrival_volume_multiplier
+                        * config.visitor_seasonality.multiplier(when)
+                        + 0.5
+                    )
                 )
-                if is_returning:
-                    returning_candidates = [
-                        agent_id
-                        for agent_id in resident_ids
-                        if busy_until.get(agent_id, start_date) <= when
-                    ]
-                    if not returning_candidates:
-                        is_returning = False
-                        is_visitor = type_draw < config.visitor_fraction
-                    else:
-                        resident_id = returning_candidates[
-                            _stable_int(seed, "returning-resident", trip_id)
-                            % len(returning_candidates)
-                        ]
-                if not is_returning and not is_visitor:
-                    continue
-                for person_number in range(party_size):
-                    terminal = "JERSEY_AIRPORT" if mode == "AIRPORT" else "JERSEY_FERRY_TERMINAL"
-                    if is_returning:
-                        if person_number > 0:
-                            # A returning-resident episode is one resident per
-                            # synthetic party; extra party members remain
-                            # visitors with the same party identifier.
-                            returning = False
-                        else:
-                            returning = True
+            )
+            daily_counts[_iso(when)][mode] = count
+            # Traveller category is apportioned at PERSON-MOVEMENT level.
+            # Homogeneous parties are constructed only after exact integer
+            # category targets have been resolved, so grouping cannot change
+            # the configured visitor/returning-resident split.
+            returning_expected += count * config.returning_resident_fraction
+            returning_count = int(np.floor(returning_expected + 0.5)) - returning_assigned
+            returning_assigned += returning_count
+            category_counts = (
+                ("RETURNING_RESIDENT", returning_count),
+                ("VISITOR", count - returning_count),
+            )
+            party_number = 0
+            for category, category_count in category_counts:
+                remaining = category_count
+                while remaining:
+                    party_size = _choose_party_size(
+                        config,
+                        seed,
+                        f"{when.isoformat()}:{mode}:{category}",
+                        party_number,
+                        remaining,
+                    )
+                    party_number += 1
+                    remaining -= party_size
+                    trip_id = f"trip-{seed:010d}-{when:%Y%m%d}-{mode.lower()}-{party_number:04d}"
+                    party_id = f"party-{trip_id}"
+                    for person_number in range(party_size):
+                        returning = category == "RETURNING_RESIDENT"
+                        resident_id: str | None = None
+                        if returning:
+                            returning_candidates = [
+                                agent_id
+                                for agent_id in resident_ids
+                                if busy_until.get(agent_id, start_date) <= when
+                            ]
+                            if not returning_candidates:
+                                raise ValueError(
+                                    "returning-resident person target exceeds available resident "
+                                    "identity capacity"
+                                )
+                            resident_id = returning_candidates[
+                                _stable_int(
+                                    seed,
+                                    "returning-resident",
+                                    trip_id,
+                                    person_number,
+                                )
+                                % len(returning_candidates)
+                            ]
+                            busy_until[resident_id] = when + timedelta(
+                                days=max(2, config.stay_duration_days)
+                            )
                         person_id = (
                             resident_id
                             if returning
                             else f"visitor-{seed:010d}-{visitor_counter:08d}"
                         )
-                        visitor_uid = None if returning else person_id
-                    else:
-                        returning = False
-                        person_id = f"visitor-{seed:010d}-{visitor_counter:08d}"
-                        visitor_uid = person_id
-                    if returning:
-                        duration = max(2, config.stay_duration_days)
-                        absence_start = when - timedelta(days=duration)
-                        departure = when
-                        busy_until[resident_id] = when + timedelta(days=duration)
-                        episode = TravelEpisode(
-                            trip_id=trip_id,
-                            person_id=person_id,
-                            visitor_uid=None,
-                            resident_agent_id=resident_id,
-                            traveller_type="RETURNING_RESIDENT",
-                            arrival_date=when,
-                            departure_date=departure,
-                            entry_mode=mode,
-                            entry_terminal=terminal,
-                            origin_category="resident_outbound_return",
-                            travel_party_id=party_id,
-                            accommodation_type="NONE",
-                            accommodation_id=None,
-                            host_household_id=None,
-                            local_transport_type="WALKING_OTHER",
-                            active_start=when,
-                            active_end=departure,
-                            disease_state_on_arrival="susceptible",
-                            provenance_config_hash=config.config_hash,
-                            absence_start_date=absence_start,
-                            return_date=when,
-                            home_household_id=household_by_resident.get(resident_id),
+                        assert person_id is not None
+                        terminal = (
+                            "JERSEY_AIRPORT" if mode == "AIRPORT" else "JERSEY_FERRY_TERMINAL"
                         )
-                        episodes.append(episode)
-                    else:
-                        visitor_uid = person_id
-                        parish, accommodation_type, accommodation_id, host_household_id = (
-                            _visitor_accommodation(
-                                config, seed, visitor_uid, host_households, parish_by_household
-                            )
-                        )
-                        if accommodation_type == "NONE":
+                        if returning:
+                            duration = max(2, config.stay_duration_days)
+                            absence_start = when - timedelta(days=duration)
                             departure = when
-                            traveller_type: TravellerType = "DAY_VISITOR"
+                            episode = TravelEpisode(
+                                trip_id=trip_id,
+                                person_id=person_id,
+                                visitor_uid=None,
+                                resident_agent_id=resident_id,
+                                traveller_type="RETURNING_RESIDENT",
+                                arrival_date=when,
+                                departure_date=departure,
+                                entry_mode=mode,
+                                entry_terminal=terminal,
+                                origin_category="resident_outbound_return",
+                                travel_party_id=party_id,
+                                accommodation_type="NONE",
+                                accommodation_id=None,
+                                host_household_id=None,
+                                local_transport_type="WALKING_OTHER",
+                                active_start=when,
+                                active_end=departure,
+                                disease_state_on_arrival="susceptible",
+                                provenance_config_hash=config.config_hash,
+                                absence_start_date=absence_start,
+                                return_date=when,
+                                home_household_id=household_by_resident.get(str(resident_id)),
+                            )
+                            episodes.append(episode)
                         else:
-                            jitter = (
-                                _stable_int(seed, "stay-jitter", visitor_uid)
-                                % (2 * config.stay_duration_jitter_days + 1)
-                                - config.stay_duration_jitter_days
+                            visitor_uid = person_id
+                            parish, accommodation_type, accommodation_id, host_household_id = (
+                                _visitor_accommodation(
+                                    config,
+                                    seed,
+                                    visitor_uid,
+                                    host_households,
+                                    parish_by_household,
+                                )
                             )
-                            departure = when + timedelta(
-                                days=max(1, config.stay_duration_days + int(jitter))
+                            if accommodation_type == "NONE":
+                                departure = when
+                                traveller_type: TravellerType = "DAY_VISITOR"
+                            else:
+                                jitter = (
+                                    _stable_int(seed, "stay-jitter", visitor_uid)
+                                    % (2 * config.stay_duration_jitter_days + 1)
+                                    - config.stay_duration_jitter_days
+                                )
+                                departure = when + timedelta(
+                                    days=max(1, config.stay_duration_days + int(jitter))
+                                )
+                                traveller_type = (
+                                    "STAYING_WITH_RESIDENTS"
+                                    if accommodation_type == "HOST_HOUSEHOLD"
+                                    else "OVERNIGHT_ACCOMMODATION_VISITOR"
+                                )
+                            state = _arrival_state(config, seed, visitor_uid)
+                            episode = TravelEpisode(
+                                trip_id=trip_id,
+                                person_id=person_id,
+                                visitor_uid=visitor_uid,
+                                resident_agent_id=None,
+                                traveller_type=traveller_type,
+                                arrival_date=when,
+                                departure_date=departure,
+                                entry_mode=mode,
+                                entry_terminal=terminal,
+                                origin_category="synthetic_temporary_visitor",
+                                travel_party_id=party_id,
+                                accommodation_type=accommodation_type,
+                                accommodation_id=accommodation_id,
+                                host_household_id=host_household_id,
+                                local_transport_type=_transport(
+                                    config, seed, visitor_uid, host_household_id is not None
+                                ),
+                                active_start=when,
+                                active_end=departure,
+                                disease_state_on_arrival=state,
+                                provenance_config_hash=config.config_hash,
                             )
-                            traveller_type = (
-                                "STAYING_WITH_RESIDENTS"
-                                if accommodation_type == "HOST_HOUSEHOLD"
-                                else "OVERNIGHT_ACCOMMODATION_VISITOR"
+                            episodes.append(episode)
+                            visitor_records.append(
+                                {
+                                    "visitor_uid": visitor_uid,
+                                    "trip_id": trip_id,
+                                    "travel_party_id": party_id,
+                                    "age": 1 + (_stable_int(seed, "visitor-age", visitor_uid) % 90),
+                                    "sex": "female"
+                                    if _stable_int(seed, "visitor-sex", visitor_uid) % 2
+                                    else "male",
+                                    "home_parish": parish,
+                                    "disease_state_on_arrival": state,
+                                    "accommodation_type": accommodation_type,
+                                    "accommodation_id": accommodation_id,
+                                    "host_household_id": host_household_id,
+                                    "local_transport_type": episode.local_transport_type,
+                                    "entry_mode": mode,
+                                    "entry_terminal": terminal,
+                                    "arrival_date": when.isoformat(),
+                                    "departure_date": departure.isoformat(),
+                                    "traveller_type": traveller_type,
+                                    "episode_identity_hash": episode.identity_hash,
+                                }
                             )
-                        state = _arrival_state(config, seed, visitor_uid)
-                        episode = TravelEpisode(
-                            trip_id=trip_id,
-                            person_id=person_id,
-                            visitor_uid=visitor_uid,
-                            resident_agent_id=None,
-                            traveller_type=traveller_type,
-                            arrival_date=when,
-                            departure_date=departure,
-                            entry_mode=mode,
-                            entry_terminal=terminal,
-                            origin_category="synthetic_temporary_visitor",
-                            travel_party_id=party_id,
-                            accommodation_type=accommodation_type,
-                            accommodation_id=accommodation_id,
-                            host_household_id=host_household_id,
-                            local_transport_type=_transport(
-                                seed, visitor_uid, host_household_id is not None
-                            ),
-                            active_start=when,
-                            active_end=departure,
-                            disease_state_on_arrival=state,
-                            provenance_config_hash=config.config_hash,
-                        )
-                        episodes.append(episode)
-                        visitor_records.append(
-                            {
-                                "visitor_uid": visitor_uid,
-                                "trip_id": trip_id,
-                                "travel_party_id": party_id,
-                                "age": 35 + (_stable_int(seed, "visitor-age", visitor_uid) % 35),
-                                "sex": "female"
-                                if _stable_int(seed, "visitor-sex", visitor_uid) % 2
-                                else "male",
-                                "home_parish": parish,
-                                "disease_state_on_arrival": state,
-                                "accommodation_type": accommodation_type,
-                                "accommodation_id": accommodation_id,
-                                "host_household_id": host_household_id,
-                                "local_transport_type": episode.local_transport_type,
-                                "entry_mode": mode,
-                                "entry_terminal": terminal,
-                            }
-                        )
-                        visitor_counter += 1
+                            visitor_counter += 1
 
     # When an explicit departure schedule is supplied, move a deterministic
     # subset of still-active episodes to those dates.  The schedule cannot
     # manufacture a departure without a prior arrival; any unmatchable excess
     # remains visible through the generated episode stream rather than being
     # silently dropped.
+    requested_departures = 0
+    matched_departures = 0
+    horizon_end = start_date + timedelta(days=duration_days)
+    requested_departures_outside_horizon = sum(
+        count
+        for key, count in config.daily_departures.items()
+        if not start_date <= date.fromisoformat(key.split(":", 1)[0]) < horizon_end
+    )
     if config.daily_departures:
         for when in _dates(start_date, duration_days):
             for mode in entry_modes:
                 target = _explicit_stream_count(config.daily_departures, config, when, mode)
                 if target is None or target <= 0:
                     continue
+                requested_departures += target
                 departure_candidates = [
                     episode
                     for episode in episodes
@@ -494,6 +597,7 @@ def generate_travel_episodes(
                     )
                 )
                 selected = {episode.person_id for episode in departure_candidates[:target]}
+                matched_departures += len(selected)
                 episodes = [
                     episode.model_copy(update={"departure_date": when, "active_end": when})
                     if episode.person_id in selected
@@ -501,8 +605,15 @@ def generate_travel_episodes(
                     for episode in episodes
                 ]
 
+    if requested_departures - matched_departures > config.departure_reconciliation_tolerance:
+        raise ValueError(
+            "explicit departure schedule reconciliation failed: "
+            f"requested={requested_departures}, matched={matched_departures}, "
+            f"tolerance={config.departure_reconciliation_tolerance}"
+        )
+
     episode_payload = [
-        row.model_dump(mode="json")
+        row.model_dump(mode="json") | {"episode_identity_hash": row.identity_hash}
         for row in sorted(episodes, key=lambda row: (row.arrival_date, row.person_id))
     ]
     visitor_payload = sorted(visitor_records, key=lambda row: row["visitor_uid"])
@@ -578,6 +689,22 @@ def generate_travel_episodes(
             "visitor slot capacity overflow: "
             f"peak active visitors {peak} exceeds configured capacity {capacity}"
         )
+    simulated_by_mode = {
+        "AIRPORT": sum(values["AIRPORT"] for values in daily_counts.values()),
+        "FERRY": sum(values["FERRY"] for values in daily_counts.values()),
+    }
+    full_years = [
+        year
+        for year in years
+        if start_date <= date(year, 1, 1)
+        and start_date + timedelta(days=duration_days) >= date(year + 1, 1, 1)
+    ]
+    source_targets = {
+        "AIRPORT": sum(_scaled_annual_target(config, "AIRPORT") for _year in full_years),
+        "FERRY": sum(_scaled_annual_target(config, "FERRY") for _year in full_years),
+    }
+    realized_returning = len([row for row in episodes if row.resident_agent_id is not None])
+    realized_total = len(episodes)
     return TravelPlan(
         episodes=tuple(sorted(episodes, key=lambda row: (row.arrival_date, row.person_id))),
         visitor_records=tuple(visitor_payload),
@@ -586,7 +713,147 @@ def generate_travel_episodes(
         visitor_slot_indices=tuple(sorted(slot_by_visitor.items())),
         episode_hash=sha256_bytes(canonical_json_bytes(episode_payload)),
         visitor_hash=sha256_bytes(canonical_json_bytes(visitor_payload)),
+        reconciliation={
+            "source_target_movements": {
+                "AIRPORT": config.annual_air_arrivals,
+                "FERRY": config.annual_ferry_arrivals,
+                "TOTAL": config.annual_air_arrivals + config.annual_ferry_arrivals,
+            },
+            "simulated_movements": simulated_by_mode | {"TOTAL": sum(simulated_by_mode.values())},
+            "full_year_scaled_targets": source_targets | {"TOTAL": sum(source_targets.values())},
+            "stream_scale": config.stream_scale,
+            "reconciliation_error": {
+                mode: simulated_by_mode[mode] - source_targets[mode]
+                for mode in entry_modes
+                if full_years
+            },
+            "reconciliation_tolerance": 0,
+            "rounding_contract": (
+                "annual half-up integer target; largest-remainder daily apportionment"
+            ),
+            "returning_resident_person_fraction": (
+                realized_returning / realized_total if realized_total else 0.0
+            ),
+            "returning_resident_fraction_tolerance": (
+                0.5 / realized_total if realized_total else 0.0
+            ),
+        },
+        departure_reconciliation={
+            "requested_departures": requested_departures,
+            "matched_departures": matched_departures,
+            "unmatched_departures": requested_departures - matched_departures,
+            "requested_departures_outside_horizon": requested_departures_outside_horizon,
+            "departures_outside_horizon": sum(
+                episode.visitor_uid is not None
+                and episode.departure_date >= start_date + timedelta(days=duration_days)
+                for episode in episodes
+            ),
+            "still_active_trips": sum(
+                episode.visitor_uid is not None
+                and episode.departure_date >= start_date + timedelta(days=duration_days)
+                for episode in episodes
+            ),
+        },
     )
+
+
+def benchmark_travel_generation(config: TravelConfig, *, year: int = 2025) -> dict[str, Any]:
+    """Constant-memory annual movement/capacity benchmark without epidemic execution.
+
+    This is the literal source-scale gate. It apportions the authoritative
+    passenger-movement targets to dates, but deliberately does not claim that
+    a scaled simulated person is a source-equivalent unique tourist.
+    """
+
+    started = time.perf_counter()
+    before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    modes: tuple[EntryMode, ...] = ("AIRPORT", "FERRY")
+    by_mode = {mode: _annual_apportionment(config, year, mode) for mode in modes}
+    start = date(year, 1, 1)
+    end = date(year + 1, 1, 1)
+    daily = [
+        by_mode["AIRPORT"][when] + by_mode["FERRY"][when]
+        for when in _dates(start, (end - start).days)
+    ]
+    returning_expected = 0.0
+    returning = 0
+    visitor_daily: list[int] = []
+    for count in daily:
+        returning_expected += count * config.returning_resident_fraction
+        assigned = int(np.floor(returning_expected + 0.5)) - returning
+        returning += assigned
+        visitor_daily.append(count - assigned)
+    day_visitors = [
+        int(np.floor(value * config.day_visitor_fraction + 0.5)) for value in visitor_daily
+    ]
+    overnight = [value - day for value, day in zip(visitor_daily, day_visitors, strict=True)]
+    active: list[int] = []
+    for index in range(len(daily)):
+        value = day_visitors[index]
+        for offset in range(max(1, config.stay_duration_days)):
+            source_index = index - offset
+            if source_index >= 0:
+                value += overnight[source_index]
+        active.append(value)
+    peak = max(active, default=0)
+    capacity = config.visitor_capacity
+    if capacity is None:
+        capacity = int(np.ceil(peak * (1.0 + config.visitor_capacity_headroom)))
+    after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    simulated = sum(daily)
+    source_total = config.annual_air_arrivals + config.annual_ferry_arrivals
+    return {
+        "year": year,
+        "source_target_movements": {
+            "AIRPORT": config.annual_air_arrivals,
+            "FERRY": config.annual_ferry_arrivals,
+            "TOTAL": source_total,
+        },
+        "simulated_movements": {
+            "AIRPORT": sum(by_mode["AIRPORT"].values()),
+            "FERRY": sum(by_mode["FERRY"].values()),
+            "TOTAL": simulated,
+        },
+        "stream_scale": config.stream_scale,
+        "reconciliation_error": simulated
+        - _scaled_annual_target(config, "AIRPORT")
+        - _scaled_annual_target(config, "FERRY"),
+        "reconciliation_tolerance": 0,
+        "average_daily_movements": simulated / len(daily),
+        "peak_daily_movements": max(daily, default=0),
+        "visitor_movements": sum(visitor_daily),
+        "returning_resident_movements": returning,
+        "realized_returning_fraction": returning / simulated if simulated else 0.0,
+        "returning_fraction_tolerance": 0.5 / simulated if simulated else 0.0,
+        "stay_distribution": {
+            "day_visitors": sum(day_visitors),
+            f"overnight_{config.stay_duration_days}_days": sum(overnight),
+            "jitter_not_materialized_in_capacity_gate": config.stay_duration_jitter_days,
+        },
+        "peak_concurrent_visitors": peak,
+        "required_slots": capacity,
+        "seven_day_window": {
+            "start_date": start.isoformat(),
+            "end_date": (start + timedelta(days=6)).isoformat(),
+            "movements": sum(daily[:7]),
+            "average_daily_movements": sum(daily[:7]) / 7,
+            "peak_daily_movements": max(daily[:7], default=0),
+            "peak_concurrent_visitors": max(active[:7], default=0),
+            "required_slots": int(
+                np.ceil(max(active[:7], default=0) * (1.0 + config.visitor_capacity_headroom))
+            ),
+        },
+        "generation_runtime_seconds": time.perf_counter() - started,
+        "generation_peak_memory_bytes": max(before, after),
+        "generation_memory_delta_bytes": max(0, after - before),
+        "execution_scope": "generation_and_capacity_only; no disease execution",
+        "scaled_mode_contract": (
+            "simulated movements are a computational sample; epidemic outcomes are not "
+            "inflated to source scale"
+            if config.stream_scale < 1
+            else "literal source passenger-movement generation target"
+        ),
+    }
 
 
 def _travel_spec(route_id: str, indoor: bool, weight: float, semantics: str) -> dict[str, Any]:
@@ -646,12 +913,19 @@ class TravelManager:
         self.away_resident_ids: set[str] = set()
         self.quarantine_until: dict[str, int] = {}
         self.pending_tests: list[tuple[int, str, bool]] = []
+        self.pending_quarantines: list[tuple[int, str, str]] = []
         self.current_date: date = start_date
         self.current_ti = 0
         self._all_resident_uids = set(range(len(base_generated.agent_ids)))
         self.event_log: list[dict[str, Any]] = []
         self.intervention_state: list[dict[str, Any]] = []
         self.route_edge_history: dict[tuple[int, str], list[dict[str, Any]]] = {}
+        self.temporary_edge_history: list[dict[str, Any]] = []
+        self._active_episode_by_uid: dict[int, TravelEpisode] = {}
+        self._identity_by_uid_ti: dict[tuple[int, int], dict[str, Any]] = {}
+        self._traveller_vaccine_effective_from: dict[str, int] = {}
+        self._traveller_vaccine_until: dict[str, int | None] = {}
+        self._processed_arrival_people: set[str] = set()
         self.state_snapshots: list[dict[str, Any]] = []
         self._initialised = False
         self._episodes_by_arrival: dict[date, list[TravelEpisode]] = defaultdict(list)
@@ -725,10 +999,61 @@ class TravelManager:
             visitor_id: self.uid_by_id[self.visitor_slot_ids[slot_index]]
             for visitor_id, slot_index in self.plan.visitor_slot_indices
         }
-        # Disease/observation events should expose stable episode-scoped visitor
-        # IDs even though Starsim itself receives only preallocated slot IDs.
-        for visitor_id, uid in self.visitor_slot_by_id.items():
-            self.id_by_uid[uid] = visitor_id
+        # Slot UIDs deliberately retain their runtime slot name here. Historical
+        # visitor identity is resolved only through the event-time interval map.
+        self.disease._event_identity_resolver = self.event_identity
+        self.disease._directional_modifier_resolver = self.directional_edge_factor
+
+    def _episode_identity(self, episode: TravelEpisode, uid: int) -> dict[str, Any]:
+        return {
+            "runtime_slot_uid": uid,
+            "slot_uid": uid,
+            "actor_type": "visitor" if episode.visitor_uid is not None else "resident",
+            "resident_or_visitor_id": episode.visitor_uid or episode.resident_agent_id,
+            "visitor_id": episode.visitor_uid,
+            "resident_agent_id": episode.resident_agent_id,
+            "trip_id": episode.trip_id,
+            "travel_party_id": episode.travel_party_id,
+            "traveller_type": episode.traveller_type,
+            "arrival_date": episode.arrival_date.isoformat(),
+            "arrival_time_index": (episode.arrival_date - self.start_date).days,
+            "departure_date": episode.departure_date.isoformat(),
+            "departure_time_index": (episode.departure_date - self.start_date).days,
+            "resident_or_visitor_status": (
+                "visitor" if episode.visitor_uid is not None else "resident"
+            ),
+            "episode_identity_hash": episode.identity_hash,
+        }
+
+    def event_identity(self, uid: int, ti: int, prefix: str) -> dict[str, Any]:
+        """Resolve an actor at event time; never consult the slot's later occupant."""
+
+        identity = self._identity_by_uid_ti.get((uid, ti))
+        if identity is None and uid < len(self.base_generated.agent_ids):
+            agent_id = self.base_generated.agent_ids[uid]
+            identity = {
+                "runtime_slot_uid": uid,
+                "slot_uid": uid,
+                "actor_type": "resident",
+                "resident_or_visitor_id": agent_id,
+                "visitor_id": None,
+                "resident_agent_id": agent_id,
+                "trip_id": None,
+                "travel_party_id": None,
+                "traveller_type": None,
+                "arrival_date": None,
+                "arrival_time_index": None,
+                "departure_date": None,
+                "departure_time_index": None,
+                "resident_or_visitor_status": "resident",
+                "episode_identity_hash": None,
+            }
+        if identity is None:
+            raise RuntimeError(f"inactive visitor slot {uid} has no identity at timestep {ti}")
+        resolved = {f"{prefix}_{key}": value for key, value in identity.items()}
+        resolved[f"{prefix}_agent_id"] = identity["resident_or_visitor_id"]
+        resolved[f"{prefix}_population"] = identity["actor_type"]
+        return resolved
 
     def _set_auids(self, uids: Iterable[int]) -> None:
         assert self.sim is not None
@@ -762,6 +1087,11 @@ class TravelManager:
         )
 
     def _append_event(self, action: str, episode: TravelEpisode, **extra: Any) -> None:
+        uid = (
+            self.visitor_slot_by_id.get(episode.visitor_uid)
+            if episode.visitor_uid is not None
+            else self.uid_by_id.get(str(episode.resident_agent_id))
+        )
         self.event_log.append(
             {
                 "date": _iso(self.current_date),
@@ -772,6 +1102,16 @@ class TravelManager:
                 "visitor_uid": episode.visitor_uid,
                 "resident_agent_id": episode.resident_agent_id,
                 "traveller_type": episode.traveller_type,
+                "travel_party_id": episode.travel_party_id,
+                "runtime_slot_uid": uid,
+                "arrival_date": episode.arrival_date.isoformat(),
+                "arrival_time_index": (episode.arrival_date - self.start_date).days,
+                "departure_date": episode.departure_date.isoformat(),
+                "departure_time_index": (episode.departure_date - self.start_date).days,
+                "resident_or_visitor_status": (
+                    "visitor" if episode.visitor_uid is not None else "resident"
+                ),
+                "episode_identity_hash": episode.identity_hash,
                 "config_hash": self.config.intervention_hash,
                 **extra,
             }
@@ -779,7 +1119,7 @@ class TravelManager:
 
     def _arrival_test(self, episode: TravelEpisode) -> None:
         controls = self.config.interventions
-        if controls.testing_probability <= 0 or episode.visitor_uid is None:
+        if controls.testing_probability <= 0:
             return
         tested = (
             _stable_uniform(self.seed, "arrival-test", episode.person_id)
@@ -789,6 +1129,9 @@ class TravelManager:
             self._append_event("arrival_test_not_taken", episode)
             return
         infected = episode.disease_state_on_arrival in {"exposed", "infectious"}
+        if episode.resident_agent_id is not None and self.disease is not None:
+            uid = self.uid_by_id[episode.resident_agent_id]
+            infected = bool(self.disease.exposed.raw[uid] or self.disease.infected.raw[uid])
         probability = controls.test_sensitivity if infected else 1.0 - controls.test_specificity
         detected = (
             _stable_uniform(self.seed, "arrival-test-result", episode.person_id) < probability
@@ -796,14 +1139,63 @@ class TravelManager:
         result_ti = self.current_ti + controls.test_result_delay_days
         self.pending_tests.append((result_ti, episode.person_id, detected))
         self._append_event(
-            "arrival_test_scheduled",
+            "arrival_test_administered",
             episode,
             tested=True,
-            detected=detected,
-            result_time_index=result_ti,
             sensitivity=controls.test_sensitivity,
             specificity=controls.test_specificity,
         )
+        self._append_event(
+            "arrival_test_result_scheduled",
+            episode,
+            result_time_index=result_ti,
+        )
+
+    def _schedule_quarantine(self, episode: TravelEpisode, cause: str, anchor_ti: int) -> None:
+        controls = self.config.interventions
+        if controls.quarantine_duration_days <= 0:
+            return
+        adheres = (
+            _stable_uniform(self.seed, "quarantine-adherence", episode.person_id, cause, anchor_ti)
+            < controls.quarantine_adherence
+        )
+        if not adheres:
+            self._append_event("quarantine_declined", episode, cause="adherence")
+            return
+        activation_ti = anchor_ti + controls.quarantine_start_delay_days
+        self.pending_quarantines.append((activation_ti, episode.person_id, cause))
+        self._append_event(
+            "quarantine_scheduled",
+            episode,
+            cause=cause,
+            activation_time_index=activation_ti,
+        )
+
+    def _process_quarantines(self) -> None:
+        due = [item for item in self.pending_quarantines if item[0] <= self.current_ti]
+        self.pending_quarantines = [
+            item for item in self.pending_quarantines if item[0] > self.current_ti
+        ]
+        for activation_ti, person_id, cause in sorted(due):
+            episode = self._episode_by_person[person_id]
+            until = activation_ti + self.config.interventions.quarantine_duration_days
+            self.quarantine_until[person_id] = max(until, self.quarantine_until.get(person_id, -1))
+            self._append_event(
+                "quarantine_activated",
+                episode,
+                cause=cause,
+                release_time_index=self.quarantine_until[person_id],
+            )
+
+    def _release_quarantines(self) -> None:
+        for person_id, until in sorted(tuple(self.quarantine_until.items())):
+            if until != self.current_ti:
+                continue
+            self._append_event(
+                "quarantine_released",
+                self._episode_by_person[person_id],
+                release_time_index=until,
+            )
 
     def _process_test_results(self) -> None:
         controls = self.config.interventions
@@ -814,26 +1206,8 @@ class TravelManager:
             self._append_event(
                 "arrival_test_result", episode, detected=detected, result_time_index=result_ti
             )
-            eligible = (
-                detected and controls.quarantine_positive_only or controls.quarantine_all_arrivals
-            )
-            if not eligible or controls.quarantine_duration_days <= 0:
-                continue
-            adheres = (
-                _stable_uniform(self.seed, "quarantine-adherence", person_id, result_ti)
-                < controls.quarantine_adherence
-            )
-            if not adheres:
-                self._append_event("quarantine_declined", episode, cause="adherence")
-                continue
-            until = self.current_ti + controls.quarantine_duration_days
-            self.quarantine_until[person_id] = max(until, self.quarantine_until.get(person_id, -1))
-            self._append_event(
-                "quarantine_started",
-                episode,
-                cause="arrival_test" if detected else "arrival_policy",
-                release_time_index=self.quarantine_until[person_id],
-            )
+            if detected and controls.quarantine_positive_only:
+                self._schedule_quarantine(episode, "positive_test", result_ti)
 
     def initialize(
         self,
@@ -854,6 +1228,13 @@ class TravelManager:
         self.disease.exposed[:] = False
         self.disease.infected[:] = False
         self.disease.recovered[:] = False
+        visitor_uids = np.asarray(
+            [self.uid_by_id[slot] for slot in self.visitor_slot_ids], dtype=np.int64
+        )
+        if len(visitor_uids):
+            self.disease.reset_person_state(visitor_uids)
+            people.age[visitor_uids] = 0.0
+            people.female[visitor_uids] = False
         resident_uids = np.asarray(
             [self.uid_by_id[item] for item in self.base_generated.agent_ids], dtype=np.int64
         )
@@ -885,22 +1266,46 @@ class TravelManager:
             return
         uid = self.visitor_slot_by_id[episode.visitor_uid]
         self.active_visitor_ids.add(episode.visitor_uid)
+        identity = self._episode_identity(episode, uid)
+        self._active_episode_by_uid[uid] = episode
+        self._identity_by_uid_ti[(uid, self.current_ti)] = identity
         self.sim.people.alive[uid] = True
-        self.disease.initialize_arrival_state(np.asarray([uid]), episode.disease_state_on_arrival)
+        visitor = self._visitor_by_id[episode.visitor_uid]
+        self.sim.people.age[uid] = float(visitor["age"])
+        self.sim.people.female[uid] = visitor["sex"] == "female"
+        self.disease.initialize_arrival_state(
+            np.asarray([uid]),
+            episode.disease_state_on_arrival,
+            recovered_days_since=self.config.recovered_arrival_days_since_recovery,
+        )
         controls = self.config.interventions
         if (
-            episode.disease_state_on_arrival == "susceptible"
-            and _stable_uniform(self.seed, "visitor-vaccination", episode.visitor_uid)
+            _stable_uniform(self.seed, "visitor-vaccination-acceptance", episode.visitor_uid)
             < controls.traveller_vaccination_coverage
         ):
-            self.disease.rel_sus.raw[uid] *= 1.0 - controls.traveller_vaccination_efficacy
+            effective_from = self.current_ti + controls.traveller_vaccination_protection_delay_days
+            self._traveller_vaccine_effective_from[episode.visitor_uid] = effective_from
+            self._traveller_vaccine_until[episode.visitor_uid] = (
+                None
+                if controls.traveller_vaccination_waning_days is None
+                else effective_from + controls.traveller_vaccination_waning_days
+            )
             self._append_event(
-                "traveller_protection_applied",
+                "traveller_vaccine_administered",
                 episode,
-                efficacy=controls.traveller_vaccination_efficacy,
+                effective_time_index=effective_from,
             )
         self._arrival_test(episode)
-        self._append_event("visitor_arrived", episode, slot_uid=uid)
+        if controls.quarantine_all_arrivals:
+            self._schedule_quarantine(episode, "all_arrivals", self.current_ti)
+        self._append_event(
+            "visitor_arrived",
+            episode,
+            slot_uid=uid,
+            active_age=float(self.sim.people.age[uid]),
+            active_sex="female" if bool(self.sim.people.female[uid]) else "male",
+            arrival_disease_state=episode.disease_state_on_arrival,
+        )
 
     def _deactivate_visitor(self, episode: TravelEpisode) -> None:
         assert self.disease is not None and self.sim is not None
@@ -909,16 +1314,45 @@ class TravelManager:
         uid = self.visitor_slot_by_id[episode.visitor_uid]
         self.active_visitor_ids.remove(episode.visitor_uid)
         self.sim.people.alive[uid] = False
-        for state in (
-            self.disease.susceptible,
-            self.disease.exposed,
-            self.disease.infected,
-            self.disease.recovered,
-        ):
-            state[uid] = False
-        self.disease.rel_sus.raw[uid] = 1.0
-        self.disease.rel_trans.raw[uid] = 1.0
         self._append_event("visitor_departed", episode, slot_uid=uid)
+        self.disease.reset_person_state(np.asarray([uid]))
+        self.sim.people.age[uid] = 0.0
+        self.sim.people.female[uid] = False
+        self._active_episode_by_uid.pop(uid, None)
+        self.quarantine_until.pop(episode.person_id, None)
+        self._traveller_vaccine_effective_from.pop(episode.person_id, None)
+        self._traveller_vaccine_until.pop(episode.person_id, None)
+        self._append_event(
+            "visitor_slot_reset",
+            episode,
+            slot_uid=uid,
+            alive=bool(self.sim.people.alive[uid]),
+            susceptible=bool(self.disease.susceptible.raw[uid]),
+            exposed=bool(self.disease.exposed.raw[uid]),
+            infectious=bool(self.disease.infected.raw[uid]),
+            recovered=bool(self.disease.recovered.raw[uid]),
+            age=float(self.sim.people.age[uid]),
+            rel_sus=float(self.disease.rel_sus.raw[uid]),
+            rel_trans=float(self.disease.rel_trans.raw[uid]),
+        )
+
+    def _sync_traveller_modifiers(self) -> None:
+        assert self.disease is not None and self.sim is not None
+        n_agents = len(self.disease.rel_sus.raw)
+        sus = np.ones(n_agents, dtype=float)
+        trans = np.ones(n_agents, dtype=float)
+        controls = self.config.interventions
+        for visitor_id in self.active_visitor_ids:
+            effective = self._traveller_vaccine_effective_from.get(visitor_id)
+            until = self._traveller_vaccine_until.get(visitor_id)
+            if effective is None or self.current_ti < effective:
+                continue
+            if until is not None and self.current_ti >= until:
+                continue
+            uid = self.visitor_slot_by_id[visitor_id]
+            sus[uid] *= 1.0 - controls.traveller_vaccination_efficacy
+            trans[uid] *= 1.0 - controls.traveller_vaccination_infectiousness_efficacy
+        self.disease.set_modifier_component("m8_traveller_vaccination", sus, trans)
 
     def _returning_acquisition(self, episode: TravelEpisode) -> None:
         assert self.disease is not None
@@ -958,7 +1392,9 @@ class TravelManager:
         raw_date = str(self.sim.t.now("str"))[:10].replace(".", "-")
         self.current_date = date.fromisoformat(raw_date)
         self.current_ti = int(self.disease.ti)
+        self._release_quarantines()
         self._process_test_results()
+        self._process_quarantines()
         # Day visitors have an inclusive one-day active window, so they are
         # retired on the next dated callback.  The same guard also makes slot
         # lifecycle robust if a departure is reached after a callback gap.
@@ -979,6 +1415,9 @@ class TravelManager:
                     "resident departure episodes are unsupported in the M8 return-event contract"
                 )
         for episode in self._episodes_by_arrival.get(self.current_date, []):
+            if episode.person_id in self._processed_arrival_people:
+                continue
+            self._processed_arrival_people.add(episode.person_id)
             if episode.resident_agent_id is not None:
                 resident_id = episode.resident_agent_id
                 self.present_resident_ids.add(resident_id)
@@ -986,9 +1425,22 @@ class TravelManager:
                 uid = self.uid_by_id[resident_id]
                 self.sim.people.alive[uid] = True
                 self._returning_acquisition(episode)
+                self._arrival_test(episode)
+                if self.config.interventions.quarantine_all_arrivals:
+                    self._schedule_quarantine(episode, "all_arrivals", self.current_ti)
                 self._append_event("resident_returned", episode)
             elif episode.visitor_uid is not None:
                 self._activate_visitor(episode)
+        # Delay-zero results and delay-zero all-arrival quarantine activate at
+        # this declared pre-network/pre-transmission arrival phase.
+        self._process_test_results()
+        self._process_quarantines()
+        for visitor_id in self.active_visitor_ids:
+            uid = self.visitor_slot_by_id[visitor_id]
+            self._identity_by_uid_ti[(uid, self.current_ti)] = self._episode_identity(
+                self._episode_by_person[visitor_id], uid
+            )
+        self._sync_traveller_modifiers()
         self._set_auids(self._active_uid_set())
         for route_id in TRAVEL_ROUTE_IDS:
             self.route_edge_history[(self.current_ti, route_id)] = self.route_edges(
@@ -1036,32 +1488,38 @@ class TravelManager:
     def _quarantine_factor(self, person_id: str, route_id: str) -> float:
         if self.quarantine_until.get(person_id, -1) <= self.current_ti:
             return 1.0
-        if route_id == "visitor_accommodation" or route_id == "visitor_host_household":
+        if route_id in {"household", "visitor_accommodation", "visitor_host_household"}:
             return self.config.interventions.quarantine_accommodation_multiplier
         return self.config.interventions.quarantine_external_route_multiplier
 
     def _edge_factor(self, route_id: str, people: Iterable[str]) -> float:
-        people = tuple(people)
         factor = float(self.config.visitor_route_multipliers[route_id])
-        if (
-            self.config.visitor_to_resident_multiplier < 1.0
-            and any(item in self._visitor_by_id for item in people)
-            and any(item in self._resident_by_id for item in people)
-        ):
-            factor *= self.config.visitor_to_resident_multiplier
         if self.config.enable_transmission_seasonality:
             factor *= self.config.transmission_seasonality.multiplier(self.current_date)
         if route_id == "arrival_terminal":
             factor *= self.config.interventions.terminal_contact_multiplier
-        if route_id == "visitor_accommodation":
-            factor *= min(self._quarantine_factor(item, route_id) for item in people)
-        elif route_id in {
-            "visitor_transit",
-            "visitor_community_indoor",
-            "visitor_community_outdoor",
-        }:
-            factor *= min(self._quarantine_factor(item, route_id) for item in people)
         return factor
+
+    def directional_edge_factor(
+        self, route_id: str, source_uid: int, target_uid: int, ti: int
+    ) -> float:
+        """Return exact endpoint/direction-specific M8 effects at transmission time."""
+
+        if route_id not in TRAVEL_ROUTE_IDS:
+            return 1.0
+        source = self.event_identity(source_uid, ti, "source")
+        target = self.event_identity(target_uid, ti, "target")
+        source_kind = source["source_actor_type"]
+        target_kind = target["target_actor_type"]
+        factor = 1.0
+        if source_kind == "visitor" and target_kind == "resident":
+            factor *= self.config.visitor_to_resident_multiplier
+        for identity in (source, target):
+            person_id = str(
+                identity[f"{'source' if identity is source else 'target'}_resident_or_visitor_id"]
+            )
+            factor *= self._quarantine_factor(person_id, route_id)
+        return max(0.0, min(1.0, factor))
 
     def _visitor_rows_active(self, when: date) -> list[dict[str, Any]]:
         return [
@@ -1096,6 +1554,8 @@ class TravelManager:
         active_rows = self._visitor_rows_active(when)
         edges: list[dict[str, Any]] = []
         if route_id == "arrival_terminal":
+            if self.config.terminal_mixing_contacts == 0:
+                return []
             arrivals = [
                 row
                 for row in self.plan.visitor_records
@@ -1107,8 +1567,23 @@ class TravelManager:
                 )
                 ids = [*group, *resident_pool]
                 edge_weight = 0.30 * self._edge_factor(route_id, ids)
-                edges.extend(_ring_edges(ids, 2, edge_weight, 1))
+                edges.extend(_ring_edges(ids, self.config.terminal_mixing_contacts, edge_weight, 1))
+        elif route_id == "visitor_party":
+            if self.config.visitor_party_contacts == 0:
+                return []
+            for _party_id, group in sorted(self._groups_by(active_rows, "travel_party_id").items()):
+                ordered = sorted(group)
+                edges.extend(
+                    _ring_edges(
+                        ordered,
+                        min(self.config.visitor_party_contacts, len(ordered) - 1),
+                        0.60 * self._edge_factor(route_id, ordered),
+                        1,
+                    )
+                )
         elif route_id == "visitor_accommodation":
+            if self.config.visitor_accommodation_contacts == 0:
+                return []
             groups: dict[str, list[str]] = defaultdict(list)
             for row in active_rows:
                 if row["accommodation_id"] is not None:
@@ -1124,29 +1599,41 @@ class TravelManager:
                 for start in range(0, len(ordered), self.config.accommodation_group_capacity):
                     members = ordered[start : start + self.config.accommodation_group_capacity]
                     edges.extend(
-                        _complete_group(members, 0.55 * self._edge_factor(route_id, members), 7)
+                        _ring_edges(
+                            members,
+                            min(self.config.visitor_accommodation_contacts, len(members) - 1),
+                            0.55 * self._edge_factor(route_id, members),
+                            7,
+                        )
                     )
         elif route_id == "visitor_host_household":
             for row in active_rows:
                 household = row.get("host_household_id")
                 if household is None:
                     continue
-                members = [
-                    *self._household_members.get(str(household), []),
-                    str(row["visitor_uid"]),
-                ]
-                members = sorted(set(members))
-                edges.extend(
-                    _complete_group(members, 0.80 * self._edge_factor(route_id, members), 1)
-                )
-        elif route_id == "visitor_transit":
-            transit_groups: dict[tuple[str, LocalTransportType], list[str]] = defaultdict(list)
-            for row in active_rows:
-                if row["local_transport_type"] in {"BUS", "TAXI_RIDE"}:
-                    transit_groups[(str(row["home_parish"]), row["local_transport_type"])].append(
-                        str(row["visitor_uid"])
+                visitor_id = str(row["visitor_uid"])
+                for resident_id in sorted(self._household_members.get(str(household), [])):
+                    edges.append(
+                        {
+                            "p1": visitor_id,
+                            "p2": resident_id,
+                            "weight": 0.80 * self._edge_factor(route_id, (visitor_id, resident_id)),
+                            "duration_days": 1,
+                        }
                     )
-            for key, group in sorted(transit_groups.items(), key=lambda item: str(item[0])):
+        elif route_id == "visitor_transit":
+            if self.config.visitor_transit_contacts == 0:
+                return []
+            transit_groups: dict[tuple[str, LocalTransportType], list[dict[str, Any]]] = (
+                defaultdict(list)
+            )
+            for row in active_rows:
+                if row["local_transport_type"] != "WALKING_OTHER":
+                    transit_groups[(str(row["home_parish"]), row["local_transport_type"])].append(
+                        row
+                    )
+            for key, rows in sorted(transit_groups.items(), key=lambda item: str(item[0])):
+                group = [str(row["visitor_uid"]) for row in rows]
                 if key[1] == "BUS":
                     edges.extend(
                         _ring_edges(
@@ -1156,11 +1643,55 @@ class TravelManager:
                             1,
                         )
                     )
-                else:
-                    edges.extend(
-                        _complete_group(group, 0.25 * self._edge_factor(route_id, group), 1)
+                elif key[1] == "TAXI_RIDE":
+                    ordered = sorted(
+                        group,
+                        key=lambda item: (_stable_int(self.seed, "taxi-unit", when, item), item),
                     )
+                    for start in range(0, len(ordered), self.config.taxi_capacity):
+                        unit = ordered[start : start + self.config.taxi_capacity]
+                        unit_id = (
+                            f"taxi-{when:%Y%m%d}-{key[0]}-{start // self.config.taxi_capacity:04d}"
+                        )
+                        edges.extend(
+                            {**edge, "transport_unit_id": unit_id}
+                            for edge in _complete_group(
+                                unit, 0.25 * self._edge_factor(route_id, unit), 1
+                            )
+                        )
+                elif key[1] == "PRIVATE_RENTAL_CAR":
+                    for _party, unit in sorted(self._groups_by(rows, "travel_party_id").items()):
+                        ordered = sorted(unit)
+                        for start in range(0, len(ordered), self.config.private_vehicle_capacity):
+                            vehicle = ordered[start : start + self.config.private_vehicle_capacity]
+                            edges.extend(
+                                _complete_group(
+                                    vehicle,
+                                    0.25 * self._edge_factor(route_id, vehicle),
+                                    1,
+                                )
+                            )
+                elif key[1] == "HOST_PICKUP":
+                    for row in rows:
+                        visitor_id = str(row["visitor_uid"])
+                        household = row.get("host_household_id")
+                        hosts = self._household_members.get(str(household), [])
+                        if hosts:
+                            host_id = sorted(hosts)[
+                                _stable_int(self.seed, "host-pickup", when, visitor_id) % len(hosts)
+                            ]
+                            edges.append(
+                                {
+                                    "p1": visitor_id,
+                                    "p2": host_id,
+                                    "weight": 0.25
+                                    * self._edge_factor(route_id, (visitor_id, host_id)),
+                                    "duration_days": 1,
+                                }
+                            )
         elif route_id in {"visitor_community_indoor", "visitor_community_outdoor"}:
+            if self.config.visitor_community_contacts == 0:
+                return []
             probability = (
                 self.config.visitor_community_indoor_probability
                 if route_id.endswith("indoor")
@@ -1206,13 +1737,61 @@ class TravelManager:
 
     def filtered_base_edges(self, route_id: str, when: date) -> list[dict[str, Any]]:
         edges = self.base_generated.route_snapshot(route_id, when).edges
-        if not self.plan.returning_resident_episodes:
+        if not self.plan.returning_resident_episodes and not self.quarantine_until:
             return list(edges)
-        return [
-            edge
-            for edge in edges
-            if edge["p1"] in self.present_resident_ids and edge["p2"] in self.present_resident_ids
-        ]
+        effective: list[dict[str, Any]] = []
+        for edge in edges:
+            p1, p2 = str(edge["p1"]), str(edge["p2"])
+            if p1 not in self.present_resident_ids or p2 not in self.present_resident_ids:
+                continue
+            factor = self._quarantine_factor(p1, route_id) * self._quarantine_factor(p2, route_id)
+            if factor > 0:
+                effective.append({**edge, "weight": float(edge["weight"]) * factor})
+        return effective
+
+    def temporary_edge_rows(self) -> list[dict[str, Any]]:
+        """Canonical exact sparse representation of every executed temporary edge."""
+
+        rows: list[dict[str, Any]] = []
+        for (ti, route_id), edges in sorted(self.route_edge_history.items()):
+            when = self.start_date + timedelta(days=ti)
+            for edge in edges:
+                p1_uid = self.uid_by_id[str(edge["p1"])]
+                p2_uid = self.uid_by_id[str(edge["p2"])]
+                p1 = self.event_identity(p1_uid, ti, "p1")
+                p2 = self.event_identity(p2_uid, ti, "p2")
+                visitor_ids = [
+                    item
+                    for item in (p1.get("p1_visitor_id"), p2.get("p2_visitor_id"))
+                    if item is not None
+                ]
+                visitor = self._visitor_by_id.get(str(visitor_ids[0])) if visitor_ids else None
+                rows.append(
+                    {
+                        "date": when.isoformat(),
+                        "time_index": ti,
+                        "route_id": route_id,
+                        **p1,
+                        **p2,
+                        "edge_weight": float(edge["weight"]),
+                        "duration_days": int(edge.get("persistence_days", 1)),
+                        "travel_party_id": visitor.get("travel_party_id") if visitor else None,
+                        "accommodation_id": visitor.get("accommodation_id") if visitor else None,
+                        "transport_type": (
+                            visitor.get("local_transport_type") if visitor else None
+                        ),
+                        "transport_unit_id": edge.get("transport_unit_id"),
+                    }
+                )
+        return sorted(
+            rows,
+            key=lambda row: (
+                row["time_index"],
+                row["route_id"],
+                row["p1_runtime_slot_uid"],
+                row["p2_runtime_slot_uid"],
+            ),
+        )
 
     def route_view(self) -> GeneratedNetworks:
         """Create a shallow route view while retaining the immutable M4 hash."""
@@ -1256,25 +1835,10 @@ class TravelManager:
         return view
 
     def classify_event(self, event: dict[str, Any]) -> dict[str, Any]:
-        infected_id = self.id_by_uid[int(event["infected_uid"])]
-        infector_uid = event.get("infector_uid")
-        infector_id = None if infector_uid is None else self.id_by_uid[int(infector_uid)]
-        infected_kind = (
-            "visitor"
-            if infected_id in self._visitor_by_id
-            else "resident"
-            if infected_id in self._resident_by_id
-            else "visitor_slot"
-        )
-        infector_kind = (
-            None
-            if infector_id is None
-            else "visitor"
-            if infector_id in self._visitor_by_id
-            else "resident"
-            if infector_id in self._resident_by_id
-            else "visitor_slot"
-        )
+        infected_id = event.get("infected_agent_id")
+        infected_kind = event.get("infected_actor_type") or event.get("infected_population")
+        infector_id = event.get("infector_agent_id")
+        infector_kind = event.get("infector_actor_type") or event.get("infector_population")
         direction = (
             f"{infector_kind}_to_{infected_kind}"
             if infector_kind
@@ -1378,11 +1942,15 @@ class TravelRunResult:
     base_generated: GeneratedNetworks
     travel_plan: TravelPlan
     daily_epidemic: list[dict[str, Any]]
+    daily_parish: list[dict[str, Any]]
+    daily_route: list[dict[str, Any]]
+    daily_age: list[dict[str, Any]]
     transmission_events: list[dict[str, Any]]
     daily_travel_population: list[dict[str, Any]]
     travel_episodes: list[dict[str, Any]]
     visitor_events: list[dict[str, Any]]
     daily_travel_route: list[dict[str, Any]]
+    temporary_edges: list[dict[str, Any]]
     travel_transmission_events: list[dict[str, Any]]
     travel_intervention_events: list[dict[str, Any]]
     daily_travel_intervention_state: list[dict[str, Any]]
@@ -1404,6 +1972,7 @@ class TravelRunResult:
     m7_intervention_route_effects: list[dict[str, Any]] = field(default_factory=list)
     m7_intervention_diagnostics: dict[str, Any] = field(default_factory=dict)
     observation_config: ObservationConfig | None = None
+    scenario_config: ScenarioConfig | None = None
 
 
 def _git_metadata(root: Path) -> tuple[str | None, bool]:
@@ -1481,7 +2050,18 @@ def _daily_metrics(
                 "visitor_linked_local_acquisitions": visitor_linked,
                 "resident_attack_rate": cumulative_resident
                 / max(1, len(manager.base_generated.agent_ids)),
-                "visitor_attack_rate": cumulative_visitor / max(1, len(manager._visitor_by_id)),
+                "visitor_arrived_denominator": sum(
+                    episode.visitor_uid is not None and episode.arrival_date <= when
+                    for episode in manager.plan.episodes
+                ),
+                "visitor_attack_rate": cumulative_visitor
+                / max(
+                    1,
+                    sum(
+                        episode.visitor_uid is not None and episode.arrival_date <= when
+                        for episode in manager.plan.episodes
+                    ),
+                ),
                 "present_prevalence": state["infectious"] / max(1, stream["present_population"]),
                 "resident_infectious": state["resident_infectious"],
                 "visitor_infectious": state["visitor_infectious"],
@@ -1594,9 +2174,10 @@ def run_travel_outbreak(
         start_date=config.start_date,
         duration_days=config.duration_days,
     )
+    view = manager.route_view()
     m7_manager = (
         InterventionManager(
-            generated,
+            view,
             scenario.interventions,
             run_seed=config.seed,
             start_date=config.start_date,
@@ -1606,7 +2187,6 @@ def run_travel_outbreak(
         if scenario is not None and scenario.interventions
         else None
     )
-    view = manager.route_view()
     route_betas: dict[str, float] = {}
     for route_id in view.route_specs:
         if route_id in config.route_multipliers:
@@ -1731,10 +2311,43 @@ def run_travel_outbreak(
     m7_route_effects = [] if m7_manager is None else list(m7_manager.route_effects)
     m7_diagnostics = {} if m7_manager is None else m7_manager.diagnostics()
     seasonality = manager.seasonality_rows()
+    temporary_edges = manager.temporary_edge_rows()
+    temporary_network_hash = sha256_bytes(canonical_json_bytes(temporary_edges))
     high_risk = manager.high_risk_rows()
     high_risk_epidemic = _high_risk_epidemic_rows(
         manager, high_risk, events, config.start_date, config.duration_days
     )
+    canonical_daily_parish: list[dict[str, Any]] = []
+    canonical_daily_route: list[dict[str, Any]] = []
+    canonical_daily_age: list[dict[str, Any]] = []
+    canonical_zero_latent_hash: str | None = None
+    if not plan.episodes:
+        # An explicit empty travel manager is a mathematical no-op. Reuse the
+        # canonical C5 projection and identity verbatim; empty temporary tables
+        # remain separate M8 artifacts and cannot perturb the C5 latent hash.
+        from .outbreak_runner import run_outbreak
+
+        canonical_scenario = (
+            scenario.model_copy(update={"travel": None}) if scenario is not None else None
+        )
+        canonical_config = (
+            config
+            if generic_enabled
+            else config.model_copy(update={"import_schedule": {}, "import_rate_per_day": 0.0})
+        )
+        canonical = run_outbreak(
+            generated,
+            canonical_config,
+            parameters,
+            observation_config=observation_config,
+            scenario=canonical_scenario,
+        )
+        daily_epidemic = canonical.daily_epidemic
+        events = canonical.transmission_events
+        canonical_daily_parish = canonical.daily_parish
+        canonical_daily_route = canonical.daily_route
+        canonical_daily_age = canonical.daily_age
+        canonical_zero_latent_hash = canonical.latent_outcome_hash
     scenario_payload = {
         "scenario": scenario.model_dump(mode="json") if scenario is not None else None,
         "m4_parent_hash": generated.logical_content_hash,
@@ -1743,7 +2356,7 @@ def run_travel_outbreak(
         "run_config": config.model_dump(mode="json"),
         "travel_config_hash": travel_config.config_hash,
         "visitor_episode_hash": plan.episode_hash,
-        "temporary_network_hash": travel_config.temporary_network_hash,
+        "temporary_network_hash": temporary_network_hash,
         "seasonality_hash": travel_config.seasonality_hash,
         "starsim_version": "3.5.2",
         "scenario_config": scenario.model_dump(mode="json") if scenario is not None else None,
@@ -1763,7 +2376,9 @@ def run_travel_outbreak(
         "travel_intervention_events": visitor_events + m7_events,
         "seasonality_schedule": seasonality,
     }
-    latent_hash = sha256_bytes(canonical_json_bytes(latent_payload))
+    latent_hash = canonical_zero_latent_hash or sha256_bytes(
+        canonical_json_bytes(_without_null_fields(latent_payload))
+    )
     artifact_hash = sha256_bytes(
         canonical_json_bytes(
             {
@@ -1774,6 +2389,45 @@ def run_travel_outbreak(
         )
     )
     peak_memory = max(before_memory, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    visitor_slot_uids = [manager.uid_by_id[slot] for slot in manager.visitor_slot_ids]
+    inactive_slot_uids = [
+        uid for uid in visitor_slot_uids if uid not in manager._active_episode_by_uid
+    ]
+    inactive_slot_audit = {
+        "count": len(inactive_slot_uids),
+        "alive_false": all(not bool(sim.people.alive[uid]) for uid in inactive_slot_uids),
+        "disease_states_false": all(
+            not any(
+                bool(state.raw[uid])
+                for state in (
+                    disease.susceptible,
+                    disease.exposed,
+                    disease.infected,
+                    disease.recovered,
+                )
+            )
+            for uid in inactive_slot_uids
+        ),
+        "timers_nan": all(
+            all(
+                bool(np.isnan(timer.raw[uid]))
+                for timer in (
+                    disease.ti_exposed,
+                    disease.ti_infected,
+                    disease.ti_recovered,
+                    disease.ti_susceptible,
+                )
+            )
+            for uid in inactive_slot_uids
+        ),
+        "modifiers_neutral": all(
+            disease.rel_sus.raw[uid] == 1.0 and disease.rel_trans.raw[uid] == 1.0
+            for uid in inactive_slot_uids
+        ),
+        "excluded_from_auids": all(
+            uid not in {int(item) for item in sim.people.auids} for uid in inactive_slot_uids
+        ),
+    }
     diagnostics = {
         "status": "passed",
         "framework_version": TRAVEL_GENERATOR_VERSION,
@@ -1793,7 +2447,7 @@ def run_travel_outbreak(
             "travel_config": travel_config.config_hash,
             "visitor_episode": plan.episode_hash,
             "visitor_population": plan.visitor_hash,
-            "temporary_network": travel_config.temporary_network_hash,
+            "temporary_network": temporary_network_hash,
             "seasonality": travel_config.seasonality_hash,
             "scenario": resolved_scenario_hash,
             "latent_outcome": latent_hash,
@@ -1806,6 +2460,11 @@ def run_travel_outbreak(
             "temporary_slot_ids": manager.visitor_slot_ids,
             "resident_ids_unchanged": generated.agent_ids == sorted(generated.agent_ids),
             "visitor_namespace": "visitor-<seed>-<counter>",
+            "slot_reuse_count": len(plan.visitor_records)
+            - len({slot for _visitor, slot in plan.visitor_slot_indices}),
+            "event_time_identity_rows": len(manager._identity_by_uid_ti),
+            "final_uid_to_visitor_mapping_forbidden": True,
+            "inactive_slot_audit": inactive_slot_audit,
         },
         "streams": {
             "generic_imports_enabled": generic_enabled,
@@ -1844,6 +2503,9 @@ def run_travel_outbreak(
         "observation_config": (
             observation_config.model_dump(mode="json") if observation_config is not None else None
         ),
+        "observation_config_hash": scenario_payload["observation_config_hash"],
+        "m7_scenario_hash": scenario_payload["m7_scenario_hash"],
+        "scenario_config": scenario_payload["scenario_config"],
         "capacity": {
             "configured_capacity": plan.visitor_capacity,
             "maximum_active_observed": max(
@@ -1852,6 +2514,8 @@ def run_travel_outbreak(
             "unused_headroom": plan.visitor_capacity
             - max((row["active_visitors"] for row in plan.daily_stream), default=0),
         },
+        "movement_reconciliation": plan.reconciliation,
+        "departure_reconciliation": plan.departure_reconciliation,
         "performance": {
             "runtime_seconds": time.perf_counter() - started,
             "peak_memory_bytes": peak_memory,
@@ -1871,11 +2535,18 @@ def run_travel_outbreak(
         base_generated=generated,
         travel_plan=plan,
         daily_epidemic=daily_epidemic,
+        daily_parish=canonical_daily_parish,
+        daily_route=canonical_daily_route,
+        daily_age=canonical_daily_age,
         transmission_events=events,
         daily_travel_population=list(plan.daily_stream),
-        travel_episodes=[row.model_dump(mode="json") for row in plan.episodes],
+        travel_episodes=[
+            row.model_dump(mode="json") | {"episode_identity_hash": row.identity_hash}
+            for row in plan.episodes
+        ],
         visitor_events=visitor_events,
         daily_travel_route=daily_route,
+        temporary_edges=temporary_edges,
         travel_transmission_events=travel_events,
         travel_intervention_events=visitor_events + m7_events,
         daily_travel_intervention_state=manager.intervention_state,
@@ -1886,7 +2557,7 @@ def run_travel_outbreak(
         scenario_hash=resolved_scenario_hash,
         travel_config_hash=travel_config.config_hash,
         visitor_episode_hash=plan.episode_hash,
-        temporary_network_hash=travel_config.temporary_network_hash,
+        temporary_network_hash=temporary_network_hash,
         seasonality_hash=travel_config.seasonality_hash,
         latent_outcome_hash=latent_hash,
         artifact_bundle_hash=artifact_hash,
@@ -1897,6 +2568,7 @@ def run_travel_outbreak(
         m7_intervention_route_effects=m7_route_effects,
         m7_intervention_diagnostics=m7_diagnostics,
         observation_config=observation_config,
+        scenario_config=scenario,
     )
 
 
@@ -1909,55 +2581,102 @@ def compare_travel_runs(
         raise ValueError("travel comparisons require matched seeds")
     rows = []
     for left, right in zip(baseline.daily_epidemic, treated.daily_epidemic, strict=True):
-        rows.append(
-            {
-                "date": left["date"],
-                "metric": "resident_infections",
-                "baseline": left["resident_infections"],
-                "treated": right["resident_infections"],
-                "absolute_difference": right["resident_infections"] - left["resident_infections"],
-            }
+        date_key = left["date"]
+        left_stream = next(
+            row for row in baseline.daily_travel_population if row["date"] == date_key
         )
-        rows.append(
-            {
-                "date": left["date"],
-                "metric": "visitor_to_resident_transmissions",
-                "baseline": sum(
-                    event["transmission_direction"] == "visitor_to_resident"
-                    and event["date"] == left["date"]
-                    for event in baseline.travel_transmission_events
-                ),
-                "treated": sum(
-                    event["transmission_direction"] == "visitor_to_resident"
-                    and event["date"] == left["date"]
-                    for event in treated.travel_transmission_events
-                ),
-                "absolute_difference": sum(
-                    event["transmission_direction"] == "visitor_to_resident"
-                    and event["date"] == left["date"]
-                    for event in treated.travel_transmission_events
-                )
-                - sum(
-                    event["transmission_direction"] == "visitor_to_resident"
-                    and event["date"] == left["date"]
-                    for event in baseline.travel_transmission_events
-                ),
-            }
+        right_stream = next(
+            row for row in treated.daily_travel_population if row["date"] == date_key
         )
-    return {
+        metric_values = {
+            "resident_infections": (
+                left.get("resident_infections", 0),
+                right.get("resident_infections", 0),
+            ),
+            "visitor_infections": (
+                left.get("visitor_infections", 0),
+                right.get("visitor_infections", 0),
+            ),
+            "travel_imported_acquisitions": (
+                left.get("returning_resident_travel_acquisitions", 0),
+                right.get("returning_resident_travel_acquisitions", 0),
+            ),
+            "arrivals": (left_stream["arrivals"], right_stream["arrivals"]),
+            "active_visitors": (left_stream["active_visitors"], right_stream["active_visitors"]),
+            "quarantined_travellers": (
+                sum(
+                    event["date"] == date_key and event["action"] == "quarantine_activated"
+                    for event in baseline.travel_intervention_events
+                ),
+                sum(
+                    event["date"] == date_key and event["action"] == "quarantine_activated"
+                    for event in treated.travel_intervention_events
+                ),
+            ),
+            "positive_tests": (
+                sum(
+                    event["date"] == date_key
+                    and event["action"] == "arrival_test_result"
+                    and bool(event.get("detected"))
+                    for event in baseline.travel_intervention_events
+                ),
+                sum(
+                    event["date"] == date_key
+                    and event["action"] == "arrival_test_result"
+                    and bool(event.get("detected"))
+                    for event in treated.travel_intervention_events
+                ),
+            ),
+        }
+        for direction in (
+            "resident_to_resident",
+            "resident_to_visitor",
+            "visitor_to_resident",
+            "visitor_to_visitor",
+        ):
+            metric_values[direction] = (
+                sum(
+                    event.get("transmission_direction") == direction and event["date"] == date_key
+                    for event in baseline.transmission_events
+                ),
+                sum(
+                    event.get("transmission_direction") == direction and event["date"] == date_key
+                    for event in treated.transmission_events
+                ),
+            )
+        for metric, (left_value, right_value) in metric_values.items():
+            rows.append(
+                {
+                    "date": date_key,
+                    "metric": metric,
+                    "baseline": left_value,
+                    "treated": right_value,
+                    "absolute_difference": right_value - left_value,
+                }
+            )
+    payload = {
         "comparison_id": comparison_id,
-        "matched_seed": baseline.config.seed,
+        "seed": baseline.config.seed,
+        "status": "completed",
+        "baseline_scenario_hash": baseline.scenario_hash,
+        "intervention_scenario_hash": treated.scenario_hash,
+        "baseline_latent_hash": baseline.latent_outcome_hash,
+        "intervention_latent_hash": treated.latent_outcome_hash,
+        "baseline_travel_config_hash": baseline.travel_config_hash,
+        "intervention_travel_config_hash": treated.travel_config_hash,
         "parent_m4_hash_equal": baseline.base_generated.logical_content_hash
         == treated.base_generated.logical_content_hash,
         "visitor_generation_coupled": baseline.travel_plan.episode_hash
         == treated.travel_plan.episode_hash,
+        "temporary_network_coupled": baseline.temporary_network_hash
+        == treated.temporary_network_hash,
         "coupling_note": (
             "Arrival/episode coupling is exact only while travel-generation controls "
             "are identical; diverging interventions may decay common random numbers."
         ),
         "rows": rows,
-        "logical_content_hash": sha256_bytes(canonical_json_bytes(rows)),
     }
+    return payload | {"logical_content_hash": sha256_bytes(canonical_json_bytes(payload))}
 
 
 def run_travel_ensemble(
@@ -1974,34 +2693,80 @@ def run_travel_ensemble(
     if not seeds:
         raise ValueError("travel ensemble requires at least one seed")
     runs: list[TravelRunResult] = []
+    failures: list[dict[str, Any]] = []
     for seed in seeds:
         run_config = base_config.model_copy(update={"seed": seed})
-        runs.append(
-            run_travel_outbreak(generated, run_config, parameters, travel_config, scenario=scenario)
+        run_scenario = (
+            scenario.model_copy(update={"seed": seed})
+            if scenario is not None and scenario.seed is not None
+            else scenario
         )
+        try:
+            runs.append(
+                run_travel_outbreak(
+                    generated, run_config, parameters, travel_config, scenario=run_scenario
+                )
+            )
+        except Exception as exc:  # failed replicates are visible and excluded
+            failures.append({"seed": seed, "status": "failed", "error": str(exc)})
+    if not runs:
+        raise ValueError(f"all travel ensemble replicates failed: {failures}")
     summary = []
     for index in range(base_config.duration_days):
         values = [run.daily_epidemic[index] for run in runs]
         streams = [run.daily_travel_population[index] for run in runs]
         date_key = values[0]["date"]
         metrics = {
-            "resident_infections": [float(row["resident_infections"]) for row in values],
-            "visitor_infections": [float(row["visitor_infections"]) for row in values],
-            "active_visitors": [float(row["active_visitors"]) for row in values],
-            "present_population": [float(row["present_population"]) for row in values],
+            "resident_infections": [
+                float(row.get("resident_infections", row.get("new_infections", 0)))
+                for row in values
+            ],
+            "visitor_infections": [float(row.get("visitor_infections", 0)) for row in values],
+            "active_visitors": [float(row["active_visitors"]) for row in streams],
+            "present_population": [float(row["present_population"]) for row in streams],
             "arrivals": [float(row["arrivals"]) for row in streams],
             "departures": [float(row["departures"]) for row in streams],
             "returning_resident_travel_acquisitions": [
-                float(row["returning_resident_travel_acquisitions"]) for row in values
+                float(row.get("returning_resident_travel_acquisitions", 0)) for row in values
             ],
             "visitor_linked_local_acquisitions": [
-                float(row["visitor_linked_local_acquisitions"]) for row in values
+                float(row.get("visitor_linked_local_acquisitions", 0)) for row in values
             ],
             "travel_intervention_burden": [
-                float(sum(event["date"] == date_key for event in run.travel_intervention_events))
+                float(
+                    sum(
+                        event["date"] == date_key
+                        and event["action"]
+                        in {
+                            "arrival_test_administered",
+                            "arrival_test_result",
+                            "quarantine_scheduled",
+                            "quarantine_activated",
+                            "quarantine_released",
+                            "traveller_vaccine_administered",
+                        }
+                        for event in run.travel_intervention_events
+                    )
+                )
                 for run in runs
             ],
         }
+        for direction in (
+            "resident_to_resident",
+            "resident_to_visitor",
+            "visitor_to_resident",
+            "visitor_to_visitor",
+        ):
+            metrics[direction] = [
+                float(
+                    sum(
+                        event["date"] == date_key
+                        and event.get("transmission_direction") == direction
+                        for event in run.transmission_events
+                    )
+                )
+                for run in runs
+            ]
         for metric, metric_values in metrics.items():
             summary.append(
                 {
@@ -2011,15 +2776,24 @@ def run_travel_ensemble(
                     "minimum": min(metric_values),
                     "maximum": max(metric_values),
                     "replicate_count": len(metric_values),
-                    "semantic": "state"
-                    if metric in {"active_visitors", "present_population"}
-                    else "incidence",
+                    "semantic": (
+                        "state"
+                        if metric == "active_visitors"
+                        else "population_denominator"
+                        if metric == "present_population"
+                        else "incidence_event"
+                    ),
+                    "outside_horizon_behavior": "excluded",
+                    "missing_behavior": (
+                        "carry_forward" if metric == "active_visitors" else "structural_zero"
+                    ),
                 }
             )
     payload = {
         "seeds": list(seeds),
         "scenario_hashes": [run.scenario_hash for run in runs],
         "latent_hashes": [run.latent_outcome_hash for run in runs],
+        "failures": failures,
         "summary": summary,
     }
     return {
@@ -2033,17 +2807,69 @@ def run_travel_ensemble(
                 "visitor_episode_hash": run.visitor_episode_hash,
             }
             for run in runs
-        ],
+        ]
+        + failures,
         "logical_content_hash": sha256_bytes(canonical_json_bytes(payload)),
         "diagnostics": {
             "status": "passed",
             "metric_semantics_preserved": True,
             "matched_seed_pairing": True,
+            "failed_replicates_excluded": True,
+            "failure_count": len(failures),
             "synthetic_claim_boundary": (
                 "Bounded uncertainty demonstration; not a Jersey prediction."
             ),
         },
     }
+
+
+def run_travel_sensitivity(
+    generated: GeneratedNetworks,
+    parameters: RespiratoryParameterSet,
+    run_config: OutbreakRunConfig,
+    base_travel_config: TravelConfig,
+    sensitivity: dict[str, Any],
+) -> dict[str, Any]:
+    """Execute named low/baseline/high M8 variants in a valid schema domain."""
+
+    sensitivity_id = str(sensitivity["sensitivity_id"])
+    axis = str(sensitivity["axis"])
+    if axis not in {
+        "visitor_community_contacts",
+        "terminal_mixing_contacts",
+        "arrival_infectious_fraction",
+    }:
+        raise ValueError(f"unsupported M8 sensitivity axis: {axis}")
+    variants: list[dict[str, Any]] = []
+    for variant in sensitivity["variants"]:
+        value = variant[axis]
+        travel = base_travel_config.model_copy(update={axis: value})
+        result = run_travel_outbreak(generated, run_config, parameters, travel)
+        variants.append(
+            {
+                "sensitivity_id": variant["sensitivity_id"],
+                "axis": axis,
+                "value": value,
+                "config": travel.model_dump(mode="json"),
+                "parent_hashes": result.diagnostics["parent_hashes"],
+                "scenario_hash": result.scenario_hash,
+                "travel_config_hash": result.travel_config_hash,
+                "visitor_episode_hash": result.visitor_episode_hash,
+                "temporary_network_hash": result.temporary_network_hash,
+                "latent_outcome_hash": result.latent_outcome_hash,
+                "outcome_summary": {
+                    "resident_infections": sum(
+                        row.get("resident_infections", 0) for row in result.daily_epidemic
+                    ),
+                    "visitor_infections": sum(
+                        row.get("visitor_infections", 0) for row in result.daily_epidemic
+                    ),
+                    "temporary_edges": len(result.temporary_edges),
+                },
+            }
+        )
+    payload = {"sensitivity_id": sensitivity_id, "axis": axis, "variants": variants}
+    return payload | {"logical_content_hash": sha256_bytes(canonical_json_bytes(payload))}
 
 
 def provenance_table(config: TravelConfig) -> list[dict[str, Any]]:
@@ -2056,7 +2882,7 @@ def provenance_table(config: TravelConfig) -> list[dict[str, Any]]:
             "units": "passenger arrivals/year",
             "provenance_status": "observed",
             "source_id": "passenger_arrivals_total_csv",
-            "derivation": "Ports of Jersey 2025 total arrivals table; rounded source values.",
+            "derivation": "Ports of Jersey 2025 total passenger-arrival movements.",
             "sensitivity_required": True,
         },
         {
@@ -2065,7 +2891,7 @@ def provenance_table(config: TravelConfig) -> list[dict[str, Any]]:
             "units": "passenger arrivals/year",
             "provenance_status": "observed",
             "source_id": "passenger_arrivals_total_csv",
-            "derivation": "Ports of Jersey 2025 total arrivals table; rounded source values.",
+            "derivation": "Ports of Jersey 2025 total passenger-arrival movements.",
             "sensitivity_required": True,
         },
         {
@@ -2117,4 +2943,94 @@ def provenance_table(config: TravelConfig) -> list[dict[str, Any]]:
             "derivation": "Sparse route construction; no manifests or venue histories are used.",
             "sensitivity_required": True,
         },
+        *[
+            {
+                "parameter": name,
+                "value_or_distribution": value,
+                "units": units,
+                "provenance_status": "scenario_assumption",
+                "source_id": None,
+                "derivation": "Synthetic configurable M8.1 structural assumption; not observed.",
+                "sensitivity_required": True,
+            }
+            for name, value, units in (
+                ("stream_scale", config.stream_scale, "computational sample fraction"),
+                (
+                    "visitor_returning_split",
+                    {
+                        "visitor": config.visitor_fraction,
+                        "returning_resident": config.returning_resident_fraction,
+                    },
+                    "person-movement fractions",
+                ),
+                (
+                    "party_distribution",
+                    dict(zip(config.party_sizes, config.party_probabilities, strict=True)),
+                    "party-size probability",
+                ),
+                (
+                    "stay_duration",
+                    {
+                        "central_days": config.stay_duration_days,
+                        "jitter_days": config.stay_duration_jitter_days,
+                    },
+                    "days",
+                ),
+                (
+                    "accommodation_mix",
+                    {
+                        "day_visitor_fraction": config.day_visitor_fraction,
+                        "staying_with_resident_fraction": config.staying_with_resident_fraction,
+                    },
+                    "fractions",
+                ),
+                (
+                    "transport_mix",
+                    config.local_transport_probabilities,
+                    "categorical probabilities",
+                ),
+                ("terminal_contacts", config.terminal_mixing_contacts, "contacts/day"),
+                (
+                    "arrival_disease_prevalence",
+                    {
+                        "infectious": config.arrival_infectious_fraction,
+                        "exposed": config.arrival_exposed_fraction,
+                        "recovered": config.arrival_recovered_fraction,
+                    },
+                    "arrival fractions",
+                ),
+                (
+                    "travel_acquisition_pressure",
+                    config.returning_resident_external_acquisition_probability,
+                    "probability/return",
+                ),
+                (
+                    "testing",
+                    config.interventions.testing_probability,
+                    "probability/arrival",
+                ),
+                (
+                    "quarantine",
+                    {
+                        "all_arrivals": config.interventions.quarantine_all_arrivals,
+                        "positive_only": config.interventions.quarantine_positive_only,
+                        "duration_days": config.interventions.quarantine_duration_days,
+                    },
+                    "policy scenario controls",
+                ),
+                (
+                    "traveller_vaccination",
+                    {
+                        "coverage": config.interventions.traveller_vaccination_coverage,
+                        "susceptibility_efficacy": (
+                            config.interventions.traveller_vaccination_efficacy
+                        ),
+                        "infectiousness_efficacy": (
+                            config.interventions.traveller_vaccination_infectiousness_efficacy
+                        ),
+                    },
+                    "fractions",
+                ),
+            )
+        ],
     ]

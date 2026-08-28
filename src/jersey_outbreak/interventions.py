@@ -31,7 +31,12 @@ INTERVENTION_FRAMEWORK_VERSION = "7.0.0"
 WORKPLACE_ROUTES = {"workplace_team", "workplace_transient"}
 TRANSPORT_ROUTES = {"shared_vehicle", "bus"}
 SCHOOL_ROUTES = {"school_class", "school_cross_class"}
-COMMUNITY_ROUTES = {"community_indoor", "community_outdoor"}
+COMMUNITY_ROUTES = {
+    "community_indoor",
+    "community_outdoor",
+    "visitor_community_indoor",
+    "visitor_community_outdoor",
+}
 CARE_ROUTES = {"care_resident", "care_staff"}
 NURSING_CARE_SETTING_TYPES = frozenset({"Care home (with nursing)"})
 NON_NURSING_CARE_SETTING_TYPES = frozenset({"Care home (without nursing)"})
@@ -188,7 +193,7 @@ class InterventionManager(ss.Intervention):
         self.setattribute("sim", sim)
         self.setattribute("t", sim.t)
         self.pre_initialized = True
-        n_agents = len(sim.people)
+        n_agents = len(sim.people.uid)
         for config in self.intervention_configs:
             if config.type == "case_isolation":
                 self._isolation_until[config.intervention_id] = np.full(
@@ -292,6 +297,46 @@ class InterventionManager(ss.Intervention):
             self._target_matches(config, agent_id)
             and _stable_uniform(
                 self.run_seed, "route-adherence", config.intervention_id, route_id, agent_id
+            )
+            < config.adherence
+        )
+
+    def _community_endpoint_adheres(
+        self, config: InterventionConfig, agent_id: str, route_id: str
+    ) -> bool:
+        if agent_id in self._m2_by_agent:
+            return self._target_adheres(config, agent_id, route_id)
+        if config.community_scope != "everyone_present":
+            return False
+        target = config.target
+        # M7 does not own temporary episode demographics. A general Jersey
+        # community restriction can include everyone present, but a targeted
+        # resident demographic/roster restriction must not silently match a
+        # visitor whose eligibility cannot be established here.
+        if any(
+            (
+                target.agent_ids,
+                target.age_min is not None,
+                target.age_max is not None,
+                target.age_bands,
+                target.home_parishes,
+                target.employment_sectors,
+                target.school_types,
+                target.school_ids,
+                target.workplace_ids,
+                target.care_setting_types,
+                target.care_role != "any",
+                target.worker_only,
+            )
+        ):
+            return False
+        return (
+            _stable_uniform(
+                self.run_seed,
+                "route-adherence",
+                config.intervention_id,
+                route_id,
+                agent_id,
             )
             < config.adherence
         )
@@ -694,7 +739,7 @@ class InterventionManager(ss.Intervention):
         if not vaccine_configs:
             return
         disease = self._disease()
-        n_agents = len(self.sim.people)
+        n_agents = len(disease.rel_sus.raw)
         relative_sus = np.ones(n_agents, dtype=float)
         relative_trans = np.ones(n_agents, dtype=float)
         for config in vaccine_configs:
@@ -730,8 +775,11 @@ class InterventionManager(ss.Intervention):
                         new_state=False,
                         time_index=ti,
                     )
-        disease.rel_sus.raw[:] = relative_sus
-        disease.rel_trans.raw[:] = relative_trans
+        if hasattr(disease, "set_modifier_component"):
+            disease.set_modifier_component("m7_vaccination", relative_sus, relative_trans)
+        else:
+            disease.rel_sus.raw[:] = relative_sus
+            disease.rel_trans.raw[:] = relative_trans
 
     def _school_edge_matches(self, config: InterventionConfig, p1: str, p2: str) -> bool:
         if not any(self._target_matches(config, agent_id) for agent_id in (p1, p2)):
@@ -858,13 +906,16 @@ class InterventionManager(ss.Intervention):
         if config.type == "community_reduction":
             if route_id not in COMMUNITY_ROUTES:
                 return 1.0
-            if not any(self._target_adheres(config, agent_id, route_id) for agent_id in endpoints):
+            if not any(
+                self._community_endpoint_adheres(config, agent_id, route_id)
+                for agent_id in endpoints
+            ):
                 return 1.0
             if explicit is not None:
                 return explicit
             return (
                 config.indoor_multiplier
-                if route_id == "community_indoor"
+                if route_id.endswith("indoor")
                 else config.outdoor_multiplier
             )
         if config.type == "care_home_protection":
@@ -1019,8 +1070,14 @@ class InterventionManager(ss.Intervention):
                 self._wfh_current[config.intervention_id]
             )
         if config.type == "community_reduction":
-            return (route_id == "community_indoor" and config.indoor_multiplier != 1.0) or (
-                route_id == "community_outdoor" and config.outdoor_multiplier != 1.0
+            return (
+                route_id.endswith("indoor")
+                and route_id in COMMUNITY_ROUTES
+                and config.indoor_multiplier != 1.0
+            ) or (
+                route_id.endswith("outdoor")
+                and route_id in COMMUNITY_ROUTES
+                and config.outdoor_multiplier != 1.0
             )
         if config.type == "care_home_protection":
             if route_id in CARE_ROUTES:

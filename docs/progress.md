@@ -420,74 +420,88 @@ synthetic assumptions; real-disease validation and API/UI remain out of scope.
 M8 visitor counts and seasonality are scenario controls, not tourism or
 border-control estimates.
 
-## Milestone 8 implementation record
+## Milestone 8 / M8.1 corrective record
 
-M8 is implemented on branch `codex/m8-visitors-seasonality` from the required
-M7/C5 parent. The typed `travel_schemas.py`, lifecycle/network runner
-`travel.py` and `travel_artifacts.py` use preallocated temporary Starsim slots
-because Starsim 3.5.2 population growth is append-only. Canonical M2/M3/M4
-inputs remain immutable. `jos travel run`, `jos travel compare` and
-`jos travel ensemble` provide the minimal configuration-first command surface.
+M8 was initially implemented at `5768398760d9822ca3e875367dcbd9a42d8c174d`.
+An independent audit then marked M8 **FAIL**: reusable Starsim slots could
+relabel historical visitor events, annual streams and seasonality did not
+reconcile, M7 could reintroduce absent residents, temporary networks/configs
+were not reconstructible, and testing/quarantine/contact boundary semantics
+were not causal. That failed audit is retained as project history.
+
+M8.1 on `codex/m8.1-travel-integrity` is the bounded corrective milestone. It
+uses interval-aware `(slot UID, timestep)` episode identity; complete temporary
+slot demographic/disease/modifier reset; exact largest-remainder annual
+apportionment; person-movement traveller categories; day-weighted seasonality;
+presence-valid resident route views consumed by M7; edge-local/directional
+travel effects; explicit test/result/quarantine phases; exact sparse temporary
+edge persistence; and logical artifact verification. No M9 API/job or M10 UI
+work is included.
 
 The frozen travel evidence currently available is the annual 2025 Ports of
 Jersey passenger-arrival table (`passenger_arrivals_total_csv`): 720,842
 airport and 196,623 sea/ferry passenger arrivals. No frozen monthly visitor
 profile was available, so demo seasonality is a bounded `scenario_assumption`;
-annual-to-daily scheduling is explicitly `derived`. Composition, average stay,
+annual-to-daily scheduling is explicitly `derived`. At `stream_scale < 1`,
+simulated movements are a computational sample and epidemic outcomes are not
+inflated back to source scale. Composition, average stay,
 party size, transport, community participation, arrival disease state and
 external acquisition controls are exposed as provenance-bound assumptions.
 
-### M8 gate ledger
+The source-scale gate is generation/capacity only. Literal full-year
+source-scale disease execution remains unbenchmarked; the materialized episode
+runner rejects unnecessarily large horizons and directs callers to the
+constant-memory generation benchmark. Monthly tourism seasonality, detailed
+taxi/rental behaviour and traveller biological values remain structural
+assumptions, not verified Jersey behaviour. The final 60-gate M8.1 status is
+recorded only after the corrective verification commands and bounded execution
+experiments complete; the original M8 PASS claim above is superseded by the
+independent FAIL and must not be used.
 
-| # | Gate | Status | Evidence / limitation |
-|---:|---|---|---|
-| 1 | Resident baseline exact compatibility | PASS | Full repository regression and zero-arrival resident-output equivalence |
-| 2 | Visitor identity contract | PASS | Separate deterministic visitor namespace; no resident ID collisions |
-| 3 | Trip episode model | PASS | Typed person/trip/party episode records with provenance |
-| 4 | Arrival/departure generation | PASS | Deterministic dated lifecycle, day and overnight semantics |
-| 5 | Air/ferry separation | PASS | Independent mode-keyed streams and terminal identity |
-| 6 | Travel parties | PASS | Deterministic party sizes, party IDs and member mapping |
-| 7 | Accommodation assignment | PASS | Hotel/guesthouse/self-catered typed accommodation records |
-| 8 | Host-household visitors | PASS | Resident household hosting with household route membership |
-| 9 | Terminal contacts | PASS | Airport/ferry terminal route family with arrival-day contacts |
-| 10 | Visitor local transport | PASS | Bus, taxi, rental, walking and host-pickup categories |
-| 11 | Visitor community mixing | PASS | Parish-aware indoor/outdoor temporary community routes |
-| 12 | Returning-resident absence | PASS | Resident IDs retained and removed from Jersey routes while away |
-| 13 | External travel acquisition | PASS | Return events can acquire `travel_imported` infection distinctly |
-| 14 | Visitor disease-state initialization | PASS | Susceptible/exposed/infectious/recovered arrival states |
-| 15 | Temporary-agent/Starsim architecture | PASS | Preallocated slots; no unsafe mid-run population growth |
-| 16 | Activation/deactivation | PASS | Alive-state, active-UID and route lifecycle transitions |
-| 17 | Resident vs present-population denominators | PASS | Resident-present and total-present denominators are separate |
-| 18 | Visitor transmission directionality | PASS | Resident/visitor direction and visitor-linked events persisted |
-| 19 | Generic-import vs explicit-travel separation | PASS | `generic_import_only`, `explicit_travel` and `both` are explicit |
-| 20 | Visitor seasonality | PASS | Typed normalized monthly visitor profile, neutral by default |
-| 21 | Transmission/contact seasonality | PASS | Optional separate typed profile applied once and persisted |
-| 22 | High-risk targeting/strata | PARTIAL | Older/care/care-staff/occupational targeting exists; severity deferred |
-| 23 | Arrival-volume intervention | PASS | Prospective arrival multiplier |
-| 24 | Arrival testing | PASS | Probability, sensitivity, specificity and delay are deterministic |
-| 25 | Traveller quarantine | PASS | Positive-only/all-arrival modes, adherence and duration controls |
-| 26 | M7/M8 intervention composition | PASS | Shared M7 intervention manager composes with visitor slots |
-| 27 | Travel intervention neutrality | PASS | Zero/neutral controls preserve resident-only behavior |
-| 28 | Resident-network immutability | PASS | M2/M3/M4 inputs and parent hash remain unchanged |
-| 29 | Route attribution | PASS | Route IDs, event direction and local-acquisition attribution |
-| 30 | Disease-state conservation | PASS | Daily state counts conserve present population |
-| 31 | Scenario/run hashing | PASS | Scenario identity binds material parent and travel controls |
-| 32 | Visitor/travel hashes | PASS | Config, episode, population, network and seasonality hashes |
-| 33 | Reconstructible M8 artifacts | PASS | Schema-2.0 manifest, required tables, hashes and verifier |
-| 34 | Matched-seed comparison | PASS | CLI/library comparison with parent and coupling diagnostics |
-| 35 | Travel ensembles | PASS | Multi-seed summary preserves state/incidence semantics |
-| 36 | Sensitivity auditability | PASS | Bounded visitor-contact sensitivity config and provenance table |
-| 37 | Limiting cases | PASS | Zero arrivals, departure cleanup, returning-resident and tamper tests |
-| 38 | Performance | PASS | Runtime and peak memory recorded in final full artifact |
-| 39 | Visitor capacity safety | PASS | Peak concurrency, headroom and overflow guard |
-| 40 | Full-island compatibility | PASS | Clean committed 104,540-resident run completed |
-| 41 | Source/provenance discipline | PASS | Official annual arrivals plus explicit derived/assumption statuses |
-| 42 | Test quality | PASS | 129 repository tests and 9 focused M8 tests pass |
-| 43 | Documentation accuracy | PASS | README, architecture, scope and progress records updated |
-| 44 | Synthetic scientific claims | PASS | Visitor outputs explicitly bounded synthetic scenarios |
-| 45 | M9/API boundary preserved | PASS | No API, job system or M9 infrastructure added |
-| 46 | M10/UI boundary preserved | PASS | No UI, map frontend or M10 work added |
+### M8.1 corrective verification — 28 August 2026
 
-Overall M8 status is **PASS with one accepted narrow PARTIAL**: high-risk
-targeting/strata are implemented, while optional biological severity modifiers
-remain intentionally deferred.
+The corrective suite completed with 139 tests passing (one pre-existing
+single-date Starsim warning), including 19 focused M8/M8.1 tests. Ruff check,
+Ruff format check, targeted mypy across six changed runtime/schema/artifact
+files, `uv lock --check`, `compileall` and `git diff --check` passed.
+
+The literal 2025 source-scale generation/capacity gate reconciled exactly:
+720,842 air plus 196,623 ferry equals 917,465 passenger movements, tolerance
+zero. It generated an annual mean 2,513.60 and peak 2,514 movements/day,
+91,747 returning-resident movements (realized fraction 0.100000545 within the
+declared 0.5/N tolerance), peak concurrent visitors 6,336 and 6,970 slots with
+headroom. The constant-memory calculation took 0.0039 seconds in the measured
+process; its process peak RSS was 277,430,272 bytes with zero incremental
+high-water increase. The first seven-day source-scale window contained 17,598
+movements and the same 6,336 concurrency peak under the declared synthetic
+stay contract.
+
+The full-island seven-day scaled-travel smoke passed with 104,540 residents,
+19 visitor episodes, two returning-resident episodes, visitor capacity 9,
+peak active visitors 8 and 11 slot reuses. It recorded 21 arrivals and 11
+visitor departures. Exact temporary edges were: terminal 160, party 11,
+accommodation 2, host household 4, transit 6, indoor community 147 and outdoor
+community 106. The representative run had no visitor-linked disease event;
+the separate controlled fixture produced and validated all four transmission
+directions with candidate-hazard and immutable event-time identities across
+slot reuse. Epidemic runtime was 174.38 seconds and peak RSS 1,240,104,960
+bytes. Its temporary-network hash was
+`776708a76860f840b9056d533e3471cb9739e759693607dba51e30a48db11f02`.
+
+A full two-day resident C5 baseline ran in 14.47 seconds; the explicit
+zero-travel manager path ran in 67.13 seconds and produced the exact same C5
+latent hash,
+`7e9d0188f6d364a6b23dec2dd13938e31c118554b7609b656a55b934fdab585b`.
+The zero-travel artifact passed logical verification. A bounded paired
+comparison emitted 44 metric rows; a two-seed ensemble emitted 52 semantic
+summary rows with zero failed replicates. The executable valid sensitivity
+axis (`visitor_community_contacts` 1/3/6) produced 268/513/1,138 temporary
+edges and distinct latent hashes.
+
+**M8.1 corrective status: PASS WITH NON-BLOCKING PERFORMANCE/REALISM
+WARNINGS. M8 status after correction: PASS WITH THE SAME WARNINGS.** Monthly
+tourism seasonality is not source-backed; detailed taxi/rental behaviour and
+travel biology remain structural assumptions; literal annual source-scale
+disease execution was not attempted; and the explicit zero-travel manager has
+measured overhead because it binds a separate travel artifact to the canonical
+C5 projection. M9 and M10 remain closed.

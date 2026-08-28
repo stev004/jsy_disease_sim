@@ -101,7 +101,31 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
         self._import_attempts_by_ti: dict[int, dict[str, int]] = {}
         self._last_attribution_evidence: dict[int, dict[str, Any]] = {}
         self._observation_scheduler = observation_scheduler
+        self._event_identity_resolver: Any | None = None
+        self._directional_modifier_resolver: Any | None = None
+        self._modifier_components: dict[str, tuple[np.ndarray, np.ndarray]] = {}
         return
+
+    def set_modifier_component(
+        self, name: str, relative_susceptibility: np.ndarray, relative_transmission: np.ndarray
+    ) -> None:
+        """Compose independent biological modifiers without one owner erasing another."""
+
+        sus = np.asarray(relative_susceptibility, dtype=float)
+        trans = np.asarray(relative_transmission, dtype=float)
+        n_people = len(self.rel_sus.raw)
+        if len(sus) != n_people or len(trans) != n_people:
+            raise ValueError("biological modifier components must cover the Starsim population")
+        self._modifier_components[name] = (sus.copy(), trans.copy())
+        self.recompose_modifiers()
+
+    def recompose_modifiers(self) -> None:
+        self.rel_sus.raw[:] = 1.0
+        self.rel_trans.raw[:] = 1.0
+        for name in sorted(self._modifier_components):
+            sus, trans = self._modifier_components[name]
+            self.rel_sus.raw[:] *= sus
+            self.rel_trans.raw[:] *= trans
 
     @property
     def infectious(self) -> Any:
@@ -152,6 +176,10 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
                 "seeded": kind == "seeded",
                 "state": "exposed",
             }
+            if self._event_identity_resolver is not None:
+                event.update(self._event_identity_resolver(target_uid, ti, "infected"))
+                if source_uid >= 0:
+                    event.update(self._event_identity_resolver(source_uid, ti, "infector"))
             if kind == "travel_imported":
                 event.update(
                     {
@@ -210,6 +238,16 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
                     beta_per_dt = route.net_beta(disease_beta=disease_beta, disease=self)
                     if np.ndim(beta_per_dt) == 0:
                         beta_per_dt = np.full(len(src), beta_per_dt, dtype=float)
+                    if self._directional_modifier_resolver is not None:
+                        beta_per_dt = np.asarray(beta_per_dt, dtype=float) * np.asarray(
+                            [
+                                self._directional_modifier_resolver(
+                                    route_id, int(source), int(target), int(self.ti)
+                                )
+                                for source, target in zip(src, trg, strict=True)
+                            ],
+                            dtype=float,
+                        )
                     randvals = self.trans_rng.rvs(src, trg)
                     target_uids, source_uids = self.compute_transmission(
                         src, trg, rel_trans, rel_sus, beta_per_dt, randvals
@@ -440,7 +478,28 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
         else:
             self.ti_susceptible[uids] = np.nan
 
-    def initialize_arrival_state(self, uids: np.ndarray, state: str) -> None:
+    def reset_person_state(self, uids: np.ndarray) -> None:
+        """Reset reusable temporary slots to a known non-participating baseline."""
+
+        uids = np.asarray(uids, dtype=np.int64)
+        for state in (self.susceptible, self.exposed, self.infected, self.recovered):
+            state[uids] = False
+        for timer in (
+            self.ti_exposed,
+            self.ti_infected,
+            self.ti_recovered,
+            self.ti_susceptible,
+        ):
+            timer[uids] = np.nan
+        for name, (sus, trans) in self._modifier_components.items():
+            sus[uids] = 1.0
+            trans[uids] = 1.0
+            self._modifier_components[name] = (sus, trans)
+        self.recompose_modifiers()
+
+    def initialize_arrival_state(
+        self, uids: np.ndarray, state: str, *, recovered_days_since: int = 0
+    ) -> None:
         """Initialize a temporary traveller without changing resident identity.
 
         This is deliberately a small generic state initializer.  Visitor
@@ -452,6 +511,7 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
         uids = np.asarray(uids, dtype=np.int64)
         if not len(uids):
             return
+        self.reset_person_state(uids)
         if state == "susceptible":
             self.susceptible[uids] = True
             self.exposed[uids] = False
@@ -463,8 +523,16 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
             self.exposed[uids] = False
             self.infected[uids] = False
             self.recovered[uids] = True
-            self.ti_recovered[uids] = self.ti
-            self.ti_susceptible[uids] = np.nan
+            self.ti_recovered[uids] = self.ti - recovered_days_since
+            if self.pars.waning_enabled:
+                remaining = np.maximum(
+                    0.0,
+                    np.asarray(self.pars.immunity_duration.rvs(uids), dtype=float)
+                    - recovered_days_since,
+                )
+                self.ti_susceptible[uids] = self.ti + remaining
+            else:
+                self.ti_susceptible[uids] = np.nan
             return
         self.set_prognoses(uids, sources=np.full(len(uids), -1, dtype=np.int64))
         if state == "infectious":

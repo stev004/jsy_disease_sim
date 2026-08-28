@@ -2,22 +2,22 @@
   "claim_boundary": "Synthetic bounded sensitivity demonstration; not a Jersey policy prediction or validation result.",
   "schema_version": "1.0",
   "sensitivity_id": "m8-visitor-contact-intensity-v1",
-  "axis": "visitor_to_resident_multiplier",
+  "axis": "visitor_community_contacts",
   "variants": [
     {
       "config_path": "configs/travel/m8_explicit_travel.yaml",
-      "sensitivity_id": "visitor-contact-neutral-v1",
-      "visitor_to_resident_multiplier": 1.0
+      "sensitivity_id": "visitor-contact-low-v1",
+      "visitor_community_contacts": 1
     },
     {
       "config_path": "configs/travel/m8_explicit_travel.yaml",
-      "sensitivity_id": "visitor-contact-reduced-v1",
-      "visitor_to_resident_multiplier": 0.5
+      "sensitivity_id": "visitor-contact-baseline-v1",
+      "visitor_community_contacts": 3
     },
     {
       "config_path": "configs/travel/m8_explicit_travel.yaml",
-      "sensitivity_id": "visitor-contact-increased-v1",
-      "visitor_to_resident_multiplier": 1.5
+      "sensitivity_id": "visitor-contact-high-v1",
+      "visitor_community_contacts": 6
     }
   ]
 }

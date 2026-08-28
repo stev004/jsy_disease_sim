@@ -3,11 +3,12 @@
 ## Current verified status
 
 The C3 verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`.
-M0–M7 and corrective closures C1–C4 are PASS. The full
+M0–M7 and corrective closures C1–C5 are PASS. The full
 104,540-agent corrected stack constructs and executes through Starsim 3.5.2,
 and the quantitative evidence is recorded in
-[`progress.md`](progress.md). M7 adds intervention experiments and M8 adds a
-synthetic explicit travel layer; API/UI remain outside scope.
+[`progress.md`](progress.md). M7 adds intervention experiments. The original M8
+travel implementation failed independent audit; M8.1 corrects its scientific
+identity, reconciliation and causality contracts. API/UI remain outside scope.
 
 ## Milestone 8 scope and claim boundary
 
@@ -27,11 +28,22 @@ transport, venue grouping, arrival disease state, community intensity and
 external acquisition pressure are scenario controls unless a registered source
 is supplied.
 
+The annual values are passenger movements, not unique tourists. Literal
+`stream_scale: 1` generation reconciles exactly by largest-remainder daily
+apportionment. A smaller scale is explicitly a computational sample: generated
+simulated people have their own count and no epidemic output is automatically
+inflated back to the source total. Monthly profiles use a day-weighted annual
+mean and remain synthetic configurable seasonality, not observed tourism
+seasonality.
+
 Generic exogenous disease imports remain available and are not renamed as
 travellers. Visitor-linked local infections retain a route and direction;
 returning residents infected through external travel are marked separately as
-`travel_imported`. Arrival tests and quarantine act at declared simulation
-times, never retroactively. High-risk strata support targeting and
+`travel_imported`. Visitor infection/transmission/detection rows bind the
+visitor, trip, party and runtime slot at event creation, so later slot reuse
+cannot relabel history. Arrival testing separates administration, scheduled
+result, result availability and prospective action. All-arrival quarantine is
+independent of testing. High-risk strata support targeting and
 stratification only; M5 has no validated severity pathway.
 
 M8 outputs mean “under the declared synthetic travel scenario.” They must not
