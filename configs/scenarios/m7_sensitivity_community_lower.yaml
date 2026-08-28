@@ -1,0 +1,11 @@
+schema_version: "7.0"
+scenario_id: m7-sensitivity-community-lower
+scenario_version: "7.0.0"
+sensitivity_config_ids: [community-exposure-lower-v1]
+interventions:
+  - intervention_id: community-exposure-sensitivity
+    type: community_reduction
+    start_date: 2025-01-06
+    indoor_multiplier: 0.7
+    outdoor_multiplier: 1.0
+notes: Bounded synthetic lower-community-exposure sensitivity; not a policy estimate.

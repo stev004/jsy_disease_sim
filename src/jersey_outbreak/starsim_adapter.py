@@ -173,7 +173,10 @@ def build_starsim_sim(
         raise ValueError("duration_days must be positive")
     ss = _load_starsim()
     start = start_date or generated.config.start_date
-    stop = start + timedelta(days=duration_days)
+    # ``duration_days`` is the number of dated output points, including the
+    # start date.  Starsim's stop date is inclusive, so the final point is
+    # start + duration_days - 1 (C5 canonical horizon contract).
+    stop = start + timedelta(days=duration_days - 1)
     sim = ss.Sim(
         people=ss.People(len(generated.agent_ids)),
         start=start.isoformat(),
@@ -204,7 +207,9 @@ def build_starsim_disease_sim(
         raise ValueError("duration_days must be positive")
     ss = _load_starsim()
     start = start_date or generated.config.start_date
-    stop = start + timedelta(days=duration_days)
+    # Starsim executes both start and stop.  Keep the public JOS control as a
+    # count of dated output points rather than elapsed intervals.
+    stop = start + timedelta(days=duration_days - 1)
     sim = ss.Sim(
         people=ss.People(len(generated.agent_ids)),
         start=start.isoformat(),

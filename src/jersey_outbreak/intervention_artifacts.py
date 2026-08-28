@@ -15,26 +15,34 @@ import pyarrow.parquet as pq
 from .contracts import ArtifactRecord, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .intervention_analysis import InterventionComparison
-from .outbreak_runner import OutbreakRunResult
+from .outbreak_artifacts import write_outbreak_artifact
+from .outbreak_runner import OutbreakRunResult, network_artifact_id
 
 
 class InterventionArtifactManifest(StrictModel):
     """Parent-linked manifest for one M7 scenario run."""
 
-    manifest_schema_version: str = "1.0"
+    manifest_schema_version: str = "2.0"
     artifact_id: str
     framework_version: str
     scenario_id: str
     scenario_hash: str
     scenario_config_hash: str
+    run_config_hash: str
+    latent_outcome_hash: str
+    latent_logical_content_hash: str
+    artifact_bundle_hash: str
     mode: str
     seed: int
     start_date: str
     duration_days: int
     starsim_version: str = "3.5.2"
     m2_logical_content_hash: str
+    m2_artifact_id: str
     m3_logical_content_hash: str
+    m3_artifact_id: str
     m4_logical_content_hash: str
+    m4_artifact_id: str
     m5_disease_config_hash: str
     c4_observation_scheduler_version: str | None
     c4_observation_config_hash: str | None
@@ -44,6 +52,8 @@ class InterventionArtifactManifest(StrictModel):
     route_weight_semantics: str
     matched_seed_coupling_diagnostics: dict[str, Any]
     logical_content_hash: str
+    latent_bundle_artifact_id: str
+    latent_bundle_manifest_sha256: str
     diagnostics_status: str
     created_at: str
     git_commit: str | None
@@ -116,7 +126,7 @@ def write_intervention_artifact(
     scenario = result.scenario_config
     artifact_id = (
         f"jos-intervention-m7-{result.config.mode}-seed-{result.config.seed}-"
-        f"{result.logical_content_hash[:12]}"
+        f"{result.artifact_bundle_hash[:12]}"
     )
     artifact_directory = output_dir / artifact_id
     artifact_directory.mkdir(parents=True, exist_ok=True)
@@ -125,7 +135,7 @@ def write_intervention_artifact(
         manifest = InterventionArtifactManifest.model_validate_json(
             manifest_path.read_text(encoding="utf-8")
         )
-        if manifest.logical_content_hash != result.logical_content_hash:
+        if manifest.artifact_bundle_hash != result.artifact_bundle_hash:
             raise ValueError("immutable M7 artifact ID already exists with different content")
         return InterventionArtifact(artifact_directory, manifest)
 
@@ -146,8 +156,19 @@ def write_intervention_artifact(
                 ("active_agents", pa.int64()),
                 ("active_households", pa.int64()),
                 ("active_settings", pa.int64()),
+                ("route_intervention_active", pa.bool_()),
+                ("affected_routes", pa.int64()),
+                ("affected_residents", pa.int64()),
+                ("affected_staff", pa.int64()),
                 ("new_activations", pa.int64()),
                 ("new_releases", pa.int64()),
+                ("new_wfh_entries", pa.int64()),
+                ("wfh_exits", pa.int64()),
+                ("doses_administered", pa.int64()),
+                ("newly_vaccinated", pa.int64()),
+                ("protection_became_effective", pa.int64()),
+                ("currently_protected", pa.int64()),
+                ("protection_waned", pa.int64()),
                 ("config_hash", pa.string()),
             ]
         ),
@@ -189,6 +210,7 @@ def write_intervention_artifact(
                 ("mean_multiplier", pa.float64()),
                 ("minimum_multiplier", pa.float64()),
                 ("maximum_multiplier", pa.float64()),
+                ("representation", pa.string()),
             ]
         ),
     )
@@ -200,7 +222,19 @@ def write_intervention_artifact(
         json.dumps(result.intervention_diagnostics, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    output_paths = (state_path, events_path, route_path, scenario_path, diagnostics_path)
+    # The complete M5 latent bundle is persisted inside the M7 directory.  It
+    # is not an optional external pointer: removing or changing any latent
+    # table makes M7 verification fail.
+    latent_artifact = write_outbreak_artifact(result, root, artifact_directory / "latent_outputs")
+    latent_manifest_path = latent_artifact.artifact_directory / "manifest.json"
+    output_paths = (
+        state_path,
+        events_path,
+        route_path,
+        scenario_path,
+        diagnostics_path,
+        *sorted(path for path in latent_artifact.artifact_directory.iterdir() if path.is_file()),
+    )
     git_commit, dirty = _git_metadata(root)
     parameter_hash = sha256_bytes(canonical_json_bytes(result.parameters.model_dump(mode="json")))
     observation_hash = (
@@ -215,13 +249,20 @@ def write_intervention_artifact(
         scenario_id=scenario.scenario_id,
         scenario_hash=result.scenario_hash,
         scenario_config_hash=scenario.config_hash,
+        run_config_hash=result.run_config_hash,
+        latent_outcome_hash=result.latent_outcome_hash,
+        latent_logical_content_hash=result.logical_content_hash,
+        artifact_bundle_hash=result.artifact_bundle_hash,
         mode=result.config.mode,
         seed=result.config.seed,
         start_date=result.config.start_date.isoformat(),
         duration_days=result.config.duration_days,
         m2_logical_content_hash=result.generated.m2_input.manifest.logical_content_hash,
+        m2_artifact_id=result.generated.m2_input.manifest.artifact_id,
         m3_logical_content_hash=result.generated.m3_input.manifest.logical_content_hash,
+        m3_artifact_id=result.generated.m3_input.manifest.artifact_id,
         m4_logical_content_hash=result.generated.logical_content_hash,
+        m4_artifact_id=network_artifact_id(result.generated),
         m5_disease_config_hash=parameter_hash,
         c4_observation_scheduler_version=("6.0.0" if result.observation_schedule else None),
         c4_observation_config_hash=observation_hash,
@@ -238,7 +279,9 @@ def write_intervention_artifact(
             "matched_seed": "same declared seed gives matched starts",
             "true_common_random_numbers": "not guaranteed after event-path divergence",
         },
-        logical_content_hash=result.logical_content_hash,
+        logical_content_hash=result.artifact_bundle_hash,
+        latent_bundle_artifact_id=latent_artifact.manifest.artifact_id,
+        latent_bundle_manifest_sha256=sha256_file(latent_manifest_path),
         diagnostics_status="passed",
         created_at=datetime.now(UTC).isoformat(),
         git_commit=git_commit,
@@ -247,7 +290,7 @@ def write_intervention_artifact(
         peak_memory_bytes=result.peak_memory_bytes,
         output_artifacts=[
             ArtifactRecord(
-                path=_relative(path, root),
+                path=str(path.relative_to(artifact_directory)),
                 sha256=sha256_file(path),
                 size_bytes=path.stat().st_size,
             )
@@ -259,6 +302,39 @@ def write_intervention_artifact(
         encoding="utf-8",
     )
     return InterventionArtifact(artifact_directory, manifest)
+
+
+def verify_intervention_artifact(artifact_directory: Path) -> InterventionArtifactManifest:
+    """Verify that an M7 artifact and its directly included latent bundle resolve."""
+
+    artifact_directory = artifact_directory.resolve()
+    manifest_path = artifact_directory / "manifest.json"
+    manifest = InterventionArtifactManifest.model_validate_json(
+        manifest_path.read_text(encoding="utf-8")
+    )
+    required_latent = {
+        "daily_epidemic.parquet",
+        "daily_parish.parquet",
+        "daily_route.parquet",
+        "daily_age.parquet",
+        "transmission_events.parquet",
+        "manifest.json",
+    }
+    latent_candidates = list((artifact_directory / "latent_outputs").glob("jos-outbreak-m5-*"))
+    if len(latent_candidates) != 1:
+        raise ValueError("M7 artifact must contain exactly one resolvable latent bundle")
+    latent_directory = latent_candidates[0]
+    missing = sorted(name for name in required_latent if not (latent_directory / name).is_file())
+    if missing:
+        raise ValueError(f"M7 latent bundle is incomplete: {missing}")
+    latent_manifest = latent_directory / "manifest.json"
+    if sha256_file(latent_manifest) != manifest.latent_bundle_manifest_sha256:
+        raise ValueError("M7 latent bundle manifest hash mismatch")
+    for record in manifest.output_artifacts:
+        path = artifact_directory / record.path
+        if not path.is_file() or sha256_file(path) != record.sha256:
+            raise ValueError(f"M7 output hash mismatch or missing file: {record.path}")
+    return manifest
 
 
 def write_intervention_comparison_artifact(

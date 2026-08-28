@@ -98,6 +98,7 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
         self._all_events: list[dict[str, Any]] = []
         self._seed_uids: list[int] = []
         self._import_counter = 0
+        self._import_attempts_by_ti: dict[int, dict[str, int]] = {}
         self._last_attribution_evidence: dict[int, dict[str, Any]] = {}
         self._observation_scheduler = observation_scheduler
         return
@@ -346,6 +347,10 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
 
     def _select_imports(self, count: int, excluded: np.ndarray) -> np.ndarray:
         if count <= 0:
+            self._import_attempts_by_ti[int(self.ti)] = {
+                "exposure_attempts": 0,
+                "successful_acquisitions": 0,
+            }
             return np.empty(0, dtype=np.int64)
         all_uids = np.asarray(self.sim.people.auids, dtype=np.int64)
         available = all_uids[np.asarray(self.susceptible.raw[all_uids], dtype=bool)]
@@ -354,24 +359,34 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
         ordered = self._ordered_uids(
             available, "import", self._import_counter, self._current_date()
         )
-        # Exogenous imports are acquisitions too: a vaccine with relative
-        # susceptibility zero must block them, while a partial modifier is
-        # applied prospectively with a stable per-agent draw.  With the
-        # neutral modifier (1.0), this is exactly the prior M5 selection.
+        # The configured pressure is a number of exposure attempts, not a
+        # guaranteed number of imported acquisitions.  Draw the attempted
+        # people first, independently of vaccine state, then apply relative
+        # susceptibility to each attempt.  This prevents partial protection
+        # from merely changing identities while back-filling the requested
+        # count from the rest of the susceptible population.
+        attempts = ordered[: min(count, len(ordered))]
         accepted = [
             int(uid)
-            for uid in ordered
-            if _stable_key(
-                int(self.sim.pars.rand_seed),
-                "import-susceptibility",
-                self._import_counter,
-                self._current_date(),
-                int(uid),
-            )[0]
-            / 256
+            for uid in attempts
+            if int.from_bytes(
+                _stable_key(
+                    int(self.sim.pars.rand_seed),
+                    "import-acquisition",
+                    self._import_counter,
+                    self._current_date(),
+                    int(uid),
+                )[:8],
+                "big",
+            )
+            / 2**64
             < max(0.0, min(1.0, float(self.rel_sus.raw[int(uid)])))
         ]
-        return np.asarray(accepted[: min(count, len(accepted))], dtype=np.int64)
+        self._import_attempts_by_ti[int(self.ti)] = {
+            "exposure_attempts": len(attempts),
+            "successful_acquisitions": len(accepted),
+        }
+        return np.asarray(accepted, dtype=np.int64)
 
     def step(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Run Starsim network transmission and generic exogenous imports."""

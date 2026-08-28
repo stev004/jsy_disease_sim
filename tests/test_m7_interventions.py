@@ -81,7 +81,9 @@ def test_intervention_schema_enforces_lifecycle_and_hashes() -> None:
 def test_neutral_intervention_preserves_m5_outputs(
     m6_network, m6_parameters, m6_base_config
 ) -> None:
-    config = m6_base_config.model_copy(update={"beta": 0.0, "duration_days": 3})
+    config = m6_base_config.model_copy(
+        update={"beta": 0.35, "duration_days": 4, "initial_seed_count": 8}
+    )
     baseline = run_outbreak(m6_network, config, m6_parameters)
     neutral = run_outbreak(
         m6_network,
@@ -106,7 +108,13 @@ def test_neutral_intervention_preserves_m5_outputs(
     assert neutral.daily_epidemic == baseline.daily_epidemic
     assert neutral.daily_route == baseline.daily_route
     assert neutral.transmission_events == baseline.transmission_events
-    assert neutral.logical_content_hash != baseline.logical_content_hash
+    assert neutral.daily_parish == baseline.daily_parish
+    assert neutral.daily_age == baseline.daily_age
+    assert neutral.latent_outcome_hash == baseline.latent_outcome_hash
+    assert neutral.logical_content_hash == baseline.logical_content_hash
+    assert all(
+        row["representation"] == "canonical_reused" for row in neutral.intervention_route_effects
+    )
     assert neutral.intervention_diagnostics["composition"]["canonical_network_mutated"] is False
 
 

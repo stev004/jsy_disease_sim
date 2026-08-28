@@ -9,8 +9,9 @@ so a detection on timestep *t* can first change contacts on *t + 1*.
 from __future__ import annotations
 
 import hashlib
+import math
 import weakref
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date, timedelta
 from typing import Any
 
@@ -32,6 +33,9 @@ TRANSPORT_ROUTES = {"shared_vehicle", "bus"}
 SCHOOL_ROUTES = {"school_class", "school_cross_class"}
 COMMUNITY_ROUTES = {"community_indoor", "community_outdoor"}
 CARE_ROUTES = {"care_resident", "care_staff"}
+NURSING_CARE_SETTING_TYPES = frozenset({"Care home (with nursing)"})
+NON_NURSING_CARE_SETTING_TYPES = frozenset({"Care home (without nursing)"})
+CARE_SETTING_TYPES = NURSING_CARE_SETTING_TYPES | NON_NURSING_CARE_SETTING_TYPES
 EXTERNAL_ROUTES = (
     WORKPLACE_ROUTES | TRANSPORT_ROUTES | SCHOOL_ROUTES | COMMUNITY_ROUTES | CARE_ROUTES
 )
@@ -77,7 +81,9 @@ class InterventionManager(ss.Intervention):
         # distributions; a weak reference preserves access during the run
         # without recursively walking the full route artifact.
         self._generated_ref = weakref.ref(generated)
-        self.intervention_configs = tuple(interventions)
+        self.intervention_configs = tuple(
+            sorted(interventions, key=lambda item: (item.intervention_id, item.version))
+        )
         self.run_seed = run_seed
         self.start_date = start_date
         self.duration_days = duration_days
@@ -110,6 +116,9 @@ class InterventionManager(ss.Intervention):
         self._school_type_by_id: dict[str, str] = {}
         self._workplaces_by_agent: dict[str, set[str]] = defaultdict(set)
         self._sectors_by_agent: dict[str, set[str]] = defaultdict(set)
+        self._jobs_by_agent: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        self._primary_job_by_agent: dict[str, dict[str, Any]] = {}
+        self._wfh_jobs_current: dict[str, set[tuple[str, str]]] = defaultdict(set)
         self._care_setting_by_agent: dict[str, str] = {}
         self._care_type_by_setting: dict[str, str] = {}
         self._care_resident_ids: set[str] = set()
@@ -152,8 +161,11 @@ class InterventionManager(ss.Intervention):
             self._school_type_by_id[str(row["school_id"])] = str(row["school_type"])
         for row in self.generated.m3_input.job_assignments:
             agent_id = str(row["agent_id"])
+            self._jobs_by_agent[agent_id].append(row)
             self._workplaces_by_agent[agent_id].add(str(row["workplace_id"]))
             self._sectors_by_agent[agent_id].add(str(row["sector"]))
+            if row.get("job_role") == "primary":
+                self._primary_job_by_agent[agent_id] = row
         for row in self.generated.school_staff_assignments:
             agent_id = str(row["agent_id"])
             self._school_by_agent[agent_id].add(str(row["school_id"]))
@@ -279,6 +291,48 @@ class InterventionManager(ss.Intervention):
             < config.adherence
         )
 
+    def _targeted_jobs(
+        self, config: InterventionConfig, agent_id: str
+    ) -> tuple[dict[str, Any], ...]:
+        """Return only jobs selected by sector/workplace controls.
+
+        Person-level demographic controls are still evaluated by
+        ``_target_matches``.  Job controls are then narrowed here so one
+        targeted secondary job does not suppress an unrelated workplace.
+        """
+
+        if not self._target_matches(config, agent_id):
+            return ()
+        jobs = self._jobs_by_agent.get(agent_id, [])
+        return tuple(
+            job
+            for job in jobs
+            if (
+                not config.target.employment_sectors
+                or str(job["sector"]) in config.target.employment_sectors
+            )
+            and (
+                not config.target.workplace_ids
+                or str(job["workplace_id"]) in config.target.workplace_ids
+            )
+        )
+
+    def _workplace_edge_targeted(
+        self, config: InterventionConfig, p1: str, p2: str, agent_id: str
+    ) -> bool:
+        other = p2 if agent_id == p1 else p1
+        other_workplaces = self._workplaces_by_agent.get(other, set())
+        return any(
+            str(job["workplace_id"]) in other_workplaces
+            for job in self._targeted_jobs(config, agent_id)
+        )
+
+    def _commute_agent_targeted(self, config: InterventionConfig, agent_id: str) -> bool:
+        """Use the primary job because M4 commute edges lack per-job attribution."""
+
+        primary = self._primary_job_by_agent.get(agent_id)
+        return primary is not None and primary in self._targeted_jobs(config, agent_id)
+
     def _event_reference(self, event: Any) -> str:
         return f"detection:{event.agent_id}:{event.detection_date}:{event.detection_reason}"
 
@@ -323,17 +377,14 @@ class InterventionManager(ss.Intervention):
             "intervention_activated",
             "agent_entered_isolation",
             "household_entered_quarantine",
-            "wfh_schedule_changed",
-            "vaccine_administered",
-            "protection_became_effective",
-            "care_protection_activated",
-            "school_route_suppressed",
+            "agent_entered_wfh",
         }:
             self._day_activations[config.intervention_id] += 1
         if action in {
             "intervention_released",
             "agent_left_isolation",
             "household_released",
+            "agent_left_wfh",
             "protection_expired",
         }:
             self._day_releases[config.intervention_id] += 1
@@ -493,18 +544,6 @@ class InterventionManager(ss.Intervention):
             previous = self._calendar_was_active[config.intervention_id]
             if active and not previous:
                 self._append_event(config, action="intervention_activated", cause="calendar")
-                if config.type == "school_closure":
-                    self._append_event(
-                        config,
-                        action="school_route_suppressed",
-                        cause="calendar",
-                        new_state={
-                            "class_multiplier": config.class_multiplier,
-                            "cross_class_multiplier": config.cross_class_multiplier,
-                        },
-                    )
-                if config.type == "care_home_protection":
-                    self._append_event(config, action="care_protection_activated", cause="calendar")
             if previous and not active:
                 self._append_event(config, action="intervention_released", cause="calendar")
             self._calendar_was_active[config.intervention_id] = active
@@ -515,9 +554,11 @@ class InterventionManager(ss.Intervention):
                 continue
             active = self._calendar_active(config, when)
             current: set[str] = set()
+            current_jobs: set[tuple[str, str]] = set()
             if active and config.adherence > 0:
                 for agent_id in self.generated.agent_ids:
-                    if not self._target_matches(config, agent_id):
+                    targeted_jobs = self._targeted_jobs(config, agent_id)
+                    if not targeted_jobs:
                         continue
                     if (
                         _stable_uniform(
@@ -554,11 +595,14 @@ class InterventionManager(ss.Intervention):
                         )
                     if scheduled:
                         current.add(agent_id)
+                        current_jobs.update(
+                            (agent_id, str(job["workplace_id"])) for job in targeted_jobs
+                        )
             previous = self._wfh_previous[config.intervention_id]
             for agent_id in sorted(current ^ previous):
                 self._append_event(
                     config,
-                    action="wfh_schedule_changed",
+                    action=("agent_entered_wfh" if agent_id in current else "agent_left_wfh"),
                     cause="calendar_schedule",
                     agent_id=agent_id,
                     previous_state=agent_id in previous,
@@ -567,6 +611,7 @@ class InterventionManager(ss.Intervention):
                     date_value=when,
                 )
             self._wfh_current[config.intervention_id] = current
+            self._wfh_jobs_current[config.intervention_id] = current_jobs
             self._wfh_previous[config.intervention_id] = current
 
     def _refresh_vaccination(self, when: date, ti: int) -> None:
@@ -591,6 +636,7 @@ class InterventionManager(ss.Intervention):
                 for agent_id in self.generated.agent_ids
                 if agent_id not in vaccinated_agent_ids
                 and self._target_matches(config, agent_id)
+                and self._vaccine_accepts(config, agent_id)
                 and bool(disease.susceptible.raw[self._uid_by_agent_id[agent_id]])
             ]
             candidates.sort(
@@ -602,16 +648,9 @@ class InterventionManager(ss.Intervention):
             count = min(
                 remaining,
                 len(candidates),
-                max(1, int(np.ceil(len(candidates) * config.rollout_rate))),
+                max(1, int(np.ceil(denominator * config.rollout_rate))),
             )
             for agent_id in candidates[:count]:
-                if (
-                    _stable_uniform(
-                        self.run_seed, "vaccine-uptake", intervention_id, agent_id, when.isoformat()
-                    )
-                    >= config.uptake_probability
-                ):
-                    continue
                 uid = self._uid_by_agent_id[agent_id]
                 already.add(uid)
                 effective_ti = ti + config.protection_delay_days
@@ -630,6 +669,20 @@ class InterventionManager(ss.Intervention):
                     date_value=when,
                     time_index=ti,
                 )
+
+    def _vaccine_accepts(self, config: InterventionConfig, agent_id: str) -> bool:
+        """Stable single-offer acceptance for one agent and campaign."""
+
+        return (
+            _stable_uniform(
+                self.run_seed,
+                "vaccine-acceptance",
+                config.intervention_id,
+                config.version,
+                agent_id,
+            )
+            < config.uptake_probability
+        )
 
     def _sync_vaccine_modifiers(self, ti: int) -> None:
         vaccine_configs = [item for item in self.intervention_configs if item.type == "vaccination"]
@@ -707,10 +760,12 @@ class InterventionManager(ss.Intervention):
             and setting_type not in config.target.care_setting_types
         ):
             return False
-        if config.care_target == "both":
-            return True
-        nursing = "with nursing" in setting_type.lower()
-        return nursing if config.care_target == "nursing" else not nursing
+        allowed = {
+            "nursing": NURSING_CARE_SETTING_TYPES,
+            "non_nursing": NON_NURSING_CARE_SETTING_TYPES,
+            "both": CARE_SETTING_TYPES,
+        }[config.care_target]
+        return setting_type in allowed
 
     def _edge_multiplier(
         self, config: InterventionConfig, route_id: str, p1: str, p2: str, when: date, ti: int
@@ -757,12 +812,38 @@ class InterventionManager(ss.Intervention):
                 else config.cross_class_multiplier
             )
         if config.type == "workplace_reduction":
-            target_edge = any(
-                self._target_adheres(config, agent_id, route_id) for agent_id in endpoints
-            )
-            if route_id in WORKPLACE_ROUTES | TRANSPORT_ROUTES and any(
-                agent_id in self._wfh_current[config.intervention_id] for agent_id in endpoints
-            ):
+            if route_id in WORKPLACE_ROUTES:
+                targeted_endpoints = [
+                    agent_id
+                    for agent_id in endpoints
+                    if self._workplace_edge_targeted(config, p1, p2, agent_id)
+                    and self._target_adheres(config, agent_id, route_id)
+                ]
+                wfh = any(
+                    (agent_id, workplace_id) in self._wfh_jobs_current[config.intervention_id]
+                    for agent_id in endpoints
+                    for workplace_id in (
+                        self._workplaces_by_agent.get(p1, set())
+                        & self._workplaces_by_agent.get(p2, set())
+                    )
+                )
+            elif route_id in TRANSPORT_ROUTES:
+                targeted_endpoints = [
+                    agent_id
+                    for agent_id in endpoints
+                    if self._commute_agent_targeted(config, agent_id)
+                    and self._target_adheres(config, agent_id, route_id)
+                ]
+                wfh = any(
+                    agent_id in self._wfh_current[config.intervention_id]
+                    and self._commute_agent_targeted(config, agent_id)
+                    for agent_id in endpoints
+                )
+            else:
+                targeted_endpoints = []
+                wfh = False
+            target_edge = bool(targeted_endpoints)
+            if route_id in WORKPLACE_ROUTES | TRANSPORT_ROUTES and wfh:
                 return 0.0
             if route_id in WORKPLACE_ROUTES and target_edge:
                 return config.workplace_multiplier if explicit is None else explicit
@@ -820,16 +901,41 @@ class InterventionManager(ss.Intervention):
             route = route_map.get(route_id)
             if route is None:
                 continue
+            relevant_configs = [
+                config
+                for config in self.intervention_configs
+                if self._config_can_touch_route(config, route_id, when, ti)
+            ]
+            if not relevant_configs:
+                base_edge_count = len(route)
+                self.route_effects.append(
+                    {
+                        "date": when.isoformat(),
+                        "time_index": ti,
+                        "route_id": route_id,
+                        "base_edge_count": base_edge_count,
+                        "effective_edge_count": base_edge_count,
+                        "suppressed_edge_count": 0,
+                        "mean_multiplier": 1.0,
+                        "minimum_multiplier": 1.0,
+                        "maximum_multiplier": 1.0,
+                        "representation": "canonical_reused",
+                    }
+                )
+                continue
             base_edges = list(self.generated.route_snapshot(route_id, when).edges)
             effective_edges: list[dict[str, Any]] = []
             multipliers: list[float] = []
             for edge in base_edges:
-                factor = 1.0
-                for config in self.intervention_configs:
-                    factor *= self._edge_multiplier(
+                factors = [
+                    self._edge_multiplier(
                         config, route_id, str(edge["p1"]), str(edge["p2"]), when, ti
                     )
-                factor = max(0.0, min(1.0, factor))
+                    for config in relevant_configs
+                ]
+                # Configs are sorted by (ID, version); one canonical reduction
+                # removes tuple-order floating-point differences.
+                factor = max(0.0, min(1.0, math.prod(factors)))
                 multipliers.append(factor)
                 # Care roster edges remain represented with beta=0 when a care
                 # intervention suppresses them.  This preserves staffing and
@@ -837,11 +943,16 @@ class InterventionManager(ss.Intervention):
                 keep_zero = route_id in CARE_ROUTES
                 if factor > 0 or keep_zero:
                     effective_edges.append({**edge, "weight": float(edge["weight"]) * factor})
-            arrays = _edge_arrays(ss_module, effective_edges, self._uid_by_agent_id)
-            route.edges.p1 = arrays["p1"]
-            route.edges.p2 = arrays["p2"]
-            route.edges.beta = arrays["beta"]
-            route.edges.dur = np.ones(len(effective_edges), dtype=float)
+            touched = any(factor != 1.0 for factor in multipliers)
+            if touched:
+                arrays = _edge_arrays(ss_module, effective_edges, self._uid_by_agent_id)
+                route.edges.p1 = arrays["p1"]
+                route.edges.p2 = arrays["p2"]
+                route.edges.beta = arrays["beta"]
+                route.edges.dur = np.ones(len(effective_edges), dtype=float)
+            # Exact-neutral contract: when every factor is one, the Starsim
+            # route already contains the canonical M4 snapshot refreshed by
+            # the network phase.  Do not cast, copy, or replace its arrays.
             self.route_effects.append(
                 {
                     "date": when.isoformat(),
@@ -853,8 +964,68 @@ class InterventionManager(ss.Intervention):
                     "mean_multiplier": float(np.mean(multipliers)) if multipliers else 1.0,
                     "minimum_multiplier": min(multipliers) if multipliers else 1.0,
                     "maximum_multiplier": max(multipliers) if multipliers else 1.0,
+                    "representation": "effective" if touched else "canonical_reused",
                 }
             )
+
+    def _config_can_touch_route(
+        self, config: InterventionConfig, route_id: str, when: date, ti: int
+    ) -> bool:
+        """Cheap route-level materiality gate used before any edge rebuilding."""
+
+        if not config.enabled:
+            return False
+        if config.activation_rule == "calendar" and not self._calendar_active(config, when):
+            return False
+        if config.type == "vaccination":
+            return False
+        if config.type == "case_isolation":
+            states = self._isolation_until.get(config.intervention_id)
+            return (
+                states is not None
+                and bool(np.any(states > ti))
+                and (
+                    config.route_effects.get(route_id, 1.0 if route_id == "household" else 0.0)
+                    != 1.0
+                )
+            )
+        if config.type == "household_quarantine":
+            active = any(
+                until > ti for until in self._quarantine_until[config.intervention_id].values()
+            )
+            return active and (
+                config.route_effects.get(route_id, 1.0 if route_id == "household" else 0.0) != 1.0
+            )
+        explicit = config.route_effects.get(route_id)
+        if explicit is not None and explicit != 1.0:
+            return True
+        if config.type == "school_closure":
+            return route_id in SCHOOL_ROUTES and (
+                config.class_multiplier != 1.0
+                if route_id == "school_class"
+                else config.cross_class_multiplier != 1.0
+            )
+        if config.type == "workplace_reduction":
+            if route_id in WORKPLACE_ROUTES and config.workplace_multiplier != 1.0:
+                return True
+            if route_id in TRANSPORT_ROUTES and config.commute_multiplier != 1.0:
+                return True
+            return route_id in WORKPLACE_ROUTES | TRANSPORT_ROUTES and bool(
+                self._wfh_current[config.intervention_id]
+            )
+        if config.type == "community_reduction":
+            return (route_id == "community_indoor" and config.indoor_multiplier != 1.0) or (
+                route_id == "community_outdoor" and config.outdoor_multiplier != 1.0
+            )
+        if config.type == "care_home_protection":
+            if route_id in CARE_ROUTES:
+                return config.care_contact_multiplier != 1.0
+            if route_id != "household":
+                return (
+                    config.care_external_resident_multiplier != 1.0
+                    or config.care_external_staff_multiplier != 1.0
+                )
+        return False
 
     def _active_agents(self, config: InterventionConfig, ti: int) -> int:
         if config.type == "case_isolation":
@@ -869,16 +1040,23 @@ class InterventionManager(ss.Intervention):
             return len(self._wfh_current[config.intervention_id])
         if config.type == "vaccination":
             return len(self._effective_by_intervention[config.intervention_id])
-        if config.type in {
-            "school_closure",
-            "community_reduction",
-            "care_home_protection",
-            "masking",
-            "gathering_reduction",
-        }:
+        when = self.start_date + timedelta(days=ti)
+        if not self._calendar_active(config, when):
+            return 0
+        if config.type == "school_closure":
             return sum(
-                self._target_matches(config, agent_id) for agent_id in self.generated.agent_ids
+                self._target_matches(config, agent_id) and bool(self._school_by_agent.get(agent_id))
+                for agent_id in self.generated.agent_ids
             )
+        if config.type == "care_home_protection":
+            return sum(
+                self._target_matches(config, agent_id)
+                and agent_id in self._care_setting_by_agent
+                and self._care_target_matches_setting(config, self._care_setting_by_agent[agent_id])
+                for agent_id in self.generated.agent_ids
+            )
+        # Global route controls deliberately have no invented person-level
+        # state denominator.
         return 0
 
     def _active_households(self, config: InterventionConfig, ti: int) -> int:
@@ -907,14 +1085,47 @@ class InterventionManager(ss.Intervention):
             return len(
                 {
                     workplace
-                    for agent_id in self._wfh_current[config.intervention_id]
-                    for workplace in self._workplaces_by_agent.get(agent_id, set())
+                    for _agent_id, workplace in self._wfh_jobs_current[config.intervention_id]
                 }
             )
         return 0
 
     def _record_daily_state(self, when: date, ti: int) -> None:
         for config in self.intervention_configs:
+            actions = Counter(
+                event["action"]
+                for event in self.event_log
+                if event["intervention_id"] == config.intervention_id and event["time_index"] == ti
+            )
+            active = (
+                self._calendar_active(config, when)
+                if config.activation_rule == "calendar"
+                else self._active_agents(config, ti) > 0 or self._active_households(config, ti) > 0
+            )
+            affected_routes = self._affected_route_count(config) if active else 0
+            residents, staff = self._affected_care_roles(config, when)
+            activation_actions = {
+                "case_isolation": ("agent_entered_isolation",),
+                "household_quarantine": ("household_entered_quarantine",),
+                "school_closure": ("intervention_activated",),
+                "workplace_reduction": ("agent_entered_wfh",),
+                "community_reduction": ("intervention_activated",),
+                "care_home_protection": ("intervention_activated",),
+                "vaccination": ("vaccine_administered",),
+                "masking": ("intervention_activated",),
+                "gathering_reduction": ("intervention_activated",),
+            }[config.type]
+            release_actions = {
+                "case_isolation": ("agent_left_isolation",),
+                "household_quarantine": ("household_released",),
+                "school_closure": ("intervention_released",),
+                "workplace_reduction": ("agent_left_wfh",),
+                "community_reduction": ("intervention_released",),
+                "care_home_protection": ("intervention_released",),
+                "vaccination": ("protection_expired",),
+                "masking": ("intervention_released",),
+                "gathering_reduction": ("intervention_released",),
+            }[config.type]
             self.daily_state.append(
                 {
                     "date": when.isoformat(),
@@ -924,11 +1135,63 @@ class InterventionManager(ss.Intervention):
                     "active_agents": self._active_agents(config, ti),
                     "active_households": self._active_households(config, ti),
                     "active_settings": self._active_settings(config, when),
-                    "new_activations": self._day_activations[config.intervention_id],
-                    "new_releases": self._day_releases[config.intervention_id],
+                    "route_intervention_active": active,
+                    "affected_routes": affected_routes,
+                    "affected_residents": residents,
+                    "affected_staff": staff,
+                    "new_activations": sum(actions[action] for action in activation_actions),
+                    "new_releases": sum(actions[action] for action in release_actions),
+                    "new_wfh_entries": actions["agent_entered_wfh"],
+                    "wfh_exits": actions["agent_left_wfh"],
+                    "doses_administered": actions["vaccine_administered"],
+                    "newly_vaccinated": actions["vaccine_administered"],
+                    "protection_became_effective": actions["protection_became_effective"],
+                    "currently_protected": (
+                        len(self._effective_by_intervention[config.intervention_id])
+                        if config.type == "vaccination"
+                        else 0
+                    ),
+                    "protection_waned": actions["protection_expired"],
                     "config_hash": self.config_hashes[config.intervention_id],
                 }
             )
+
+    def _affected_route_count(self, config: InterventionConfig) -> int:
+        route_defaults: dict[str, float] = dict(config.route_effects)
+        if config.type == "school_closure":
+            route_defaults.setdefault("school_class", config.class_multiplier)
+            route_defaults.setdefault("school_cross_class", config.cross_class_multiplier)
+        elif config.type == "workplace_reduction":
+            for route in WORKPLACE_ROUTES:
+                route_defaults.setdefault(route, config.workplace_multiplier)
+            for route in TRANSPORT_ROUTES:
+                route_defaults.setdefault(route, config.commute_multiplier)
+            if config.additional_wfh_fraction > 0 or (config.wfh_days_per_week or 0) > 0:
+                route_defaults.update({route: 0.0 for route in WORKPLACE_ROUTES | TRANSPORT_ROUTES})
+        elif config.type == "community_reduction":
+            route_defaults.setdefault("community_indoor", config.indoor_multiplier)
+            route_defaults.setdefault("community_outdoor", config.outdoor_multiplier)
+        elif config.type == "care_home_protection":
+            for route in CARE_ROUTES:
+                route_defaults.setdefault(route, config.care_contact_multiplier)
+        return sum(value != 1.0 for value in route_defaults.values())
+
+    def _affected_care_roles(self, config: InterventionConfig, when: date) -> tuple[int, int]:
+        if config.type != "care_home_protection" or not self._calendar_active(config, when):
+            return 0, 0
+        residents = sum(
+            agent_id in self._care_resident_ids
+            and self._target_matches(config, agent_id)
+            and self._care_target_matches_setting(config, self._care_setting_by_agent[agent_id])
+            for agent_id in self._care_resident_ids
+        )
+        staff = sum(
+            agent_id in self._care_staff_ids
+            and self._target_matches(config, agent_id)
+            and self._care_target_matches_setting(config, self._care_setting_by_agent[agent_id])
+            for agent_id in self._care_staff_ids
+        )
+        return residents, staff
 
     def step(self) -> None:
         ti = int(self.ti)
@@ -967,12 +1230,27 @@ class InterventionManager(ss.Intervention):
             "wfh_active_agents": {
                 key: sorted(values) for key, values in sorted(self._wfh_current.items())
             },
+            "wfh_active_jobs": {
+                key: sorted([list(value) for value in values])
+                for key, values in sorted(self._wfh_jobs_current.items())
+            },
+            "vaccine_accepting_agents": {
+                config.intervention_id: [
+                    self._uid_by_agent_id[agent_id]
+                    for agent_id in self.generated.agent_ids
+                    if self._target_matches(config, agent_id)
+                    and self._vaccine_accepts(config, agent_id)
+                ]
+                for config in self.intervention_configs
+                if config.type == "vaccination"
+            },
         }
 
     def diagnostics(self) -> dict[str, Any]:
         """Return framework, lifecycle, composition and provenance diagnostics."""
 
         return {
+            "attached": True,
             "framework_version": self.framework_version,
             "scenario_id": self.scenario.scenario_id if self.scenario is not None else None,
             "scenario_config_hash": (
@@ -1000,11 +1278,30 @@ class InterventionManager(ss.Intervention):
                 "immutable M4 snapshots plus prospective effective route edge/beta views"
             ),
             "composition": {
-                "rule": "product of active route multipliers, clipped to [0, 1]",
-                "ordering": (
-                    "stable intervention_id order for diagnostics; multiplication is commutative"
-                ),
+                "rule": "math.prod of active route multipliers, clipped to [0, 1]",
+                "ordering": "canonical (intervention_id, version) order",
                 "canonical_network_mutated": False,
+            },
+            "horizon_contract": (
+                "duration_days is the number of inclusive dated output points; "
+                "simulation_end=start_date+duration_days-1"
+            ),
+            "care_target_classes": {
+                "nursing": sorted(NURSING_CARE_SETTING_TYPES),
+                "non_nursing": sorted(NON_NURSING_CARE_SETTING_TYPES),
+                "both": sorted(CARE_SETTING_TYPES),
+            },
+            "vaccination_acceptance_contract": (
+                "one stable seed/campaign/agent acceptance draw; rollout controls timing"
+            ),
+            "wfh_commute_contract": (
+                "workplace edges are job/workplace aware; commute suppression uses only the "
+                "primary job because M4 commute edges have no secondary-job attribution"
+            ),
+            "optional_interventions": {
+                "masking": "experimental_deferred_from_core_m7_pass_claim",
+                "gathering_reduction": "experimental_deferred_from_core_m7_pass_claim",
+                "ventilation": "not_implemented_or_claimed",
             },
             "event_count": len(self.event_log),
             "daily_state_rows": len(self.daily_state),

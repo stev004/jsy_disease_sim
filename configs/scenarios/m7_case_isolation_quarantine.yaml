@@ -1,6 +1,7 @@
 schema_version: "7.0"
 scenario_id: m7-case-isolation-household-quarantine
 scenario_version: "7.0.0"
+sensitivity_config_ids: [baseline]
 interventions:
   - intervention_id: case-isolation
     type: case_isolation

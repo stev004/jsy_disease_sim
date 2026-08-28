@@ -328,8 +328,33 @@ documented in [`interventions.md`](interventions.md).
 - **Observation:** M6 observed-case generation remains separate from latent
   infections and writes its own configuration, event table and manifest.
 - **Interventions:** M7 scenarios and experiments carry typed targets,
-  lifecycle controls, route composition, parameter provenance, sensitivity IDs
-  and parent hashes; no travel/visitor controls are included.
+lifecycle controls, route composition, parameter provenance, sensitivity IDs
+and parent hashes; no travel/visitor controls are included.
+
+C5 tightens that boundary. `duration_days` is a count of inclusive dated output
+points, so every layer uses `start + duration_days - 1` as the final date. The
+manager performs a route-level materiality check before edge work: an unchanged
+route retains the exact network-refresh arrays, while a touched route is rebuilt
+from the immutable snapshot using modifiers sorted by intervention ID/version.
+This preserves float precision and hazard evidence for empty and neutral
+manager-attached runs.
+
+Scenario/run identity contains the canonical full `OutbreakRunConfig`, M2, M3
+and M4 hashes, disease/observation configs, interventions, sensitivity IDs,
+seed/date horizon and Starsim/JOS versions. A separate latent-outcome hash
+covers only the five material M5 output datasets. The M7 artifact-bundle hash
+adds intervention state, events and route effects. M7 artifacts directly embed
+a hash-verified M5 bundle; they cannot verify as complete after any latent table
+or its manifest is removed or changed.
+
+WFH workplace targeting resolves selected jobs and shared workplaces; commute
+suppression is deliberately primary-job-only because M4 commute edges cannot
+identify a secondary job. Vaccination acceptance is stable by seed, campaign
+and agent; capacity affects administration timing, not willingness. Exogenous
+import controls represent exposure attempts followed by susceptibility-modified
+acquisition. Care targets use an explicit two-class allow-list for nursing and
+non-nursing care homes. Route-global community controls expose route/settings
+state rather than claiming an island-wide person-level active count.
 - **Results:** M6/M7 summaries and ensembles carry their configuration,
   sources, parameters, code state and explicit seed list; matched comparisons
   preserve seed pairing and separate health outcomes from intervention burden.

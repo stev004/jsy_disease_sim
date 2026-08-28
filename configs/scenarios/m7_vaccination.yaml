@@ -1,6 +1,7 @@
 schema_version: "7.0"
 scenario_id: m7-generic-vaccination
 scenario_version: "7.0.0"
+sensitivity_config_ids: [baseline]
 interventions:
   - intervention_id: generic-vaccination
     type: vaccination

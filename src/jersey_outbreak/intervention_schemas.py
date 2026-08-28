@@ -320,6 +320,19 @@ class ScenarioConfig(StrictModel):
             raise ValueError("scenario intervention_id values must be unique")
         if len(set(self.sensitivity_config_ids)) != len(self.sensitivity_config_ids):
             raise ValueError("sensitivity_config_ids must be unique")
+        # Scenario tuple order is not a scientific control.  Canonicalizing it
+        # also makes multiplier composition and scenario identity invariant to
+        # YAML/list ordering.
+        object.__setattr__(
+            self,
+            "interventions",
+            tuple(
+                sorted(self.interventions, key=lambda item: (item.intervention_id, item.version))
+            ),
+        )
+        object.__setattr__(
+            self, "sensitivity_config_ids", tuple(sorted(self.sensitivity_config_ids))
+        )
         return self
 
     @property
@@ -339,19 +352,35 @@ class ScenarioConfig(StrictModel):
         seed: int,
         start_date: date,
         duration_days: int,
+        run_config_hash: str | None = None,
+        m2_hash: str | None = None,
+        m3_hash: str | None = None,
+        starsim_version: str = "3.5.2",
+        jos_model_versions: dict[str, str] | None = None,
     ) -> str:
-        """Hash the full parent/config/date/seed contract for one run."""
+        """Hash the canonical scientific parent/config contract for one run.
+
+        ``run_config_hash`` is the hash of the complete ``OutbreakRunConfig``.
+        The explicit legacy fields remain in the payload as independently
+        inspectable controls and for compatibility with callers constructing
+        scenario hashes outside the runner.
+        """
 
         return sha256_bytes(
             canonical_json_bytes(
                 {
                     "scenario_config_hash": self.config_hash,
+                    "run_config_hash": run_config_hash,
+                    "m2_hash": m2_hash,
+                    "m3_hash": m3_hash,
                     "disease_config_hash": disease_config_hash,
                     "network_hash": network_hash,
                     "observation_config_hash": observation_config_hash,
                     "seed": seed,
                     "start_date": start_date.isoformat(),
                     "duration_days": duration_days,
+                    "starsim_version": starsim_version,
+                    "jos_model_versions": dict(sorted((jos_model_versions or {}).items())),
                 }
             )
         )
@@ -372,6 +401,11 @@ def scenario_hash(
     seed: int | None = None,
     start_date: date | None = None,
     duration_days: int | None = None,
+    run_config_hash: str | None = None,
+    m2_hash: str | None = None,
+    m3_hash: str | None = None,
+    starsim_version: str = "3.5.2",
+    jos_model_versions: dict[str, str] | None = None,
 ) -> str:
     """Hash a scenario alone or with its complete run-parent contract."""
 
@@ -390,4 +424,9 @@ def scenario_hash(
         seed=seed,
         start_date=start_date,
         duration_days=duration_days,
+        run_config_hash=run_config_hash,
+        m2_hash=m2_hash,
+        m3_hash=m3_hash,
+        starsim_version=starsim_version,
+        jos_model_versions=jos_model_versions,
     )

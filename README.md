@@ -7,7 +7,7 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–7 plus corrective closures C1–C4**:
+This repository contains **Milestones 0–7 plus corrective closures C1–C5**:
 repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
@@ -30,8 +30,8 @@ The C4 correction samples observation schedules when infections occur, delivers
 detections at their simulation timestep through a read-only consumer hook, and
 uses metric-aware ensemble grids. Observation randomness remains isolated by
 replicate/configuration, process execution records requested/planned/actual
-workers, and synthetic held-out beta recovery remains available. Milestone 7
-adds the typed composable intervention runtime, detection-triggered isolation
+workers, and synthetic held-out beta recovery remains available. Milestone 7,
+as corrected by C5, adds the typed composable intervention runtime, detection-triggered isolation
 and quarantine, calendar/contact families, vaccination, matched-seed
 comparisons, intervention ensembles and visualization-ready artifacts. M7
 does not implement travel/visitor controls, an API or a UI. The quantitative
@@ -40,6 +40,15 @@ The Starsim demo is an official SIR example using Starsim's built-in
 `RandomNet`; it is not a Jersey outbreak reconstruction or a validated
 forecast. The Milestone 2 population is synthetic and control-driven; it is
 not a sample of named people or real addresses.
+
+C5 defines `duration_days` as the number of dated output points, including the
+start and final dates. A manager-attached neutral scenario reuses canonical M4
+route arrays without copying or float recasting, so its nonzero-beta latent
+events, hazard evidence, daily trajectories and latent-outcome hash are exact
+baseline equivalents. Scenario identity hashes the complete run config and all
+M2/M3/M4, disease, observation, intervention, sensitivity and model-version
+parents. M7 artifacts directly contain the five M5 latent tables alongside
+intervention state/events and verify every persisted file hash.
 
 Milestone 1 includes immutable official source snapshots, explicitly labelled
 manual PDF transcriptions, canonical aggregate CSVs and deterministic data
@@ -210,6 +219,11 @@ uv run mypy --ignore-missing-imports \
   src/jersey_outbreak/respiratory.py \
   src/jersey_outbreak/outbreak_runner.py \
   src/jersey_outbreak/outbreak_artifacts.py \
+  src/jersey_outbreak/intervention_schemas.py \
+  src/jersey_outbreak/interventions.py \
+  src/jersey_outbreak/intervention_artifacts.py \
+  src/jersey_outbreak/intervention_analysis.py \
+  src/jersey_outbreak/scenario.py \
   src/jersey_outbreak/observation_schemas.py \
   src/jersey_outbreak/observation.py \
   src/jersey_outbreak/observation_artifacts.py \

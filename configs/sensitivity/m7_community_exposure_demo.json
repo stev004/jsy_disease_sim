@@ -1,0 +1,37 @@
+{
+  "claim_boundary": "Synthetic bounded sensitivity demonstration; not a Jersey policy prediction or validation result.",
+  "disease_controls": {
+    "beta": 0.35,
+    "duration_days": 8,
+    "initial_seed_count": 8,
+    "mode": "ci",
+    "seed": 123
+  },
+  "parent_hashes": {
+    "m2_logical_content_hash": "aab67c77b7fc7d09082931b8693bf2a360a2ef304a9c05eb8f40ac1e6bab1774",
+    "m3_logical_content_hash": "bfcb1511b225d0c1774bfeb2478a50c0d4636603a0f1e942f3247793dec227d1",
+    "m4_logical_content_hash": "40a0dbf33bf3252457addcdcd67f37dff50cc512ff9665b35656eeabc39128a8",
+    "run_config_hash": "8c050da784b10eedd26314092eb804eb3d1269fd3c5f0202118218821ad312af"
+  },
+  "schema_version": "1.0",
+  "variants": [
+    {
+      "config_path": "configs/scenarios/m7_sensitivity_community_lower.yaml",
+      "cumulative_total_infections": 638,
+      "indoor_multiplier": 0.7,
+      "latent_outcome_hash": "84e7ba70b6aa639ec1422d3903c5b617ff17d930052c0a09276c9db62765b1b2",
+      "local_infections": 630,
+      "scenario_hash": "f9392b4ffc1f09cae7af324bf8769df0ac96953a9295c8eede0cd932803c2a30",
+      "sensitivity_id": "community-exposure-lower-v1"
+    },
+    {
+      "config_path": "configs/scenarios/m7_sensitivity_community_higher.yaml",
+      "cumulative_total_infections": 708,
+      "indoor_multiplier": 1.0,
+      "latent_outcome_hash": "649d9b993be151879c936b1fecf5e8defb2f3018dd961491048019891d956082",
+      "local_infections": 700,
+      "scenario_hash": "76d3a5e8916490935a4f2f9baa30ca22fef0422e5994771fff00fe74b09c30ed",
+      "sensitivity_id": "community-exposure-higher-v1"
+    }
+  ]
+}

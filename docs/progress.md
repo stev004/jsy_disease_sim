@@ -246,7 +246,101 @@ compileall: passed
 verification archive check: passed
 ```
 
-## M7 intervention verification
+## C5 — M7 intervention integrity and provenance correction
+
+C5 closes the independent post-M7 audit blockers without opening M8. The
+canonical horizon is a count of dated output points. Empty and neutral managers
+reuse exact network-refresh arrays, touched-route modifiers are reduced in
+canonical ID/version order, vaccination acceptance is stable per
+seed/campaign/agent, import pressure is attempts followed by acquisition, and
+care eligibility is an explicit two-class allow-list.
+
+The C5 test suite contains adversarial nonzero-beta comparisons for every core
+neutral family and the retained experimental optional paths. Baseline and
+neutral runs have identical infections, dates, infectors, routes, successful
+candidate hazard evidence, daily epidemic/route/age/parish rows, latent-outcome
+hash and latent logical hash. The empty scenario genuinely attaches an
+`InterventionManager`; all of its route rows report `canonical_reused`.
+
+The stable latent-outcome hash covers exactly `daily_epidemic`, `daily_route`,
+`daily_age`, `daily_parish` and `transmission_events`. Scenario/run hashes bind
+the complete `OutbreakRunConfig`, M2/M3/M4 parents, disease and observation
+configs, interventions, sensitivity IDs, seed/dates and Starsim/JOS versions.
+M7 manifest schema 2.0 directly embeds a complete M5 latent bundle and rejects
+missing, stale or hash-mismatched content.
+
+The bounded CI sensitivity demonstration is tracked at
+`configs/sensitivity/m7_community_exposure_demo.json`. With beta 0.35, seed 123
+and eight dated points, community-indoor multipliers 0.7 and 1.0 produced 638
+and 708 cumulative infections. Their scenario hashes are
+`f9392b4ffc1f09cae7af324bf8769df0ac96953a9295c8eede0cd932803c2a30` and
+`76d3a5e8916490935a4f2f9baa30ca22fef0422e5994771fff00fe74b09c30ed`.
+
+The 104,540-agent four-point profile retained M2/M3/M4 hashes
+`bc1e30281edc211dd860cd515450029e2e549cf2b33297d679b9c4b6b975296a`,
+`b445ee6eb8f366bd07157a1ca8d3f5757892609a5067bf33d5df061b86aad9b7`
+and `6ef553d4c640baf0d441e57bcc70322aa622dd69c2429ab6a9d13843b274cfb6`.
+Baseline, neutral attached manager and community-indoor 0.5 runs took 29.41,
+45.83 and 51.29 seconds. Neutral events and daily rows were exact and shared
+latent-outcome hash
+`402df7ada8e512199d38690e1be12bdacf7ddf40b8db870e19aad57adb7fadee`.
+The targeted run touched exactly four indoor-route/date rows and had latent hash
+`39d45e8cbb9be85eb006282ea51844b7dc46749c4d9f6a8a895b587ec815bc6e`.
+Neutral and targeted overheads were 55.82% and 74.41%; this is a measured
+remaining performance limitation, not a correctness blocker under C5.
+
+Verification on the pre-commit worktree completed with the full pytest suite,
+Ruff, format check, targeted mypy across 18 CI and M5–M7/ensemble source files,
+`uv lock --check`, `git diff --check` and compileall. Clean-commit artifact
+identity and verification hashes are recorded in the final C5 handoff.
+The final suite result was 120 passed with one expected Starsim warning for the
+deliberate one-point C1 compatibility fixture.
+
+| C5 sub-gate | Status |
+|---|---|
+| 1. nonzero-beta empty-manager equivalence | PASS |
+| 2. neutral isolation equivalence | PASS |
+| 3. neutral quarantine equivalence | PASS |
+| 4. neutral school equivalence | PASS |
+| 5. neutral WFH equivalence | PASS |
+| 6. neutral community equivalence | PASS |
+| 7. neutral care equivalence | PASS |
+| 8. neutral vaccination equivalence | PASS |
+| 9. neutral optional equivalence where retained | PASS / experimental-deferred |
+| 10. canonical modifier composition | PASS |
+| 11. simulation/calendar end semantics | PASS |
+| 12. care target correctness | PASS |
+| 13. isolation state/event metrics | PASS |
+| 14. quarantine state/event metrics | PASS |
+| 15. school state metrics | PASS |
+| 16. WFH transition/state metrics | PASS |
+| 17. community metric semantics | PASS |
+| 18. care state metrics | PASS |
+| 19. vaccination administration/protection metrics | PASS |
+| 20. stable vaccine uptake semantics | PASS |
+| 21. import exposure/acquisition semantics | PASS |
+| 22. WFH multi-job semantics | PASS |
+| 23. scenario/run hashing completeness | PASS |
+| 24. latent outcome hash | PASS |
+| 25. complete/reconstructible M7 artifacts | PASS |
+| 26. matched-seed comparison | PASS |
+| 27. intervention ensemble metrics | PASS |
+| 28. sensitivity auditability | PASS |
+| 29. performance overhead | PASS with measured limitation |
+| 30. C1–C4 regression compatibility | PASS |
+| 31. test quality | PASS |
+| 32. documentation accuracy | PASS |
+
+**C5 overall: PASS.** M7 is restored to PASS subject to the documented
+synthetic-claim boundary. Masking and gathering reduction remain experimental,
+and M8 remains closed.
+
+## M7 intervention verification (superseded by C5)
+
+The original M7 PASS record below is retained as historical evidence but was
+invalidated by the independent post-M7 audit. C5 is the authoritative current
+gate record; the old baseline-equivalence, provenance and metric claims must not
+be read as current.
 
 M7 adds a single typed `InterventionManager` with immutable M4 snapshot
 refresh, multiplicative route effects and explicit state/event/provenance

@@ -51,6 +51,9 @@ class OutbreakRunResult:
     transmission_events: list[dict[str, Any]]
     diagnostics: dict[str, Any]
     logical_content_hash: str
+    latent_outcome_hash: str
+    run_config_hash: str
+    artifact_bundle_hash: str
     runtime_seconds: float
     peak_memory_bytes: int | None
     observation_schedule: ObservationScheduleSnapshot | None = None
@@ -240,7 +243,7 @@ def run_outbreak(
             duration_days=config.duration_days,
             scenario=scenario_for_run,
         )
-        if intervention_configs
+        if scenario_for_run is not None
         else None
     )
     if manager is not None and scheduler is not None:
@@ -494,6 +497,18 @@ def run_outbreak(
         "imports": {
             "schedule": dict(config.import_schedule),
             "rate_per_day": config.import_rate_per_day,
+            "configured_semantics": "exposure_attempts",
+            "daily_attempts_and_acquisitions": [
+                {
+                    "time_index": ti,
+                    "date": (config.start_date + timedelta(days=ti)).isoformat(),
+                    **counts,
+                }
+                for ti, counts in sorted(disease._import_attempts_by_ti.items())
+            ],
+            "realized_exposure_attempts": sum(
+                counts["exposure_attempts"] for counts in disease._import_attempts_by_ti.values()
+            ),
             "realized_imports": attribution_totals["imported"],
         },
         "parameter_provenance": parameters.model_dump(mode="json"),
@@ -537,48 +552,64 @@ def run_outbreak(
             "python_version": platform.python_version(),
         },
     }
-    logical_payload: dict[str, Any] = {
-        "config": config.model_dump(mode="json"),
-        "parameters": parameters.model_dump(mode="json"),
+    latent_outcome_payload: dict[str, Any] = {
         "daily_epidemic": daily_epidemic,
         "daily_parish": daily_parish,
         "daily_route": daily_route,
         "daily_age": daily_age,
         "transmission_events": events,
+    }
+    latent_outcome_hash = sha256_bytes(canonical_json_bytes(latent_outcome_payload))
+    run_config_hash = sha256_bytes(canonical_json_bytes(config.model_dump(mode="json")))
+    disease_config_hash = sha256_bytes(canonical_json_bytes(parameters.model_dump(mode="json")))
+    observation_config_hash = (
+        sha256_bytes(canonical_json_bytes(observation_config.model_dump(mode="json")))
+        if observation_config is not None
+        else None
+    )
+    model_versions = {
+        "intervention_framework": "7.0.0",
+        "outbreak_generator": config.generator_version,
+        "respiratory_module": RespiratorySEIRS.disease_module_version,
+    }
+
+    def scenario_run_hash() -> str | None:
+        if scenario_for_run is None:
+            return None
+        return scenario_for_run.run_hash(
+            disease_config_hash=disease_config_hash,
+            network_hash=generated.logical_content_hash,
+            observation_config_hash=observation_config_hash,
+            seed=config.seed,
+            start_date=config.start_date,
+            duration_days=config.duration_days,
+            run_config_hash=run_config_hash,
+            m2_hash=generated.m2_input.manifest.logical_content_hash,
+            m3_hash=generated.m3_input.manifest.logical_content_hash,
+            starsim_version="3.5.2",
+            jos_model_versions=model_versions,
+        )
+
+    resolved_scenario_hash = scenario_run_hash()
+    logical_payload: dict[str, Any] = {
+        "config": config.model_dump(mode="json"),
+        "parameters": parameters.model_dump(mode="json"),
+        "latent_outcome_hash": latent_outcome_hash,
         "network_logical_content_hash": generated.logical_content_hash,
     }
-    if manager is not None and scenario_for_run is not None:
-        intervention_config_digest = sha256_bytes(
-            canonical_json_bytes(
-                {
-                    key: value.model_dump(mode="json")
-                    for key, value in sorted(
-                        (item.intervention_id, item) for item in intervention_configs
-                    )
-                }
-            )
-        )
-        logical_payload["interventions"] = {
-            "scenario_hash": scenario_for_run.run_hash(
-                disease_config_hash=sha256_bytes(
-                    canonical_json_bytes(parameters.model_dump(mode="json"))
-                ),
-                network_hash=generated.logical_content_hash,
-                observation_config_hash=(
-                    sha256_bytes(canonical_json_bytes(observation_config.model_dump(mode="json")))
-                    if observation_config is not None
-                    else None
-                ),
-                seed=config.seed,
-                start_date=config.start_date,
-                duration_days=config.duration_days,
-            ),
-            "config_hash": intervention_config_digest,
-            "daily_state": manager.daily_state,
-            "events": manager.event_log,
-            "route_effects": manager.route_effects,
-        }
     logical_content_hash = sha256_bytes(canonical_json_bytes(logical_payload))
+    artifact_bundle_hash = sha256_bytes(
+        canonical_json_bytes(
+            {
+                "latent_logical_content_hash": logical_content_hash,
+                "latent_outcome_hash": latent_outcome_hash,
+                "scenario_hash": resolved_scenario_hash,
+                "daily_intervention_state": [] if manager is None else manager.daily_state,
+                "intervention_events": [] if manager is None else manager.event_log,
+                "route_effects": [] if manager is None else manager.route_effects,
+            }
+        )
+    )
     runtime_seconds = time.perf_counter() - started
     peak_memory_bytes = max(before_memory, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
     diagnostics["benchmark"]["runtime_seconds"] = runtime_seconds
@@ -594,6 +625,9 @@ def run_outbreak(
         transmission_events=events,
         diagnostics=diagnostics,
         logical_content_hash=logical_content_hash,
+        latent_outcome_hash=latent_outcome_hash,
+        run_config_hash=run_config_hash,
+        artifact_bundle_hash=artifact_bundle_hash,
         runtime_seconds=runtime_seconds,
         peak_memory_bytes=peak_memory_bytes,
         observation_schedule=observation_schedule,
@@ -602,23 +636,6 @@ def run_outbreak(
         intervention_events=[] if manager is None else list(manager.event_log),
         intervention_route_effects=[] if manager is None else list(manager.route_effects),
         intervention_diagnostics={} if manager is None else manager.diagnostics(),
-        scenario_hash=(
-            None
-            if scenario_for_run is None
-            else scenario_for_run.run_hash(
-                disease_config_hash=sha256_bytes(
-                    canonical_json_bytes(parameters.model_dump(mode="json"))
-                ),
-                network_hash=generated.logical_content_hash,
-                observation_config_hash=(
-                    sha256_bytes(canonical_json_bytes(observation_config.model_dump(mode="json")))
-                    if observation_config is not None
-                    else None
-                ),
-                seed=config.seed,
-                start_date=config.start_date,
-                duration_days=config.duration_days,
-            )
-        ),
+        scenario_hash=resolved_scenario_hash,
         scenario_config=scenario_for_run,
     )

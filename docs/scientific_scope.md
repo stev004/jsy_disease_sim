@@ -200,6 +200,28 @@ effectiveness, identify causal effects from Jersey data, or validate the
 contact mechanisms. Travel, arrivals, airports, ferries and visitor processes
 remain deferred to M8.
 
+C5 establishes exact-neutral and provenance semantics for those experiments.
+Empty and mathematically neutral managers reuse untouched route arrays exactly;
+nonzero-beta latent events, infectors, routes, hazard evidence, daily outputs
+and latent hashes therefore match the no-manager run. `duration_days` means the
+number of dated output points. Care protection can target only the explicit
+nursing/non-nursing care-home classes. Global community route controls do not
+invent an all-island `active_agents` denominator.
+
+Vaccination `uptake_probability` is stable willingness for one agent/campaign,
+not a repeated daily offer. Rollout controls timing and coverage bounds total
+administration. Administration, protection becoming effective, current
+protection and waning are separate event/state measures. Import schedules and
+rates are exposure-attempt pressure; susceptibility modifies whether each
+attempt becomes an imported acquisition, without replacing blocked attempts.
+These are synthetic experiment semantics, not real vaccine-effectiveness or
+travel-incidence claims.
+
+M7 artifacts directly include the material latent epidemic tables and verify
+their file hashes. Scenario/run, latent-outcome and artifact-bundle hashes have
+separate roles. Optional masking/gathering controls remain experimental and
+outside the core M7 PASS claim; ventilation is neither implemented nor claimed.
+
 The verification archive is a separate retained index for ignored/generated
 outputs. It records the clean Git commit, parent logical hashes, source-manifest
 hashes, command results, benchmark metadata and hashes of retained summary

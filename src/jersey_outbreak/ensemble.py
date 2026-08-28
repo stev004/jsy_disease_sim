@@ -44,6 +44,18 @@ METRIC_SEMANTICS: dict[str, MetricSemantic] = {
     "intervention_active_agents": "state",
     "intervention_active_households": "state",
     "intervention_active_settings": "state",
+    "intervention_route_active": "state",
+    "intervention_affected_routes": "state",
+    "intervention_affected_residents": "state",
+    "intervention_affected_staff": "state",
+    "intervention_currently_protected": "state",
+    "intervention_new_activations": "incidence",
+    "intervention_new_releases": "incidence",
+    "intervention_wfh_entries": "incidence",
+    "intervention_wfh_exits": "incidence",
+    "intervention_vaccine_doses": "incidence",
+    "intervention_protection_effective": "incidence",
+    "intervention_protection_waned": "incidence",
 }
 
 
@@ -220,33 +232,33 @@ def _trajectory_rows(
             }
         )
     for row in latent.intervention_state:
+        state_metrics = {
+            "intervention_active_agents": "active_agents",
+            "intervention_active_households": "active_households",
+            "intervention_active_settings": "active_settings",
+            "intervention_route_active": "route_intervention_active",
+            "intervention_affected_routes": "affected_routes",
+            "intervention_affected_residents": "affected_residents",
+            "intervention_affected_staff": "affected_staff",
+            "intervention_currently_protected": "currently_protected",
+            "intervention_new_activations": "new_activations",
+            "intervention_new_releases": "new_releases",
+            "intervention_wfh_entries": "new_wfh_entries",
+            "intervention_wfh_exits": "wfh_exits",
+            "intervention_vaccine_doses": "doses_administered",
+            "intervention_protection_effective": "protection_became_effective",
+            "intervention_protection_waned": "protection_waned",
+        }
         rows.extend(
-            [
-                {
-                    "seed": seed,
-                    "scope": "intervention",
-                    "key": row["intervention_id"],
-                    "metric": "intervention_active_agents",
-                    "date": row["date"],
-                    "value": row["active_agents"],
-                },
-                {
-                    "seed": seed,
-                    "scope": "intervention",
-                    "key": row["intervention_id"],
-                    "metric": "intervention_active_households",
-                    "date": row["date"],
-                    "value": row["active_households"],
-                },
-                {
-                    "seed": seed,
-                    "scope": "intervention",
-                    "key": row["intervention_id"],
-                    "metric": "intervention_active_settings",
-                    "date": row["date"],
-                    "value": row["active_settings"],
-                },
-            ]
+            {
+                "seed": seed,
+                "scope": "intervention",
+                "key": row["intervention_id"],
+                "metric": metric,
+                "date": row["date"],
+                "value": row[field],
+            }
+            for metric, field in state_metrics.items()
         )
     return tuple(rows)
 
@@ -674,6 +686,12 @@ def run_ensemble(
         "failed_replica_errors": {
             str(output.seed): output.error for output in outputs if output.error
         },
+        "scenario_config_hash": scenario.config_hash if scenario is not None else None,
+        "replicate_scenario_run_hashes": {
+            str(output.seed): output.scenario_hash
+            for output in outputs
+            if output.status == "passed" and output.scenario_hash is not None
+        },
         "date_grid": {
             "complete": True,
             "metric_semantics": dict(sorted(METRIC_SEMANTICS.items())),
@@ -738,7 +756,19 @@ def run_ensemble(
         disease_parameter_hash=sha256_bytes(
             canonical_json_bytes(parameters.model_dump(mode="json"))
         ),
-        scenario_hash=(scenario.config_hash if scenario is not None else None),
+        scenario_hash=(
+            sha256_bytes(
+                canonical_json_bytes(
+                    {
+                        str(record.seed): record.scenario_hash
+                        for record in records
+                        if record.status == "passed" and record.scenario_hash is not None
+                    }
+                )
+            )
+            if scenario is not None
+            else None
+        ),
     )
 
 

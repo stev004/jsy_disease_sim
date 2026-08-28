@@ -28,6 +28,11 @@ jobs:
           src/jersey_outbreak/network_schemas.py
           src/jersey_outbreak/network_generator.py
           src/jersey_outbreak/network_artifacts.py
+          src/jersey_outbreak/intervention_schemas.py
+          src/jersey_outbreak/interventions.py
+          src/jersey_outbreak/intervention_artifacts.py
+          src/jersey_outbreak/intervention_analysis.py
+          src/jersey_outbreak/scenario.py
           src/jersey_outbreak/staffing_evidence.py
           src/jersey_outbreak/staffing_generator.py
           src/jersey_outbreak/starsim_adapter.py

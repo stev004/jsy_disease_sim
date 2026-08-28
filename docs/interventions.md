@@ -10,7 +10,7 @@ forecast, Jersey surveillance calibration, or named-person model.
 `InterventionConfig` describes one versioned intervention with an ID, type,
 enabled flag, activation/release rules, dates or detection delay, target
 population, route multipliers, adherence, provenance metadata, assumptions and
-an independent content hash. `ScenarioConfig` is an ordered, ID-unique set of
+an independent content hash. `ScenarioConfig` is a canonically sorted, ID-unique set of
 these configs plus seed, parent identifiers, sensitivity IDs and a run hash.
 Unknown fields and unknown M4 route IDs fail validation.
 
@@ -31,9 +31,11 @@ transmission already completed on `t`. Overlapping isolation/quarantine uses
 the maximum active-until time, and release is explicitly logged.
 
 The canonical M4 route object is never modified. For each date, the manager
-starts from an immutable M4 snapshot, multiplies active route effects in
-intervention-ID order, clips the product to `[0, 1]`, and replaces only the
-prospective Starsim route view. Care roster edges remain represented with zero
+first determines whether any active config can materially touch a route.
+Untouched routes reuse the exact canonical representation, without a copy,
+float cast or array replacement. Touched routes multiply effects in canonical
+`(intervention_id, version)` order with `math.prod`, clip the product to
+`[0, 1]`, and replace only the prospective Starsim route view. Care roster edges remain represented with zero
 effective beta when protected so setting/staff topology is not silently lost.
 
 ## Supported intervention families
@@ -46,13 +48,19 @@ effective beta when protected so setting/staff topology is not silently lost.
   routes, including staff memberships already present in M4.1.
 - `workplace_reduction`: workplace and commute multipliers plus deterministic
   WFH fractions or exact weekday schedules. Institutional staff are excluded
-  from ordinary workplace targeting unless explicitly enabled.
+  from ordinary workplace targeting unless explicitly enabled. Workplace
+  edges are selected by job/workplace. Because M4 commute edges have no
+  secondary-job attribution, commute suppression uses the primary job only.
 - `community_reduction`: separate indoor and outdoor multipliers.
 - `care_home_protection`: nursing/non-nursing/both setting targeting, resident
   and staff care-route effects, and separate external resident/staff effects.
-- `vaccination`: deterministic rollout, target/eligibility, uptake, delay,
+  Eligible classes are exactly `Care home (with nursing)` and `Care home
+  (without nursing)`; all other communal types are excluded.
+- `vaccination`: deterministic rollout, target/eligibility, stable one-draw
+  campaign/person acceptance, delay,
   susceptibility and infectiousness efficacy, and optional waning.
-- `masking` and `gathering_reduction`: generic route-multiplier families.
+- `masking` and `gathering_reduction`: experimental generic route-multiplier
+  families deferred from the core PASS claim. Ventilation is not implemented.
 
 There are no travel, airport, ferry, arrival or visitor controls in M7; those
 remain an M8 boundary. Every random choice is keyed by the declared run seed,
@@ -65,8 +73,9 @@ intervention draws, while epidemic paths can still diverge after treatment.
 `jos scenario run` and its `jos intervention run` alias write a versioned,
 content-addressed directory containing:
 
-- `daily_intervention_state.parquet` — active agents, households, settings and
-  activation/release counts;
+- `daily_intervention_state.parquet` — family-specific agents, households,
+  settings/routes, care residents/staff, WFH transitions, vaccine doses,
+  effective protection and waning;
 - `intervention_events.parquet` — detection references, state transitions,
   release reasons, configuration hashes and provenance hashes;
 - `route_effects.parquet` — base/effective edge counts and composed
@@ -74,6 +83,27 @@ content-addressed directory containing:
 - `scenario_config.json`, `diagnostics.json` and `manifest.json` — the full
   scenario, parent M2/M3/M4/M5/C4 hashes, dependency versions, sensitivity IDs,
   seed, dirty-worktree flag and output hashes.
+- `latent_outputs/jos-outbreak-m5-*/` — directly included daily epidemic,
+  route, age and parish tables plus transmission events and a verified M5
+  manifest. Missing or changed latent content makes verification fail.
+
+`duration_days` is the number of inclusive dated output points, with
+`simulation_end = start_date + duration_days - 1`. Generic imports are exposure
+attempts: attempted people are selected before vaccine susceptibility controls
+successful acquisition, and blocked attempts are not back-filled.
+Pre-C5 M5/M7 artifacts used an inclusive Starsim stop with `start +
+duration_days`, producing one extra point; those artifacts retain their
+historical meaning and must be regenerated under manifest schema 2.0 rather
+than mixed with C5 results.
+
+The stable latent-outcome hash covers exactly the canonical rows in
+`daily_epidemic`, `daily_route`, `daily_age`, `daily_parish` and
+`transmission_events`; it excludes file paths, timestamps and Parquet metadata.
+The latent logical hash additionally binds the full run/disease config and M4
+parent. Scenario identity separately binds the complete `OutbreakRunConfig`,
+M2/M3/M4, disease and observation configs, intervention/sensitivity config,
+seed/dates and Starsim/JOS versions. The artifact-bundle hash also binds M7
+state, events and route-effect outputs.
 
 `jos intervention compare` runs a matched-seed baseline and scenario and
 writes `scenario_comparison.parquet`, `paired_seed_comparison.parquet` and a

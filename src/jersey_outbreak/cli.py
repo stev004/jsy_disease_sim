@@ -318,7 +318,7 @@ def outbreak_run(
         PopulationMode, typer.Option(help="Outbreak scale: ci, scaled or full.")
     ] = "ci",
     seed: Annotated[int, typer.Option(help="Non-negative outbreak seed.")] = 123,
-    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
     parameter_set: Annotated[
         Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
     ] = None,
@@ -383,7 +383,7 @@ def observe_run(
         PopulationMode, typer.Option(help="Observation scale: ci, scaled or full.")
     ] = "ci",
     seed: Annotated[int, typer.Option(help="Non-negative latent-run seed.")] = 123,
-    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
     parameter_set: Annotated[
         Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
     ] = None,
@@ -456,7 +456,7 @@ def ensemble_run(
     seeds: Annotated[
         str, typer.Option(help="Explicit comma-separated unique replicate seeds.")
     ] = "101,102,103",
-    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
     workers: Annotated[int, typer.Option(help="Bounded process workers; 1 is sequential.")] = 1,
     parameter_set: Annotated[
         Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
@@ -592,7 +592,7 @@ def scenario_run(
         PopulationMode, typer.Option(help="Scenario scale: ci, scaled or full.")
     ] = "ci",
     seed: Annotated[int, typer.Option(help="Non-negative scenario seed.")] = 123,
-    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
     scenario_config: Annotated[
         Path | None, typer.Option(help="Versioned M7 scenario YAML.")
     ] = None,
@@ -631,7 +631,7 @@ def intervention_run(
         PopulationMode, typer.Option(help="Intervention scale: ci, scaled or full.")
     ] = "ci",
     seed: Annotated[int, typer.Option(help="Non-negative scenario seed.")] = 123,
-    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
     scenario_config: Annotated[
         Path | None, typer.Option(help="Versioned M7 scenario YAML.")
     ] = None,
@@ -670,7 +670,7 @@ def intervention_compare(
         PopulationMode, typer.Option(help="Comparison scale: ci, scaled or full.")
     ] = "ci",
     seed: Annotated[int, typer.Option(help="Matched seed for baseline and scenario.")] = 123,
-    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
     scenario_config: Annotated[
         Path, typer.Option(help="M7 scenario YAML to compare with baseline.")
     ] = Path("configs/scenarios/m7_school_closure.yaml"),
@@ -739,7 +739,7 @@ def intervention_ensemble(
     seeds: Annotated[
         str, typer.Option(help="Explicit comma-separated unique replicate seeds.")
     ] = "101,102,103",
-    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
     workers: Annotated[int, typer.Option(help="Bounded process workers; 1 is sequential.")] = 1,
     scenario_config: Annotated[Path, typer.Option(help="Versioned M7 scenario YAML.")] = Path(
         "configs/scenarios/m7_school_closure.yaml"
@@ -812,7 +812,7 @@ def calibration_synthetic(
         PopulationMode, typer.Option(help="Calibration harness scale: ci, scaled or full.")
     ] = "ci",
     seed: Annotated[int, typer.Option(help="Seed for the target synthetic latent run.")] = 123,
-    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 30,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
     parameter_set: Annotated[
         Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
     ] = None,
@@ -872,7 +872,7 @@ def calibration_beta(
         PopulationMode, typer.Option(help="Calibration harness scale: ci, scaled or full.")
     ] = "ci",
     seed: Annotated[int, typer.Option(help="Seed for the base synthetic network.")] = 123,
-    duration_days: Annotated[int, typer.Option(help="Number of daily disease timesteps.")] = 8,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 8,
     parameter_set: Annotated[
         Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
     ] = None,
