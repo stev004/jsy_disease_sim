@@ -228,8 +228,13 @@ class InterventionManager(ss.Intervention):
 
     def _target_matches(self, config: InterventionConfig, agent_id: str) -> bool:
         target = config.target
-        m2 = self._m2_by_agent[agent_id]
-        m3 = self._m3_by_agent[agent_id]
+        m2 = self._m2_by_agent.get(agent_id)
+        m3 = self._m3_by_agent.get(agent_id)
+        # M8 may pass a resident-plus-temporary Starsim population to the
+        # shared M7 manager.  Visitor slots are handled by the travel layer;
+        # resident-targeted M7 interventions must simply ignore them.
+        if m2 is None or m3 is None:
+            return False
         age = int(m2["age"])
         care_setting = self._care_setting_by_agent.get(agent_id)
         care_role = (
@@ -689,7 +694,7 @@ class InterventionManager(ss.Intervention):
         if not vaccine_configs:
             return
         disease = self._disease()
-        n_agents = len(self.generated.agent_ids)
+        n_agents = len(self.sim.people)
         relative_sus = np.ones(n_agents, dtype=float)
         relative_trans = np.ones(n_agents, dtype=float)
         for config in vaccine_configs:

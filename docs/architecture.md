@@ -7,10 +7,48 @@ verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`; the C3
 implementation commit is `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`, followed
 by verification manifest-integrity hardening and documentation-only commits.
 M7 adds a prospective intervention layer while keeping the canonical M4
-routes and latent M5 outputs immutable. Travel/visitor controls, API and UI
-remain later boundaries.
+routes and latent M5 outputs immutable. M8 adds the explicit travel/visitor
+layer; API and UI remain later boundaries.
 Quantitative evidence is maintained in
 [`progress.md`](progress.md).
+
+## Milestone 8 travel boundary
+
+M8 is an explicit temporary-person layer above the immutable resident M2/M3/M4
+parent. `travel_schemas.py` owns strict episode, stream, seasonality,
+intervention and targeting contracts. `travel.py` generates deterministic
+airport/ferry episodes, maps temporary visitor identities to bounded
+preallocated Starsim slots, activates/deactivates those slots on episode
+dates, and constructs sparse temporary routes for terminals,
+accommodation/host households, local visitor transit and visitor community
+activity. Starsim 3.5.2 population growth is append-only, so M8 does not append
+or delete agents during a run. Capacity is derived from peak concurrency plus
+declared headroom, not annual passenger volume.
+
+Canonical resident IDs and M4 routes are not rewritten. A route view adds six
+M8 route families and filters resident routes to people present in Jersey when
+returning-resident episodes exist. Event attribution maps temporary slot UIDs
+back to stable visitor IDs and retains resident→resident, resident→visitor,
+visitor→resident and visitor→visitor directions. The travel lifecycle runs
+before disease transmission; post-transmission state snapshots drive the
+date-specific present-population outputs.
+
+Generic M5 exposure attempts and explicit visitor arrivals/returning-resident
+external acquisition are separate processes. The `both` mode is intentional
+and persisted to prevent silent double counting. Arrival testing, quarantine,
+traveller protection and travel-acquisition reduction are prospective controls.
+M7's resident-targeted manager can share the same run; temporary visitor slots
+are ignored by resident-only target selectors. Visitor intensity and optional
+travel-route transmission seasonality are separate typed profiles, and the
+actual daily schedule is persisted. High-risk categories are targeting and
+stratification tags, not medical diagnoses or severity probabilities.
+
+M8 artifacts use schema version 2.0 and include required travel/epidemic
+Parquet tables, configurations, parent references, file hashes, scenario/run/
+episode/network/seasonality hashes and performance diagnostics. Comparisons
+retain matched seed and parent information while documenting coupling decay.
+The M8 CLI stops at travel runs, comparisons and small ensembles; M9 API/job
+architecture and M10 UI/map work are outside this milestone.
 
 The full corrected stack produces 104,540 agents, 522,388 structural edges,
 856,050 baseline edges and 1,906,144 selected snapshot edges. A full Starsim

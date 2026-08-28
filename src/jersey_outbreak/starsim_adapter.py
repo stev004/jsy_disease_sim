@@ -63,6 +63,19 @@ def _apply_jos_demographics(sim: Any, generated: GeneratedNetworks) -> None:
         raise RuntimeError("Starsim sex state does not match the JOS population")
 
 
+def _apply_demographics_arrays(sim: Any, ages: np.ndarray, female: np.ndarray) -> None:
+    """Apply an explicit resident-plus-temporary demographic contract."""
+
+    if len(ages) != len(sim.people) or len(female) != len(sim.people):
+        raise ValueError("explicit demographic arrays must match the Starsim population size")
+    sim.people.age[:] = ages
+    sim.people.female[:] = female
+    if not np.array_equal(np.asarray(sim.people.age), ages):
+        raise RuntimeError("Starsim ages do not match the explicit JOS population")
+    if not np.array_equal(np.asarray(sim.people.female), female):
+        raise RuntimeError("Starsim sex state does not match the explicit JOS population")
+
+
 def _edge_arrays(
     ss: Any,
     edges: tuple[dict[str, Any], ...] | list[dict[str, Any]],
@@ -139,8 +152,16 @@ def _make_static_network(
 def build_starsim_networks(generated: GeneratedNetworks) -> list[Any]:
     """Convert all configured JOS routes into exact Starsim network objects."""
 
-    ss = _load_starsim()
     uid_by_agent_id = agent_uid_mapping(generated)
+    return _build_starsim_networks_for_mapping(generated, uid_by_agent_id)
+
+
+def _build_starsim_networks_for_mapping(
+    generated: GeneratedNetworks, uid_by_agent_id: dict[str, int]
+) -> list[Any]:
+    """Build networks using a caller-owned total identity mapping."""
+
+    ss = _load_starsim()
     networks: list[Any] = []
     initial_date = generated.config.start_date
     for route_id, spec in sorted(generated.route_specs.items()):
@@ -224,6 +245,50 @@ def build_starsim_disease_sim(
     )
     sim.init()
     _apply_jos_demographics(sim, generated)
+    return sim
+
+
+def build_starsim_travel_sim(
+    generated: GeneratedNetworks,
+    disease: Any,
+    *,
+    agent_ids: list[str],
+    ages: np.ndarray,
+    female: np.ndarray,
+    start_date: date | None = None,
+    duration_days: int = 2,
+    seed: int | None = None,
+    interventions: list[Any] | tuple[Any, ...] | None = None,
+) -> Any:
+    """Build Starsim with a preallocated resident-plus-visitor slot pool.
+
+    M4 remains the immutable parent artifact.  The supplied ``generated``
+    view adds only temporary route snapshots and uses an explicit identity
+    mapping for the larger Starsim population.
+    """
+
+    if duration_days <= 0:
+        raise ValueError("duration_days must be positive")
+    if len(agent_ids) != len(ages) or len(agent_ids) != len(female):
+        raise ValueError("travel identities and demographics must have equal lengths")
+    ss = _load_starsim()
+    start = start_date or generated.config.start_date
+    stop = start + timedelta(days=duration_days - 1)
+    uid_by_agent_id = {agent_id: index for index, agent_id in enumerate(agent_ids)}
+    sim = ss.Sim(
+        people=ss.People(len(agent_ids)),
+        start=start.isoformat(),
+        stop=stop.isoformat(),
+        dt=ss.days(1),
+        rand_seed=generated.config.seed if seed is None else seed,
+        networks=_build_starsim_networks_for_mapping(generated, uid_by_agent_id),
+        diseases=disease,
+        interventions=list(interventions or []),
+        verbose=0,
+        copy_inputs=False,
+    )
+    sim.init()
+    _apply_demographics_arrays(sim, ages, female)
     return sim
 
 

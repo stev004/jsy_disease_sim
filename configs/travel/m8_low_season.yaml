@@ -1,0 +1,19 @@
+schema_version: "1.0"
+travel_config_id: m8-low-season-demo
+mode: explicit_travel
+stream_scale: 0.001
+visitor_fraction: 0.9
+returning_resident_fraction: 0.1
+day_visitor_fraction: 0.1
+staying_with_resident_fraction: 0.2
+stay_duration_days: 3
+stay_duration_jitter_days: 1
+visitor_seasonality:
+  profile_id: synthetic-low-season-pressure
+  monthly_multipliers: [1.45, 1.35, 1.2, 1.05, 0.85, 0.65, 0.5, 0.5, 0.75, 1.0, 1.25, 1.45]
+  normalization: mean_one
+  minimum: 0.0
+  maximum: 2.0
+  status: scenario_assumption
+  source_ids: [passenger_arrivals_total_csv]
+  notes: Bounded illustrative low-season profile; official frozen data supports annual totals, not this monthly shape.

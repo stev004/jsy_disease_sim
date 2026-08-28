@@ -12,7 +12,7 @@ which gates have actually passed and the evidence supporting them.
 ## Gate status
 
 | Gate | Status | Verification boundary |
-|---|---|---|
+|---:|---|---|---|
 | M0 | PASS | Starsim 3.5.2 compatibility and deterministic demo |
 | M1 | PASS | Registered Jersey sources, canonical tables and quality report |
 | M2 | PASS | 104,540 synthetic residents; logical hash `bc1e30281edc211dd860cd515450029e2e549cf2b33297d679b9c4b6b975296a` |
@@ -415,6 +415,79 @@ capacity, not a whole-island headcount or roster; Care Commission values are
 regulatory minima, not observed staffing. Contact weights remain relative
 daily exposure-opportunity weights and are not separately identified from
 disease transmissibility. Beta recovery is a synthetic demonstration, not
-Jersey surveillance calibration. M7 intervention values are synthetic
-assumptions, and real-disease validation, API/UI, visitors and travel controls
-remain out of scope.
+Jersey surveillance calibration. M7 and M8 intervention/travel values are
+synthetic assumptions; real-disease validation and API/UI remain out of scope.
+M8 visitor counts and seasonality are scenario controls, not tourism or
+border-control estimates.
+
+## Milestone 8 implementation record
+
+M8 is implemented on branch `codex/m8-visitors-seasonality` from the required
+M7/C5 parent. The typed `travel_schemas.py`, lifecycle/network runner
+`travel.py` and `travel_artifacts.py` use preallocated temporary Starsim slots
+because Starsim 3.5.2 population growth is append-only. Canonical M2/M3/M4
+inputs remain immutable. `jos travel run`, `jos travel compare` and
+`jos travel ensemble` provide the minimal configuration-first command surface.
+
+The frozen travel evidence currently available is the annual 2025 Ports of
+Jersey passenger-arrival table (`passenger_arrivals_total_csv`): 720,842
+airport and 196,623 sea/ferry passenger arrivals. No frozen monthly visitor
+profile was available, so demo seasonality is a bounded `scenario_assumption`;
+annual-to-daily scheduling is explicitly `derived`. Composition, average stay,
+party size, transport, community participation, arrival disease state and
+external acquisition controls are exposed as provenance-bound assumptions.
+
+### M8 gate ledger
+
+| # | Gate | Status | Evidence / limitation |
+|---:|---|---|---|
+| 1 | Resident baseline exact compatibility | PASS | Full repository regression and zero-arrival resident-output equivalence |
+| 2 | Visitor identity contract | PASS | Separate deterministic visitor namespace; no resident ID collisions |
+| 3 | Trip episode model | PASS | Typed person/trip/party episode records with provenance |
+| 4 | Arrival/departure generation | PASS | Deterministic dated lifecycle, day and overnight semantics |
+| 5 | Air/ferry separation | PASS | Independent mode-keyed streams and terminal identity |
+| 6 | Travel parties | PASS | Deterministic party sizes, party IDs and member mapping |
+| 7 | Accommodation assignment | PASS | Hotel/guesthouse/self-catered typed accommodation records |
+| 8 | Host-household visitors | PASS | Resident household hosting with household route membership |
+| 9 | Terminal contacts | PASS | Airport/ferry terminal route family with arrival-day contacts |
+| 10 | Visitor local transport | PASS | Bus, taxi, rental, walking and host-pickup categories |
+| 11 | Visitor community mixing | PASS | Parish-aware indoor/outdoor temporary community routes |
+| 12 | Returning-resident absence | PASS | Resident IDs retained and removed from Jersey routes while away |
+| 13 | External travel acquisition | PASS | Return events can acquire `travel_imported` infection distinctly |
+| 14 | Visitor disease-state initialization | PASS | Susceptible/exposed/infectious/recovered arrival states |
+| 15 | Temporary-agent/Starsim architecture | PASS | Preallocated slots; no unsafe mid-run population growth |
+| 16 | Activation/deactivation | PASS | Alive-state, active-UID and route lifecycle transitions |
+| 17 | Resident vs present-population denominators | PASS | Resident-present and total-present denominators are separate |
+| 18 | Visitor transmission directionality | PASS | Resident/visitor direction and visitor-linked events persisted |
+| 19 | Generic-import vs explicit-travel separation | PASS | `generic_import_only`, `explicit_travel` and `both` are explicit |
+| 20 | Visitor seasonality | PASS | Typed normalized monthly visitor profile, neutral by default |
+| 21 | Transmission/contact seasonality | PASS | Optional separate typed profile applied once and persisted |
+| 22 | High-risk targeting/strata | PARTIAL | Older/care/care-staff/occupational targeting exists; severity deferred |
+| 23 | Arrival-volume intervention | PASS | Prospective arrival multiplier |
+| 24 | Arrival testing | PASS | Probability, sensitivity, specificity and delay are deterministic |
+| 25 | Traveller quarantine | PASS | Positive-only/all-arrival modes, adherence and duration controls |
+| 26 | M7/M8 intervention composition | PASS | Shared M7 intervention manager composes with visitor slots |
+| 27 | Travel intervention neutrality | PASS | Zero/neutral controls preserve resident-only behavior |
+| 28 | Resident-network immutability | PASS | M2/M3/M4 inputs and parent hash remain unchanged |
+| 29 | Route attribution | PASS | Route IDs, event direction and local-acquisition attribution |
+| 30 | Disease-state conservation | PASS | Daily state counts conserve present population |
+| 31 | Scenario/run hashing | PASS | Scenario identity binds material parent and travel controls |
+| 32 | Visitor/travel hashes | PASS | Config, episode, population, network and seasonality hashes |
+| 33 | Reconstructible M8 artifacts | PASS | Schema-2.0 manifest, required tables, hashes and verifier |
+| 34 | Matched-seed comparison | PASS | CLI/library comparison with parent and coupling diagnostics |
+| 35 | Travel ensembles | PASS | Multi-seed summary preserves state/incidence semantics |
+| 36 | Sensitivity auditability | PASS | Bounded visitor-contact sensitivity config and provenance table |
+| 37 | Limiting cases | PASS | Zero arrivals, departure cleanup, returning-resident and tamper tests |
+| 38 | Performance | PASS | Runtime and peak memory recorded in final full artifact |
+| 39 | Visitor capacity safety | PASS | Peak concurrency, headroom and overflow guard |
+| 40 | Full-island compatibility | PASS | Clean committed 104,540-resident run completed |
+| 41 | Source/provenance discipline | PASS | Official annual arrivals plus explicit derived/assumption statuses |
+| 42 | Test quality | PASS | 129 repository tests and 9 focused M8 tests pass |
+| 43 | Documentation accuracy | PASS | README, architecture, scope and progress records updated |
+| 44 | Synthetic scientific claims | PASS | Visitor outputs explicitly bounded synthetic scenarios |
+| 45 | M9/API boundary preserved | PASS | No API, job system or M9 infrastructure added |
+| 46 | M10/UI boundary preserved | PASS | No UI, map frontend or M10 work added |
+
+Overall M8 status is **PASS with one accepted narrow PARTIAL**: high-risk
+targeting/strata are implemented, while optional biological severity modifiers
+remain intentionally deferred.

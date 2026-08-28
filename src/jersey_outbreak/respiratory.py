@@ -152,6 +152,14 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
                 "seeded": kind == "seeded",
                 "state": "exposed",
             }
+            if kind == "travel_imported":
+                event.update(
+                    {
+                        "travel_acquisition": True,
+                        "imported": False,
+                        "travel_origin": "external_resident_travel",
+                    }
+                )
             evidence = self._last_attribution_evidence.get(target_uid)
             if evidence is not None:
                 event.update(evidence)
@@ -431,6 +439,43 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
             )
         else:
             self.ti_susceptible[uids] = np.nan
+
+    def initialize_arrival_state(self, uids: np.ndarray, state: str) -> None:
+        """Initialize a temporary traveller without changing resident identity.
+
+        This is deliberately a small generic state initializer.  Visitor
+        prevalence is a scenario control, not a clinical diagnosis model.
+        """
+
+        if state not in {"susceptible", "exposed", "infectious", "recovered"}:
+            raise ValueError(f"unknown arrival disease state: {state}")
+        uids = np.asarray(uids, dtype=np.int64)
+        if not len(uids):
+            return
+        if state == "susceptible":
+            self.susceptible[uids] = True
+            self.exposed[uids] = False
+            self.infected[uids] = False
+            self.recovered[uids] = False
+            return
+        if state == "recovered":
+            self.susceptible[uids] = False
+            self.exposed[uids] = False
+            self.infected[uids] = False
+            self.recovered[uids] = True
+            self.ti_recovered[uids] = self.ti
+            self.ti_susceptible[uids] = np.nan
+            return
+        self.set_prognoses(uids, sources=np.full(len(uids), -1, dtype=np.int64))
+        if state == "infectious":
+            self.exposed[uids] = False
+            self.infected[uids] = True
+            self.ti_infected[uids] = self.ti
+            self.ti_recovered[uids] = self.ti + self.pars.infectious_period.rvs(uids)
+            if self.pars.waning_enabled:
+                self.ti_susceptible[uids] = self.ti_recovered[
+                    uids
+                ] + self.pars.immunity_duration.rvs(uids)
 
     def init_results(self) -> None:
         """Add explicit seed/import/local and total-infection result series."""

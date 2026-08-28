@@ -1,0 +1,31 @@
+schema_version: "8.0"
+scenario_id: m8-explicit-travel-baseline
+scenario_version: "8.0.0"
+travel:
+  schema_version: "1.0"
+  travel_config_id: m8-explicit-travel-scenario
+  mode: explicit_travel
+  stream_scale: 0.001
+  arrival_volume_multiplier: 1.0
+  visitor_fraction: 0.9
+  returning_resident_fraction: 0.1
+  day_visitor_fraction: 0.1
+  staying_with_resident_fraction: 0.2
+  stay_duration_days: 3
+  stay_duration_jitter_days: 1
+  arrival_infectious_fraction: 0.01
+  arrival_exposed_fraction: 0.01
+  arrival_recovered_fraction: 0.05
+  returning_resident_external_acquisition_probability: 0.01
+  visitor_seasonality:
+    profile_id: neutral-scenario-profile
+    monthly_multipliers: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    status: scenario_assumption
+    source_ids: []
+    notes: Neutral synthetic profile.
+  transmission_seasonality:
+    profile_id: neutral-transmission-profile
+    monthly_multipliers: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    status: scenario_assumption
+    source_ids: []
+    notes: Disabled neutral profile.

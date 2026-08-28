@@ -1,0 +1,69 @@
+schema_version: "1.0"
+travel_config_id: m8-explicit-travel-demo
+mode: explicit_travel
+stream_scale: 0.001
+arrival_volume_multiplier: 1.0
+visitor_fraction: 0.9
+returning_resident_fraction: 0.1
+day_visitor_fraction: 0.1
+staying_with_resident_fraction: 0.2
+stay_duration_days: 3
+stay_duration_jitter_days: 1
+party_sizes: [1, 2, 4, 6]
+party_probabilities: [0.45, 0.30, 0.20, 0.05]
+accommodation_group_capacity: 8
+terminal_mixing_contacts: 4
+visitor_community_contacts: 3
+visitor_transit_contacts: 2
+visitor_community_indoor_probability: 0.65
+visitor_community_outdoor_probability: 0.45
+arrival_infectious_fraction: 0.01
+arrival_exposed_fraction: 0.01
+arrival_recovered_fraction: 0.05
+returning_resident_external_acquisition_probability: 0.01
+visitor_seasonality:
+  profile_id: neutral-visitor-pressure
+  monthly_multipliers: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+  normalization: mean_one
+  minimum: 0.0
+  maximum: 2.0
+  status: scenario_assumption
+  source_ids: []
+  notes: Neutral demo profile; official frozen data is annual passenger arrivals only.
+transmission_seasonality:
+  profile_id: neutral-transmission-pressure
+  monthly_multipliers: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+  normalization: mean_one
+  minimum: 0.0
+  maximum: 2.0
+  status: scenario_assumption
+  source_ids: []
+  notes: Disabled neutral profile; no seasonal disease claim.
+enable_transmission_seasonality: false
+interventions:
+  arrival_volume_multiplier: 1.0
+  testing_probability: 0.0
+  test_sensitivity: 1.0
+  test_specificity: 1.0
+  test_result_delay_days: 0
+  quarantine_positive_only: true
+  quarantine_all_arrivals: false
+  quarantine_duration_days: 0
+  quarantine_adherence: 0.0
+  quarantine_external_route_multiplier: 0.0
+  quarantine_accommodation_multiplier: 1.0
+  terminal_contact_multiplier: 1.0
+  travel_acquisition_multiplier: 1.0
+  traveller_vaccination_coverage: 0.0
+  traveller_vaccination_efficacy: 0.0
+high_risk:
+  older_age_threshold: 65
+  include_care_residents: true
+  include_care_staff: true
+  include_occupational_exposure: true
+  include_visitor_travel_exposure: true
+  occupational_sectors: []
+  biological_risk_multiplier: 1.0
+  status: scenario_assumption
+  source_ids: []
+  notes: Targeting and stratification only; no severity model is enabled.

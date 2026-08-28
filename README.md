@@ -7,7 +7,7 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–7 plus corrective closures C1–C5**:
+This repository contains **Milestones 0–8 plus corrective closures C1–C5**:
 repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
@@ -31,11 +31,12 @@ detections at their simulation timestep through a read-only consumer hook, and
 uses metric-aware ensemble grids. Observation randomness remains isolated by
 replicate/configuration, process execution records requested/planned/actual
 workers, and synthetic held-out beta recovery remains available. Milestone 7,
-as corrected by C5, adds the typed composable intervention runtime, detection-triggered isolation
-and quarantine, calendar/contact families, vaccination, matched-seed
-comparisons, intervention ensembles and visualization-ready artifacts. M7
-does not implement travel/visitor controls, an API or a UI. The quantitative
-gate record is in [`docs/progress.md`](docs/progress.md).
+as corrected by C5, adds the typed composable intervention runtime,
+detection-triggered isolation and quarantine, calendar/contact families,
+vaccination, matched-seed comparisons, intervention ensembles and
+visualization-ready artifacts. M8 adds the separate travel/visitor layer; the
+API and UI remain outside the implemented milestones. The quantitative gate
+record is in [`docs/progress.md`](docs/progress.md).
 The Starsim demo is an official SIR example using Starsim's built-in
 `RandomNet`; it is not a Jersey outbreak reconstruction or a validated
 forecast. The Milestone 2 population is synthetic and control-driven; it is
@@ -192,8 +193,7 @@ committed generated-output directories; see
 M7 outputs are written under `outputs/interventions`,
 `outputs/intervention_comparisons` and `outputs/ensembles` by the scenario,
 comparison and intervention-ensemble commands. All demonstration intervention
-values and route multipliers are synthetic assumptions. Travel, visitor,
-airport, ferry and arrival processes remain deferred to M8. See
+values and route multipliers are synthetic assumptions. See
 [`docs/interventions.md`](docs/interventions.md) for the runtime contract and
 artifact schema.
 
@@ -265,3 +265,36 @@ scenario comparisons, and reproducible manifests for every run.
 The architecture boundary is documented in
 [`docs/architecture.md`](docs/architecture.md). Later milestones must be
 started one at a time and must pass their gates before the next one begins.
+
+## Milestone 8 explicit travel and visitors
+
+M8 adds a typed travel layer without inflating the 104,540 permanent resident
+population. Residents retain stable IDs; temporary visitors use a
+`visitor-<seed>-<counter>` namespace and preallocated Starsim slots. Episodes
+record airport/ferry entry, travel parties, accommodation or host households,
+transport, arrival disease state and departure. Inactive slots have no
+contacts and are excluded from present-population denominators. Returning
+residents retain their identity but leave Jersey routes while away and may
+acquire infection through a separate synthetic external-travel pressure.
+
+Generic M5 import attempts and explicit arrivals are separate streams. Use
+`mode: generic_import_only`, `explicit_travel` or `both` deliberately; the M8
+manifest records the choice. Visitor terminal, accommodation, host-household,
+transit and community routes are temporary and route-attributed, while M7
+interventions can compose with M8 episodes. Visitor-volume seasonality and
+optional travel-contact seasonality are typed, bounded and persisted in
+`seasonality_schedule.parquet`. High-risk strata are targeting metadata only;
+M5 has no validated severity pathway.
+
+```bash
+uv run jos travel run --mode ci --seed 123 \
+  --travel-config configs/travel/m8_explicit_travel.yaml
+uv run jos travel compare --mode ci --seed 123
+uv run jos travel ensemble --mode ci --seeds 101,102,103
+uv run jos scenario run --mode ci --seed 123 \
+  --scenario-config configs/scenarios/m8_combined.yaml
+```
+
+M8 outputs describe only the declared synthetic travel scenario. They are not
+real visitor prevalence, airport/ferry transmission rates, policy-effectiveness
+estimates, tourism forecasts or traveller surveillance.

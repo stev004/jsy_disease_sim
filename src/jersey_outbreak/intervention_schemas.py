@@ -16,6 +16,7 @@ from pydantic import Field, field_validator, model_validator
 from .contracts import NonEmptyString, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes
 from .outbreak_schemas import ROUTE_IDS
+from .travel_schemas import TravelConfig
 
 InterventionType = Literal[
     "case_isolation",
@@ -292,9 +293,9 @@ InterventionSpec = InterventionConfig
 
 
 class ScenarioConfig(StrictModel):
-    """A deterministic, composable M7 scenario definition."""
+    """A deterministic, composable M7/M8 scenario definition."""
 
-    schema_version: Literal["7.0"] = "7.0"
+    schema_version: Literal["7.0", "8.0"] = "7.0"
     scenario_id: NonEmptyString
     scenario_version: NonEmptyString = "7.0.0"
     interventions: tuple[InterventionConfig, ...] = ()
@@ -303,6 +304,7 @@ class ScenarioConfig(StrictModel):
     duration_days: int | None = Field(default=None, ge=1, le=3660)
     disease_config_id: NonEmptyString | None = None
     observation_config_id: NonEmptyString | None = None
+    travel: TravelConfig | None = None
     sensitivity_config_ids: tuple[NonEmptyString, ...] = ()
     notes: NonEmptyString = (
         "Synthetic scenario experiment; not a Jersey policy recommendation or forecast."

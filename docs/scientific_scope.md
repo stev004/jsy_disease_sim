@@ -6,8 +6,39 @@ The C3 verification commit is `658364c7f02cf44f9392116e7db44c94bdb3175a`.
 M0–M7 and corrective closures C1–C4 are PASS. The full
 104,540-agent corrected stack constructs and executes through Starsim 3.5.2,
 and the quantitative evidence is recorded in
-[`progress.md`](progress.md). M7 adds intervention experiments; API/UI and
-visitor/travel work remain outside scope.
+[`progress.md`](progress.md). M7 adds intervention experiments and M8 adds a
+synthetic explicit travel layer; API/UI remain outside scope.
+
+## Milestone 8 scope and claim boundary
+
+M8 extends the synthetic resident experiment with explicit temporary visitors,
+resident absences and bounded airport/ferry arrival streams. A visitor is an
+episode-scoped synthetic person, not a permanent Jersey resident and not a row
+in M2. Accommodation, host-household, terminal, transport and community
+memberships are structural scenario mechanisms, not named hotels, passenger
+manifests, GPS histories or observed contact diaries.
+
+The frozen travel evidence currently supplies annual 2025 Ports of Jersey
+passenger-arrival totals used as observed annual controls: 720,842 airport and
+196,623 sea/ferry passenger arrivals. No frozen monthly visitor profile was
+available, so demo seasonality is a bounded `scenario_assumption`; daily
+scheduling is explicitly `derived`. Composition, stay duration, party size,
+transport, venue grouping, arrival disease state, community intensity and
+external acquisition pressure are scenario controls unless a registered source
+is supplied.
+
+Generic exogenous disease imports remain available and are not renamed as
+travellers. Visitor-linked local infections retain a route and direction;
+returning residents infected through external travel are marked separately as
+`travel_imported`. Arrival tests and quarantine act at declared simulation
+times, never retroactively. High-risk strata support targeting and
+stratification only; M5 has no validated severity pathway.
+
+M8 outputs mean “under the declared synthetic travel scenario.” They must not
+be read as real visitor prevalence, airport/ferry transmission rates, validated
+traveller contact counts, policy or border-control effectiveness, tourism
+burden, or a seasonal forecast. M9 API/job infrastructure and M10 interactive
+UI/map functionality remain outside scope.
 
 ## What this repository demonstrates
 

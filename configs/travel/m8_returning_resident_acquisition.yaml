@@ -1,0 +1,11 @@
+schema_version: "1.0"
+travel_config_id: m8-returning-resident-acquisition-demo
+mode: explicit_travel
+stream_scale: 0.001
+visitor_fraction: 0.8
+returning_resident_fraction: 0.2
+day_visitor_fraction: 0.1
+staying_with_resident_fraction: 0.2
+stay_duration_days: 3
+stay_duration_jitter_days: 1
+returning_resident_external_acquisition_probability: 0.05

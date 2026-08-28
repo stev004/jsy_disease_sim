@@ -162,8 +162,29 @@ def run_outbreak(
     detection_consumer: DetectionConsumer | None = None,
     scenario: ScenarioConfig | None = None,
     interventions: tuple[Any, ...] | list[Any] | None = None,
+    travel_config: Any | None = None,
+    travel: Any | None = None,
 ) -> OutbreakRunResult:
     """Run the generic respiratory disease with optional prospective interventions."""
+
+    if travel_config is not None and travel is not None:
+        raise ValueError("pass either travel_config or travel, not both")
+    requested_travel = travel_config if travel_config is not None else travel
+    if requested_travel is None and scenario is not None and scenario.travel is not None:
+        requested_travel = scenario.travel
+    if requested_travel is not None and requested_travel.mode in {"explicit_travel", "both"}:
+        from .travel import run_travel_outbreak
+
+        if interventions is not None:
+            raise ValueError("travel-backed scenarios must carry M7 interventions in scenario")
+        return run_travel_outbreak(
+            generated,
+            config,
+            parameters,
+            requested_travel,
+            observation_config=observation_config,
+            scenario=scenario,
+        )  # type: ignore[return-value]
 
     if generated.config.mode != config.mode or generated.config.seed != config.seed:
         raise ValueError("M5 run controls must match the M4 route artifact mode and seed")

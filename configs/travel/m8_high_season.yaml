@@ -1,0 +1,19 @@
+schema_version: "1.0"
+travel_config_id: m8-high-season-demo
+mode: explicit_travel
+stream_scale: 0.001
+visitor_fraction: 0.9
+returning_resident_fraction: 0.1
+day_visitor_fraction: 0.1
+staying_with_resident_fraction: 0.2
+stay_duration_days: 3
+stay_duration_jitter_days: 1
+visitor_seasonality:
+  profile_id: synthetic-high-summer-pressure
+  monthly_multipliers: [0.55, 0.55, 0.65, 0.8, 1.0, 1.3, 1.55, 1.55, 1.2, 0.9, 0.7, 0.65]
+  normalization: mean_one
+  minimum: 0.0
+  maximum: 2.0
+  status: scenario_assumption
+  source_ids: [passenger_arrivals_total_csv]
+  notes: Bounded illustrative summer-weighted profile; official frozen data supports annual totals, not this monthly shape.

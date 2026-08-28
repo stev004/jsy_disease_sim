@@ -39,6 +39,13 @@ from .population_structure_artifacts import (
 from .population_structure_generator import generate_structure
 from .population_structure_schemas import StructureGenerationConfig
 from .scenario import load_scenario_config
+from .travel import (
+    compare_travel_runs,
+    load_travel_config,
+    run_travel_ensemble,
+    run_travel_outbreak,
+)
+from .travel_artifacts import write_travel_artifact
 from .verification_archive import verify_verification_archive
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
@@ -50,6 +57,7 @@ outbreak_app = typer.Typer(add_completion=False, no_args_is_help=True)
 observe_app = typer.Typer(add_completion=False, no_args_is_help=True)
 ensemble_app = typer.Typer(add_completion=False, no_args_is_help=True)
 scenario_app = typer.Typer(add_completion=False, no_args_is_help=True)
+travel_app = typer.Typer(add_completion=False, no_args_is_help=True)
 intervention_app = typer.Typer(add_completion=False, no_args_is_help=True)
 calibration_app = typer.Typer(add_completion=False, no_args_is_help=True)
 verification_app = typer.Typer(add_completion=False, no_args_is_help=True)
@@ -61,6 +69,7 @@ app.add_typer(outbreak_app, name="outbreak")
 app.add_typer(observe_app, name="observe")
 app.add_typer(ensemble_app, name="ensemble")
 app.add_typer(scenario_app, name="scenario")
+app.add_typer(travel_app, name="travel")
 app.add_typer(intervention_app, name="intervention")
 app.add_typer(calibration_app, name="calibrate")
 app.add_typer(verification_app, name="verify")
@@ -99,11 +108,19 @@ def _display_path(path: Path, root: Path) -> str:
         return str(path)
 
 
-def _build_m4_for_m6(root: Path, mode: PopulationMode, seed: int, destination: Path):
+def _build_m4_for_m6(
+    root: Path,
+    mode: PopulationMode,
+    seed: int,
+    destination: Path,
+    *,
+    isolate_parents: bool = False,
+):
     """Build the existing M2/M3/M4.1 stack for an M6 command."""
 
-    m2_output = destination.parent / "populations"
-    m3_output = destination.parent / "structures"
+    parent_output = destination / "parents" if isolate_parents else destination.parent
+    m2_output = parent_output / "populations"
+    m3_output = parent_output / "structures"
     m2_generated = generate_population(root, PopulationGenerationConfig(mode=mode, seed=seed))
     m2_artifact = write_population_artifact(m2_generated, root, m2_output)
     m2_input = load_m2_population_artifact(root, m2_artifact.artifact_directory)
@@ -573,17 +590,228 @@ def _run_m7_scenario(
             }
         ),
     )
-    artifact = write_intervention_artifact(result, root, destination)
+    if hasattr(result, "travel_config"):
+        travel_artifact = write_travel_artifact(result, root, destination)  # type: ignore[arg-type]
+        return {
+            "artifact_id": travel_artifact.manifest.artifact_id,
+            "artifact_directory": str(travel_artifact.artifact_directory),
+            "diagnostics_status": travel_artifact.manifest.diagnostics_status,
+            "scenario_id": scenario.scenario_id,
+            "scenario_hash": result.scenario_hash,
+            "logical_content_hash": result.latent_outcome_hash,
+            "runtime_seconds": result.runtime_seconds,
+            "travel_controls": "M8",
+        }
+    m7_artifact = write_intervention_artifact(result, root, destination)
     return {
-        "artifact_id": artifact.manifest.artifact_id,
-        "artifact_directory": str(artifact.artifact_directory),
-        "diagnostics_status": artifact.manifest.diagnostics_status,
+        "artifact_id": m7_artifact.manifest.artifact_id,
+        "artifact_directory": str(m7_artifact.artifact_directory),
+        "diagnostics_status": m7_artifact.manifest.diagnostics_status,
         "scenario_id": scenario.scenario_id,
         "scenario_hash": result.scenario_hash,
         "logical_content_hash": result.logical_content_hash,
         "runtime_seconds": result.runtime_seconds,
         "travel_controls": "DEFERRED TO M8",
     }
+
+
+def _run_m8_scenario(
+    *,
+    mode: PopulationMode,
+    seed: int,
+    duration_days: int,
+    travel_path: Path | None,
+    scenario_path: Path | None,
+    parameter_path: Path | None,
+    observation_path: Path | None,
+    output_dir: Path,
+) -> dict[str, object]:
+    """Build the canonical resident parent and execute one M8 run."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    parameter_path = (
+        parameter_path
+        if parameter_path is None or parameter_path.is_absolute()
+        else root / parameter_path
+    )
+    observation_path = (
+        observation_path
+        if observation_path is None or observation_path.is_absolute()
+        else root / observation_path
+    )
+    scenario_path = (
+        scenario_path
+        if scenario_path is None or scenario_path.is_absolute()
+        else root / scenario_path
+    )
+    travel_path = (
+        travel_path if travel_path is None or travel_path.is_absolute() else root / travel_path
+    )
+    parameters = load_parameter_set(root, parameter_path)
+    observation = load_observation_config(root, observation_path)
+    scenario = load_scenario_config(root, scenario_path) if scenario_path is not None else None
+    travel_config = (
+        scenario.travel
+        if scenario is not None and scenario.travel is not None
+        else load_travel_config(root, travel_path)
+    )
+    run_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
+    generated = _build_m4_for_m6(root, mode, seed, destination, isolate_parents=True)
+    result = run_travel_outbreak(
+        generated,
+        run_config,
+        parameters,
+        travel_config,
+        observation_config=observation,
+        scenario=scenario,
+    )
+    artifact = write_travel_artifact(result, root, destination)
+    return {
+        "artifact_id": artifact.manifest.artifact_id,
+        "artifact_directory": str(artifact.artifact_directory),
+        "diagnostics_status": artifact.manifest.diagnostics_status,
+        "scenario_hash": result.scenario_hash,
+        "travel_config_hash": result.travel_config_hash,
+        "visitor_episode_hash": result.visitor_episode_hash,
+        "temporary_network_hash": result.temporary_network_hash,
+        "seasonality_hash": result.seasonality_hash,
+        "latent_outcome_hash": result.latent_outcome_hash,
+        "visitor_count": len(result.travel_plan.visitor_records),
+        "visitor_capacity": result.travel_plan.visitor_capacity,
+        "runtime_seconds": result.runtime_seconds,
+    }
+
+
+@travel_app.command("run")
+def travel_run(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Travel run scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Non-negative travel seed.")] = 123,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
+    travel_config: Annotated[Path | None, typer.Option(help="Versioned M8 travel YAML.")] = None,
+    scenario_config: Annotated[
+        Path | None, typer.Option(help="Optional M7+M8 scenario YAML.")
+    ] = None,
+    parameter_set: Annotated[
+        Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
+    ] = None,
+    observation_config: Annotated[
+        Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    output_dir: Annotated[
+        Path, typer.Option(help="Directory for versioned M8 travel artifacts.")
+    ] = Path("outputs/travel"),
+) -> None:
+    """Run an explicit synthetic travel/visitor experiment."""
+
+    typer.echo(
+        json.dumps(
+            _run_m8_scenario(
+                mode=mode,
+                seed=seed,
+                duration_days=duration_days,
+                travel_path=travel_config,
+                scenario_path=scenario_config,
+                parameter_path=parameter_set,
+                observation_path=observation_config,
+                output_dir=output_dir,
+            ),
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
+@travel_app.command("compare")
+def travel_compare(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Comparison scale: ci, scaled or full.")
+    ] = "ci",
+    seed: Annotated[int, typer.Option(help="Matched comparison seed.")] = 123,
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
+    baseline_config: Annotated[Path, typer.Option(help="Baseline M8 travel YAML.")] = Path(
+        "configs/travel/m8_explicit_travel.yaml"
+    ),
+    treated_config: Annotated[Path, typer.Option(help="Treated M8 travel YAML.")] = Path(
+        "configs/travel/m8_reduced_arrivals.yaml"
+    ),
+    output_dir: Annotated[Path, typer.Option(help="Directory for comparison outputs.")] = Path(
+        "outputs/travel_comparisons"
+    ),
+) -> None:
+    """Run a matched-seed travel comparison and emit direction-aware deltas."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    baseline_path = baseline_config if baseline_config.is_absolute() else root / baseline_config
+    treated_path = treated_config if treated_config.is_absolute() else root / treated_config
+    parameters = load_parameter_set(root)
+    base_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
+    generated = _build_m4_for_m6(root, mode, seed, destination, isolate_parents=True)
+    observation = load_observation_config(root)
+    baseline = run_travel_outbreak(
+        generated,
+        base_config,
+        parameters,
+        load_travel_config(root, baseline_path),
+        observation_config=observation,
+    )
+    treated = run_travel_outbreak(
+        generated,
+        base_config,
+        parameters,
+        load_travel_config(root, treated_path),
+        observation_config=observation,
+    )
+    comparison = compare_travel_runs(baseline, treated, comparison_id="m8-cli-comparison")
+    destination.mkdir(parents=True, exist_ok=True)
+    comparison_path = destination / "m8-cli-comparison.json"
+    comparison_path.write_text(
+        json.dumps(comparison, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    typer.echo(json.dumps(comparison, ensure_ascii=False, sort_keys=True))
+
+
+@travel_app.command("ensemble")
+def travel_ensemble(
+    mode: Annotated[
+        PopulationMode, typer.Option(help="Ensemble scale: ci, scaled or full.")
+    ] = "ci",
+    seeds: Annotated[str, typer.Option(help="Comma-separated replicate seeds.")] = "101,102,103",
+    duration_days: Annotated[int, typer.Option(help="Number of dated output points.")] = 30,
+    travel_config: Annotated[Path, typer.Option(help="Versioned M8 travel YAML.")] = Path(
+        "configs/travel/m8_explicit_travel.yaml"
+    ),
+    output_dir: Annotated[Path, typer.Option(help="Directory for ensemble outputs.")] = Path(
+        "outputs/travel_ensembles"
+    ),
+) -> None:
+    """Run a small multi-seed M8 ensemble with state/event semantics retained."""
+
+    root = _repo_root()
+    destination = output_dir if output_dir.is_absolute() else root / output_dir
+    replicate_seeds = _parse_seeds(seeds)
+    parameters = load_parameter_set(root)
+    base_config = default_run_config(
+        mode, replicate_seeds[0], parameters, duration_days=duration_days
+    )
+    generated = _build_m4_for_m6(root, mode, replicate_seeds[0], destination, isolate_parents=True)
+    result = run_travel_ensemble(
+        generated,
+        parameters,
+        base_config,
+        load_travel_config(
+            root, travel_config if travel_config.is_absolute() else root / travel_config
+        ),
+        replicate_seeds,
+    )
+    destination.mkdir(parents=True, exist_ok=True)
+    (destination / "m8-ensemble.json").write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    typer.echo(json.dumps(result, ensure_ascii=False, sort_keys=True))
 
 
 @scenario_app.command("run")

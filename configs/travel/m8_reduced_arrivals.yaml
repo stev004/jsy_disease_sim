@@ -1,0 +1,17 @@
+schema_version: "1.0"
+travel_config_id: m8-reduced-arrivals-demo
+mode: explicit_travel
+stream_scale: 0.001
+arrival_volume_multiplier: 0.5
+visitor_fraction: 0.9
+returning_resident_fraction: 0.1
+day_visitor_fraction: 0.1
+staying_with_resident_fraction: 0.2
+stay_duration_days: 3
+stay_duration_jitter_days: 1
+visitor_seasonality:
+  profile_id: neutral-reduced-arrivals
+  monthly_multipliers: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+  status: scenario_assumption
+  source_ids: []
+  notes: Neutral profile with an explicit arrival-volume sensitivity.

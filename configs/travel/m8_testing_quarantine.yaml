@@ -1,0 +1,22 @@
+schema_version: "1.0"
+travel_config_id: m8-testing-quarantine-demo
+mode: explicit_travel
+stream_scale: 0.001
+visitor_fraction: 0.9
+returning_resident_fraction: 0.1
+day_visitor_fraction: 0.1
+staying_with_resident_fraction: 0.2
+stay_duration_days: 3
+stay_duration_jitter_days: 1
+arrival_infectious_fraction: 0.02
+arrival_exposed_fraction: 0.02
+interventions:
+  testing_probability: 1.0
+  test_sensitivity: 1.0
+  test_specificity: 1.0
+  test_result_delay_days: 0
+  quarantine_positive_only: true
+  quarantine_duration_days: 5
+  quarantine_adherence: 1.0
+  quarantine_external_route_multiplier: 0.0
+  quarantine_accommodation_multiplier: 0.25
