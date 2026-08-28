@@ -32,7 +32,7 @@ from .network_generator import (
     _deduplicate_edges,
     _ring_edges,
 )
-from .observation_scheduler import ObservationScheduler
+from .observation_scheduler import DetectionEvent, ObservationScheduler
 from .observation_schemas import ObservationConfig
 from .outbreak_schemas import OutbreakRunConfig, RespiratoryParameterSet
 from .respiratory import RespiratorySEIRS
@@ -122,6 +122,21 @@ class TravelPlan:
     @property
     def returning_resident_episodes(self) -> tuple[TravelEpisode, ...]:
         return tuple(item for item in self.episodes if item.resident_agent_id is not None)
+
+
+@dataclass(frozen=True, order=True)
+class ScheduledArrivalTest:
+    """Episode-bound arrival-test result that cannot follow a reused slot."""
+
+    result_time_index: int
+    person_id: str
+    detected: bool
+    actor_type: str
+    runtime_slot_uid: int
+    trip_id: str
+    travel_party_id: str
+    episode_identity_hash: str
+    administration_time_index: int
 
 
 def _profile_counts(
@@ -912,7 +927,7 @@ class TravelManager:
         self.present_resident_ids: set[str] = set(base_generated.agent_ids)
         self.away_resident_ids: set[str] = set()
         self.quarantine_until: dict[str, int] = {}
-        self.pending_tests: list[tuple[int, str, bool]] = []
+        self.pending_tests: list[ScheduledArrivalTest] = []
         self.pending_quarantines: list[tuple[int, str, str]] = []
         self.current_date: date = start_date
         self.current_ti = 0
@@ -1137,17 +1152,37 @@ class TravelManager:
             _stable_uniform(self.seed, "arrival-test-result", episode.person_id) < probability
         )
         result_ti = self.current_ti + controls.test_result_delay_days
-        self.pending_tests.append((result_ti, episode.person_id, detected))
+        runtime_slot_uid = (
+            self.visitor_slot_by_id[episode.visitor_uid]
+            if episode.visitor_uid is not None
+            else self.uid_by_id[str(episode.resident_agent_id)]
+        )
+        self.pending_tests.append(
+            ScheduledArrivalTest(
+                result_time_index=result_ti,
+                person_id=episode.person_id,
+                detected=detected,
+                actor_type="visitor" if episode.visitor_uid is not None else "resident",
+                runtime_slot_uid=runtime_slot_uid,
+                trip_id=episode.trip_id,
+                travel_party_id=episode.travel_party_id,
+                episode_identity_hash=episode.identity_hash,
+                administration_time_index=self.current_ti,
+            )
+        )
         self._append_event(
             "arrival_test_administered",
             episode,
             tested=True,
             sensitivity=controls.test_sensitivity,
             specificity=controls.test_specificity,
+            administration_time_index=self.current_ti,
+            result_time_index=result_ti,
         )
         self._append_event(
             "arrival_test_result_scheduled",
             episode,
+            administration_time_index=self.current_ti,
             result_time_index=result_ti,
         )
 
@@ -1178,6 +1213,23 @@ class TravelManager:
         ]
         for activation_ti, person_id, cause in sorted(due):
             episode = self._episode_by_person[person_id]
+            if episode.visitor_uid is not None:
+                uid = self.visitor_slot_by_id[episode.visitor_uid]
+                active_episode = self._active_episode_by_uid.get(uid)
+                if (
+                    episode.visitor_uid not in self.active_visitor_ids
+                    or active_episode is None
+                    or active_episode.identity_hash != episode.identity_hash
+                    or not self._visitor_active(episode, self.current_date)
+                ):
+                    self._append_event(
+                        "quarantine_not_activated_after_departure",
+                        episode,
+                        cause=cause,
+                        activation_time_index=activation_ti,
+                        actionable=False,
+                    )
+                    continue
             until = activation_ti + self.config.interventions.quarantine_duration_days
             self.quarantine_until[person_id] = max(until, self.quarantine_until.get(person_id, -1))
             self._append_event(
@@ -1199,15 +1251,56 @@ class TravelManager:
 
     def _process_test_results(self) -> None:
         controls = self.config.interventions
-        due = [item for item in self.pending_tests if item[0] <= self.current_ti]
-        self.pending_tests = [item for item in self.pending_tests if item[0] > self.current_ti]
-        for result_ti, person_id, detected in sorted(due, key=lambda item: (item[0], item[1])):
-            episode = self._episode_by_person[person_id]
+        due = [item for item in self.pending_tests if item.result_time_index <= self.current_ti]
+        self.pending_tests = [
+            item for item in self.pending_tests if item.result_time_index > self.current_ti
+        ]
+        for scheduled in sorted(due):
+            episode = self._episode_by_person[scheduled.person_id]
+            if (
+                scheduled.trip_id != episode.trip_id
+                or scheduled.travel_party_id != episode.travel_party_id
+                or scheduled.episode_identity_hash != episode.identity_hash
+            ):
+                raise RuntimeError("scheduled arrival-test episode identity changed")
+            if episode.visitor_uid is not None:
+                active_episode = self._active_episode_by_uid.get(scheduled.runtime_slot_uid)
+                episode_active = bool(
+                    episode.visitor_uid in self.active_visitor_ids
+                    and active_episode is not None
+                    and active_episode.identity_hash == scheduled.episode_identity_hash
+                    and self._visitor_active(episode, self.current_date)
+                )
+            else:
+                resident_id = str(episode.resident_agent_id)
+                episode_active = bool(
+                    scheduled.actor_type == "resident"
+                    and scheduled.runtime_slot_uid == self.uid_by_id[resident_id]
+                    and resident_id in self.present_resident_ids
+                )
+            result_fields = {
+                "detected": scheduled.detected,
+                "administration_time_index": scheduled.administration_time_index,
+                "result_time_index": scheduled.result_time_index,
+                "result_runtime_slot_uid": scheduled.runtime_slot_uid,
+                "result_episode_identity_hash": scheduled.episode_identity_hash,
+                "episode_active": episode_active,
+                "actionable": episode_active,
+            }
+            if episode.visitor_uid is not None and not episode_active:
+                self._append_event(
+                    "test_result_available_after_departure",
+                    episode,
+                    **result_fields,
+                )
+                continue
             self._append_event(
-                "arrival_test_result", episode, detected=detected, result_time_index=result_ti
+                "arrival_test_result",
+                episode,
+                **result_fields,
             )
-            if detected and controls.quarantine_positive_only:
-                self._schedule_quarantine(episode, "positive_test", result_ti)
+            if scheduled.detected and controls.quarantine_positive_only:
+                self._schedule_quarantine(episode, "positive_test", scheduled.result_time_index)
 
     def initialize(
         self,
@@ -1973,6 +2066,9 @@ class TravelRunResult:
     m7_intervention_diagnostics: dict[str, Any] = field(default_factory=dict)
     observation_config: ObservationConfig | None = None
     scenario_config: ScenarioConfig | None = None
+    observation_events: list[dict[str, Any]] = field(default_factory=list)
+    detection_events: tuple[DetectionEvent, ...] = ()
+    delivered_detection_events: tuple[DetectionEvent, ...] = ()
 
 
 def _git_metadata(root: Path) -> tuple[str | None, bool]:
@@ -2235,6 +2331,7 @@ def run_travel_outbreak(
         interventions=[m7_manager] if m7_manager is not None else None,
     )
     manager.attach(sim, disease)
+    scheduler: ObservationScheduler | None = None
     if observation_config is not None:
         scheduler = ObservationScheduler(
             latent_seed=config.seed,
@@ -2257,6 +2354,7 @@ def run_travel_outbreak(
     sim.loop.insert(manager.apply, label=f"{disease.name}.step_state", before=True)
     sim.loop.insert(manager.capture, label=f"{disease.name}.step")
     sim.run(verbose=0)
+    observation_schedule = scheduler.snapshot() if scheduler is not None else None
     events = [manager.classify_event(event) for event in disease._all_events]
     # The event list has to be classified after the run, but the runner also
     # records terminal/accommodation lifecycle separately in visitor_events.
@@ -2569,6 +2667,19 @@ def run_travel_outbreak(
         m7_intervention_diagnostics=m7_diagnostics,
         observation_config=observation_config,
         scenario_config=scenario,
+        observation_events=(
+            list(observation_schedule.observation_events)
+            if observation_schedule is not None
+            else []
+        ),
+        detection_events=(
+            observation_schedule.detection_events if observation_schedule is not None else ()
+        ),
+        delivered_detection_events=(
+            observation_schedule.delivered_detection_events
+            if observation_schedule is not None
+            else ()
+        ),
     )
 
 

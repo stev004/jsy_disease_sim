@@ -68,6 +68,8 @@ def event_stream_seed(stream_seed: int, event: Mapping[str, Any]) -> int:
         event.get("source_kind", ""),
         event.get("route_id", ""),
         event.get("infector_uid", ""),
+        event.get("infected_episode_identity_hash", ""),
+        event.get("infector_episode_identity_hash", ""),
     )
 
 
@@ -83,6 +85,18 @@ class DetectionEvent:
     symptomatic: bool
     observation_config_id: str
     provenance: Mapping[str, Any]
+    infected_agent_id: str | None = None
+    infected_actor_type: str | None = None
+    infected_runtime_uid: int | None = None
+    infected_trip_id: str | None = None
+    infected_travel_party_id: str | None = None
+    infected_episode_identity_hash: str | None = None
+    infector_agent_id: str | None = None
+    infector_actor_type: str | None = None
+    infector_runtime_uid: int | None = None
+    infector_trip_id: str | None = None
+    infector_travel_party_id: str | None = None
+    infector_episode_identity_hash: str | None = None
 
 
 class DetectionConsumer(Protocol):
@@ -133,8 +147,8 @@ class ObservationScheduler:
         self._observation_events: list[dict[str, Any]] = []
         self._detection_events: list[DetectionEvent] = []
         self._delivered: list[DetectionEvent] = []
-        self._queue: list[tuple[int, str, int, str, DetectionEvent]] = []
-        self._scheduled_keys: set[tuple[int, str, str]] = set()
+        self._queue: list[tuple[int, str, int, str, str, DetectionEvent]] = []
+        self._scheduled_keys: set[tuple[int, str, str, str]] = set()
 
     @property
     def stream_fingerprint(self) -> str:
@@ -145,11 +159,60 @@ class ObservationScheduler:
 
         uid = int(event["infected_uid"])
         agent_id = str(event.get("infected_agent_id") or self.agent_id_by_uid[uid])
-        event_key = (uid, str(event["date"]), str(event.get("source_kind", "")))
+        episode_hash = str(event.get("infected_episode_identity_hash") or "")
+        event_key = (uid, str(event["date"]), str(event.get("source_kind", "")), episode_hash)
         if event_key in self._scheduled_keys:
             raise ValueError(f"infection event was scheduled twice: {event_key}")
         self._scheduled_keys.add(event_key)
         resident = self.resident_by_agent_id[agent_id]
+        actor_type = str(
+            event.get("infected_actor_type")
+            or event.get("infected_population")
+            or resident.get("population_kind")
+            or "resident"
+        )
+        infected_runtime_uid = int(
+            event.get(
+                "infected_runtime_uid",
+                event.get("infected_runtime_slot_uid", event.get("infected_slot_uid", uid)),
+            )
+        )
+        raw_infector_uid = event.get("infector_uid")
+        infector_uid = int(raw_infector_uid) if raw_infector_uid is not None else None
+        infector_agent_id = event.get("infector_agent_id")
+        if infector_agent_id is None and infector_uid is not None:
+            infector_agent_id = self.agent_id_by_uid[infector_uid]
+        infector_metadata = (
+            self.resident_by_agent_id.get(str(infector_agent_id), {})
+            if infector_agent_id is not None
+            else {}
+        )
+        infector_actor_type = (
+            event.get("infector_actor_type")
+            or event.get("infector_population")
+            or infector_metadata.get("population_kind")
+            or ("resident" if infector_agent_id is not None else None)
+        )
+        identity = {
+            "infected_agent_id": agent_id,
+            "infected_actor_type": actor_type,
+            "infected_runtime_uid": infected_runtime_uid,
+            "infected_trip_id": event.get("infected_trip_id"),
+            "infected_travel_party_id": event.get("infected_travel_party_id"),
+            "infected_episode_identity_hash": event.get("infected_episode_identity_hash"),
+            "infector_agent_id": infector_agent_id,
+            "infector_actor_type": infector_actor_type,
+            "infector_runtime_uid": event.get(
+                "infector_runtime_uid",
+                event.get(
+                    "infector_runtime_slot_uid",
+                    event.get("infector_slot_uid", infector_uid),
+                ),
+            ),
+            "infector_trip_id": event.get("infector_trip_id"),
+            "infector_travel_party_id": event.get("infector_travel_party_id"),
+            "infector_episode_identity_hash": event.get("infector_episode_identity_hash"),
+        }
         infection_date = date.fromisoformat(str(event["date"]))
         seeded_event = {**dict(event), "infected_agent_id": agent_id}
         rng = np.random.default_rng(event_stream_seed(self.stream_seed, seeded_event))
@@ -189,7 +252,7 @@ class ObservationScheduler:
             else "not_detected"
         )
         row = {
-            "infected_agent_id": agent_id,
+            **identity,
             "infected_uid": uid,
             "infection_date": infection_date.isoformat(),
             "symptom_onset_date": symptom_date.isoformat() if symptom_date else None,
@@ -230,6 +293,7 @@ class ObservationScheduler:
                         "lifecycle_delivery_point": "after_disease_transmission",
                     }
                 ),
+                **identity,
             )
             self._detection_events.append(notification)
             heapq.heappush(
@@ -239,6 +303,7 @@ class ObservationScheduler:
                     notification.detection_date,
                     notification.agent_uid,
                     notification.agent_id,
+                    notification.infected_episode_identity_hash or "",
                     notification,
                 ),
             )
@@ -249,7 +314,7 @@ class ObservationScheduler:
 
         delivered_now: list[DetectionEvent] = []
         while self._queue and self._queue[0][0] <= time_index:
-            _ti, _date, _uid, _agent_id, event = heapq.heappop(self._queue)
+            _ti, _date, _uid, _agent_id, _episode_hash, event = heapq.heappop(self._queue)
             if event.detection_time_index > time_index:
                 raise RuntimeError("future detection notification became visible early")
             delivered_now.append(event)

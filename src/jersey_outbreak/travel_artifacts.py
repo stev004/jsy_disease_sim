@@ -88,16 +88,200 @@ def _git_metadata(root: Path) -> tuple[str | None, bool]:
         return None, True
 
 
-def _write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
+def _write_rows(path: Path, rows: list[dict[str, Any]], schema: pa.Schema | None = None) -> None:
     if rows:
         # Arrow infers a struct from the first row and otherwise drops keys
         # introduced only by later heterogeneous events. Normalize the union
         # explicitly so infector/candidate/episode identity is never lost.
         columns = sorted({key for row in rows for key in row})
-        table = pa.Table.from_pylist([{key: row.get(key) for key in columns} for row in rows])
+        normalized = [{key: row.get(key) for key in columns} for row in rows]
+        table = pa.Table.from_pylist(normalized, schema=schema)
+    elif schema is not None:
+        table = pa.Table.from_arrays(
+            [pa.array([], type=field.type) for field in schema], schema=schema
+        )
     else:
         table = pa.Table.from_pylist([{}]).slice(0, 0)
     pq.write_table(table, path, compression="zstd", use_dictionary=True, write_statistics=True)
+
+
+TRAVEL_INTERVENTION_EVENT_SCHEMA = pa.schema(
+    [
+        ("date", pa.string()),
+        ("time_index", pa.int64()),
+        ("action", pa.string()),
+        ("trip_id", pa.string()),
+        ("person_id", pa.string()),
+        ("visitor_uid", pa.string()),
+        ("resident_agent_id", pa.string()),
+        ("traveller_type", pa.string()),
+        ("travel_party_id", pa.string()),
+        ("runtime_slot_uid", pa.int64()),
+        ("arrival_date", pa.string()),
+        ("arrival_time_index", pa.int64()),
+        ("departure_date", pa.string()),
+        ("departure_time_index", pa.int64()),
+        ("resident_or_visitor_status", pa.string()),
+        ("episode_identity_hash", pa.string()),
+        ("tested", pa.bool_()),
+        ("sensitivity", pa.float64()),
+        ("specificity", pa.float64()),
+        ("administration_time_index", pa.int64()),
+        ("result_time_index", pa.int64()),
+        ("result_runtime_slot_uid", pa.int64()),
+        ("result_episode_identity_hash", pa.string()),
+        ("episode_active", pa.bool_()),
+        ("actionable", pa.bool_()),
+        ("detected", pa.bool_()),
+        ("cause", pa.string()),
+        ("activation_time_index", pa.int64()),
+        ("release_time_index", pa.int64()),
+        ("effective_time_index", pa.int64()),
+        ("slot_uid", pa.int64()),
+        ("active_age", pa.float64()),
+        ("active_sex", pa.string()),
+        ("arrival_disease_state", pa.string()),
+        ("alive", pa.bool_()),
+        ("susceptible", pa.bool_()),
+        ("exposed", pa.bool_()),
+        ("infectious", pa.bool_()),
+        ("recovered", pa.bool_()),
+        ("age", pa.float64()),
+        ("rel_sus", pa.float64()),
+        ("rel_trans", pa.float64()),
+        ("route_id", pa.string()),
+        ("intervention_id", pa.string()),
+        ("intervention_type", pa.string()),
+        ("detection_event_reference", pa.string()),
+        ("agent_uid", pa.int64()),
+        ("agent_id", pa.string()),
+        ("household_id", pa.string()),
+        ("setting_id", pa.string()),
+        ("previous_state_json", pa.string()),
+        ("new_state_json", pa.string()),
+        ("config_hash", pa.string()),
+        ("provenance_hash", pa.string()),
+    ]
+)
+
+
+OBSERVATION_EVENT_SCHEMA = pa.schema(
+    [
+        ("infected_agent_id", pa.string()),
+        ("infected_uid", pa.int64()),
+        ("infected_actor_type", pa.string()),
+        ("infected_runtime_uid", pa.int64()),
+        ("infected_trip_id", pa.string()),
+        ("infected_travel_party_id", pa.string()),
+        ("infected_episode_identity_hash", pa.string()),
+        ("infector_agent_id", pa.string()),
+        ("infector_actor_type", pa.string()),
+        ("infector_runtime_uid", pa.int64()),
+        ("infector_trip_id", pa.string()),
+        ("infector_travel_party_id", pa.string()),
+        ("infector_episode_identity_hash", pa.string()),
+        ("infection_date", pa.string()),
+        ("symptom_onset_date", pa.string()),
+        ("detection_date", pa.string()),
+        ("report_date", pa.string()),
+        ("symptom_onset_delay_days", pa.int64()),
+        ("detection_delay_days", pa.int64()),
+        ("reporting_delay_days", pa.int64()),
+        ("symptomatic", pa.bool_()),
+        ("tested", pa.bool_()),
+        ("detected", pa.bool_()),
+        ("detection_reason", pa.string()),
+        ("source_kind", pa.string()),
+        ("route_id", pa.string()),
+        ("home_parish", pa.string()),
+        ("age_band", pa.string()),
+    ]
+)
+
+
+DETECTION_EVENT_SCHEMA = pa.schema(
+    [
+        ("agent_uid", pa.int64()),
+        ("agent_id", pa.string()),
+        ("detection_date", pa.string()),
+        ("detection_time_index", pa.int64()),
+        ("detection_reason", pa.string()),
+        ("symptomatic", pa.bool_()),
+        ("observation_config_id", pa.string()),
+        ("provenance_json", pa.string()),
+        ("delivered", pa.bool_()),
+        ("infected_agent_id", pa.string()),
+        ("infected_actor_type", pa.string()),
+        ("infected_runtime_uid", pa.int64()),
+        ("infected_trip_id", pa.string()),
+        ("infected_travel_party_id", pa.string()),
+        ("infected_episode_identity_hash", pa.string()),
+        ("infector_agent_id", pa.string()),
+        ("infector_actor_type", pa.string()),
+        ("infector_runtime_uid", pa.int64()),
+        ("infector_trip_id", pa.string()),
+        ("infector_travel_party_id", pa.string()),
+        ("infector_episode_identity_hash", pa.string()),
+    ]
+)
+
+
+def _canonical_json_text(value: Any) -> str:
+    return canonical_json_bytes(value).decode("utf-8")
+
+
+def _serialize_intervention_event_rows(
+    rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Serialize heterogeneous M7 state values without Arrow inference."""
+
+    allowed = set(TRAVEL_INTERVENTION_EVENT_SCHEMA.names) | {"previous_state", "new_state"}
+    unknown = sorted({key for row in rows for key in row} - allowed)
+    if unknown:
+        raise ValueError(f"travel intervention event schema is missing fields: {unknown}")
+    serialized: list[dict[str, Any]] = []
+    for event in rows:
+        row = {
+            key: value for key, value in event.items() if key not in {"previous_state", "new_state"}
+        }
+        row["previous_state_json"] = (
+            _canonical_json_text(event["previous_state"]) if "previous_state" in event else None
+        )
+        row["new_state_json"] = (
+            _canonical_json_text(event["new_state"]) if "new_state" in event else None
+        )
+        serialized.append(row)
+    return serialized
+
+
+def _deserialize_intervention_event_rows(
+    rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Reconstruct exact Python JSON types from the typed event table."""
+
+    reconstructed: list[dict[str, Any]] = []
+    for event in rows:
+        row = dict(event)
+        previous_json = row.pop("previous_state_json", None)
+        new_json = row.pop("new_state_json", None)
+        if previous_json is not None:
+            row["previous_state"] = json.loads(previous_json)
+        if new_json is not None:
+            row["new_state"] = json.loads(new_json)
+        reconstructed.append(row)
+    return reconstructed
+
+
+def _detection_rows(result: TravelRunResult) -> list[dict[str, Any]]:
+    delivered = {id(event) for event in result.delivered_detection_events}
+    return [
+        {
+            **{key: value for key, value in event.__dict__.items() if key != "provenance"},
+            "provenance_json": _canonical_json_text(dict(event.provenance)),
+            "delivered": id(event) in delivered,
+        }
+        for event in result.detection_events
+    ]
 
 
 def _write_json(path: Path, payload: Any) -> None:
@@ -160,6 +344,8 @@ def _rows_for_result(result: TravelRunResult) -> dict[str, list[dict[str, Any]]]
         "daily_route.parquet": result.daily_route,
         "daily_age.parquet": result.daily_age,
         "transmission_events.parquet": result.transmission_events,
+        "observation_events.parquet": result.observation_events,
+        "detection_events.parquet": _detection_rows(result),
     }
 
 
@@ -186,7 +372,15 @@ def write_travel_artifact(
         return TravelArtifact(artifact_directory, manifest)
 
     for filename, rows in _rows_for_result(result).items():
-        _write_rows(artifact_directory / filename, rows)
+        schema = None
+        if filename == "travel_intervention_events.parquet":
+            rows = _serialize_intervention_event_rows(rows)
+            schema = TRAVEL_INTERVENTION_EVENT_SCHEMA
+        elif filename == "observation_events.parquet":
+            schema = OBSERVATION_EVENT_SCHEMA
+        elif filename == "detection_events.parquet":
+            schema = DETECTION_EVENT_SCHEMA
+        _write_rows(artifact_directory / filename, rows, schema=schema)
     _write_json(
         artifact_directory / "travel_config.json",
         result.travel_config.model_dump(mode="json"),
@@ -297,6 +491,8 @@ def verify_travel_artifact(artifact_directory: Path) -> TravelArtifactManifest:
         "seasonality_schedule.parquet",
         "daily_epidemic.parquet",
         "transmission_events.parquet",
+        "observation_events.parquet",
+        "detection_events.parquet",
     }
     recorded = {record.path for record in manifest.output_artifacts}
     missing = sorted(required - recorded)
@@ -327,7 +523,10 @@ def verify_travel_artifact(artifact_directory: Path) -> TravelArtifactManifest:
         raise ValueError("M8 seasonality identity does not match the persisted travel config")
 
     def rows(filename: str) -> list[dict[str, Any]]:
-        return pq.read_table(artifact_directory / filename).to_pylist()
+        values = pq.read_table(artifact_directory / filename).to_pylist()
+        if filename == "travel_intervention_events.parquet":
+            return _deserialize_intervention_event_rows(values)
+        return values
 
     episode_rows = rows("travel_episodes.parquet")
     episode_rows.sort(key=lambda row: (row["arrival_date"], row["person_id"]))

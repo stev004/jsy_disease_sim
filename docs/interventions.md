@@ -105,6 +105,11 @@ M2/M3/M4, disease and observation configs, intervention/sensitivity config,
 seed/dates and Starsim/JOS versions. The artifact-bundle hash also binds M7
 state, events and route-effect outputs.
 
+When M7 events are composed into an M8 travel artifact, heterogeneous
+`previous_state` and `new_state` values are persisted as canonical JSON strings
+under an explicit Arrow schema. Logical verification reconstructs the original
+JSON types before hashing; Python `repr` is never used.
+
 `jos intervention compare` runs a matched-seed baseline and scenario and
 writes `scenario_comparison.parquet`, `paired_seed_comparison.parquet` and a
 route-shift table. Health outcomes are reported as absolute cumulative cases,

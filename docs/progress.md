@@ -1,9 +1,9 @@
 # Jersey Outbreak Simulator progress ledger
 
-**Last verified:** 27 August 2026
-**Current branch:** `codex/m7-interventions`
+**Last verified:** 28 August 2026
+**Current branch:** `codex/m8.2-final-travel-closure`
 **C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
-**Scope:** M7 intervention framework and matched-seed experiment gate.
+**Scope:** Minimal M8.2 observation/lifecycle/artifact closure; M9/M10 closed.
 
 This ledger records the current implementation and verification state. The
 project charter remains the authoritative specification; this file records
@@ -23,6 +23,7 @@ which gates have actually passed and the evidence supporting them.
 | M6 / C3 | PASS | Observation, ensemble, calibration, process-safety and archive contracts verified at `658364c7f02cf44f9392116e7db44c94bdb3175a` |
 | C4 | PASS | Runtime detection delivery, metric-aware ensemble grids, truthful fallback workers and zero-contact boundary verified on a fresh full-island path |
 | M7 | PASS | Typed composable interventions, causal detection effects, route composition, vaccination, artifacts, comparisons and bounded ensembles |
+| M8 | PASS | M8.2 closes the three blockers remaining after the independent M8.1 FAIL: episode-safe observations, departed-result lifecycle and typed combined-event artifacts |
 
 The C3 implementation was committed in `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`;
 its final integrity hardening is the C3 verification commit recorded above.
@@ -453,10 +454,7 @@ source-scale disease execution remains unbenchmarked; the materialized episode
 runner rejects unnecessarily large horizons and directs callers to the
 constant-memory generation benchmark. Monthly tourism seasonality, detailed
 taxi/rental behaviour and traveller biological values remain structural
-assumptions, not verified Jersey behaviour. The final 60-gate M8.1 status is
-recorded only after the corrective verification commands and bounded execution
-experiments complete; the original M8 PASS claim above is superseded by the
-independent FAIL and must not be used.
+assumptions, not verified Jersey behaviour.
 
 ### M8.1 corrective verification — 28 August 2026
 
@@ -498,10 +496,61 @@ summary rows with zero failed replicates. The executable valid sensitivity
 axis (`visitor_community_contacts` 1/3/6) produced 268/513/1,138 temporary
 edges and distinct latent hashes.
 
-**M8.1 corrective status: PASS WITH NON-BLOCKING PERFORMANCE/REALISM
-WARNINGS. M8 status after correction: PASS WITH THE SAME WARNINGS.** Monthly
-tourism seasonality is not source-backed; detailed taxi/rental behaviour and
-travel biology remain structural assumptions; literal annual source-scale
-disease execution was not attempted; and the explicit zero-travel manager has
-measured overhead because it binds a separate travel artifact to the canonical
-C5 projection. M9 and M10 remain closed.
+The independent M8.1 audit subsequently passed 57 of 60 gates but marked
+**M8.1 FAIL — M8 REMAINS CLOSED**. It found three blockers: temporary-traveller
+observation rows and `DetectionEvent` objects dropped trip/party/episode
+identity; an arrival-test result due after visitor departure could be processed
+against a reused runtime slot; and combined M7/M8 intervention events could not
+be written when `new_state` mixed scalar and structured values. The earlier
+M8.1 PASS claim is therefore preserved above only as superseded implementation
+history, not as a valid audit conclusion.
+
+### M8.2 final travel closure — 28 August 2026
+
+M8.2 is a minimal correction for those three findings. The observation
+scheduler now copies visitor, actor, runtime slot, trip, travel party and
+episode hash directly from the latent infection event into the observation row
+and immutable `DetectionEvent`; equivalent infector context is retained when
+present. Travel artifacts persist both observation and detection tables with
+the same episode identity. Permanent-resident scheduling remains compatible.
+
+Arrival-test work items now bind administration/result timesteps, actor,
+runtime UID, trip, party and episode hash. At result availability, actionability
+is computed from that episode and its active interval. An old positive result
+after visitor departure is retained as
+`test_result_available_after_departure` with `actionable=false`; it cannot
+detect, quarantine, isolate or alter a replacement visitor. Returning-resident
+results remain actionable against the permanent resident identity. Deferred
+quarantine activation is also rejected after the originating visitor departs.
+
+`travel_intervention_events.parquet` now has an explicit Arrow schema.
+Heterogeneous `previous_state` and `new_state` values are stored as canonical
+JSON strings in `previous_state_json` and `new_state_json`, preserving JSON
+bool/dict/string/number/null types on reconstruction. Verification deserializes
+those values before recomputing the existing latent logical hash, so scientific
+state tampering still fails even after raw checksum and size metadata are
+updated. Direct non-M7 runs continue to persist a legitimate null
+`scenario_config.json`; applicable combined M7/M8 runs persist non-null
+scenario, M7 and observation identities.
+
+Fresh M8.2 verification completed as follows:
+
+```text
+6 focused M8.2 tests passed in 11.23s
+25 combined M8/M8.1/M8.2 tests passed in 39.07s
+72 exposed C4/M7/M8 regression tests passed in 118.53s
+145 full pytest tests passed in 225.16s (one pre-existing single-date warning)
+ruff check: passed
+ruff format --check: passed (77 files already formatted)
+targeted mypy --ignore-missing-imports: Success, no issues found in 4 source files
+uv lock --check: passed (67 packages resolved)
+compileall: passed
+git diff --check: passed
+```
+
+**M8.2 corrective status: PASS. M8 status: PASS with the previously recorded
+non-blocking performance/realism warnings.** Monthly tourism seasonality is not
+source-backed; detailed taxi/rental behaviour and travel biology remain
+structural assumptions; literal annual source-scale disease execution was not
+attempted; and the explicit zero-travel manager retains measured overhead.
+M9 and M10 remain closed.

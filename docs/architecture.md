@@ -8,10 +8,12 @@ implementation commit is `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`, followed
 by verification manifest-integrity hardening and documentation-only commits.
 M7 adds a prospective intervention layer while keeping the canonical M4
 routes and latent M5 outputs immutable. The original M8 implementation failed
-independent audit; M8.1 is the corrective travel-integrity layer. API and UI
-remain later boundaries. M8.1 passes with explicit non-blocking warnings for
-source-backed seasonality, structural transport detail and unbenchmarked
-literal annual source-scale disease execution.
+independent audit, and the independent M8.1 audit left three blockers. M8.2 is
+the minimal final correction for episode-safe observations, departed test
+results and combined-event artifact serialization. API and UI remain later
+boundaries. M8 now passes with explicit non-blocking warnings for source-backed
+seasonality, structural transport detail and unbenchmarked literal annual
+source-scale disease execution.
 Quantitative evidence is maintained in
 [`progress.md`](progress.md).
 
@@ -42,6 +44,11 @@ Generic M5 exposure attempts and explicit visitor arrivals/returning-resident
 external acquisition are separate processes. The `both` mode is intentional
 and persisted to prevent silent double counting. Arrival testing, quarantine,
 traveller protection and travel-acquisition reduction are prospective controls.
+Each scheduled arrival-test result is bound to the immutable actor, runtime UID,
+trip/episode and administration/result timesteps. A visitor result available
+after departure is historical and non-actionable; it cannot follow the slot to
+its next occupant. Returning-resident results retain the permanent resident
+contract.
 M7 consumes the presence-valid route view rather than rebuilding canonical M4,
 so route intervention refreshes cannot reintroduce absent residents. Its
 vaccination modifier composes multiplicatively with traveller protection, and
@@ -54,8 +61,12 @@ stratification tags, not medical diagnoses or severity probabilities.
 M8 artifacts use schema version 2.0 and include exact sparse executed temporary
 edges plus travel/epidemic Parquet tables, complete configurations, parent
 references, file hashes, scenario/run/episode/network/seasonality hashes and
-performance diagnostics. Verification recomputes logical identities from
-contents, so replacing a table and updating only its raw checksum still fails. Comparisons
+performance diagnostics. Observation and detection tables retain immutable
+event-time visitor/trip/party/episode identity. Combined M7/M8 intervention
+state is stored in explicit typed columns with canonical JSON state values,
+then reconstructed before logical hashing. Verification recomputes logical
+identities from contents, so replacing a table and updating only its raw
+checksum still fails. Comparisons
 retain matched seed and parent information while documenting coupling decay.
 The M8 CLI stops at travel runs, comparisons and small ensembles; M9 API/job
 architecture and M10 UI/map work are outside this milestone.

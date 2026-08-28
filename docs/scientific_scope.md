@@ -7,8 +7,10 @@ M0–M7 and corrective closures C1–C5 are PASS. The full
 104,540-agent corrected stack constructs and executes through Starsim 3.5.2,
 and the quantitative evidence is recorded in
 [`progress.md`](progress.md). M7 adds intervention experiments. The original M8
-travel implementation failed independent audit; M8.1 corrects its scientific
-identity, reconciliation and causality contracts. API/UI remain outside scope.
+travel implementation failed independent audit; M8.1 corrected most integrity
+contracts but failed its independent audit on three final blockers. M8.2 closes
+episode-safe observation identity, departed-result lifecycle and combined-event
+artifact serialization. API/UI remain outside scope.
 
 ## Milestone 8 scope and claim boundary
 
@@ -42,7 +44,10 @@ returning residents infected through external travel are marked separately as
 `travel_imported`. Visitor infection/transmission/detection rows bind the
 visitor, trip, party and runtime slot at event creation, so later slot reuse
 cannot relabel history. Arrival testing separates administration, scheduled
-result, result availability and prospective action. All-arrival quarantine is
+result, result availability and prospective action. A departed visitor's result
+may remain as historical evidence but is non-actionable inside Jersey and
+cannot affect a replacement slot occupant. Returning-resident delayed results
+remain attached to their permanent identity. All-arrival quarantine is
 independent of testing. High-risk strata support targeting and
 stratification only; M5 has no validated severity pathway.
 

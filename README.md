@@ -276,8 +276,10 @@ transport, arrival disease state and departure. Inactive slots have no
 contacts and are excluded from present-population denominators. Returning
 residents retain their identity but leave Jersey routes while away and may
 acquire infection through a separate synthetic external-travel pressure.
-M8.1 resolves every visitor event through the active `(slot UID, timestep)`
-episode interval; a final slot map is never used for historical attribution.
+M8.1 resolves every transmission event through the active `(slot UID, timestep)`
+episode interval; M8.2 carries that immutable visitor/trip/party/episode identity
+through observation rows, detection delivery and persisted travel artifacts.
+A final slot map is never used for historical attribution.
 Activation assigns episode age/sex/state/protection and departure resets all
 temporary state before reuse.
 
@@ -293,6 +295,12 @@ days so annual passenger-movement totals are preserved. Exact executed
 temporary edges are persisted in `temporary_edges.parquet` and logically
 rehash-verified with the episode, visitor, scenario and latent tables. High-risk strata are targeting metadata only;
 M5 has no validated severity pathway.
+
+Arrival-test results are episode-bound. Results available after visitor
+departure remain historical and non-actionable, so slot reuse cannot transfer a
+positive result or quarantine to the replacement visitor. Combined M7/M8 event
+artifacts use typed columns and canonical JSON for heterogeneous transition
+state, preserving exact JSON types during logical verification.
 
 ```bash
 uv run jos travel run --mode ci --seed 123 \
