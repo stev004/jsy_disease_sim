@@ -97,12 +97,15 @@ typed request validation -> SQLite FIFO registry
                  one execution adapter -> M5/M6/M7/M8
                                 |
                                 v
-       content-verified artifacts + M9.1 transactional finalizer
+       content-verified artifacts + M9.2 provenance-bound finalizer
 ```
 
 `api.py` contains the compact FastAPI contract and no scientific calls.
-`job_registry.py` owns SQLite schema version 1, WAL mode, canonical request
-identity, append-only application events and legal state transitions.
+`job_registry.py` owns SQLite schema version 2, WAL mode, canonical submission
+identity, immutable submitted engine anchors, atomic write-once worker-observed
+anchors, append-only application events and legal state transitions. Schema v1
+rows migrate without fabricated anchors: existing values and terminal states
+are preserved, while the new fields remain null.
 `job_manager.py` claims queued rows atomically in FIFO order and launches only
 the fixed `jersey_outbreak.job_worker` entrypoint with `sys.executable`.
 Workers run in dedicated process groups on POSIX so cancellation can terminate
@@ -115,7 +118,10 @@ writes existing scientific artifacts, and emits only persisted artifact
 locators. `scientific_verification.py` uses a fixed allow-listed dispatch and
 shared writer/verifier scientific hash functions. `job_finalizer.py` is the
 only path to `SUCCEEDED`; both live workers and restart reconciliation use it,
-and its registry publication is one transaction. Dataset endpoints resolve
+and its registry publication is one transaction. It treats submitted and
+worker-observed SQLite identities as authority and candidate, scientific
+artifact, and result-manifest identities as evidence that must match. Neither
+candidate nor finalizer may replace the anchors. Dataset endpoints resolve
 only catalogue- and manifest-listed Parquet files under a job directory and
 use Arrow projection/filter pushdown with bounded response materialization.
 The API never exposes arbitrary paths, SQL, Python, shell commands or a new

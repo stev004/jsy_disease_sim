@@ -646,3 +646,38 @@ the pre-commit run necessarily recorded `dirty_worktree_flag: true`.
 Additional runtime smokes showed one-running/two-queued FIFO behavior at API
 concurrency 1, real process-group cancellation with no verified artifact, and
 a persisted `FAILED` worker integrity error while the API remained healthy.
+
+### Independent M9.1 audit and M9.2 provenance correction
+
+The M9.1 implementation evidence above is retained as history. A later
+independent adversarial audit confirmed the missing/incomplete-artifact and
+M5/M6 content-verification blockers closed, but reproduced one remaining
+restart defect: coordinated false commit/dirty values in mutable request
+metadata, the candidate, and scientific manifests could agree with one another,
+reach `SUCCEEDED`, and overwrite SQLite provenance. The independent result was
+therefore **M9.1 FAIL — M10 REMAINS CLOSED**.
+
+M9.2 is the minimal correction for that single defect. SQLite schema version 2
+persists submission-time commit/dirty values atomically with the job and worker
+commit/dirty observations through a conditional write-once operation. The
+canonical application request hash now includes submission identity; scientific
+scenario-hash semantics are unchanged. The strict live/restart finalizer treats
+the two registry identities as authority, requires them to agree with each
+other and with candidate, scientific artifact, and result-manifest evidence,
+and no longer accepts provenance fields during success publication. Historical
+v1 rows retain their state and old evidence while the new fields remain null;
+stale active jobs with incomplete anchors cannot succeed.
+
+The focused M9.2 suite passes 15 tests covering atomic submission persistence,
+hash binding, immutable generic updates, concurrent write-once observations,
+commit and dirty mismatches before scientific execution, coordinated false
+commit/dirty restart substitution, independent candidate/artifact binding,
+result-manifest binding after coordinated hash replacement, valid and
+incomplete restart paths, immutable success publication, and v1-to-v2/fresh/
+future-schema behavior. The combined M9/M9.1/M9.2 suite passes 46 tests, and
+the complete repository suite passes 191 tests in 147.09s with only the
+pre-existing Starlette/httpx and single-date Starsim warnings. Final toolchain
+and clean-commit smoke evidence is recorded with the M9.2 completion report.
+
+**M9.2 corrective status: PASS. The immutable restart provenance blocker is
+closed, M9 returns to PASS, and M10 remains closed.**

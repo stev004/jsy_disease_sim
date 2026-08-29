@@ -1,4 +1,4 @@
-# Milestone 9/M9.1 local API and jobs
+# Milestone 9/M9.1/M9.2 local API and jobs
 
 M9 provides a local application bridge around the verified M5–M8 engine. It
 does not change epidemiological behavior and it does not make the synthetic
@@ -42,10 +42,23 @@ state/
     artifacts/
 ```
 
-SQLite schema version 1 uses WAL mode, foreign keys, and atomic write
-transactions. Every request is canonically serialized and hashed separately
-from scientific scenario, latent-outcome, and artifact-bundle hashes. The
-canonical request is stored both in SQLite and `request.json`.
+SQLite schema version 2 uses WAL mode, foreign keys, and atomic write
+transactions. It adds immutable `submitted_engine_commit` and
+`submitted_dirty_worktree_flag` fields plus write-once
+`worker_observed_engine_commit` and
+`worker_observed_dirty_worktree_flag` fields. The v1-to-v2 migration preserves
+historical jobs and leaves these new fields null because v1 did not record
+enough independent evidence to reconstruct them. It never invents stronger
+historical provenance.
+
+Every request is canonically serialized with its submission-time engine
+identity and then hashed. Thus changing the submitted commit or dirty flag
+changes the application request hash and the idempotency identity. This
+application binding is separate from, and does not change, scientific
+scenario, latent-outcome, or artifact-bundle hash semantics. The canonical
+submission is stored both in SQLite and `request.json`; the submitted commit
+and dirty flag are also inserted into dedicated SQLite columns in the same
+transaction as the job.
 
 The scheduler is deterministic FIFO and defaults to one API scientific job at
 a time. An API job is one isolated subprocess launched with `sys.executable`
@@ -79,21 +92,31 @@ create separate jobs.
 
 Legal states are `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`,
 `CANCEL_REQUESTED`, `CANCELLED`, and `INTERRUPTED`. A scientific job becomes
-`SUCCEEDED` only through the M9.1 finalizer. The worker's
+`SUCCEEDED` only through the M9.2 finalizer. At worker start, the process
+independently observes the engine commit and dirty state and records them with
+an atomic write-once registry operation. A conflicting second observation is
+rejected, and submitted/observed mismatch fails before scientific execution.
+The worker's
 `result_candidate.json` contains only artifact roles and manifest paths. The
 finalizer reloads the canonical request, enforces the exact job-kind/role/type
 contract, independently verifies content-derived M5--M8 scientific identities,
-checks request and Git provenance, writes and rereads the M9 result manifest,
-then atomically publishes artifact rows, ordered events, and `SUCCEEDED` in one
-SQLite transaction. The generic state machine cannot publish success. Failed
-or partial output is not exposed as a verified successful result.
+and requires the canonical submission, submitted registry identity,
+worker-observed registry identity, candidate, each scientific artifact, and
+result manifest to agree. It writes and rereads the M9 result manifest, then
+atomically publishes artifact rows, ordered events, and `SUCCEEDED` in one
+SQLite transaction. Candidate, artifact, request-file, and result-manifest
+values are evidence only and cannot rewrite either registry anchor. The
+generic state machine cannot publish success. Failed or partial output is not
+exposed as a verified successful result.
 
 Queued jobs survive an API restart. API-owned active jobs are terminated on
 graceful shutdown and become `INTERRUPTED`; a later process never silently
 reruns them. On startup, a persisted result candidate whose database transition
 was interrupted is passed through that same finalizer; an existing result
 manifest is never trusted as proof of success. Otherwise stale active jobs
-become `INTERRUPTED` and are never silently rerun.
+become `INTERRUPTED` and are never silently rerun. A stale job with a candidate
+but no persisted worker-observed identity also becomes `INTERRUPTED`; restart
+never infers what the worker observed from candidate or artifact metadata.
 
 Cancellation sends `SIGTERM` to the worker's dedicated POSIX process group and
 uses `SIGKILL` only if necessary. It never targets unrelated processes. A
@@ -103,22 +126,31 @@ with final output registration. Worker logs are retained as bounded tails.
 Progress is intentionally coarse: `queued`, `validating`, `preparing`,
 `running`, `writing_artifacts`, `verifying`, `finalizing`, and `complete`. Fractional
 progress is null because Starsim does not expose a truthful run fraction at
-this boundary.
+this boundary. `finalizing` means that the strict application reread has begun;
+the later `artifact_written` and `artifact_verified` events record atomic
+registry publication of already-written and reverified artifacts, followed by
+`job_completed`. This ordering is intentional rather than a claim that file
+writing occurs after finalization begins.
 
 ## Results and provenance
 
 The M9 `result_manifest.json` is an application manifest, separate from each
 scientific artifact manifest. It records the job ID/kind, API version/schema,
-request hash, worker-observed engine commit, dirty-worktree flag, artifact roles, scientific
-scenario/latent/bundle hashes, and summary metadata. The provenance chain is:
+request hash, final validated engine commit and dirty-worktree flag, artifact
+roles, scientific scenario/latent/bundle hashes, and summary metadata. Its
+engine identity is constructed from the immutable registry anchor only after
+submitted and worker-observed identities agree; the manifest is not an
+authority for those registry values. Its logical hash binds that validated
+identity. The reconstructible provenance chain is:
 
 ```text
-HTTP request
-  -> canonical request hash
-  -> scientific scenario/run identity
-  -> latent outcome identity
-  -> verified scientific artifact bundle
-  -> M9 result manifest
+canonical API request
+  -> request hash including immutable submitted engine identity
+  -> immutable submitted engine commit/dirty registry anchor
+  -> immutable worker-observed engine commit/dirty registry anchor
+  -> candidate evidence + verified scientific artifact identity
+  -> hashed M9 result manifest with the validated identity
+  -> atomic SUCCEEDED publication
 ```
 
 Dataset names are derived from allow-listed scientific manifest outputs. Reads

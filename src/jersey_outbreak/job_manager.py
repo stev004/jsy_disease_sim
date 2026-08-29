@@ -130,25 +130,30 @@ class JobManager:
         except Exception as exc:
             raise JobSubmissionError(f"request validation failed: {exc}") from exc
         payload = validated.model_dump(mode="json")
-        envelope = canonical_request_envelope(validated)
+        identity = observed_engine_identity(self.project_root)
+        submitted_commit = identity.get("engine_git_commit")
+        submitted_dirty = identity.get("dirty_worktree_flag")
+        if not submitted_commit or not isinstance(submitted_dirty, bool):
+            raise JobSubmissionError("submission engine identity is unavailable")
+        envelope = canonical_request_envelope(validated, identity)
         request_hash = sha256_bytes(canonical_json_bytes(envelope))
         job, existed = self.registry.create_job(
             job_kind=str(payload["kind"]),
             canonical_request=envelope,
             request_hash=request_hash,
+            submitted_engine_commit=str(submitted_commit),
+            submitted_dirty_worktree_flag=submitted_dirty,
             idempotency_key=idempotency_key,
         )
         job_dir = self._job_dir(job["job_id"])
         if not existed:
             try:
                 job_dir.mkdir(parents=True, exist_ok=False)
-                identity = observed_engine_identity(self.project_root)
                 _atomic_json(
                     job_dir / "request.json",
                     {
                         **envelope,
                         "request_hash": request_hash,
-                        "submitted_engine_identity": identity,
                     },
                 )
                 _atomic_json(

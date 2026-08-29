@@ -53,16 +53,19 @@ def _candidate_for(
     manager: JobManager, job_id: str, manifest_path: Path, *, role: str = "scientific_result"
 ) -> None:
     job = manager.registry.get_job(job_id)
-    envelope = json.loads((manager._job_dir(job_id) / "request.json").read_text(encoding="utf-8"))
-    identity = envelope["submitted_engine_identity"]
+    manager.registry.set_worker_observed_identity_once(
+        job_id,
+        engine_commit=job["submitted_engine_commit"],
+        dirty_worktree_flag=bool(job["submitted_dirty_worktree_flag"]),
+    )
     candidate = APIResultCandidate(
         job_id=job_id,
         job_kind=job["job_kind"],
         request_hash=job["request_hash"],
         started_at=job["started_at"],
         finished_at="2026-08-29T12:00:00+00:00",
-        engine_git_commit=identity["engine_git_commit"],
-        dirty_worktree_flag=identity["dirty_worktree_flag"],
+        engine_git_commit=job["submitted_engine_commit"],
+        dirty_worktree_flag=bool(job["submitted_dirty_worktree_flag"]),
         output_artifacts=[
             CandidateArtifact(
                 role=role,
@@ -234,11 +237,20 @@ def test_every_non_success_terminal_transition_clears_worker_pid(tmp_path: Path)
     manager = JobManager(state_dir=tmp_path, project_root=ROOT)
 
     def create() -> str:
-        canonical = {"schema_version": "m9-1.0", "request": {"kind": "scenario_run"}}
+        canonical = {
+            "schema_version": "m9-1.0",
+            "request": {"kind": "scenario_run"},
+            "submitted_engine_identity": {
+                "engine_git_commit": "a" * 40,
+                "dirty_worktree_flag": False,
+            },
+        }
         return manager.registry.create_job(
             job_kind="scenario_run",
             canonical_request=canonical,
             request_hash=manager.registry.request_hash(canonical),
+            submitted_engine_commit="a" * 40,
+            submitted_dirty_worktree_flag=False,
         )[0]["job_id"]
 
     queued = create()
@@ -351,6 +363,11 @@ def test_restart_accepts_only_complete_valid_comparison(tmp_path: Path) -> None:
     )
     envelope = json.loads((manager._job_dir(job_id) / "request.json").read_text(encoding="utf-8"))
     identity = envelope["submitted_engine_identity"]
+    manager.registry.set_worker_observed_identity_once(
+        job_id,
+        engine_commit=identity["engine_git_commit"],
+        dirty_worktree_flag=identity["dirty_worktree_flag"],
+    )
     candidate = APIResultCandidate(
         job_id=job_id,
         job_kind="scenario_compare",
@@ -386,6 +403,11 @@ def test_restart_rejects_incomplete_or_unbound_candidates(tmp_path: Path, defect
     manager.registry.claim_next_queued()
     request = json.loads((manager._job_dir(job_id) / "request.json").read_text(encoding="utf-8"))
     identity = request["submitted_engine_identity"]
+    manager.registry.set_worker_observed_identity_once(
+        job_id,
+        engine_commit=identity["engine_git_commit"],
+        dirty_worktree_flag=identity["dirty_worktree_flag"],
+    )
     artifacts = (
         []
         if defect == "missing"
@@ -431,6 +453,12 @@ def test_restart_rejects_real_artifact_contract_defects(
     job = manager.submit(request)
     job_id = job["job_id"]
     manager.registry.claim_next_queued()
+    anchored = manager.registry.get_job(job_id)
+    manager.registry.set_worker_observed_identity_once(
+        job_id,
+        engine_commit=anchored["submitted_engine_commit"],
+        dirty_worktree_flag=bool(anchored["submitted_dirty_worktree_flag"]),
+    )
     artifact = write_outbreak_artifact(m6_latent_run, ROOT, manager._job_dir(job_id) / "artifacts")
     manifest_path = artifact.artifact_directory / "manifest.json"
     if defect == "artifact_commit":
@@ -479,6 +507,11 @@ def test_success_publication_rolls_back_on_event_failure(tmp_path: Path, monkeyp
     job = manager.submit(ScenarioRunRequest(kind="scenario_run", duration_days=1))
     job_id = job["job_id"]
     manager.registry.claim_next_queued()
+    manager.registry.set_worker_observed_identity_once(
+        job_id,
+        engine_commit=job["submitted_engine_commit"],
+        dirty_worktree_flag=bool(job["submitted_dirty_worktree_flag"]),
+    )
 
     def fail_event(*_args, **_kwargs) -> None:
         raise RuntimeError("injected event failure")
@@ -492,8 +525,6 @@ def test_success_publication_rolls_back_on_event_failure(tmp_path: Path, monkeyp
                 "result_manifest_path": "result_manifest.json",
                 "result_manifest_hash": "a" * 64,
                 "verification_status": "passed",
-                "engine_git_commit": "test",
-                "dirty_worktree_flag": 1,
             },
             artifacts=[
                 {
@@ -593,9 +624,27 @@ def test_worker_finalizer_accepts_complete_scientific_contracts(
         )
         result_path = app.state.job_manager._job_dir(job_id) / "result_manifest.json"
         result = json.loads(result_path.read_text(encoding="utf-8"))
+        registry_job = app.state.job_manager.registry.get_job(job_id)
+        scientific_manifest = json.loads(
+            (app.state.job_manager._job_dir(job_id) / artifacts[0]["manifest_path"]).read_text(
+                encoding="utf-8"
+            )
+        )
         assert result["api_version"] == "v1"
         assert result["request_hash"] == job["request_hash"]
         assert result["engine_git_commit"] == job["engine_git_commit"]
+        assert (
+            registry_job["submitted_engine_commit"]
+            == registry_job["worker_observed_engine_commit"]
+            == scientific_manifest["git_commit"]
+            == result["engine_git_commit"]
+        )
+        assert (
+            bool(registry_job["submitted_dirty_worktree_flag"])
+            is bool(registry_job["worker_observed_dirty_worktree_flag"])
+            is scientific_manifest["dirty_worktree_flag"]
+            is result["dirty_worktree_flag"]
+        )
         events = client.get(f"/api/v1/jobs/{job_id}/events").json()["events"]
         event_types = [event["type"] for event in events]
         assert event_types[-1] == "job_completed"

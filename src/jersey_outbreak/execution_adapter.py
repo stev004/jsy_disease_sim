@@ -510,8 +510,16 @@ def parse_request(payload: dict[str, Any]) -> Any:
     )
 
 
-def canonical_request_envelope(request: Any) -> dict[str, Any]:
-    return {"schema_version": API_SCHEMA_VERSION, "request": request.model_dump(mode="json")}
+def canonical_request_envelope(
+    request: Any, submitted_engine_identity: dict[str, Any]
+) -> dict[str, Any]:
+    """Bind the canonical application request to its submission-time engine identity."""
+
+    return {
+        "schema_version": API_SCHEMA_VERSION,
+        "request": request.model_dump(mode="json"),
+        "submitted_engine_identity": submitted_engine_identity,
+    }
 
 
 def result_manifest_hash(path: Path) -> str:

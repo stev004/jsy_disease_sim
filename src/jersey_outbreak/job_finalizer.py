@@ -135,6 +135,7 @@ class JobFinalizer:
             canonical = {
                 "schema_version": envelope["schema_version"],
                 "request": envelope["request"],
+                "submitted_engine_identity": envelope["submitted_engine_identity"],
             }
             if sha256_bytes(canonical_json_bytes(canonical)) != job["request_hash"]:
                 raise FinalizationError("request_hash_mismatch", "persisted request hash mismatch")
@@ -153,10 +154,45 @@ class JobFinalizer:
             raise FinalizationError(
                 "job_kind_mismatch", "request kind does not match registry job kind"
             )
+        submitted = envelope["submitted_engine_identity"]
+        if submitted.get("engine_git_commit") != job["submitted_engine_commit"] or submitted.get(
+            "dirty_worktree_flag"
+        ) is not bool(job["submitted_dirty_worktree_flag"]):
+            raise FinalizationError(
+                "submitted_identity_mismatch",
+                "persisted request identity does not match immutable registry submission",
+            )
         return request, envelope
 
+    @staticmethod
+    def _authoritative_identity(job: dict[str, Any]) -> tuple[str, bool]:
+        submitted_commit = job["submitted_engine_commit"]
+        submitted_dirty = job["submitted_dirty_worktree_flag"]
+        observed_commit = job["worker_observed_engine_commit"]
+        observed_dirty = job["worker_observed_dirty_worktree_flag"]
+        if submitted_commit is None or submitted_dirty is None:
+            raise FinalizationError(
+                "missing_submitted_engine_identity",
+                "immutable submitted engine identity is absent",
+            )
+        if observed_commit is None or observed_dirty is None:
+            raise FinalizationError(
+                "missing_worker_observed_identity",
+                "immutable worker-observed engine identity is absent",
+            )
+        if submitted_commit != observed_commit or bool(submitted_dirty) is not bool(observed_dirty):
+            raise FinalizationError(
+                "engine_identity_mismatch",
+                "submitted and worker-observed engine identities differ",
+            )
+        return str(submitted_commit), bool(submitted_dirty)
+
     def _load_candidate(
-        self, job: dict[str, Any], job_directory: Path, envelope: dict[str, Any]
+        self,
+        job: dict[str, Any],
+        job_directory: Path,
+        authoritative_commit: str,
+        authoritative_dirty: bool,
     ) -> APIResultCandidate:
         path = job_directory / "result_candidate.json"
         try:
@@ -165,13 +201,6 @@ class JobFinalizer:
             raise FinalizationError(
                 "invalid_result_candidate", "result candidate is missing or invalid"
             ) from exc
-        submitted = envelope.get("submitted_engine_identity", {})
-        submitted_commit = submitted.get("engine_git_commit")
-        submitted_dirty = submitted.get("dirty_worktree_flag")
-        if not submitted_commit:
-            raise FinalizationError(
-                "missing_submitted_commit", "submitted engine Git commit is not explicit"
-            )
         if (
             candidate.job_id != job["job_id"]
             or candidate.job_kind != job["job_kind"]
@@ -181,11 +210,12 @@ class JobFinalizer:
                 "candidate_identity_mismatch", "result candidate identity mismatch"
             )
         if (
-            candidate.engine_git_commit != submitted_commit
-            or candidate.dirty_worktree_flag is not bool(submitted_dirty)
+            candidate.engine_git_commit != authoritative_commit
+            or candidate.dirty_worktree_flag is not authoritative_dirty
         ):
             raise FinalizationError(
-                "worker_provenance_mismatch", "worker and submitted engine identities differ"
+                "candidate_provenance_mismatch",
+                "candidate engine identity differs from immutable registry provenance",
             )
         return candidate
 
@@ -356,6 +386,7 @@ class JobFinalizer:
     def finalize(self, job_id: str) -> APIResultManifest:
         job = self.registry.get_job(job_id)
         if job["state"] == "SUCCEEDED":
+            authoritative_commit, authoritative_dirty = self._authoritative_identity(job)
             job_directory = (self.state_dir / "jobs" / job_id).resolve()
             try:
                 path = _inside(job_directory / str(job["result_manifest_path"]), job_directory)
@@ -369,6 +400,8 @@ class JobFinalizer:
                 result_hash != job["result_manifest_hash"]
                 or result.job_id != job_id
                 or result.request_hash != job["request_hash"]
+                or result.engine_git_commit != authoritative_commit
+                or result.dirty_worktree_flag is not authoritative_dirty
                 or result.engine_git_commit != job["engine_git_commit"]
                 or result.dirty_worktree_flag is not bool(job["dirty_worktree_flag"])
                 or [item.model_dump(mode="json") for item in result.output_artifacts]
@@ -380,16 +413,21 @@ class JobFinalizer:
             return result
         if job["state"] != "RUNNING":
             raise FinalizationError("invalid_finalization_state", "only RUNNING jobs may finalize")
+        authoritative_commit, authoritative_dirty = self._authoritative_identity(job)
         job_directory = (self.state_dir / "jobs" / job_id).resolve()
-        request, envelope = self._load_request(job, job_directory)
-        candidate = self._load_candidate(job, job_directory, envelope)
-        submitted = envelope["submitted_engine_identity"]
+        request, _envelope = self._load_request(job, job_directory)
+        candidate = self._load_candidate(
+            job,
+            job_directory,
+            authoritative_commit,
+            authoritative_dirty,
+        )
         verified = self._verify_artifacts(
             request,
             candidate,
             job_directory,
-            str(submitted["engine_git_commit"]),
-            bool(submitted["dirty_worktree_flag"]),
+            authoritative_commit,
+            authoritative_dirty,
         )
         self._bind_request(request, verified)
         references = [
@@ -417,8 +455,8 @@ class JobFinalizer:
             state="SUCCEEDED",
             started_at=job["started_at"] or candidate.started_at,
             finished_at=finished_at,
-            engine_git_commit=candidate.engine_git_commit,
-            dirty_worktree_flag=candidate.dirty_worktree_flag,
+            engine_git_commit=authoritative_commit,
+            dirty_worktree_flag=authoritative_dirty,
             output_artifacts=references,
             scientific_hashes=ScientificHashes.model_validate(scientific_hashes),
             summary=_authoritative_summary(request, verified),
@@ -447,8 +485,6 @@ class JobFinalizer:
                 "latent_hash": scientific_hashes["latent_hash"],
                 "bundle_hash": scientific_hashes["bundle_hash"],
                 "last_heartbeat": finished_at,
-                "engine_git_commit": candidate.engine_git_commit,
-                "dirty_worktree_flag": int(candidate.dirty_worktree_flag),
             },
             artifacts=[artifact.model_dump(mode="json") for artifact in references],
         )

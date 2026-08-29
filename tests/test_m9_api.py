@@ -21,18 +21,34 @@ from jersey_outbreak.outbreak_runner import run_outbreak
 from jersey_outbreak.scientific_hashes import canonical_m5_events
 
 ROOT = Path(__file__).resolve().parents[1]
+TEST_ENGINE_COMMIT = "a" * 40
+
+
+def _registry_submission(request: dict[str, object]) -> dict[str, object]:
+    return {
+        "schema_version": "m9-1.0",
+        "request": request,
+        "submitted_engine_identity": {
+            "engine_git_commit": TEST_ENGINE_COMMIT,
+            "dirty_worktree_flag": False,
+        },
+    }
 
 
 def test_registry_state_machine_and_fifo_atomic_claim(tmp_path: Path) -> None:
     registry = JobRegistry(tmp_path / "jobs.sqlite")
-    jobs = [
-        registry.create_job(
+
+    def create(index: int) -> dict[str, object]:
+        canonical = _registry_submission({"kind": "scenario_run", "n": index})
+        return registry.create_job(
             job_kind="scenario_run",
-            canonical_request={"kind": "scenario_run", "n": index},
-            request_hash=f"{index:064x}",
+            canonical_request=canonical,
+            request_hash=registry.request_hash(canonical),
+            submitted_engine_commit=TEST_ENGINE_COMMIT,
+            submitted_dirty_worktree_flag=False,
         )[0]
-        for index in range(3)
-    ]
+
+    jobs = [create(index) for index in range(3)]
     claimed: list[str] = []
     barrier = threading.Barrier(3)
 
@@ -58,11 +74,13 @@ def test_registry_state_machine_and_fifo_atomic_claim(tmp_path: Path) -> None:
 
 def test_registry_hash_persistence_idempotency_and_restart_reconciliation(tmp_path: Path) -> None:
     registry = JobRegistry(tmp_path / "jobs.sqlite")
-    canonical = {"schema_version": "m9-1.0", "request": {"kind": "scenario_run"}}
+    canonical = _registry_submission({"kind": "scenario_run"})
     first, existed = registry.create_job(
         job_kind="scenario_run",
         canonical_request=canonical,
         request_hash=registry.request_hash(canonical),
+        submitted_engine_commit=TEST_ENGINE_COMMIT,
+        submitted_dirty_worktree_flag=False,
         idempotency_key="same-request",
     )
     assert not existed
@@ -70,6 +88,8 @@ def test_registry_hash_persistence_idempotency_and_restart_reconciliation(tmp_pa
         job_kind="scenario_run",
         canonical_request=canonical,
         request_hash=registry.request_hash(canonical),
+        submitted_engine_commit=TEST_ENGINE_COMMIT,
+        submitted_dirty_worktree_flag=False,
         idempotency_key="same-request",
     )
     assert existed and again["job_id"] == first["job_id"]
@@ -161,6 +181,11 @@ def _fake_completed_job(manager: JobManager) -> str:
     job = manager.submit(request)
     job_id = job["job_id"]
     assert manager.registry.claim_next_queued() is not None
+    manager.registry.set_worker_observed_identity_once(
+        job_id,
+        engine_commit=job["submitted_engine_commit"],
+        dirty_worktree_flag=bool(job["submitted_dirty_worktree_flag"]),
+    )
     job_dir = manager._job_dir(job_id)
     artifact_dir = job_dir / "artifacts" / "fake"
     artifact_dir.mkdir(parents=True)
@@ -211,8 +236,6 @@ def _fake_completed_job(manager: JobManager) -> str:
             "result_manifest_path": "result_manifest.json",
             "result_manifest_hash": "0" * 64,
             "verification_status": "passed",
-            "engine_git_commit": "test-commit",
-            "dirty_worktree_flag": 0,
         },
         artifacts=[artifact],
     )

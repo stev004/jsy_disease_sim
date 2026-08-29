@@ -51,30 +51,36 @@ def run_worker(*, job_id: str, state_dir: Path, project_root: Path) -> int:
         if job["state"] != "RUNNING":
             return 2
         envelope = json.loads(request_path.read_text(encoding="utf-8"))
-        request_hash = sha256_bytes(
-            canonical_json_bytes(
-                {"schema_version": envelope["schema_version"], "request": envelope["request"]}
-            )
-        )
-        if request_hash != job["request_hash"]:
+        canonical = {
+            "schema_version": envelope["schema_version"],
+            "request": envelope["request"],
+            "submitted_engine_identity": envelope["submitted_engine_identity"],
+        }
+        request_hash = sha256_bytes(canonical_json_bytes(canonical))
+        if request_hash != job["request_hash"] or canonical != job["canonical_request"]:
             raise ValueError("persisted request hash does not match the registry")
         request = parse_request(envelope["request"])
-        submitted = envelope.get("submitted_engine_identity", {})
         observed = observed_engine_identity(project_root)
-        if not submitted.get("engine_git_commit") or not observed.get("engine_git_commit"):
-            raise ValueError("worker and API engine Git commits must be explicit")
-        if submitted["engine_git_commit"] != observed["engine_git_commit"] or bool(
-            submitted.get("dirty_worktree_flag")
-        ) is not bool(observed.get("dirty_worktree_flag")):
-            raise ValueError("worker and API engine identities do not match")
-        registry.update_fields(
+        observed_commit = observed.get("engine_git_commit")
+        observed_dirty = observed.get("dirty_worktree_flag")
+        if not observed_commit or not isinstance(observed_dirty, bool):
+            raise FinalizationError(
+                "missing_worker_observed_identity", "worker engine identity is incomplete"
+            )
+        registry.set_worker_observed_identity_once(
             job_id,
-            {
-                "engine_git_commit": observed.get("engine_git_commit"),
-                "dirty_worktree_flag": int(bool(observed.get("dirty_worktree_flag"))),
-                "last_heartbeat": _now(),
-            },
+            engine_commit=str(observed_commit),
+            dirty_worktree_flag=observed_dirty,
         )
+        anchored = registry.get_job(job_id)
+        if anchored["submitted_engine_commit"] != anchored["worker_observed_engine_commit"] or bool(
+            anchored["submitted_dirty_worktree_flag"]
+        ) is not bool(anchored["worker_observed_dirty_worktree_flag"]):
+            raise FinalizationError(
+                "engine_identity_mismatch",
+                "submitted and worker-observed engine identities differ",
+            )
+        registry.update_fields(job_id, {"last_heartbeat": _now()})
 
         last_phase: str | None = None
 
@@ -104,8 +110,8 @@ def run_worker(*, job_id: str, state_dir: Path, project_root: Path) -> int:
             request_hash=job["request_hash"],
             started_at=job["started_at"] or finished_at,
             finished_at=finished_at,
-            engine_git_commit=str(observed["engine_git_commit"]),
-            dirty_worktree_flag=bool(observed.get("dirty_worktree_flag")),
+            engine_git_commit=str(anchored["worker_observed_engine_commit"]),
+            dirty_worktree_flag=bool(anchored["worker_observed_dirty_worktree_flag"]),
             output_artifacts=[
                 CandidateArtifact(role=item["role"], manifest_path=item["manifest_path"])
                 for item in result.artifacts

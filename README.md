@@ -40,6 +40,11 @@ execution, isolated workers, cancellation, restart reconciliation, verified
 application result manifests and bounded dataset retrieval. No frontend or UI
 is included. Corrective M9.1 makes one content-aware, request/provenance-bound,
 transactional finalizer the only path to successful job publication. The
+independent M9.1 audit still found one restart provenance substitution, so
+corrective M9.2 binds submission identity into the request hash, persists
+submitted and worker-observed commit/dirty identities as separate immutable
+SQLite anchors, and requires every candidate, scientific artifact, and result
+manifest to match them. M10 remains closed. The
 quantitative gate record is in
 [`docs/progress.md`](docs/progress.md), and the API contract is in
 [`docs/api.md`](docs/api.md).

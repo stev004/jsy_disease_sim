@@ -62,7 +62,7 @@ def _decode(row: sqlite3.Row) -> dict[str, Any]:
 
 
 class JobRegistry:
-    """Small transactional registry with one schema version and WAL mode."""
+    """Small transactional registry with versioned schema and WAL mode."""
 
     def __init__(self, database_path: Path) -> None:
         self.database_path = database_path.resolve()
@@ -124,6 +124,10 @@ class JobRegistry:
                         last_heartbeat TEXT,
                         engine_git_commit TEXT,
                         dirty_worktree_flag INTEGER,
+                        submitted_engine_commit TEXT NOT NULL,
+                        submitted_dirty_worktree_flag INTEGER NOT NULL,
+                        worker_observed_engine_commit TEXT,
+                        worker_observed_dirty_worktree_flag INTEGER,
                         idempotency_key TEXT UNIQUE
                     );
                     CREATE INDEX jobs_created_idx ON jobs(created_at, job_id);
@@ -153,9 +157,21 @@ class JobRegistry:
                         request_hash TEXT NOT NULL,
                         job_id TEXT NOT NULL REFERENCES jobs(job_id) ON DELETE CASCADE
                     );
-                    PRAGMA user_version=1;
+                    PRAGMA user_version=2;
                     """
                 )
+            elif version == 1:
+                connection.execute("BEGIN IMMEDIATE")
+                connection.execute("ALTER TABLE jobs ADD COLUMN submitted_engine_commit TEXT")
+                connection.execute(
+                    "ALTER TABLE jobs ADD COLUMN submitted_dirty_worktree_flag INTEGER"
+                )
+                connection.execute("ALTER TABLE jobs ADD COLUMN worker_observed_engine_commit TEXT")
+                connection.execute(
+                    "ALTER TABLE jobs ADD COLUMN worker_observed_dirty_worktree_flag INTEGER"
+                )
+                connection.execute("PRAGMA user_version=2")
+                connection.commit()
 
     @staticmethod
     def _new_job_id() -> str:
@@ -167,9 +183,23 @@ class JobRegistry:
         job_kind: str,
         canonical_request: dict[str, Any],
         request_hash: str,
+        submitted_engine_commit: str,
+        submitted_dirty_worktree_flag: bool,
         idempotency_key: str | None = None,
     ) -> tuple[dict[str, Any], bool]:
         """Create a queued job, returning ``(job, already_existed)``."""
+
+        identity = canonical_request.get("submitted_engine_identity")
+        if not isinstance(identity, dict):
+            raise RegistryError("canonical request has no submitted engine identity")
+        if (
+            not submitted_engine_commit
+            or identity.get("engine_git_commit") != submitted_engine_commit
+            or identity.get("dirty_worktree_flag") is not submitted_dirty_worktree_flag
+        ):
+            raise RegistryError("submitted engine identity does not match canonical request")
+        if request_hash != self.request_hash(canonical_request):
+            raise RegistryError("request hash does not bind the canonical submission")
 
         job_id = self._new_job_id()
         created_at = utc_now()
@@ -197,8 +227,9 @@ class JobRegistry:
                 """
                 INSERT INTO jobs (
                     job_id, job_kind, state, canonical_request, request_hash,
-                    created_at, phase, dirty_worktree_flag, idempotency_key
-                ) VALUES (?, ?, 'QUEUED', ?, ?, ?, 'queued', NULL, ?)
+                    created_at, phase, submitted_engine_commit,
+                    submitted_dirty_worktree_flag, idempotency_key
+                ) VALUES (?, ?, 'QUEUED', ?, ?, ?, 'queued', ?, ?, ?)
                 """,
                 (
                     job_id,
@@ -206,6 +237,8 @@ class JobRegistry:
                     _json(canonical_request),
                     request_hash,
                     created_at,
+                    submitted_engine_commit,
+                    int(submitted_dirty_worktree_flag),
                     idempotency_key,
                 ),
             )
@@ -400,8 +433,6 @@ class JobRegistry:
             "progress_fraction",
             "worker_pid",
             "last_heartbeat",
-            "engine_git_commit",
-            "dirty_worktree_flag",
         }
         forbidden = sorted(set(fields) - allowed)
         if forbidden:
@@ -420,6 +451,49 @@ class JobRegistry:
         if row is None:  # pragma: no cover
             raise JobNotFoundError(job_id)
         return _decode(row)
+
+    def set_worker_observed_identity_once(
+        self,
+        job_id: str,
+        *,
+        engine_commit: str,
+        dirty_worktree_flag: bool,
+    ) -> dict[str, Any]:
+        """Atomically persist one worker observation, allowing identical replay only."""
+
+        if not engine_commit or not isinstance(dirty_worktree_flag, bool):
+            raise RegistryError("worker-observed engine identity is incomplete")
+        with self._lock, self._connection() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = self._require_job(connection, job_id)
+            observed_commit = row["worker_observed_engine_commit"]
+            observed_dirty = row["worker_observed_dirty_worktree_flag"]
+            if observed_commit is not None or observed_dirty is not None:
+                if observed_commit == engine_commit and bool(observed_dirty) is dirty_worktree_flag:
+                    connection.commit()
+                    return _decode(row)
+                connection.rollback()
+                raise RegistryError("worker-observed engine identity is already immutable")
+            if row["state"] != "RUNNING":
+                connection.rollback()
+                raise RegistryError("worker identity may only be observed for a RUNNING job")
+            connection.execute(
+                """
+                UPDATE jobs
+                SET worker_observed_engine_commit=?, worker_observed_dirty_worktree_flag=?
+                WHERE job_id=? AND worker_observed_engine_commit IS NULL
+                    AND worker_observed_dirty_worktree_flag IS NULL
+                """,
+                (engine_commit, int(dirty_worktree_flag), job_id),
+            )
+            if connection.execute("SELECT changes()").fetchone()[0] != 1:
+                connection.rollback()
+                raise RegistryError("worker-observed engine identity was written concurrently")
+            connection.commit()
+            result = connection.execute("SELECT * FROM jobs WHERE job_id=?", (job_id,)).fetchone()
+        if result is None:  # pragma: no cover
+            raise JobNotFoundError(job_id)
+        return _decode(result)
 
     def claim_next_queued(self) -> dict[str, Any] | None:
         """Claim exactly one FIFO job under a write transaction."""
@@ -514,10 +588,19 @@ class JobRegistry:
             "result_manifest_path",
             "result_manifest_hash",
             "verification_status",
-            "engine_git_commit",
-            "dirty_worktree_flag",
+        }
+        allowed = required | {
+            "scenario_hash",
+            "latent_hash",
+            "bundle_hash",
+            "last_heartbeat",
         }
         missing = sorted(required - fields.keys())
+        forbidden = sorted(set(fields) - allowed)
+        if forbidden:
+            raise RegistryError(
+                f"successful finalization field update is not allowed for: {forbidden}"
+            )
         if missing or fields.get("verification_status") != "passed":
             raise RegistryError(f"verified success fields are incomplete: {missing}")
         if not artifacts:
@@ -543,6 +626,17 @@ class JobRegistry:
                 raise InvalidJobTransitionError(
                     f"{row['state']} -> SUCCEEDED is not a legal finalization"
                 )
+            if (
+                row["submitted_engine_commit"] is None
+                or row["submitted_dirty_worktree_flag"] is None
+                or row["worker_observed_engine_commit"] is None
+                or row["worker_observed_dirty_worktree_flag"] is None
+                or row["submitted_engine_commit"] != row["worker_observed_engine_commit"]
+                or bool(row["submitted_dirty_worktree_flag"])
+                is not bool(row["worker_observed_dirty_worktree_flag"])
+            ):
+                connection.rollback()
+                raise RegistryError("immutable submitted and worker engine identities do not match")
             connection.execute("DELETE FROM job_artifacts WHERE job_id=?", (job_id,))
             for artifact in artifacts:
                 connection.execute(
@@ -580,6 +674,8 @@ class JobRegistry:
                 "progress_fraction": None,
                 "worker_pid": None,
                 "exit_status": 0,
+                "engine_git_commit": row["submitted_engine_commit"],
+                "dirty_worktree_flag": row["submitted_dirty_worktree_flag"],
                 **fields,
             }
             assignments = ", ".join(f"{key}=?" for key in updates)
