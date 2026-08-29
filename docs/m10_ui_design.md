@@ -257,8 +257,16 @@ checklist with plain-language descriptions:
   `#E2E9EB`. Dark theme: ground `#131719`, panel `#1C2225`, ink `#E6ECEE`.
 - **Accent**: petrel teal `#20707B` (dark: `#4FA6B1`) — CTAs, active states,
   the single-series epicurve.
-- **Sequential (infection intensity)**: 5 bins `#F8EAE5 → #8E2F2E` (dark:
-  `#3A2E2C → #EFA285`), lightness-monotonic per surface.
+- **Map treatment — "Survey Coral"** (chosen from a four-option exploration):
+  tidal-water panel `#E4EDEF` (dark `#16232A`) with a faint 86 px graticule
+  `#D3E0E3` / `#1E313A`; a two-ring offshore shallows halo `#CFDEE2` /
+  `#1D2F38` behind the island; coastline stroke `#7E99A3` / `#4E6874`;
+  parish hairlines `#FDFEFE` / `#101B20`; haloed labels; a small 2-mile
+  scale bar.
+- **Sequential (infection intensity)**: 5 luminous coral bins
+  `#FBF3EE → #F5CDB8 → #EC9C7E → #D5644C → #9E2F28` (dark:
+  `#33261F → #6E3C2C → #A5573C → #D97C55 → #F7B08A`), lightness-monotonic
+  per surface.
 - **Diverging (comparison)**: `#2a78d6 ↔ #C33B37` around a neutral midpoint.
 - **Intervention identity** (fixed categorical order, CVD-validated set):
   isolation `#2a78d6`, school `#eb6834`, WFH `#1baf7a`, vaccination
