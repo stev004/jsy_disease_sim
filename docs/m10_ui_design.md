@@ -103,6 +103,26 @@ Filter chips + one card of rows (state chip, name, kind, meta line, actions).
    multipliers (11 resident + 7 travel), observation model, explicit seeds.
    Every advanced value carries its provenance badge inline.
 
+**Simple / Scientific switch** (global, top bar, persisted per user): one
+control that moves the whole application between two detail levels without
+changing layout or navigation.
+
+- *Simple* (default): human concepts only — friendly parameter names,
+  rounded values, provenance badges, no hashes or engine identifiers.
+- *Scientific*: additive, never a different UI. Advanced disclosures open
+  automatically; parameters gain their engine field names, exact values,
+  distributions and valid ranges (`beta = 0.08 · fixed · valid [0, 1]`);
+  intervention cards show their composed route multipliers and lifecycle
+  rules; the builder summary shows mode, explicit seed list and engine
+  identity; headline metrics gain a replicate-quantile definition note;
+  route charts append canonical route IDs; the results workspace gains a
+  scenario/latent/bundle-hash and dataset provenance strip; the job monitor
+  shows request hash, idempotency key and worker PID.
+
+Everything scientific-mode reveals is one toggle away, so the default
+experience stays clean while a scientist never has to leave the workspace to
+see the exact contract values.
+
 **Intervention cards** show only human concepts on their face (Start,
 Duration, Strength, Scope, Adherence); route multipliers appear only inside
 the card's Edit → Advanced. Detection-triggered families (case isolation,
