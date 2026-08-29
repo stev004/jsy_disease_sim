@@ -103,6 +103,16 @@ Filter chips + one card of rows (state chip, name, kind, meta line, actions).
    multipliers (11 resident + 7 travel), observation model, explicit seeds.
    Every advanced value carries its provenance badge inline.
 
+**Template gallery**: the builder opens with a "Start from a template" grid —
+nine tiles derived from the repository's demo configs (`configs/scenarios/`,
+`configs/travel/`): blank, winter baseline, school closure, isolation +
+quarantine, working from home, community reduction, care-home protection,
+vaccination campaign, and high-season travel with arrival testing. A tile
+pre-fills the scenario (name, intervention cards, travel mode) and everything
+stays editable; the gallery reminds the user these are synthetic demo
+assumptions, and scientific mode shows each tile's source config filename.
+Home links here via a "Browse templates" action.
+
 **Simple / Scientific switch** (global, top bar, persisted per user): one
 control that moves the whole application between two detail levels without
 changing layout or navigation.
@@ -221,6 +231,11 @@ double-click cannot create duplicate jobs.
   color alone) under an active-infectious sparkline sharing the same x-axis.
 - Numerals are tabular; grids/axes recessive; direct labels on bars; legends
   whenever two series share a plot.
+- **Export**: the epicurve, route, and comparison charts carry a compact
+  Export menu — "Chart as PNG" (client-side canvas render of the SVG) and
+  "Data as CSV" (the visible slice, fetched through the existing bounded
+  dataset endpoint and named after the canonical dataset, e.g.
+  `daily_route`). No backend change required.
 
 ## 9. Run / job states
 
@@ -250,6 +265,18 @@ checklist with plain-language descriptions:
   queued/running.
 - State chip colors: green/teal/neutral/red/amber, always paired with the
   state word.
+- **Completion notification**: when a job reaches a terminal state the app
+  raises a toast (state-colored edge, "Open results" action, auto-dismiss)
+  and, if the user is elsewhere, a badge dot on the Runs rail item that
+  clears on visit. The implementation should additionally request browser
+  `Notification` permission (opt-in, from Settings) so long full-island runs
+  can be left unattended.
+- **Fizzle is a first-class result**: a run whose outbreak dies out early is
+  not an error state. The results workspace shows a calm callout ("The
+  outbreak died out by day N — X residents infected; with these assumptions
+  stochastic die-out is common"), honest small headline numbers, the
+  near-empty map, and two forward actions (duplicate with stronger seeding;
+  return to another run). No red, no empty-chart placeholders.
 
 ## 10. Provenance / assumption UX
 
@@ -306,7 +333,9 @@ checklist with plain-language descriptions:
   experience is never compromised for mobile.
 - Keyboard: parishes, tabs, segmented controls and scrubber are focusable
   with visible focus rings; ←/→ step days, space plays/pauses; Esc closes
-  the drawer.
+  the drawer. A `?` overlay (also reachable from a "Shortcuts" button in the
+  time bar) lists the bindings; shortcuts never fire while typing in a
+  field.
 - Non-color meaning everywhere: state words on chips, hatching for
   detection-triggered bars, signs and wording on deltas, direct labels on
   bars, sequential bins ordered by lightness.
