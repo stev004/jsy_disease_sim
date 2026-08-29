@@ -24,6 +24,15 @@ repository commit must be retained together for reproducibility. Runtime,
 peak-memory and process-pool measurements are benchmark metadata, not logical
 simulation content.
 
+## Evidence retention
+
+Temporary `/tmp` and `/private/tmp` verification artifacts are not durable
+evidence. Final milestone or gate verification that must be independently
+reopened must use the existing per-user application state mechanism (or another
+explicit non-temporary location) outside the Git worktree. Git-tracked source
+should not contain large generated scientific artifacts merely to satisfy this
+retention rule.
+
 ## Latest verified C3 record
 
 The final C3 archive was created from a clean worktree at Git commit

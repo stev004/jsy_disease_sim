@@ -1,9 +1,11 @@
 # Jersey Outbreak Simulator progress ledger
 
 **Last verified:** 29 August 2026
-**Current branch:** `codex/m9.1-job-integrity`
+**Current verified milestone:** M9.2 provenance closure
+**M9.2 implementation commit:** `5be3bbf494f5ae85d7f9c3181fc9bcc73212294a`
 **C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
-**Scope:** corrective M9.1 job integrity; M10 remains closed.
+**M9 status:** functional PASS; final evidence/documentation closure in progress
+**M10:** CLOSED pending the final independent M9 gate
 
 This ledger records the current implementation and verification state. The
 project charter remains the authoritative specification; this file records
@@ -629,8 +631,9 @@ and M9 finalization under 0.01s. M9 orchestration is not the ten-minute
 bottleneck. Reuse of verified M2--M4 parents is an explicit post-M9/pre-M10
 performance item and is not implemented in M9.1.
 
-**M9.1 corrective status: PASS. The three independently reproduced M9
-blockers are closed, M9 returns to PASS, and M10 remains closed.**
+**Historical M9.1 implementation status: PASS.** The three independently
+reproduced M9 blockers were closed by the implementation, before the later
+independent audit recorded below; M10 remains closed.
 
 The required API full-island smoke submitted one `scenario_run` at `full`
 scale (104,540 residents), seed 123, one dated output point. Job
@@ -679,5 +682,7 @@ the complete repository suite passes 191 tests in 147.09s with only the
 pre-existing Starlette/httpx and single-date Starsim warnings. Final toolchain
 and clean-commit smoke evidence is recorded with the M9.2 completion report.
 
-**M9.2 corrective status: PASS. The immutable restart provenance blocker is
-closed, M9 returns to PASS, and M10 remains closed.**
+**M9.2 corrective implementation status: PASS.** The immutable restart
+provenance blocker is closed and functional M9 verification passes. Final
+independent evidence/documentation closure remains in progress; M10 remains
+closed.
