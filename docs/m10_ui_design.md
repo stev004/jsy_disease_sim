@@ -163,9 +163,12 @@ double-click cannot create duplicate jobs.
 
 ## 7. Map visualization system
 
-- **Stylized 12-parish choropleth**, recognizably Jersey (concave St Ouen's
-  Bay, St Aubin's Bay, SW peninsula), simplified geometry — no agent dots,
-  ever. Individual-agent rendering is explicitly out of scope for M10.
+- **Real 12-parish choropleth**: OpenStreetMap administrative boundaries
+  (ODbL — the implementation must carry OSM attribution), mainland ring only,
+  Douglas-Peucker simplified to ~1,200 points total and equirectangularly
+  projected. The mockup embeds this geometry; the implementation should
+  regenerate it from a pinned OSM extract with the same simplification. No
+  agent dots, ever — individual-agent rendering is out of scope for M10.
 - Five-bin sequential fill; bins recomputed per metric against the
   run's own maximum so playback shows spread, not flicker; legend shows the
   scale extent numerically.
