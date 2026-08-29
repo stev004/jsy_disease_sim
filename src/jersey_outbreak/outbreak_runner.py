@@ -27,6 +27,11 @@ from .observation_schemas import ObservationConfig
 from .outbreak_schemas import ROUTE_IDS, OutbreakRunConfig, RespiratoryParameterSet
 from .population_schemas import PopulationMode
 from .respiratory import RespiratorySEIRS
+from .scientific_hashes import (
+    m5_artifact_bundle_hash,
+    m5_latent_outcome_hash,
+    m5_logical_content_hash,
+)
 from .starsim_adapter import build_starsim_disease_sim
 
 AGE_BANDS: tuple[tuple[str, int, int | None], ...] = (
@@ -573,14 +578,13 @@ def run_outbreak(
             "python_version": platform.python_version(),
         },
     }
-    latent_outcome_payload: dict[str, Any] = {
-        "daily_epidemic": daily_epidemic,
-        "daily_parish": daily_parish,
-        "daily_route": daily_route,
-        "daily_age": daily_age,
-        "transmission_events": events,
-    }
-    latent_outcome_hash = sha256_bytes(canonical_json_bytes(latent_outcome_payload))
+    latent_outcome_hash = m5_latent_outcome_hash(
+        daily_epidemic=daily_epidemic,
+        daily_parish=daily_parish,
+        daily_route=daily_route,
+        daily_age=daily_age,
+        transmission_events=events,
+    )
     run_config_hash = sha256_bytes(canonical_json_bytes(config.model_dump(mode="json")))
     disease_config_hash = sha256_bytes(canonical_json_bytes(parameters.model_dump(mode="json")))
     observation_config_hash = (
@@ -612,24 +616,19 @@ def run_outbreak(
         )
 
     resolved_scenario_hash = scenario_run_hash()
-    logical_payload: dict[str, Any] = {
-        "config": config.model_dump(mode="json"),
-        "parameters": parameters.model_dump(mode="json"),
-        "latent_outcome_hash": latent_outcome_hash,
-        "network_logical_content_hash": generated.logical_content_hash,
-    }
-    logical_content_hash = sha256_bytes(canonical_json_bytes(logical_payload))
-    artifact_bundle_hash = sha256_bytes(
-        canonical_json_bytes(
-            {
-                "latent_logical_content_hash": logical_content_hash,
-                "latent_outcome_hash": latent_outcome_hash,
-                "scenario_hash": resolved_scenario_hash,
-                "daily_intervention_state": [] if manager is None else manager.daily_state,
-                "intervention_events": [] if manager is None else manager.event_log,
-                "route_effects": [] if manager is None else manager.route_effects,
-            }
-        )
+    logical_content_hash = m5_logical_content_hash(
+        config=config.model_dump(mode="json"),
+        parameters=parameters.model_dump(mode="json"),
+        latent_hash=latent_outcome_hash,
+        network_hash=generated.logical_content_hash,
+    )
+    artifact_bundle_hash = m5_artifact_bundle_hash(
+        logical_hash=logical_content_hash,
+        latent_hash=latent_outcome_hash,
+        scenario_hash=resolved_scenario_hash,
+        daily_intervention_state=[] if manager is None else manager.daily_state,
+        intervention_events=[] if manager is None else manager.event_log,
+        route_effects=[] if manager is None else manager.route_effects,
     )
     runtime_seconds = time.perf_counter() - started
     peak_memory_bytes = max(before_memory, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)

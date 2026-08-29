@@ -18,6 +18,7 @@ from jersey_outbreak.job_manager import JobManager
 from jersey_outbreak.job_registry import InvalidJobTransitionError, JobRegistry
 from jersey_outbreak.job_worker import run_worker
 from jersey_outbreak.outbreak_runner import run_outbreak
+from jersey_outbreak.scientific_hashes import canonical_m5_events
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -167,12 +168,18 @@ def _fake_completed_job(manager: JobManager) -> str:
     pq.write_table(
         pa.Table.from_pylist(
             [
-                {"date": "2025-01-07", "parish": "St Helier", "value": 2.0},
                 {"date": "2025-01-06", "parish": "St Helier", "value": None},
+                {"date": "2025-01-07", "parish": "St Helier", "value": 2.0},
                 {"date": "2025-01-08", "parish": "Trinity", "value": 3.0},
             ]
         ),
         data_path,
+    )
+    outside_path = job_dir / "outside.parquet"
+    pq.write_table(pa.Table.from_pylist([{"secret": "not-an-artifact"}]), outside_path)
+    (artifact_dir / "escape.parquet").symlink_to(outside_path)
+    pq.write_table(
+        pa.Table.from_pylist([{"secret": "undeclared"}]), artifact_dir / "private.parquet"
     )
     manifest_path = artifact_dir / "manifest.json"
     manifest_path.write_text(
@@ -180,7 +187,10 @@ def _fake_completed_job(manager: JobManager) -> str:
             {
                 "artifact_id": "fake-artifact",
                 "module": "generic_respiratory_seirs",
-                "output_artifacts": [{"path": "daily_epidemic.parquet"}],
+                "output_artifacts": [
+                    {"path": "daily_epidemic.parquet"},
+                    {"path": "escape.parquet"},
+                ],
             }
         ),
         encoding="utf-8",
@@ -192,10 +202,20 @@ def _fake_completed_job(manager: JobManager) -> str:
         "manifest_path": "artifacts/fake/manifest.json",
         "verification_status": "passed",
         "size_bytes": data_path.stat().st_size,
-        "datasets": ["daily_epidemic"],
+        "datasets": ["daily_epidemic", "escape"],
     }
-    manager.registry.replace_artifacts(job_id, [artifact])
-    manager.registry.transition(job_id, "SUCCEEDED", phase="complete")
+    manager.registry.finalize_success(
+        job_id,
+        fields={
+            "finished_at": "2026-01-01T00:00:00+00:00",
+            "result_manifest_path": "result_manifest.json",
+            "result_manifest_hash": "0" * 64,
+            "verification_status": "passed",
+            "engine_git_commit": "test-commit",
+            "dirty_worktree_flag": 0,
+        },
+        artifacts=[artifact],
+    )
     return job_id
 
 
@@ -215,13 +235,16 @@ def test_bounded_dataset_read_and_path_safety(tmp_path: Path) -> None:
             f"/api/v1/jobs/{job_id}/datasets/daily_epidemic",
             params={"parish": "St Helier", "limit": 10},
         )
-        assert filtered.json()["total"] == 2
+        assert filtered.json()["total"] is None
+        assert filtered.json()["has_more"] is False
         for bad_name in ("../daily_epidemic", "../../etc/passwd", "/etc/passwd"):
             assert client.get(f"/api/v1/jobs/{job_id}/datasets/{bad_name}").status_code in {
                 400,
                 404,
             }
         assert client.get(f"/api/v1/jobs/{job_id}/datasets/not-present").status_code == 404
+        assert client.get(f"/api/v1/jobs/{job_id}/datasets/private").status_code == 404
+        assert client.get(f"/api/v1/jobs/{job_id}/datasets/escape").status_code == 404
 
 
 def test_direct_and_api_worker_scientific_equivalence(
@@ -249,14 +272,29 @@ def test_direct_and_api_worker_scientific_equivalence(
                 break
             time.sleep(0.25)
         assert job["state"] == "SUCCEEDED", job
+        assert job["scenario_hash"] is None
         assert job["latent_hash"] == direct.latent_outcome_hash
+        assert job["bundle_hash"] == direct.artifact_bundle_hash
         artifact = client.get(f"/api/v1/jobs/{job_id}/artifacts").json()["artifacts"][0]
         assert artifact["latent_hash"] == direct.latent_outcome_hash
         assert artifact["bundle_hash"] == direct.artifact_bundle_hash
-        rows = client.get(
-            f"/api/v1/jobs/{job_id}/datasets/daily_epidemic", params={"limit": 10_000}
+        for name, expected in (
+            ("daily_epidemic", direct.daily_epidemic),
+            ("daily_parish", direct.daily_parish),
+            ("daily_route", direct.daily_route),
+            ("daily_age", direct.daily_age),
+        ):
+            rows = client.get(
+                f"/api/v1/jobs/{job_id}/datasets/{name}", params={"limit": 10_000}
+            ).json()["rows"]
+            assert rows == expected
+        transmission_rows = client.get(
+            f"/api/v1/jobs/{job_id}/datasets/transmission_events",
+            params={"limit": 10_000},
         ).json()["rows"]
-        assert rows == direct.daily_epidemic
+        assert canonical_m5_events(transmission_rows) == canonical_m5_events(
+            direct.transmission_events
+        )
 
 
 def test_running_cancellation_terminates_worker_and_preserves_api(tmp_path: Path) -> None:

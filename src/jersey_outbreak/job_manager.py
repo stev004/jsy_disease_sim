@@ -12,15 +12,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .api_schemas import API_SCHEMA_VERSION, APIResultManifest
+from .api_schemas import API_SCHEMA_VERSION
 from .execution_adapter import (
-    _path_inside,
     canonical_request_envelope,
     observed_engine_identity,
     validate_job_request,
-    verify_scientific_artifact,
 )
 from .hashing import canonical_json_bytes, sha256_bytes
+from .job_finalizer import FinalizationError, JobFinalizer
 from .job_registry import InvalidJobTransitionError, JobNotFoundError, JobRegistry
 
 
@@ -87,46 +86,30 @@ class JobManager:
         return (self.jobs_dir / job_id).resolve()
 
     def _reconcile_startup(self) -> None:
-        # A completed worker writes and verifies the application result
-        # manifest before the final DB transition.  Recover only that exact
-        # case; every other API-owned active job is explicitly interrupted.
-        successful: dict[str, dict[str, Any]] = {}
+        # The same finalizer used by a live worker is the only restart path to
+        # success.  Every remaining active row becomes explicitly terminal.
+        finalizer = JobFinalizer(
+            registry=self.registry, state_dir=self.state_dir, project_root=self.project_root
+        )
+        failures: dict[str, dict[str, str]] = {}
         for job in self.registry.list_jobs(limit=10_000):
             if job["state"] != "RUNNING":
                 continue
-            result_path = self._job_dir(job["job_id"]) / "result_manifest.json"
-            if not result_path.is_file():
+            if not (self._job_dir(job["job_id"]) / "result_candidate.json").is_file():
                 continue
             try:
-                payload = json.loads(result_path.read_text(encoding="utf-8"))
-                manifest = APIResultManifest.model_validate_json(result_path.read_bytes())
-                verified_artifacts = []
-                for artifact in manifest.output_artifacts:
-                    artifact_manifest = _path_inside(
-                        self._job_dir(job["job_id"]) / artifact.manifest_path,
-                        self._job_dir(job["job_id"]),
-                    )
-                    verify_scientific_artifact(artifact_manifest.parent)
-                    verified_artifacts.append(artifact.model_dump(mode="json"))
-                if (
-                    payload.get("schema_version") == API_SCHEMA_VERSION
-                    and payload.get("job_id") == job["job_id"]
-                    and payload.get("state") == "SUCCEEDED"
-                    and payload.get("request_hash") == job["request_hash"]
-                    and verified_artifacts
-                ):
-                    successful[job["job_id"]] = {
-                        "result_manifest_path": "result_manifest.json",
-                        "result_manifest_hash": sha256_bytes(result_path.read_bytes()),
-                        "verification_status": "passed",
-                        "engine_git_commit": payload.get("engine_git_commit"),
-                        "dirty_worktree_flag": payload.get("dirty_worktree_flag"),
-                        "finished_at": payload.get("finished_at"),
-                        "artifacts": verified_artifacts,
-                    }
-            except (OSError, TypeError, ValueError, json.JSONDecodeError):
-                continue
-        self.registry.reconcile_stale_jobs(successful_jobs=successful)
+                finalizer.finalize(job["job_id"])
+            except FinalizationError as exc:
+                failures[job["job_id"]] = {
+                    "error_code": exc.code,
+                    "error_message": str(exc)[:1000],
+                }
+            except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                failures[job["job_id"]] = {
+                    "error_code": "restart_finalization_failed",
+                    "error_message": f"Restart finalization failed: {type(exc).__name__}",
+                }
+        self.registry.reconcile_stale_jobs(failures=failures)
 
     def start(self) -> None:
         if self._started:

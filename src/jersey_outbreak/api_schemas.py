@@ -42,6 +42,7 @@ JobPhase = Literal[
     "running",
     "writing_artifacts",
     "verifying",
+    "finalizing",
     "complete",
     "failed",
     "cancelled",
@@ -205,20 +206,49 @@ class APIArtifact(StrictModel):
     datasets: list[NonEmptyString] = Field(default_factory=list)
 
 
+class CandidateArtifact(StrictModel):
+    """Untrusted worker locator consumed by the application finalizer."""
+
+    role: NonEmptyString
+    manifest_path: NonEmptyString
+
+
+class APIResultCandidate(StrictModel):
+    """Persisted worker output locator; never authoritative for scientific identity."""
+
+    schema_version: Literal["m9-1.0"] = "m9-1.0"
+    api_version: Literal["v1"] = "v1"
+    job_id: NonEmptyString
+    job_kind: JobKind
+    request_hash: NonEmptyString
+    started_at: NonEmptyString
+    finished_at: NonEmptyString
+    engine_git_commit: NonEmptyString
+    dirty_worktree_flag: StrictBool
+    output_artifacts: list[CandidateArtifact]
+
+
+class ScientificHashes(StrictModel):
+    scenario_hash: str | None
+    latent_hash: str | None
+    bundle_hash: str | None
+
+
 class APIResultManifest(StrictModel):
     """Application manifest; it is separate from M5–M8 scientific manifests."""
 
     schema_version: Literal["m9-1.0"] = "m9-1.0"
+    api_version: Literal["v1"] = "v1"
     job_id: NonEmptyString
     job_kind: JobKind
     request_hash: NonEmptyString
     state: Literal["SUCCEEDED"]
     started_at: NonEmptyString
     finished_at: NonEmptyString
-    engine_git_commit: str | None = None
+    engine_git_commit: NonEmptyString
     dirty_worktree_flag: StrictBool
     output_artifacts: list[APIArtifact]
-    scientific_hashes: dict[str, str | None] = Field(default_factory=dict)
+    scientific_hashes: ScientificHashes
     summary: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -237,6 +267,21 @@ class DatasetQuery(StrictModel):
     metric: str | None = None
     key: str | None = None
     seed: StrictInt | None = Field(default=None, ge=0)
+    columns: tuple[NonEmptyString, ...] | None = None
+
+    @field_validator("columns", mode="before")
+    @classmethod
+    def normalize_columns(cls, value: object) -> object:
+        normalized = tuple(value) if isinstance(value, list) else value
+        if normalized == ():
+            raise ValueError("columns must contain at least one projected field")
+        if (
+            isinstance(normalized, tuple)
+            and all(isinstance(item, str) for item in normalized)
+            and len(set(normalized)) != len(normalized)
+        ):
+            raise ValueError("columns must not contain duplicates")
+        return normalized
 
 
 class APIErrorBody(StrictModel):
@@ -244,6 +289,131 @@ class APIErrorBody(StrictModel):
     message: NonEmptyString
     details: dict[str, Any] | None = None
     request_id: str | None = None
+
+
+class HealthResponse(StrictModel):
+    status: Literal["ok", "degraded"]
+    api_version: Literal["v1"]
+    api_schema_version: Literal["m9-1.0"]
+    registry: Literal["ok", "error"]
+
+
+class CapabilitiesResponse(StrictModel):
+    api_version: Literal["v1"]
+    api_schema_version: Literal["m9-1.0"]
+    package_version: NonEmptyString
+    engine: dict[str, Any]
+    artifact_schema_versions: dict[str, str]
+    population_presets: dict[str, int]
+    job_kinds: list[JobKind]
+    resident_route_ids: list[str]
+    travel_route_ids: list[str]
+    route_families: list[str]
+    intervention_families: list[str]
+    travel_modes: list[str]
+    parishes: list[str]
+    dataset_names: list[str]
+    scheduler: dict[str, Any]
+    limits: dict[str, int]
+    state_directory: NonEmptyString
+    scientific_claim_boundary: NonEmptyString
+
+
+class ScenarioValidationResponse(StrictModel):
+    valid: StrictBool
+    errors: list[dict[str, Any]]
+    warnings: list[str]
+    normalized: dict[str, Any] | None = None
+    scenario_config_hash: str | None = None
+
+
+class JobSubmissionResponse(StrictModel):
+    job_id: NonEmptyString
+    kind: JobKind
+    state: Literal["QUEUED"]
+    request_hash: NonEmptyString
+    status_url: NonEmptyString
+    events_url: NonEmptyString
+    already_exists: StrictBool
+
+
+class JobStatusResponse(StrictModel):
+    job_id: NonEmptyString
+    kind: JobKind
+    state: JobState
+    phase: JobPhase
+    created_at: NonEmptyString
+    started_at: str | None = None
+    finished_at: str | None = None
+    progress_fraction: float | None = None
+    request_hash: NonEmptyString
+    request: dict[str, Any]
+    scenario_hash: str | None = None
+    latent_hash: str | None = None
+    bundle_hash: str | None = None
+    error: APIErrorBody | None = None
+    artifact_count: StrictInt = Field(ge=0)
+    verification_status: str | None = None
+    worker_pid: StrictInt | None = None
+    last_heartbeat: str | None = None
+    exit_status: StrictInt | None = None
+    result_manifest_path: str | None = None
+    result_manifest_hash: str | None = None
+    engine_git_commit: str | None = None
+    dirty_worktree_flag: StrictBool | None = None
+    status_url: NonEmptyString
+
+
+class JobListResponse(StrictModel):
+    jobs: list[JobStatusResponse]
+    total: StrictInt = Field(ge=0)
+    limit: StrictInt = Field(ge=1)
+    offset: StrictInt = Field(ge=0)
+
+
+class CancelResponse(StrictModel):
+    job_id: NonEmptyString
+    state: JobState
+    action: NonEmptyString
+    idempotent: StrictBool
+
+
+class JobEvent(StrictModel):
+    event_id: NonEmptyString
+    job_id: NonEmptyString
+    timestamp: NonEmptyString
+    type: NonEmptyString
+    message: str
+    metadata: dict[str, Any]
+
+
+class JobEventsResponse(StrictModel):
+    job_id: NonEmptyString
+    events: list[JobEvent]
+
+
+class JobArtifactsResponse(StrictModel):
+    job_id: NonEmptyString
+    artifacts: list[APIArtifact]
+
+
+class JobDatasetsResponse(StrictModel):
+    job_id: NonEmptyString
+    datasets: list[dict[str, Any]]
+    available: StrictBool
+
+
+class DatasetReadResponse(StrictModel):
+    job_id: NonEmptyString
+    dataset: NonEmptyString
+    artifact_id: NonEmptyString
+    metadata: dict[str, Any]
+    rows: list[dict[str, Any]]
+    total: StrictInt | None = Field(default=None, ge=0)
+    has_more: StrictBool
+    limit: StrictInt = Field(ge=1)
+    offset: StrictInt = Field(ge=0)
+    next_offset: StrictInt | None = None
 
 
 def request_payload(request: Any) -> dict[str, Any]:

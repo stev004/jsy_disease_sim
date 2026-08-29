@@ -97,7 +97,7 @@ typed request validation -> SQLite FIFO registry
                  one execution adapter -> M5/M6/M7/M8
                                 |
                                 v
-           verified scientific artifacts + M9 result manifest
+       content-verified artifacts + M9.1 transactional finalizer
 ```
 
 `api.py` contains the compact FastAPI contract and no scientific calls.
@@ -111,12 +111,16 @@ existing ensemble worker bound remains authoritative inside an ensemble job.
 
 `execution_adapter.py` is the only application-to-engine translation point.
 It builds the existing M2/M3/M4 parent, calls the existing M5–M8 orchestration,
-writes existing scientific artifacts, and invokes the applicable verifier
-before constructing the separate M9 result manifest. Dataset endpoints resolve
-only manifest-listed Parquet files under a job directory and stream bounded
-batches with deterministic ordering. The API never exposes arbitrary paths,
-SQL, Python, shell commands or a new scientific taxonomy. Full endpoint and
-restart/cancellation semantics are documented in [`api.md`](api.md).
+writes existing scientific artifacts, and emits only persisted artifact
+locators. `scientific_verification.py` uses a fixed allow-listed dispatch and
+shared writer/verifier scientific hash functions. `job_finalizer.py` is the
+only path to `SUCCEEDED`; both live workers and restart reconciliation use it,
+and its registry publication is one transaction. Dataset endpoints resolve
+only catalogue- and manifest-listed Parquet files under a job directory and
+use Arrow projection/filter pushdown with bounded response materialization.
+The API never exposes arbitrary paths, SQL, Python, shell commands or a new
+scientific taxonomy. Full endpoint and restart/cancellation semantics are
+documented in [`api.md`](api.md).
 
 ## Milestone 0–4 boundaries
 

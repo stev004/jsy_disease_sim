@@ -38,7 +38,9 @@ visualization-ready artifacts. M8 adds the separate travel/visitor layer.
 Milestone 9 adds a loopback-only FastAPI interface, persistent SQLite job
 execution, isolated workers, cancellation, restart reconciliation, verified
 application result manifests and bounded dataset retrieval. No frontend or UI
-is included. The quantitative gate record is in
+is included. Corrective M9.1 makes one content-aware, request/provenance-bound,
+transactional finalizer the only path to successful job publication. The
+quantitative gate record is in
 [`docs/progress.md`](docs/progress.md), and the API contract is in
 [`docs/api.md`](docs/api.md).
 The Starsim demo is an official SIR example using Starsim's built-in

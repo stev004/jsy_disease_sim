@@ -1,9 +1,9 @@
 # Jersey Outbreak Simulator progress ledger
 
 **Last verified:** 29 August 2026
-**Current branch:** `codex/m9-api-jobs`
+**Current branch:** `codex/m9.1-job-integrity`
 **C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
-**Scope:** M9 local API and persistent jobs; M10 remains closed.
+**Scope:** corrective M9.1 job integrity; M10 remains closed.
 
 This ledger records the current implementation and verification state. The
 project charter remains the authoritative specification; this file records
@@ -565,6 +565,13 @@ M9 verification result.
 
 ## M9 verification evidence
 
+The implementation-time evidence in this section is historical. A subsequent
+independent adversarial audit reproduced three blockers and returned
+**M9 FAIL — M10 REMAINS CLOSED**: in-memory artifact references could be
+trusted at normal completion, restart used a weaker success path, and M5/M6
+verification did not rederive scientific identities from persisted content.
+M9.1 below is the bounded correction of that audit result.
+
 The focused M9 suite passed 7 tests in 11.62s, covering the registry state
 machine, concurrent claiming, request/idempotency persistence, API contract and
 CORS, bounded dataset reads and traversal rejection, direct/API equivalence,
@@ -572,6 +579,58 @@ running cancellation, and isolated worker failure. The complete repository
 suite passed 152 tests in 234.87s with only the existing Starlette/httpx
 deprecation and single-date Starsim timestep warnings. Ruff check, formatting,
 targeted mypy, `uv lock --check`, compileall, and `git diff --check` passed.
+
+### M9.1 corrective integrity architecture
+
+M9.1 closes the independent M9 audit's successful-finalization and scientific
+verification blockers without changing M5--M8 scientific behavior. A worker
+now persists only `result_candidate.json` role/path locators. One fail-closed
+finalizer reloads `request.json`, recomputes its hash, enforces exact artifact
+roles and types for each job kind, checks worker and artifact Git provenance,
+rederives scientific identities from persisted content, reconstructs and
+rereads `result_manifest.json`, and calls the registry's sole successful
+terminal operation. Artifact publication, `artifact_written`,
+`artifact_verified`, `job_completed`, PID clearing, and `SUCCEEDED` commit in
+one SQLite transaction. Restart reconciliation invokes the same finalizer;
+unverifiable active jobs become `INTERRUPTED`.
+
+M5 and M6 writers and verifiers share canonical identity functions. The M5
+verifier rebuilds parameter/run identities and table-derived latent, logical,
+and bundle hashes. The M6 verifier rebuilds ensemble/comparison logical hashes,
+replicate identities and counts, metric-aware persisted values, configuration
+links, and request-bound disease parameters. Existing M7/M8 verifiers remain
+in the same fixed dispatch, with M7 additionally verifying its contained M5
+bundle. The API now exposes typed response models, a catalogue-derived dataset
+list, explicit loopback-only CORS origins, and Arrow predicate/projection
+pushdown with bounded page materialization.
+
+The corrective suite adds 24 direct M9.1 tests. It covers the closed success
+transition, transaction rollback, normal/restart idempotence, incomplete and
+wrong-role candidates, wrong artifact type, request mismatch, candidate and
+scientific provenance mismatch, result-manifest write failure, M5/M6 logical
+tampering with attacker-updated raw checksums, bounded 50,000-row projection
+and filtering, wildcard/non-loopback CORS rejection, and controlled POSIX child
+process cleanup. Real worker smokes pass for M5, M7, M8, M6 ensemble, and M6
+matched comparison. Direct/worker M5 equivalence covers scenario, latent and
+bundle identities plus exact epidemic, parish, route, age, and canonical event
+tables. The strengthened verifier independently reproduces the previously
+recorded full-island M5 latent/bundle hashes and clean M7
+scenario/latent/bundle hashes. The complete repository suite passes 176 tests
+in 134.41s. An archived required-base checkout and the corrected branch
+produced identical M5 latent/logical/bundle, two M6 ensemble, and M6 comparison
+identities for the same deterministic inputs. Ruff, formatting, targeted mypy (nine application files),
+`uv lock --check`, compileall, CLI help smokes, and `git diff --check` pass.
+
+The independent full-island timing decomposition remains the performance
+baseline: queue about 0.06s; worker startup/validation 4.39s; M2 construction
+217.75s; M3 construction 276.20s; M4 construction 67.05s; parent load/other
+about 18s; M5 simulation 17.29s; artifact writing 0.19s; verification 0.01s;
+and M9 finalization under 0.01s. M9 orchestration is not the ten-minute
+bottleneck. Reuse of verified M2--M4 parents is an explicit post-M9/pre-M10
+performance item and is not implemented in M9.1.
+
+**M9.1 corrective status: PASS. The three independently reproduced M9
+blockers are closed, M9 returns to PASS, and M10 remains closed.**
 
 The required API full-island smoke submitted one `scenario_run` at `full`
 scale (104,540 residents), seed 123, one dated output point. Job

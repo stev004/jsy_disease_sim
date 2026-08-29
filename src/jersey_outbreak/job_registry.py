@@ -34,7 +34,9 @@ class IdempotencyConflictError(RegistryError):
 
 LEGAL_TRANSITIONS: dict[str, set[str]] = {
     "QUEUED": {"RUNNING", "CANCELLED"},
-    "RUNNING": {"SUCCEEDED", "FAILED", "CANCEL_REQUESTED", "INTERRUPTED"},
+    # SUCCEEDED is deliberately absent.  Only finalize_success() may publish
+    # verified output and the terminal successful state.
+    "RUNNING": {"FAILED", "CANCEL_REQUESTED", "INTERRUPTED"},
     "CANCEL_REQUESTED": {"CANCELLED", "INTERRUPTED"},
     "SUCCEEDED": set(),
     "FAILED": set(),
@@ -311,7 +313,7 @@ class JobRegistry:
             rows = connection.execute(
                 """
                 SELECT event_id, job_id, timestamp, event_type, message, metadata
-                FROM job_events WHERE job_id=? ORDER BY timestamp ASC, event_id ASC LIMIT ?
+                FROM job_events WHERE job_id=? ORDER BY rowid ASC LIMIT ?
                 """,
                 (job_id, limit),
             ).fetchall()
@@ -348,6 +350,16 @@ class JobRegistry:
         """Atomically apply one legal state transition."""
 
         fields = fields or {}
+        allowed_fields = {
+            "exit_status",
+            "error_code",
+            "error_message",
+            "error_details",
+            "last_heartbeat",
+        }
+        forbidden = sorted(set(fields) - allowed_fields)
+        if forbidden:
+            raise RegistryError(f"transition field update is not allowed for: {forbidden}")
         with self._lock, self._connection() as connection:
             connection.execute("BEGIN IMMEDIATE")
             row = self._require_job(connection, job_id)
@@ -362,7 +374,8 @@ class JobRegistry:
                 updates["progress_fraction"] = progress_fraction
             updates.update(fields)
             if target in {"SUCCEEDED", "FAILED", "CANCELLED", "INTERRUPTED"}:
-                updates.setdefault("finished_at", utc_now())
+                updates["finished_at"] = utc_now()
+                updates["worker_pid"] = None
             assignments = ", ".join(f"{key}=?" for key in updates)
             connection.execute(
                 f"UPDATE jobs SET {assignments} WHERE job_id=?",
@@ -382,6 +395,17 @@ class JobRegistry:
             return _decode(result)
 
     def update_fields(self, job_id: str, fields: dict[str, Any]) -> dict[str, Any]:
+        allowed = {
+            "phase",
+            "progress_fraction",
+            "worker_pid",
+            "last_heartbeat",
+            "engine_git_commit",
+            "dirty_worktree_flag",
+        }
+        forbidden = sorted(set(fields) - allowed)
+        if forbidden:
+            raise RegistryError(f"operational field update is not allowed for: {forbidden}")
         if not fields:
             return self.get_job(job_id)
         with self._lock, self._connection() as connection:
@@ -443,7 +467,8 @@ class JobRegistry:
             if state == "QUEUED":
                 target = "CANCELLED"
                 connection.execute(
-                    "UPDATE jobs SET state=?, phase=?, finished_at=? WHERE job_id=?",
+                    "UPDATE jobs SET state=?, phase=?, finished_at=?, worker_pid=NULL "
+                    "WHERE job_id=?",
                     (target, "cancelled", utc_now(), job_id),
                 )
                 self._insert_event(connection, job_id, "job_cancelled", "Queued job cancelled")
@@ -471,10 +496,53 @@ class JobRegistry:
             raise JobNotFoundError(job_id)
         return _decode(updated), action
 
-    def replace_artifacts(self, job_id: str, artifacts: list[dict[str, Any]]) -> None:
+    def finalize_success(
+        self,
+        job_id: str,
+        *,
+        fields: dict[str, Any],
+        artifacts: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Atomically publish verified artifacts, events, and SUCCEEDED.
+
+        This is the registry's only successful-terminal transition.  Repeating
+        the same completed finalization is idempotent and emits no events.
+        """
+
+        required = {
+            "finished_at",
+            "result_manifest_path",
+            "result_manifest_hash",
+            "verification_status",
+            "engine_git_commit",
+            "dirty_worktree_flag",
+        }
+        missing = sorted(required - fields.keys())
+        if missing or fields.get("verification_status") != "passed":
+            raise RegistryError(f"verified success fields are incomplete: {missing}")
+        if not artifacts:
+            raise RegistryError("verified success requires at least one scientific artifact")
         with self._lock, self._connection() as connection:
             connection.execute("BEGIN IMMEDIATE")
-            self._require_job(connection, job_id)
+            row = self._require_job(connection, job_id)
+            if row["state"] == "SUCCEEDED":
+                if row["result_manifest_hash"] == fields["result_manifest_hash"]:
+                    connection.commit()
+                    current = connection.execute(
+                        "SELECT * FROM jobs WHERE job_id=?", (job_id,)
+                    ).fetchone()
+                    if current is None:  # pragma: no cover
+                        raise RegistryError("job disappeared during finalization")
+                    return _decode(current)
+                connection.rollback()
+                raise InvalidJobTransitionError(
+                    "completed job cannot be finalized with a different result"
+                )
+            if row["state"] != "RUNNING":
+                connection.rollback()
+                raise InvalidJobTransitionError(
+                    f"{row['state']} -> SUCCEEDED is not a legal finalization"
+                )
             connection.execute("DELETE FROM job_artifacts WHERE job_id=?", (job_id,))
             for artifact in artifacts:
                 connection.execute(
@@ -492,7 +560,48 @@ class JobRegistry:
                         _json(artifact),
                     ),
                 )
+                self._insert_event(
+                    connection,
+                    job_id,
+                    "artifact_written",
+                    "Scientific artifact is present on disk",
+                    {"artifact_id": artifact["artifact_id"], "role": artifact["role"]},
+                )
+                self._insert_event(
+                    connection,
+                    job_id,
+                    "artifact_verified",
+                    "Scientific artifact passed content-aware verification",
+                    {"artifact_id": artifact["artifact_id"], "role": artifact["role"]},
+                )
+            updates = {
+                "state": "SUCCEEDED",
+                "phase": "complete",
+                "progress_fraction": None,
+                "worker_pid": None,
+                "exit_status": 0,
+                **fields,
+            }
+            assignments = ", ".join(f"{key}=?" for key in updates)
+            connection.execute(
+                f"UPDATE jobs SET {assignments} WHERE job_id=? AND state='RUNNING'",
+                [*updates.values(), job_id],
+            )
+            if connection.execute("SELECT changes()").fetchone()[0] != 1:
+                connection.rollback()
+                raise InvalidJobTransitionError("job state changed during successful finalization")
+            self._insert_event(
+                connection,
+                job_id,
+                "job_completed",
+                "Job completed after result-manifest and scientific verification",
+                {"result_manifest_hash": fields["result_manifest_hash"]},
+            )
             connection.commit()
+            current = connection.execute("SELECT * FROM jobs WHERE job_id=?", (job_id,)).fetchone()
+        if current is None:  # pragma: no cover
+            raise RegistryError("job disappeared during finalization")
+        return _decode(current)
 
     def artifacts(self, job_id: str) -> list[dict[str, Any]]:
         with self._lock, self._connection() as connection:
@@ -504,11 +613,11 @@ class JobRegistry:
         return [json.loads(row["metadata"]) for row in rows]
 
     def reconcile_stale_jobs(
-        self, *, successful_jobs: dict[str, dict[str, Any]] | None = None
+        self, *, failures: dict[str, dict[str, str]] | None = None
     ) -> list[str]:
-        """Mark API-owned active jobs interrupted unless a verified result is supplied."""
+        """Mark every remaining active job terminal after finalization attempts."""
 
-        successful_jobs = successful_jobs or {}
+        failures = failures or {}
         reconciled: list[str] = []
         with self._lock, self._connection() as connection:
             connection.execute("BEGIN IMMEDIATE")
@@ -517,63 +626,39 @@ class JobRegistry:
             ).fetchall()
             for row in rows:
                 job_id = str(row["job_id"])
-                if row["state"] == "RUNNING" and job_id in successful_jobs:
-                    fields = successful_jobs[job_id]
-                    connection.execute(
-                        """
-                        UPDATE jobs SET state='SUCCEEDED', phase='complete', finished_at=?,
-                            result_manifest_path=?, result_manifest_hash=?, verification_status=?,
-                            engine_git_commit=?, dirty_worktree_flag=? WHERE job_id=?
-                        """,
-                        (
-                            fields.get("finished_at") or utc_now(),
-                            fields.get("result_manifest_path"),
-                            fields.get("result_manifest_hash"),
-                            fields.get("verification_status", "passed"),
-                            fields.get("engine_git_commit"),
-                            fields.get("dirty_worktree_flag"),
-                            job_id,
-                        ),
-                    )
-                    connection.execute("DELETE FROM job_artifacts WHERE job_id=?", (job_id,))
-                    for artifact in fields.get("artifacts", []):
-                        connection.execute(
-                            """
-                            INSERT INTO job_artifacts
-                            (
-                                job_id, role, artifact_type, scientific_artifact_id,
-                                manifest_path, metadata
-                            )
-                            VALUES (?, ?, ?, ?, ?, ?)
-                            """,
-                            (
-                                job_id,
-                                artifact["role"],
-                                artifact["artifact_type"],
-                                artifact["artifact_id"],
-                                artifact["manifest_path"],
-                                _json(artifact),
-                            ),
-                        )
-                    self._insert_event(
-                        connection,
+                target = "CANCELLED" if row["state"] == "CANCEL_REQUESTED" else "INTERRUPTED"
+                phase = "cancelled" if target == "CANCELLED" else "interrupted"
+                failure = failures.get(job_id, {}) if target == "INTERRUPTED" else {}
+                error_code = (
+                    failure.get("error_code", "worker_interrupted")
+                    if target == "INTERRUPTED"
+                    else None
+                )
+                error_message = (
+                    failure.get("error_message", "Active worker was not manageable after restart")
+                    if target == "INTERRUPTED"
+                    else None
+                )
+                connection.execute(
+                    "UPDATE jobs SET state=?, phase=?, finished_at=?, worker_pid=NULL, "
+                    "error_code=?, error_message=? "
+                    "WHERE job_id=?",
+                    (
+                        target,
+                        phase,
+                        utc_now(),
+                        error_code,
+                        error_message,
                         job_id,
-                        "job_reconciled",
-                        "Verified result manifest reconciled after API restart",
-                    )
-                else:
-                    target = "CANCELLED" if row["state"] == "CANCEL_REQUESTED" else "INTERRUPTED"
-                    phase = "cancelled" if target == "CANCELLED" else "interrupted"
-                    connection.execute(
-                        "UPDATE jobs SET state=?, phase=?, finished_at=? WHERE job_id=?",
-                        (target, phase, utc_now(), job_id),
-                    )
-                    self._insert_event(
-                        connection,
-                        job_id,
-                        "job_interrupted" if target == "INTERRUPTED" else "job_cancelled",
-                        "Active job reconciled after API restart",
-                    )
+                    ),
+                )
+                self._insert_event(
+                    connection,
+                    job_id,
+                    "job_interrupted" if target == "INTERRUPTED" else "job_cancelled",
+                    "Active job reconciled after API restart",
+                    {"error_code": error_code} if error_code else None,
+                )
                 reconciled.append(job_id)
             connection.commit()
         return reconciled

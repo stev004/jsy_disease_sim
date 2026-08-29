@@ -14,9 +14,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .api_schemas import APIArtifact, APIResultManifest
+from .api_schemas import APIResultCandidate, CandidateArtifact
 from .execution_adapter import execute_job, observed_engine_identity, parse_request
-from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
+from .hashing import canonical_json_bytes, sha256_bytes
+from .job_finalizer import FinalizationError, JobFinalizer
 from .job_registry import JobRegistry
 
 
@@ -60,12 +61,12 @@ def run_worker(*, job_id: str, state_dir: Path, project_root: Path) -> int:
         request = parse_request(envelope["request"])
         submitted = envelope.get("submitted_engine_identity", {})
         observed = observed_engine_identity(project_root)
-        if (
-            submitted.get("engine_git_commit")
-            and observed.get("engine_git_commit")
-            and submitted["engine_git_commit"] != observed["engine_git_commit"]
-        ):
-            raise ValueError("worker and API engine Git commits do not match")
+        if not submitted.get("engine_git_commit") or not observed.get("engine_git_commit"):
+            raise ValueError("worker and API engine Git commits must be explicit")
+        if submitted["engine_git_commit"] != observed["engine_git_commit"] or bool(
+            submitted.get("dirty_worktree_flag")
+        ) is not bool(observed.get("dirty_worktree_flag")):
+            raise ValueError("worker and API engine identities do not match")
         registry.update_fields(
             job_id,
             {
@@ -97,49 +98,23 @@ def run_worker(*, job_id: str, state_dir: Path, project_root: Path) -> int:
         if current["state"] != "RUNNING":
             raise WorkerCancelled
         finished_at = _now()
-        manifest = APIResultManifest(
+        candidate = APIResultCandidate(
             job_id=job_id,
             job_kind=request.kind,
             request_hash=job["request_hash"],
-            state="SUCCEEDED",
             started_at=job["started_at"] or finished_at,
             finished_at=finished_at,
-            engine_git_commit=observed.get("engine_git_commit"),
+            engine_git_commit=str(observed["engine_git_commit"]),
             dirty_worktree_flag=bool(observed.get("dirty_worktree_flag")),
-            output_artifacts=[APIArtifact.model_validate(item) for item in result.artifacts],
-            scientific_hashes=result.scientific_hashes,
-            summary=result.summary,
+            output_artifacts=[
+                CandidateArtifact(role=item["role"], manifest_path=item["manifest_path"])
+                for item in result.artifacts
+            ],
         )
-        result_path = job_directory / "result_manifest.json"
-        _atomic_json(result_path, manifest.model_dump(mode="json"))
-        result_hash = sha256_file(result_path)
-        for artifact in result.artifacts:
-            registry.add_event(
-                job_id,
-                "artifact_verified",
-                "Scientific artifact passed verification",
-                {"artifact_id": artifact["artifact_id"], "role": artifact["role"]},
-            )
-        registry.replace_artifacts(job_id, list(result.artifacts))
-        registry.transition(
-            job_id,
-            "SUCCEEDED",
-            phase="complete",
-            fields={
-                "result_manifest_path": "result_manifest.json",
-                "result_manifest_hash": result_hash,
-                "verification_status": "passed",
-                "scenario_hash": result.scientific_hashes.get("scenario_hash"),
-                "latent_hash": result.scientific_hashes.get("latent_hash"),
-                "bundle_hash": result.scientific_hashes.get("bundle_hash"),
-                "exit_status": 0,
-                "last_heartbeat": finished_at,
-                "engine_git_commit": observed.get("engine_git_commit"),
-                "dirty_worktree_flag": int(bool(observed.get("dirty_worktree_flag"))),
-            },
-            event_type="job_completed",
-            event_message="Job completed after scientific artifact verification",
-            event_metadata={"result_manifest_hash": result_hash},
+        _atomic_json(job_directory / "result_candidate.json", candidate.model_dump(mode="json"))
+        progress("finalizing", "Re-reading and finalizing persisted scientific output")
+        JobFinalizer(registry=registry, state_dir=state_dir, project_root=project_root).finalize(
+            job_id
         )
         return 0
     except WorkerCancelled:
@@ -172,7 +147,9 @@ def run_worker(*, job_id: str, state_dir: Path, project_root: Path) -> int:
                     "FAILED",
                     phase="failed",
                     fields={
-                        "error_code": "worker_execution_failed",
+                        "error_code": exc.code
+                        if isinstance(exc, FinalizationError)
+                        else "worker_execution_failed",
                         "error_message": _bounded_error_message(exc),
                         "error_details": json.dumps(
                             {"exception_type": type(exc).__name__, "message": str(exc)[:1000]},

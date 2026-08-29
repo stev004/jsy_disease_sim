@@ -22,6 +22,7 @@ from .observation import ObservationRunResult, observe_latent_run
 from .observation_schemas import ObservationConfig
 from .outbreak_runner import OutbreakRunResult, run_outbreak
 from .outbreak_schemas import RespiratoryParameterSet
+from .scientific_hashes import m6_comparison_logical_hash, m6_ensemble_logical_hash
 
 MetricSemantic = Literal["incidence", "cumulative", "state"]
 CellSemantic = Literal[
@@ -717,22 +718,12 @@ def run_ensemble(
     }
     if fallback_reason is not None:
         diagnostics["parallelism_fallback_reason"] = fallback_reason
-    logical_content_hash = sha256_bytes(
-        canonical_json_bytes(
-            {
-                "config": config.model_dump(mode="json"),
-                # Runtime and memory are benchmark metadata, not logical
-                # ensemble content; excluding them keeps same-seed reruns
-                # content-addressable despite normal timing jitter.
-                "replicates": [
-                    record.model_dump(mode="json", exclude={"runtime_seconds"})
-                    for record in records
-                ],
-                "summary": summary,
-                "trajectories": successful_trajectories,
-                "replicate_grid": replicate_grid,
-            }
-        )
+    logical_content_hash = m6_ensemble_logical_hash(
+        config=config.model_dump(mode="json"),
+        replicate_records=[record.model_dump(mode="json") for record in records],
+        summary=list(summary),
+        trajectories=successful_trajectories,
+        replicate_grid=list(replicate_grid),
     )
     runtime_seconds = time.perf_counter() - started
     peak_memory_bytes = max(before_memory, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
@@ -898,15 +889,11 @@ def compare_ensembles(
             ),
         },
     }
-    logical_content_hash = sha256_bytes(
-        canonical_json_bytes(
-            {
-                "comparison_id": comparison_id,
-                "config_a_hash": _ensemble_config_hash(ensemble_a),
-                "config_b_hash": _ensemble_config_hash(ensemble_b),
-                "rows": rows,
-            }
-        )
+    logical_content_hash = m6_comparison_logical_hash(
+        comparison_id=comparison_id,
+        config_a_hash=_ensemble_config_hash(ensemble_a),
+        config_b_hash=_ensemble_config_hash(ensemble_b),
+        rows=rows,
     )
     return ComparisonResult(
         comparison_id=comparison_id,

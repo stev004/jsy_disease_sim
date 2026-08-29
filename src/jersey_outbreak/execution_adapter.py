@@ -21,13 +21,8 @@ from pydantic import TypeAdapter
 from .api_schemas import API_SCHEMA_VERSION, JobRequest
 from .ensemble import compare_ensembles, run_ensemble
 from .ensemble_artifacts import write_comparison_artifact, write_ensemble_artifact
-from .ensemble_schemas import ComparisonArtifactManifest, EnsembleArtifactManifest
 from .hashing import sha256_file
-from .intervention_artifacts import (
-    InterventionArtifactManifest,
-    verify_intervention_artifact,
-    write_intervention_artifact,
-)
+from .intervention_artifacts import write_intervention_artifact
 from .intervention_schemas import ScenarioConfig
 from .network_artifacts import write_network_artifact
 from .network_generator import generate_networks
@@ -36,7 +31,7 @@ from .observation import load_observation_config
 from .observation_schemas import ObservationConfig
 from .outbreak_artifacts import write_outbreak_artifact
 from .outbreak_runner import default_run_config, load_parameter_set, run_outbreak
-from .outbreak_schemas import OutbreakArtifactManifest, OutbreakRunConfig, RespiratoryParameterSet
+from .outbreak_schemas import OutbreakRunConfig, RespiratoryParameterSet
 from .population_artifacts import write_population_artifact
 from .population_generator import generate_population
 from .population_schemas import PopulationGenerationConfig, PopulationMode
@@ -47,19 +42,18 @@ from .population_structure_artifacts import (
 )
 from .population_structure_generator import generate_structure
 from .population_structure_schemas import StructureGenerationConfig
+from .scientific_verification import verify_scientific_artifact
 from .travel import TravelRunResult
-from .travel_artifacts import TravelArtifactManifest, verify_travel_artifact, write_travel_artifact
+from .travel_artifacts import write_travel_artifact
 
 ProgressCallback = Callable[[str, str], None]
 
 
 @dataclass(frozen=True)
 class AdapterResult:
-    """Worker result before the application-level result manifest is written."""
+    """Untrusted worker locators consumed by the application finalizer."""
 
     artifacts: tuple[dict[str, Any], ...]
-    scientific_hashes: dict[str, str | None]
-    summary: dict[str, Any]
 
 
 def _git_identity(root: Path) -> tuple[str | None, bool]:
@@ -192,76 +186,6 @@ def _path_inside(path: Path, root: Path) -> Path:
     return resolved
 
 
-def _artifact_files(artifact_directory: Path, manifest_payload: dict[str, Any]) -> list[Path]:
-    files: list[Path] = []
-    for record in manifest_payload.get("output_artifacts", []):
-        candidate = Path(str(record["path"]))
-        if not candidate.is_absolute():
-            candidate = artifact_directory / candidate
-        candidate = _path_inside(candidate, artifact_directory)
-        if not candidate.is_file():
-            raise ValueError(f"scientific artifact file is missing: {candidate.name}")
-        expected_size = record.get("size_bytes")
-        expected_hash = record.get("sha256")
-        if expected_size is not None and candidate.stat().st_size != expected_size:
-            raise ValueError(f"scientific artifact size mismatch: {candidate.name}")
-        if expected_hash is not None and sha256_file(candidate) != expected_hash:
-            raise ValueError(f"scientific artifact hash mismatch: {candidate.name}")
-        files.append(candidate)
-    return files
-
-
-def _artifact_type(payload: dict[str, Any]) -> tuple[str, Any]:
-    if "travel_config_hash" in payload:
-        return "m8_travel", TravelArtifactManifest.model_validate_json(json.dumps(payload))
-    if "latent_bundle_artifact_id" in payload:
-        return "m7_intervention", InterventionArtifactManifest.model_validate_json(
-            json.dumps(payload)
-        )
-    if "ensemble_id" in payload:
-        return "m6_ensemble", EnsembleArtifactManifest.model_validate_json(json.dumps(payload))
-    if "comparison_id" in payload:
-        return "m6_comparison", ComparisonArtifactManifest.model_validate_json(json.dumps(payload))
-    if payload.get("module") == "generic_respiratory_seirs":
-        return "m5_outbreak", OutbreakArtifactManifest.model_validate_json(json.dumps(payload))
-    raise ValueError("unsupported scientific artifact manifest")
-
-
-def verify_scientific_artifact(artifact_directory: Path) -> tuple[str, dict[str, Any]]:
-    """Verify a produced artifact before an application job can succeed."""
-
-    artifact_directory = artifact_directory.resolve()
-    manifest_path = artifact_directory / "manifest.json"
-    if not manifest_path.is_file():
-        raise ValueError("scientific artifact is missing manifest.json")
-    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    artifact_type, manifest = _artifact_type(payload)
-    if artifact_type == "m8_travel":
-        manifest = verify_travel_artifact(artifact_directory)
-    elif artifact_type == "m7_intervention":
-        manifest = verify_intervention_artifact(artifact_directory)
-    else:
-        _artifact_files(artifact_directory, payload)
-        required = {
-            "m5_outbreak": {
-                "daily_epidemic.parquet",
-                "daily_parish.parquet",
-                "daily_route.parquet",
-                "daily_age.parquet",
-                "transmission_events.parquet",
-            },
-            "m6_ensemble": {"ensemble_summary.parquet", "replicate_trajectories.parquet"},
-            "m6_comparison": {"matched_seed_comparison.parquet"},
-        }[artifact_type]
-        names = {path.name for path in artifact_directory.rglob("*") if path.is_file()}
-        missing = sorted(required - names)
-        if missing:
-            raise ValueError(f"scientific artifact is incomplete: {missing}")
-    if getattr(manifest, "diagnostics_status", "passed") != "passed":
-        raise ValueError("scientific artifact diagnostics did not pass")
-    return artifact_type, payload
-
-
 def _dataset_names(artifact_directory: Path, payload: dict[str, Any]) -> list[str]:
     names: set[str] = set()
     for record in payload.get("output_artifacts", []):
@@ -316,13 +240,13 @@ def _finish_artifact(
     role: str,
     hash_overrides: dict[str, str | None] | None = None,
 ) -> dict[str, Any]:
-    artifact_type, payload = verify_scientific_artifact(artifact_directory)
+    verified = verify_scientific_artifact(artifact_directory)
     reference = artifact_reference(
         artifact_directory,
         job_directory,
         role=role,
-        artifact_type=artifact_type,
-        payload=payload,
+        artifact_type=verified.artifact_type,
+        payload=verified.manifest_payload,
     )
     for name in ("scenario_hash", "latent_hash", "bundle_hash"):
         if reference[name] is None and hash_overrides and hash_overrides.get(name) is not None:
@@ -397,14 +321,8 @@ def execute_job(
             role="scientific_result",
             hash_overrides=scientific_hashes,
         )
-        summary = {
-            "residents": len(generated.agent_ids),
-            "routes": len(generated.route_specs),
-            "horizon_days": request.duration_days,
-            "runtime_seconds": result.runtime_seconds,
-        }
-        phase("complete", "Scientific artifact verified")
-        return AdapterResult((reference,), scientific_hashes, summary)
+        phase("finalizing", "Scientific artifact is ready for application finalization")
+        return AdapterResult((reference,))
 
     if request.kind == "ensemble":
         first_seed = request.replicate_seeds[0]
@@ -441,22 +359,8 @@ def execute_job(
             role="ensemble",
             hash_overrides={"scenario_hash": ensemble_result.scenario_hash},
         )
-        phase("complete", "Ensemble artifact verified")
-        return AdapterResult(
-            (reference,),
-            {
-                "scenario_hash": ensemble_result.scenario_hash,
-                "latent_hash": None,
-                "bundle_hash": None,
-            },
-            {
-                "replicate_count": len(ensemble_result.replicate_records),
-                "successful_replicates": ensemble_result.diagnostics["successful_replicates"],
-                "failed_replicates": ensemble_result.diagnostics["failed_replicates"],
-                "execution_mode": ensemble_result.diagnostics["execution_mode"],
-                "runtime_seconds": ensemble_result.runtime_seconds,
-            },
-        )
+        phase("finalizing", "Ensemble artifact is ready for application finalization")
+        return AdapterResult((reference,))
 
     # The comparison path executes two existing ensembles and then the
     # existing matched-seed comparison.  The API scheduler counts this whole
@@ -537,20 +441,8 @@ def execute_job(
             hash_overrides={"bundle_hash": comparison.logical_content_hash},
         ),
     )
-    phase("complete", "Matched comparison artifacts verified")
-    return AdapterResult(
-        references,
-        {
-            "scenario_hash": ensemble_b.scenario_hash,
-            "latent_hash": None,
-            "bundle_hash": comparison.logical_content_hash,
-        },
-        {
-            "paired_seed_count": comparison.diagnostics["paired_seed_count"],
-            "missing_or_failed_pair_count": comparison.diagnostics["missing_or_failed_pair_count"],
-            "runtime_seconds": comparison.runtime_seconds,
-        },
-    )
+    phase("finalizing", "Comparison artifacts are ready for application finalization")
+    return AdapterResult(references)
 
 
 def validate_job_request(request: Any, root: Path) -> Any:

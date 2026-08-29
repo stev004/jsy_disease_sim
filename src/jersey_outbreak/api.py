@@ -11,7 +11,9 @@ from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
 from typing import Any, get_args
+from urllib.parse import urlsplit
 
+import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 from fastapi import FastAPI, Header, HTTPException, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
@@ -25,13 +27,26 @@ from .api_schemas import (
     API_VERSION,
     DEFAULT_DATASET_LIMIT,
     MAX_DATASET_ROWS,
+    APIErrorBody,
+    CancelResponse,
+    CapabilitiesResponse,
     DatasetQuery,
+    DatasetReadResponse,
+    HealthResponse,
+    JobArtifactsResponse,
+    JobDatasetsResponse,
+    JobEventsResponse,
     JobKind,
+    JobListResponse,
     JobRequest,
     JobState,
+    JobStatusResponse,
+    JobSubmissionResponse,
     ScenarioValidationRequest,
+    ScenarioValidationResponse,
     _normalize_json_dates,
 )
+from .artifact_catalog import ALL_SCIENTIFIC_DATASETS
 from .execution_adapter import _path_inside
 from .intervention_schemas import InterventionType
 from .job_manager import JobManager, JobSubmissionError
@@ -157,16 +172,30 @@ def _safe_json(value: Any) -> Any:
     return value
 
 
-def _matches(row: dict[str, Any], query: DatasetQuery) -> bool:
-    row_date = row.get("date")
-    if row_date is not None:
-        row_date_text = str(row_date)
-        if query.start_date is not None and row_date_text < query.start_date.isoformat():
-            return False
-        if query.end_date is not None and row_date_text > query.end_date.isoformat():
-            return False
-    elif query.start_date is not None or query.end_date is not None:
-        return False
+def _read_bounded(path: Path, query: DatasetQuery) -> tuple[list[dict[str, Any]], int | None, bool]:
+    """Push projection/filtering into Arrow and stop after one bounded page."""
+
+    dataset = ds.dataset(path, format="parquet")
+    available = set(dataset.schema.names)
+    expression: ds.Expression | None = None
+
+    def add_filter(field: str, value: Any, operator: str = "eq") -> None:
+        nonlocal expression
+        if value is None:
+            return
+        if field not in available:
+            raise ValueError(f"dataset does not contain filter column {field}")
+        term = (
+            ds.field(field) >= value
+            if operator == "ge"
+            else ds.field(field) <= value
+            if operator == "le"
+            else ds.field(field) == value
+        )
+        expression = term if expression is None else expression & term
+
+    add_filter("date", query.start_date.isoformat() if query.start_date else None, "ge")
+    add_filter("date", query.end_date.isoformat() if query.end_date else None, "le")
     for field in (
         "parish",
         "route_id",
@@ -175,42 +204,33 @@ def _matches(row: dict[str, Any], query: DatasetQuery) -> bool:
         "scope",
         "metric",
         "key",
+        "seed",
     ):
-        expected = getattr(query, field)
-        if expected is not None and str(row.get(field)) != expected:
-            return False
-    return query.seed is None or row.get("seed") == query.seed
-
-
-def _row_sort_key(row: dict[str, Any]) -> tuple[str, str]:
-    return (
-        str(row.get("date") or ""),
-        json.dumps(_safe_json(row), sort_keys=True, separators=(",", ":")),
-    )
-
-
-def _read_bounded(path: Path, query: DatasetQuery) -> tuple[list[dict[str, Any]], int]:
-    """Stream Parquet batches and retain only the bounded page window."""
-
-    keep = query.offset + query.limit
+        add_filter(field, getattr(query, field))
+    columns = list(query.columns) if query.columns is not None else dataset.schema.names
+    unknown = sorted(set(columns) - available)
+    if unknown:
+        raise ValueError(f"dataset does not contain projected columns: {unknown}")
+    scanner = dataset.scanner(columns=columns, filter=expression, batch_size=2048)
+    page_end = query.offset + query.limit
+    scan_end = page_end + 1
     selected: list[dict[str, Any]] = []
-    total = 0
-    parquet = pq.ParquetFile(path)
-    for batch in parquet.iter_batches(batch_size=2048):
+    seen = 0
+    for batch in scanner.to_batches():
         for raw in batch.to_pylist():
-            row = _safe_json(raw)
-            if not _matches(row, query):
-                continue
-            total += 1
-            selected.append(row)
-        # Every generated JOS dataset is written in a stable logical order.
-        # Sorting after each batch keeps memory bounded while preserving the
-        # canonical order for the page window.
-        selected.sort(key=_row_sort_key)
-        if len(selected) > keep:
-            del selected[keep:]
-    selected.sort(key=_row_sort_key)
-    return selected[query.offset : query.offset + query.limit], total
+            if query.offset <= seen < scan_end:
+                selected.append(_safe_json(raw))
+            seen += 1
+            if seen >= scan_end:
+                break
+        if seen >= scan_end:
+            break
+    has_more = len(selected) > query.limit
+    selected = selected[: query.limit]
+    # Exact unfiltered counts are Parquet metadata. A filtered request does
+    # not trigger a second whole-dataset count scan merely to populate total.
+    total = int(pq.ParquetFile(path).metadata.num_rows) if expression is None else None
+    return selected, total, has_more
 
 
 def _dataset_path(
@@ -261,6 +281,25 @@ def _load_parishes(root: Path) -> list[str]:
         return []
 
 
+def _validated_cors_origins(origins: list[str]) -> list[str]:
+    validated: list[str] = []
+    for origin in origins:
+        parsed = urlsplit(origin)
+        if (
+            origin == "*"
+            or parsed.scheme not in {"http", "https"}
+            or parsed.hostname not in {"localhost", "127.0.0.1", "::1"}
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+            or parsed.path not in {"", "/"}
+        ):
+            raise ValueError("CORS origins must be explicit HTTP(S) loopback origins")
+        validated.append(origin.rstrip("/"))
+    return validated
+
+
 def create_app(
     *,
     state_dir: Path | None = None,
@@ -288,6 +327,7 @@ def create_app(
             ).split(",")
             if item.strip()
         ]
+    configured_origins = _validated_cors_origins(configured_origins)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -334,109 +374,126 @@ def create_app(
             content=detail or _error("request_error", "The request could not be completed"),
         )
 
-    @app.get("/health", tags=["system"])
-    def health() -> dict[str, Any]:
+    error_responses: dict[int | str, dict[str, Any]] = {
+        400: {"model": APIErrorBody},
+        404: {"model": APIErrorBody},
+        409: {"model": APIErrorBody},
+        422: {"model": APIErrorBody},
+    }
+
+    @app.get("/health", tags=["system"], response_model=HealthResponse)
+    def health() -> HealthResponse:
         try:
             manager.registry.get_job("__health_probe__")
         except JobNotFoundError:
             registry_status = "ok"
         except RegistryError:
             registry_status = "error"
-        return {
-            "status": "ok" if registry_status == "ok" else "degraded",
-            "api_version": API_VERSION,
-            "api_schema_version": API_SCHEMA_VERSION,
-            "registry": registry_status,
-        }
+        return HealthResponse.model_validate(
+            {
+                "status": "ok" if registry_status == "ok" else "degraded",
+                "api_version": API_VERSION,
+                "api_schema_version": API_SCHEMA_VERSION,
+                "registry": registry_status,
+            }
+        )
 
-    @app.get(f"/api/{API_VERSION}/capabilities", tags=["system"])
-    def capabilities() -> dict[str, Any]:
+    @app.get(
+        f"/api/{API_VERSION}/capabilities",
+        tags=["system"],
+        response_model=CapabilitiesResponse,
+    )
+    def capabilities() -> CapabilitiesResponse:
         commit, dirty = _git_identity(root)
-        return {
-            "api_version": API_VERSION,
-            "api_schema_version": API_SCHEMA_VERSION,
-            "package_version": __version__,
-            "engine": {
-                "name": "Starsim",
-                "version": "3.5.2",
-                "git_commit": commit,
-                "dirty_worktree_flag": dirty,
-            },
-            "artifact_schema_versions": {
-                "m5": "1.0",
-                "m6_observation": "1.1",
-                "m6_ensemble": "1.2",
-                "m7": "2.0",
-                "m8": "2.0",
-            },
-            "population_presets": DEFAULT_MODE_TARGETS,
-            "job_kinds": ["scenario_run", "scenario_compare", "ensemble"],
-            "resident_route_ids": list(ROUTE_IDS),
-            "travel_route_ids": list(TRAVEL_ROUTE_IDS),
-            "route_families": list(ROUTE_FAMILIES),
-            "intervention_families": list(get_args(InterventionType)),
-            "travel_modes": list(get_args(TravelMode)),
-            "parishes": _load_parishes(root),
-            "dataset_names": [
-                "daily_epidemic",
-                "daily_parish",
-                "daily_route",
-                "daily_age",
-                "transmission_events",
-                "daily_intervention_state",
-                "intervention_events",
-                "route_effects",
-                "ensemble_summary",
-                "replicate_trajectories",
-                "replicate_grid",
-                "matched_seed_comparison",
-                "daily_travel_population",
-                "daily_travel_route",
-                "travel_episodes",
-                "travel_transmission_events",
-            ],
-            "scheduler": {
-                "configured_max_concurrent_jobs": manager.max_concurrent_jobs,
-                "effective_max_concurrent_jobs": manager.max_concurrent_jobs,
-                "policy": "FIFO; one API scientific job by default",
-                "worker_execution_mode": "subprocess; POSIX process group when available",
-            },
-            "limits": {
-                "default_dataset_rows": DEFAULT_DATASET_LIMIT,
-                "max_dataset_rows": MAX_DATASET_ROWS,
-            },
-            "state_directory": "per-user application state; exact path intentionally not exposed",
-            "scientific_claim_boundary": (
-                "Synthetic research engine interface; not a validated forecast."
-            ),
-        }
+        return CapabilitiesResponse.model_validate(
+            {
+                "api_version": API_VERSION,
+                "api_schema_version": API_SCHEMA_VERSION,
+                "package_version": __version__,
+                "engine": {
+                    "name": "Starsim",
+                    "version": "3.5.2",
+                    "git_commit": commit,
+                    "dirty_worktree_flag": dirty,
+                },
+                "artifact_schema_versions": {
+                    "m5": "1.0",
+                    "m6_observation": "1.1",
+                    "m6_ensemble": "1.2",
+                    "m7": "2.0",
+                    "m8": "2.0",
+                },
+                "population_presets": DEFAULT_MODE_TARGETS,
+                "job_kinds": ["scenario_run", "scenario_compare", "ensemble"],
+                "resident_route_ids": list(ROUTE_IDS),
+                "travel_route_ids": list(TRAVEL_ROUTE_IDS),
+                "route_families": list(ROUTE_FAMILIES),
+                "intervention_families": list(get_args(InterventionType)),
+                "travel_modes": list(get_args(TravelMode)),
+                "parishes": _load_parishes(root),
+                "dataset_names": list(ALL_SCIENTIFIC_DATASETS),
+                "scheduler": {
+                    "configured_max_concurrent_jobs": manager.max_concurrent_jobs,
+                    "effective_max_concurrent_jobs": manager.max_concurrent_jobs,
+                    "policy": "FIFO; one API scientific job by default",
+                    "worker_execution_mode": "subprocess; POSIX process group when available",
+                },
+                "limits": {
+                    "default_dataset_rows": DEFAULT_DATASET_LIMIT,
+                    "max_dataset_rows": MAX_DATASET_ROWS,
+                },
+                "state_directory": (
+                    "per-user application state; exact path intentionally not exposed"
+                ),
+                "scientific_claim_boundary": (
+                    "Synthetic research engine interface; not a validated forecast."
+                ),
+            }
+        )
 
-    @app.post(f"/api/{API_VERSION}/scenarios/validate", tags=["scenarios"])
-    def validate_scenario(payload: ScenarioValidationRequest) -> dict[str, Any]:
+    @app.post(
+        f"/api/{API_VERSION}/scenarios/validate",
+        tags=["scenarios"],
+        response_model=ScenarioValidationResponse,
+        responses=error_responses,
+    )
+    def validate_scenario(payload: ScenarioValidationRequest) -> ScenarioValidationResponse:
         try:
             from .intervention_schemas import ScenarioConfig
 
             scenario = ScenarioConfig.model_validate(_normalize_json_dates(payload.scenario))
         except ValidationError as exc:
-            return {"valid": False, "errors": _safe_validation_errors(exc), "warnings": []}
+            return ScenarioValidationResponse(
+                valid=False, errors=_safe_validation_errors(exc), warnings=[]
+            )
         except (TypeError, ValueError) as exc:
-            return {"valid": False, "errors": [{"message": str(exc)}], "warnings": []}
-        return {
-            "valid": True,
-            "errors": [],
-            "warnings": [
-                "Scenario values are synthetic assumptions and do not constitute a forecast."
-            ],
-            "normalized": scenario.model_dump(mode="json"),
-            "scenario_config_hash": scenario.config_hash,
-        }
+            return ScenarioValidationResponse(
+                valid=False, errors=[{"message": str(exc)}], warnings=[]
+            )
+        return ScenarioValidationResponse.model_validate(
+            {
+                "valid": True,
+                "errors": [],
+                "warnings": [
+                    "Scenario values are synthetic assumptions and do not constitute a forecast."
+                ],
+                "normalized": scenario.model_dump(mode="json"),
+                "scenario_config_hash": scenario.config_hash,
+            }
+        )
 
-    @app.post(f"/api/{API_VERSION}/jobs", status_code=status.HTTP_202_ACCEPTED, tags=["jobs"])
+    @app.post(
+        f"/api/{API_VERSION}/jobs",
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["jobs"],
+        response_model=JobSubmissionResponse,
+        responses=error_responses,
+    )
     def submit_job(
         request: JobRequest,
         response: Response,
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
-    ) -> dict[str, Any]:
+    ) -> JobSubmissionResponse:
         try:
             job = manager.submit(request, idempotency_key=idempotency_key)
         except IdempotencyConflictError as exc:
@@ -450,46 +507,65 @@ def create_app(
                 detail=_error("validation_error", "Job request failed scientific pre-validation"),
             ) from exc
         response.headers["Location"] = f"/api/{API_VERSION}/jobs/{job['job_id']}"
-        return {
-            "job_id": job["job_id"],
-            "kind": job["job_kind"],
-            # Submission is asynchronous: the scheduler may claim a very
-            # small CI job before this response is serialized, but the
-            # submission contract always starts at QUEUED.
-            "state": "QUEUED",
-            "request_hash": job["request_hash"],
-            "status_url": f"/api/{API_VERSION}/jobs/{job['job_id']}",
-            "events_url": f"/api/{API_VERSION}/jobs/{job['job_id']}/events",
-            "already_exists": bool(job.get("_already_exists", False)),
-        }
+        return JobSubmissionResponse.model_validate(
+            {
+                "job_id": job["job_id"],
+                "kind": job["job_kind"],
+                # Submission is asynchronous: the scheduler may claim a very
+                # small CI job before this response is serialized, but the
+                # submission contract always starts at QUEUED.
+                "state": "QUEUED",
+                "request_hash": job["request_hash"],
+                "status_url": f"/api/{API_VERSION}/jobs/{job['job_id']}",
+                "events_url": f"/api/{API_VERSION}/jobs/{job['job_id']}/events",
+                "already_exists": bool(job.get("_already_exists", False)),
+            }
+        )
 
-    @app.get(f"/api/{API_VERSION}/jobs", tags=["jobs"])
+    @app.get(
+        f"/api/{API_VERSION}/jobs",
+        tags=["jobs"],
+        response_model=JobListResponse,
+        responses=error_responses,
+    )
     def list_jobs(
         state: JobState | None = None,
         kind: JobKind | None = None,
         limit: int = Query(default=50, ge=1, le=100),
         offset: int = Query(default=0, ge=0),
-    ) -> dict[str, Any]:
+    ) -> JobListResponse:
         jobs, total = manager.list_jobs(state=state, kind=kind, limit=limit, offset=offset)
-        return {
-            "jobs": [_public_job(manager, job) for job in jobs],
-            "total": total,
-            "limit": limit,
-            "offset": offset,
-        }
+        return JobListResponse.model_validate(
+            {
+                "jobs": [_public_job(manager, job) for job in jobs],
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            }
+        )
 
-    @app.get(f"/api/{API_VERSION}/jobs/{{job_id}}", tags=["jobs"])
-    def get_job(job_id: str) -> dict[str, Any]:
+    @app.get(
+        f"/api/{API_VERSION}/jobs/{{job_id}}",
+        tags=["jobs"],
+        response_model=JobStatusResponse,
+        responses=error_responses,
+    )
+    def get_job(job_id: str) -> JobStatusResponse:
         try:
-            return _public_job(manager, manager.get(job_id))
+            return JobStatusResponse.model_validate(_public_job(manager, manager.get(job_id)))
         except JobNotFoundError as exc:
             raise __import__("fastapi").HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=_error("job_not_found", "Job was not found"),
             ) from exc
 
-    @app.post(f"/api/{API_VERSION}/jobs/{{job_id}}/cancel", tags=["jobs"])
-    def cancel_job(job_id: str) -> dict[str, Any]:
+    @app.post(
+        f"/api/{API_VERSION}/jobs/{{job_id}}/cancel",
+        tags=["jobs"],
+        response_model=CancelResponse,
+        responses=error_responses,
+    )
+    def cancel_job(job_id: str) -> CancelResponse:
         try:
             job, action = manager.cancel(job_id)
         except JobNotFoundError as exc:
@@ -504,43 +580,66 @@ def create_app(
                     "invalid_job_transition", "Job cannot be cancelled in its current state"
                 ),
             ) from exc
-        return {
-            "job_id": job_id,
-            "state": job["state"],
-            "action": action,
-            "idempotent": action == "already_cancelled",
-        }
+        return CancelResponse.model_validate(
+            {
+                "job_id": job_id,
+                "state": job["state"],
+                "action": action,
+                "idempotent": action == "already_cancelled",
+            }
+        )
 
-    @app.get(f"/api/{API_VERSION}/jobs/{{job_id}}/events", tags=["jobs"])
-    def job_events(job_id: str, limit: int = Query(default=200, ge=1, le=1_000)) -> dict[str, Any]:
+    @app.get(
+        f"/api/{API_VERSION}/jobs/{{job_id}}/events",
+        tags=["jobs"],
+        response_model=JobEventsResponse,
+        responses=error_responses,
+    )
+    def job_events(
+        job_id: str, limit: int = Query(default=200, ge=1, le=1_000)
+    ) -> JobEventsResponse:
         try:
-            return {"job_id": job_id, "events": manager.events(job_id, limit=limit)}
+            return JobEventsResponse.model_validate(
+                {"job_id": job_id, "events": manager.events(job_id, limit=limit)}
+            )
         except JobNotFoundError as exc:
             raise __import__("fastapi").HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=_error("job_not_found", "Job was not found"),
             ) from exc
 
-    @app.get(f"/api/{API_VERSION}/jobs/{{job_id}}/artifacts", tags=["results"])
-    def job_artifacts(job_id: str) -> dict[str, Any]:
+    @app.get(
+        f"/api/{API_VERSION}/jobs/{{job_id}}/artifacts",
+        tags=["results"],
+        response_model=JobArtifactsResponse,
+        responses=error_responses,
+    )
+    def job_artifacts(job_id: str) -> JobArtifactsResponse:
         try:
             job = manager.get(job_id)
-            return {
-                "job_id": job_id,
-                "artifacts": manager.artifacts(job_id) if job["state"] == "SUCCEEDED" else [],
-            }
+            return JobArtifactsResponse.model_validate(
+                {
+                    "job_id": job_id,
+                    "artifacts": manager.artifacts(job_id) if job["state"] == "SUCCEEDED" else [],
+                }
+            )
         except JobNotFoundError as exc:
             raise __import__("fastapi").HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=_error("job_not_found", "Job was not found"),
             ) from exc
 
-    @app.get(f"/api/{API_VERSION}/jobs/{{job_id}}/datasets", tags=["results"])
-    def job_datasets(job_id: str) -> dict[str, Any]:
+    @app.get(
+        f"/api/{API_VERSION}/jobs/{{job_id}}/datasets",
+        tags=["results"],
+        response_model=JobDatasetsResponse,
+        responses=error_responses,
+    )
+    def job_datasets(job_id: str) -> JobDatasetsResponse:
         try:
             job = manager.get(job_id)
             if job["state"] != "SUCCEEDED":
-                return {"job_id": job_id, "datasets": [], "available": False}
+                return JobDatasetsResponse(job_id=job_id, datasets=[], available=False)
             artifacts: list[dict[str, Any]] = manager.artifacts(job_id)
             datasets: list[dict[str, Any]] = []
             for artifact in artifacts:
@@ -555,7 +654,7 @@ def create_app(
                             "metadata": _dataset_metadata(path),
                         }
                     )
-            return {"job_id": job_id, "datasets": datasets, "available": True}
+            return JobDatasetsResponse(job_id=job_id, datasets=datasets, available=True)
         except JobNotFoundError as exc:
             raise __import__("fastapi").HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -567,7 +666,12 @@ def create_app(
                 detail=_error("artifact_unavailable", "Verified dataset metadata is unavailable"),
             ) from exc
 
-    @app.get(f"/api/{API_VERSION}/jobs/{{job_id}}/datasets/{{dataset_name}}", tags=["results"])
+    @app.get(
+        f"/api/{API_VERSION}/jobs/{{job_id}}/datasets/{{dataset_name}}",
+        tags=["results"],
+        response_model=DatasetReadResponse,
+        responses=error_responses,
+    )
     def read_dataset(
         job_id: str,
         dataset_name: str,
@@ -583,7 +687,8 @@ def create_app(
         metric: str | None = None,
         key: str | None = None,
         seed: int | None = Query(default=None, ge=0),
-    ) -> dict[str, Any]:
+        columns: list[str] | None = Query(default=None),  # noqa: B008
+    ) -> DatasetReadResponse:
         try:
             job = manager.get(job_id)
             if job["state"] != "SUCCEEDED":
@@ -607,19 +712,23 @@ def create_app(
                 metric=metric,
                 key=key,
                 seed=seed,
+                columns=tuple(columns) if columns is not None else None,
             )
-            rows, total = _read_bounded(path, query)
-            return {
-                "job_id": job_id,
-                "dataset": logical_name,
-                "artifact_id": artifact["artifact_id"],
-                "metadata": _dataset_metadata(path),
-                "rows": rows,
-                "total": total,
-                "limit": limit,
-                "offset": offset,
-                "next_offset": offset + limit if offset + limit < total else None,
-            }
+            rows, total, has_more = _read_bounded(path, query)
+            return DatasetReadResponse.model_validate(
+                {
+                    "job_id": job_id,
+                    "dataset": logical_name,
+                    "artifact_id": artifact["artifact_id"],
+                    "metadata": _dataset_metadata(path),
+                    "rows": rows,
+                    "total": total,
+                    "has_more": has_more,
+                    "limit": limit,
+                    "offset": offset,
+                    "next_offset": offset + len(rows) if has_more else None,
+                }
+            )
         except JobNotFoundError as exc:
             raise __import__("fastapi").HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
