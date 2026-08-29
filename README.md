@@ -7,7 +7,7 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–8 plus corrective closures C1–C5**:
+This repository contains **Milestones 0–9 plus corrective closures C1–C5**:
 repository contracts, a verified
 Starsim compatibility/reproducibility spike, a source-registered aggregate
 evidence layer, a disease-agnostic synthetic Jersey population generator, and
@@ -34,9 +34,13 @@ workers, and synthetic held-out beta recovery remains available. Milestone 7,
 as corrected by C5, adds the typed composable intervention runtime,
 detection-triggered isolation and quarantine, calendar/contact families,
 vaccination, matched-seed comparisons, intervention ensembles and
-visualization-ready artifacts. M8 adds the separate travel/visitor layer; the
-API and UI remain outside the implemented milestones. The quantitative gate
-record is in [`docs/progress.md`](docs/progress.md).
+visualization-ready artifacts. M8 adds the separate travel/visitor layer.
+Milestone 9 adds a loopback-only FastAPI interface, persistent SQLite job
+execution, isolated workers, cancellation, restart reconciliation, verified
+application result manifests and bounded dataset retrieval. No frontend or UI
+is included. The quantitative gate record is in
+[`docs/progress.md`](docs/progress.md), and the API contract is in
+[`docs/api.md`](docs/api.md).
 The Starsim demo is an official SIR example using Starsim's built-in
 `RandomNet`; it is not a Jersey outbreak reconstruction or a validated
 forecast. The Milestone 2 population is synthetic and control-driven; it is
@@ -131,6 +135,7 @@ uv run jos intervention compare --mode ci --seed 123 \
   --scenario-config configs/scenarios/m7_school_closure.yaml
 uv run jos intervention ensemble --mode ci --seeds 101,102,103 \
   --scenario-config configs/scenarios/m7_case_isolation.yaml
+uv run jos api serve
 ```
 
 The command prints a machine-readable JSON summary and writes:

@@ -10,7 +10,8 @@ and the quantitative evidence is recorded in
 travel implementation failed independent audit; M8.1 corrected most integrity
 contracts but failed its independent audit on three final blockers. M8.2 closes
 episode-safe observation identity, departed-result lifecycle and combined-event
-artifact serialization. API/UI remain outside scope.
+artifact serialization. The M9 API is an execution/retrieval boundary; M10 UI
+remains outside scope.
 
 ## Milestone 8 scope and claim boundary
 
@@ -54,8 +55,10 @@ stratification only; M5 has no validated severity pathway.
 M8 outputs mean “under the declared synthetic travel scenario.” They must not
 be read as real visitor prevalence, airport/ferry transmission rates, validated
 traveller contact counts, policy or border-control effectiveness, tourism
-burden, or a seasonal forecast. M9 API/job infrastructure and M10 interactive
-UI/map functionality remain outside scope.
+burden, or a seasonal forecast. M9 API/job infrastructure is only an execution
+and retrieval interface over those synthetic outputs; it adds no scientific
+validation and does not turn results into forecasts. M10 interactive UI/map
+functionality remains outside scope.
 
 ## What this repository demonstrates
 

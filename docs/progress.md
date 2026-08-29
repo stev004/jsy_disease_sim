@@ -1,9 +1,9 @@
 # Jersey Outbreak Simulator progress ledger
 
-**Last verified:** 28 August 2026
-**Current branch:** `codex/m8.2-final-travel-closure`
+**Last verified:** 29 August 2026
+**Current branch:** `codex/m9-api-jobs`
 **C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
-**Scope:** Minimal M8.2 observation/lifecycle/artifact closure; M9/M10 closed.
+**Scope:** M9 local API and persistent jobs; M10 remains closed.
 
 This ledger records the current implementation and verification state. The
 project charter remains the authoritative specification; this file records
@@ -553,4 +553,37 @@ non-blocking performance/realism warnings.** Monthly tourism seasonality is not
 source-backed; detailed taxi/rental behaviour and travel biology remain
 structural assumptions; literal annual source-scale disease execution was not
 attempted; and the explicit zero-travel manager retains measured overhead.
-M9 and M10 remain closed.
+M9 implementation is complete at the application boundary and M10 remains
+closed. M9 adds a loopback-only FastAPI `/api/v1` contract, persistent SQLite
+schema version 1, FIFO scheduling with default API concurrency one, isolated
+worker subprocesses, cancellation, restart reconciliation, append-only job
+events, verified M5–M8 artifact discovery, bounded manifest-driven Parquet
+queries, and an application result manifest. Scientific engine modules and
+scientific artifact semantics are unchanged. See [`api.md`](api.md) for the
+runtime contract and limitations; final gate evidence is recorded with the
+M9 verification result.
+
+## M9 verification evidence
+
+The focused M9 suite passed 7 tests in 11.62s, covering the registry state
+machine, concurrent claiming, request/idempotency persistence, API contract and
+CORS, bounded dataset reads and traversal rejection, direct/API equivalence,
+running cancellation, and isolated worker failure. The complete repository
+suite passed 152 tests in 234.87s with only the existing Starlette/httpx
+deprecation and single-date Starsim timestep warnings. Ruff check, formatting,
+targeted mypy, `uv lock --check`, compileall, and `git diff --check` passed.
+
+The required API full-island smoke submitted one `scenario_run` at `full`
+scale (104,540 residents), seed 123, one dated output point. Job
+`b5832a52-fa04-4fd0-a4ca-9f91fb4bd855` reached `SUCCEEDED` after 601.4s; its
+M5 runner reported 17.29s, 11 routes, latent hash
+`23ddd5d0ea47943ebb4d2b50facfaf74bc03d056083cd5f9d298ead1480e2e54`, bundle
+hash `9316b3727ebb9b89e800203c16d30cc8812a3f5feef49e77c5f9b7dd8c2797f5`, and
+M9 result-manifest hash
+`d0569cccbc96f7d98e3f9d5c5f6800f55cba4e960094acfcd7397585407bf1d4`.
+Artifact verification passed and `daily_epidemic` was discoverable/readable;
+the pre-commit run necessarily recorded `dirty_worktree_flag: true`.
+
+Additional runtime smokes showed one-running/two-queued FIFO behavior at API
+concurrency 1, real process-group cancellation with no verified artifact, and
+a persisted `FAILED` worker integrity error while the API remained healthy.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
 from datetime import date
 from pathlib import Path
@@ -61,6 +62,7 @@ travel_app = typer.Typer(add_completion=False, no_args_is_help=True)
 intervention_app = typer.Typer(add_completion=False, no_args_is_help=True)
 calibration_app = typer.Typer(add_completion=False, no_args_is_help=True)
 verification_app = typer.Typer(add_completion=False, no_args_is_help=True)
+api_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(data_app, name="data")
 app.add_typer(population_app, name="population")
 app.add_typer(structure_app, name="structure")
@@ -73,11 +75,52 @@ app.add_typer(travel_app, name="travel")
 app.add_typer(intervention_app, name="intervention")
 app.add_typer(calibration_app, name="calibrate")
 app.add_typer(verification_app, name="verify")
+app.add_typer(api_app, name="api")
 
 
 @app.callback()
 def main() -> None:
     """Jersey Outbreak Simulator command-line tools."""
+
+
+@api_app.command("serve")
+def api_serve(
+    port: Annotated[int, typer.Option(help="Loopback TCP port.")] = 8000,
+    host: Annotated[
+        str, typer.Option(help="Loopback host only; LAN binding is refused.")
+    ] = "127.0.0.1",
+    state_dir: Annotated[
+        Path | None, typer.Option(help="Persistent application state directory (or JOS_STATE_DIR).")
+    ] = None,
+    max_concurrent_jobs: Annotated[
+        int, typer.Option(help="Maximum concurrent API scientific jobs; default is one.")
+    ] = 1,
+) -> None:
+    """Serve the local, versioned M9 API on a loopback interface."""
+
+    try:
+        is_loopback = ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        is_loopback = host.lower() == "localhost"
+    if not is_loopback:
+        raise typer.BadParameter("M9 API binding must be loopback (127.0.0.1, ::1, or localhost)")
+    if not 1 <= port <= 65535:
+        raise typer.BadParameter("port must be between 1 and 65535")
+    if max_concurrent_jobs < 1:
+        raise typer.BadParameter("max-concurrent-jobs must be at least one")
+    import uvicorn
+
+    from .api import create_app
+
+    uvicorn.run(
+        create_app(
+            state_dir=state_dir,
+            project_root=_repo_root(),
+            max_concurrent_jobs=max_concurrent_jobs,
+        ),
+        host=host,
+        port=port,
+    )
 
 
 @app.command()

@@ -11,7 +11,8 @@ routes and latent M5 outputs immutable. The original M8 implementation failed
 independent audit, and the independent M8.1 audit left three blockers. M8.2 is
 the minimal final correction for episode-safe observations, departed test
 results and combined-event artifact serialization. API and UI remain later
-boundaries. M8 now passes with explicit non-blocking warnings for source-backed
+M9 now adds the local API/job boundary described below; M10 UI remains a later
+boundary. M8 now passes with explicit non-blocking warnings for source-backed
 seasonality, structural transport detail and unbenchmarked literal annual
 source-scale disease execution.
 Quantitative evidence is maintained in
@@ -68,8 +69,8 @@ then reconstructed before logical hashing. Verification recomputes logical
 identities from contents, so replacing a table and updating only its raw
 checksum still fails. Comparisons
 retain matched seed and parent information while documenting coupling decay.
-The M8 CLI stops at travel runs, comparisons and small ensembles; M9 API/job
-architecture and M10 UI/map work are outside this milestone.
+The M8 CLI stops at travel runs, comparisons and small ensembles. M9 wraps
+those verified paths without changing their scientific artifacts.
 
 The full corrected stack produces 104,540 agents, 522,388 structural edges,
 856,050 baseline edges and 1,906,144 selected snapshot edges. A full Starsim
@@ -78,6 +79,44 @@ delivery, independent observation streams, metric-aware ensemble grids,
 truthful fallback worker reporting and a zero-community-contact boundary. The
 synthetic train/held-out beta recovery and hash-checked external archive
 contracts remain intact.
+
+## Milestone 9 local API and persistent jobs
+
+M9 is an application layer above the verified scientific runners:
+
+```text
+loopback HTTP /api/v1
+          |
+          v
+typed request validation -> SQLite FIFO registry
+                                |
+                                v
+                  isolated worker subprocess
+                                |
+                                v
+                 one execution adapter -> M5/M6/M7/M8
+                                |
+                                v
+           verified scientific artifacts + M9 result manifest
+```
+
+`api.py` contains the compact FastAPI contract and no scientific calls.
+`job_registry.py` owns SQLite schema version 1, WAL mode, canonical request
+identity, append-only application events and legal state transitions.
+`job_manager.py` claims queued rows atomically in FIFO order and launches only
+the fixed `jersey_outbreak.job_worker` entrypoint with `sys.executable`.
+Workers run in dedicated process groups on POSIX so cancellation can terminate
+only that job and its children. The default API concurrency is one, while the
+existing ensemble worker bound remains authoritative inside an ensemble job.
+
+`execution_adapter.py` is the only application-to-engine translation point.
+It builds the existing M2/M3/M4 parent, calls the existing M5–M8 orchestration,
+writes existing scientific artifacts, and invokes the applicable verifier
+before constructing the separate M9 result manifest. Dataset endpoints resolve
+only manifest-listed Parquet files under a job directory and stream bounded
+batches with deterministic ordering. The API never exposes arbitrary paths,
+SQL, Python, shell commands or a new scientific taxonomy. Full endpoint and
+restart/cancellation semantics are documented in [`api.md`](api.md).
 
 ## Milestone 0–4 boundaries
 
