@@ -11,7 +11,7 @@ from datetime import date, timedelta
 from math import isfinite
 from typing import Any, Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, ValidationInfo, field_validator, model_validator
 
 from .contracts import NonEmptyString, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes
@@ -174,6 +174,15 @@ class InterventionConfig(StrictModel):
 
     parameter_provenance: dict[NonEmptyString, InterventionParameter] = Field(default_factory=dict)
     assumptions: tuple[NonEmptyString, ...] = ()
+
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def decode_json_dates(cls, value: object, info: ValidationInfo) -> object:
+        """Decode the canonical ISO representation without weakening Python input."""
+
+        if info.mode == "json" and isinstance(value, str):
+            return date.fromisoformat(value)
+        return value
 
     @field_validator("assumptions", mode="before")
     @classmethod
