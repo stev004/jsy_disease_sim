@@ -296,8 +296,10 @@ checklist with plain-language descriptions:
 
 ## 11. Visual design system
 
-- **Direction**: scientific instrument × survey chart. Calm, high-information,
-  map-first.
+- **Direction**: "Survey Instrument" — scientific instrument × survey chart.
+  Calm, high-information, map-first. Chosen over three explored alternatives
+  (Journal, Console, Civic Atlas) in a four-direction comparison; the mockup
+  implements it.
 - **Type**: Instrument Sans (UI, 400–700); IBM Plex Mono (numerals, dates,
   hashes, axes). Tabular numerals for all metrics. Base 14 px; headline
   metrics 23–24 px; no sub-10 px text.
