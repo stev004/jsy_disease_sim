@@ -189,7 +189,11 @@ export function JobMonitor({ jobId, onBack }: { jobId: string; onBack: () => voi
         {isFailed && (
           <div className="job-err" style={{ display: 'block' }}>
             <b>
-              The run failed during <span className="mono">{failedPhaseName(job)}</span>.
+              {failedPhaseName(job) ? (
+                <>The run failed during <span className="mono">{failedPhaseName(job)}</span>.</>
+              ) : (
+                'Run failed.'
+              )}
             </b>
             <span className="mono">
               {job.error?.message ?? 'The API reported a failure without a message.'}
@@ -203,7 +207,7 @@ export function JobMonitor({ jobId, onBack }: { jobId: string; onBack: () => voi
                 View worker log
               </Btn>
               <Btn to="/simulate" style={{ fontSize: 12 }}>
-                Duplicate &amp; edit scenario
+                New scenario
               </Btn>
             </div>
           </div>

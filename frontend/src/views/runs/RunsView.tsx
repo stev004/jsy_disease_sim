@@ -220,7 +220,9 @@ function RunList({ onOpenMonitor }: { onOpenMonitor: (jobId: string) => void }) 
       <Card>
         {visible.length === 0 ? (
           <div className="runs-empty">
-            {!loaded
+            {error
+              ? 'Runs could not be loaded.'
+              : !loaded
               ? 'Loading runs…'
               : filter === 'all'
                 ? 'No runs yet. Build a scenario and submit it — it will appear here.'
@@ -289,9 +291,9 @@ function RunRow({
         {job.state === 'INTERRUPTED' ? (
           <Btn to="/simulate">Re-run scenario</Btn>
         ) : job.state === 'FAILED' ? (
-          <Btn to="/simulate">Duplicate &amp; edit</Btn>
+          <Btn to="/simulate">New scenario</Btn>
         ) : !active ? (
-          <Btn to="/simulate">Duplicate</Btn>
+          <Btn to="/simulate">New scenario</Btn>
         ) : null}
       </div>
       <div className="meta">

@@ -120,7 +120,7 @@ export function HomeView() {
           {jobs.length === 0 && (
             <div className="row" style={{ color: 'var(--ink-3)', fontSize: 12.5 }}>
               {loadError
-                ? `Could not load recent runs — ${loadError}`
+                ? `Unable to load recent runs: ${loadError}`
                 : 'No runs yet. Start with a new scenario.'}
             </div>
           )}

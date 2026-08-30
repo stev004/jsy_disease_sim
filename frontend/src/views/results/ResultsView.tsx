@@ -24,6 +24,7 @@ import type { JobStatusResponse } from '../../api';
 import { jobDisplayName, jobKindDetail } from '../../api/naming';
 import { seqColor, type ParishId } from '../../map/geometry';
 import { useScenarioContextEffect } from '../../app/ScenarioContextProvider';
+import { setProvenanceJobId } from '../drawer/provenanceStore';
 import { TabsBand } from './TabsBand';
 import { deriveInterventions, type InterventionBar } from './interventions';
 import {
@@ -106,13 +107,14 @@ export function ResultsView() {
         job = newestSucceeded(list.jobs);
         if (!job) throw new Error('No succeeded run has been recorded yet.');
       }
+      setProvenanceJobId(job.job_id);
       const loaded = await loadResults(job);
       if (cancelled) return;
       setData(loaded);
       // Open on the peak day: the most informative frame of the run.
       let peak = 0;
       for (let d = 0; d < loaded.epi.length; d += 1) {
-        if (loaded.epi[d].active > loaded.epi[peak].active) peak = d;
+        if ((loaded.epi[d].active ?? -Infinity) > (loaded.epi[peak].active ?? -Infinity)) peak = d;
       }
       setDay(peak);
       setParish(null);
@@ -126,6 +128,7 @@ export function ResultsView() {
 
     return () => {
       cancelled = true;
+      setProvenanceJobId(null);
     };
   }, [jobId]);
 
@@ -287,67 +290,36 @@ export function ResultsView() {
     mapMetrics.find((m) => m.id === metric) ?? MAP_METRICS.find((m) => m.id === metric)!;
   const parishNote = data.availability.parishNote;
 
-  /* Replicate range: use the artifact's own band columns when present,
-     otherwise the ensemble's declared spread; never for a single seed. */
-  const bandRatio = ((): [number, number] | null => {
-    if (data.seeds <= 1) return null;
-    if (epiToday.bandLow != null && epiToday.bandHigh != null && epiToday.active > 0) {
-      return [epiToday.bandLow / epiToday.active, epiToday.bandHigh / epiToday.active];
+  const range = (value: number | null, pct = false, banded = false): string | undefined => {
+    if (!banded || value == null || epiToday.bandLow == null || epiToday.bandHigh == null) return undefined;
+    if (pct && data.population != null) {
+      return `${((100 * epiToday.bandLow) / data.population).toFixed(1)} – ${((100 * epiToday.bandHigh) / data.population).toFixed(1)}%`;
     }
-    return [0.86, 1.16];
-  })();
-
-  const range = (value: number, pct = false): string | undefined => {
-    if (!bandRatio) return undefined;
-    const [lo, hi] = bandRatio;
-    if (pct) {
-      return `${((100 * value * lo) / data.population).toFixed(1)} – ${((100 * value * hi) / data.population).toFixed(1)}%`;
-    }
-    return `${fmt(value * lo)} – ${fmt(value * hi)}`;
+    return pct ? undefined : `${fmt(epiToday.bandLow)} – ${fmt(epiToday.bandHigh)}`;
   };
 
   const legendScale = ((): string => {
     if (!parishAvailable) return '—';
     if (metric === 'attack') {
-      const pct = vmax / 10;
+      const pct = vmax * 100;
       return `0 – ${pct < 5 ? pct.toFixed(1) : pct.toFixed(0)}% of parish`;
     }
-    if (vmax < 1) return 'all below 1 per 1,000';
-    return `0 – ${fmt(vmax)} per 1,000`;
+    return `0 – ${fmt(vmax)} counts`;
   })();
 
   const parishCurve = selectedParish
     ? [
         {
-          pts: selectedParish.points.map((pt, d) => [d, pt.active] as [number, number]),
-          band: data.seeds > 1,
+          pts: selectedParish.points.flatMap((pt, d) => pt.cum == null ? [] : [[d, pt.cum] as [number, number]]),
         },
       ]
     : [];
 
-  const parishRoutes: HBarRow[] = selectedParish
-    ? routeCounts(data.routes, day, 'cum')
-        .filter((r) => r.family === 'resident')
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 4)
-        .map((r) => ({
-          name: r.name,
-          key: r.key,
-          count: (r.count * selectedParish.pop) / (data.population || 1),
-          share: r.share,
-        }))
-    : [];
-
-  const parishRelative = ((): string => {
-    if (!selectedParish) return '';
-    const islandAttack = data.population ? epiToday.cum / data.population : 0;
-    const parishAttack = selectedParish.points[day]?.attack ?? 0;
-    if (!islandAttack) return 'No island-wide infections yet to compare against';
-    const rel = parishAttack / islandAttack;
-    if (rel > 1.02) return `▲ Attack rate ${((rel - 1) * 100).toFixed(0)}% above the Jersey average`;
-    if (rel < 0.98) return `▼ Attack rate ${((1 - rel) * 100).toFixed(0)}% below the Jersey average`;
-    return '≈ At the Jersey average attack rate';
-  })();
+  const parishRelative = selectedParish && data.availability.parishAttack
+    ? 'Parish attack rate is published for this run.'
+    : selectedParish
+      ? 'Parish route attribution and attack-rate denominator are not published for this run.'
+      : '';
 
   return (
     <section className="view view-results active">
@@ -406,11 +378,10 @@ export function ResultsView() {
             <div className="card fizzle">
               <div className="ft">The outbreak died out by day {fizzle.dieOutDay}.</div>
               <p className="fb">
-                {fmt(fizzle.cumulative)} of {fmt(data.population)} synthetic residents were infected
-                before transmission stopped
-                {' '}
-                ({((100 * fizzle.cumulative) / (data.population || 1)).toFixed(3)}% of the
-                population). With this scenario&apos;s assumptions stochastic die-out is common.
+                {fmt(fizzle.cumulative)} synthetic residents were infected before transmission
+                stopped{data.population != null
+                  ? ` (${((100 * fizzle.cumulative) / data.population).toFixed(3)}% of the population)`
+                  : ' (the run did not publish a denominator)'}. With this scenario&apos;s assumptions stochastic die-out is common.
                 This is a real result, not an error.
               </p>
               <div className="fa">
@@ -435,11 +406,11 @@ export function ResultsView() {
               selected={parish}
               onSelect={(id) => setParish((cur) => (cur === id ? null : id))}
               colorFor={(id) => {
-                if (!parishAvailable) return 'var(--seq0)';
+                if (!parishAvailable) return 'var(--panel-2)';
                 const p = data.parishes.find((x) => x.id === id);
-                if (!p) return 'var(--seq0)';
+                if (!p) return 'var(--panel-2)';
                 const v = parishMetricPer1k(p, day, metric);
-                return seqColor(Math.min(0.999, vmax ? v / vmax : 0));
+                return v == null ? 'var(--panel-2)' : seqColor(Math.min(0.999, vmax ? v / vmax : 0));
               }}
               ariaLabel={
                 parishAvailable
@@ -476,23 +447,23 @@ export function ResultsView() {
         {/* ------------------------------ side ------------------------------ */}
         <aside className="ws-side">
           <MetricTileGrid>
-            <MetricTile k="Active infectious" v={fmt(epiToday.active)} u={range(epiToday.active)} />
-            <MetricTile k="Cumulative infected" v={fmt(epiToday.cum)} u={range(epiToday.cum)} />
+            <MetricTile k="Active infectious" v={fmt(epiToday.active)} u={range(epiToday.active, false, true)} />
+            <MetricTile k={data.cumulativeLabel} v={fmt(epiToday.cum)} />
             <MetricTile
               k="Detected"
               v={data.availability.detected ? fmt(epiToday.detected) : '—'}
-              u={data.availability.detected ? range(epiToday.detected) : 'not published'}
+              u={data.availability.detected ? undefined : 'not published'}
             />
             <MetricTile
               k="Attack rate"
-              v={`${(100 * epiToday.attack).toFixed(1)}%`}
-              u={range(epiToday.cum, true)}
+              v={epiToday.attack == null ? '—' : `${(100 * epiToday.attack).toFixed(1)}%`}
+              u={epiToday.attack == null ? 'not published' : undefined}
             />
           </MetricTileGrid>
 
           <div className="sci-only sci-note" style={{ padding: '0 4px' }}>
-            {data.seeds > 1
-              ? `Point values are ensemble medians of ${data.seeds} replicates; ranges are lower–upper replicate quantiles (linear interpolation), not confidence intervals.`
+            {data.seeds > 1 && data.epi.some((point) => point.bandLow != null && point.bandHigh != null)
+              ? `Point values are ensemble medians of ${data.seeds} replicates; ranges are persisted lower–upper replicate quantiles, not confidence intervals.`
               : 'Single-seed run: point values are one stochastic realisation, with no replicate range.'}
           </div>
 
@@ -521,15 +492,16 @@ export function ResultsView() {
                 style={{ border: 'none', boxShadow: 'none', marginTop: 10, gap: 1 }}
               >
                 <div className="m4" style={{ padding: '9px 11px' }}>
-                  <div className="k">Active</div>
+                  <div className="k">Active infectious</div>
                   <div className="v num" style={{ fontSize: 18 }}>
-                    {fmt(selectedParish.points[day]?.active ?? 0)}
+                    {fmt(selectedParish.points[day]?.active)}
                   </div>
+                  {!data.availability.parishActive && <div className="s">not available for this run</div>}
                 </div>
                 <div className="m4" style={{ padding: '9px 11px' }}>
-                  <div className="k">Attack rate</div>
+                  <div className="k">New infections today</div>
                   <div className="v num" style={{ fontSize: 18 }}>
-                    {((selectedParish.points[day]?.attack ?? 0) * 100).toFixed(1)}%
+                    {fmt(selectedParish.points[day]?.newInfections)}
                   </div>
                 </div>
               </div>
@@ -543,10 +515,6 @@ export function ResultsView() {
                   formatDay={(d) => formatDate(data.dates[d] ?? '')}
                 />
               </div>
-              <div className="label" style={{ marginTop: 12 }}>
-                Top routes here
-              </div>
-              <HBar rows={parishRoutes} />
               <div className="vs-avg">{parishRelative}</div>
                 </>
               )}

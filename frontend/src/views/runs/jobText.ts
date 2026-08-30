@@ -63,17 +63,18 @@ export function checklistCursor(job: JobStatusResponse): { current: number; fail
     return { current: JOB_PHASES.length, failed: false };
   }
   if (job.state === 'FAILED' || job.phase === 'failed') {
-    return { current: failedPhaseIndex(job), failed: true };
+    const phase = failedPhaseIndex(job);
+    return { current: phase ?? -1, failed: phase != null };
   }
   const idx = phaseIndex(job.phase);
   if (idx >= 0) return { current: idx, failed: false };
   // cancelled / interrupted: fall back to the failure phase recorded in error
   // details when present, otherwise the start of the checklist.
-  return { current: Math.max(0, failedPhaseIndex(job)), failed: false };
+  return { current: Math.max(0, failedPhaseIndex(job) ?? 0), failed: false };
 }
 
 /** Phase the worker died in, from `error.details.phase` when the API supplies it. */
-export function failedPhaseIndex(job: JobStatusResponse): number {
+export function failedPhaseIndex(job: JobStatusResponse): number | null {
   const details = job.error?.details as JsonObject | null | undefined;
   const p = details?.phase;
   if (typeof p === 'string') {
@@ -81,11 +82,12 @@ export function failedPhaseIndex(job: JobStatusResponse): number {
     if (i >= 0) return i;
   }
   const own = phaseIndex(job.phase);
-  return own >= 0 ? own : JOB_PHASES.indexOf('running');
+  return own >= 0 ? own : null;
 }
 
-export function failedPhaseName(job: JobStatusResponse): string {
-  return JOB_PHASES[failedPhaseIndex(job)] ?? 'running';
+export function failedPhaseName(job: JobStatusResponse): string | null {
+  const index = failedPhaseIndex(job);
+  return index == null ? null : JOB_PHASES[index] ?? null;
 }
 
 /** "06:18" / "1:04:22" — clock-style elapsed. */
@@ -211,11 +213,13 @@ export function stateNote(
       ].filter(Boolean);
       return bits.join(' · ');
     }
-    case 'FAILED':
+    case 'FAILED': {
+      const phase = failedPhaseName(job);
       return [
         formatWhen(job.finished_at ?? job.created_at),
-        `failed during ${failedPhaseName(job)}`,
+        phase ? `failed during ${phase}` : 'Run failed',
       ].join(' · ');
+    }
     case 'CANCELLED': {
       const ms = runtimeMs(job, now);
       const at = ms === null ? null : `cancelled by you at ${formatElapsed(ms)}`;

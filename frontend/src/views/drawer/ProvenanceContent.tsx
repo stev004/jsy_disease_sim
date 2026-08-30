@@ -3,11 +3,11 @@
  *
  * Synthetic-model note → verification block (finalizer status, engine commit +
  * dirty flag, Starsim version, request/scenario/latent/bundle hashes, each
- * truncated and click-to-copy) → parameter-provenance table → badge legend →
+ * truncated and click-to-copy) → model-information table → badge legend →
  * map attribution.
  *
- * The verification values are read from a real job: whichever job a view
- * announced through `provenanceStore`, else the newest succeeded job.
+ * The verification values are read only from the job the current view
+ * announced through `provenanceStore`.
  */
 
 import { useEffect, useState } from 'react';
@@ -68,12 +68,7 @@ export function ProvenanceContent() {
           if (!cancelled) setJob(j);
           return;
         }
-        const res = await api.listJobs({ state: 'SUCCEEDED', limit: 50 });
-        if (cancelled) return;
-        const newest = [...res.jobs].sort((a, b) =>
-          (b.finished_at ?? b.created_at).localeCompare(a.finished_at ?? a.created_at),
-        )[0];
-        setJob(newest ?? null);
+        setJob(null);
       } catch {
         if (!cancelled) {
           setJob(null);
@@ -116,9 +111,10 @@ export function ProvenanceContent() {
 
   const engine = caps?.engine as JsonObject | undefined;
   const commit = job?.engine_git_commit ?? engineString(engine, 'git_commit');
-  const dirty = job?.dirty_worktree_flag ?? (engine?.dirty_worktree as boolean | undefined);
-  const starsim = engineString(engine, 'starsim') ?? engineString(engine, 'starsim_version');
+  const dirty = job?.dirty_worktree_flag ?? (engine?.dirty_worktree_flag as boolean | undefined);
+  const starsim = engineString(engine, 'version') ?? engineString(engine, 'starsim_version');
   const verification = job?.verification_status ?? null;
+  const demo = api.usingMock || job?.job_id.startsWith('mock-') === true;
 
   const hashes: Array<[string, string | null | undefined]> = [
     ['Request hash', job?.request_hash],
@@ -138,7 +134,12 @@ export function ProvenanceContent() {
       <div className="dsec">
         <h2>Verification</h2>
 
-        {verification === 'passed' ? (
+        {demo ? (
+          <div className="dnote">
+            Demo data only — values are deterministic, memory-only session data and carry no
+            artifact verification, hashes or engine provenance.
+          </div>
+        ) : verification === 'passed' ? (
           <div className="verify-ok">✓ All artifacts verified by the result finalizer</div>
         ) : verification ? (
           <div className="prov-verify-other">Finalizer verification: {verification}</div>
@@ -154,16 +155,22 @@ export function ProvenanceContent() {
 
         <div className="kv" style={{ marginTop: 10 }}>
           <div className="li">
+            <span className="k">API contract</span>
+            <span className="v mono">
+              {caps ? `${caps.api_version} · ${caps.api_schema_version}` : 'not reported'}
+            </span>
+          </div>
+          {!demo && <div className="li">
             <span className="k">Engine commit</span>
             <span className="v mono">
               {commit ? `${commit} · ${dirty ? 'dirty worktree' : 'clean worktree'}` : 'not reported'}
             </span>
-          </div>
+          </div>}
           <div className="li">
             <span className="k">Starsim</span>
             <span className="v mono">{starsim ? `${starsim} · pinned` : 'not reported'}</span>
           </div>
-          {hashes.map(([label, value]) =>
+          {!demo && hashes.map(([label, value]) =>
             value ? (
               <div className="li" key={label}>
                 <span className="k">{label}</span>
@@ -187,7 +194,8 @@ export function ProvenanceContent() {
       </div>
 
       <div className="dsec">
-        <h2>Parameter provenance</h2>
+        <h2>Model information (not a per-run report)</h2>
+        <p className="dnote">These static rows describe model inputs and assumptions; they are not evidence that this specific job used every value.</p>
         {PROVENANCE_ROWS.map(([name, value, kind, numeric]) => (
           <div className="prov-row" key={name}>
             <span>{name}</span>

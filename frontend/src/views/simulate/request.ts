@@ -38,10 +38,25 @@ export function scenarioId(name: string): string {
   return slug || 'untitled-scenario';
 }
 
-function travelConfig(mode: TravelMode): JsonObject {
+export function travelConfig(mode: TravelMode): JsonObject {
   if (mode === 'off') return { mode: 'disabled' };
   if (mode === 'custom') {
-    return { travel_config_id: 'm10-custom-travel-v1', mode: 'explicit_travel' };
+    return {
+      travel_config_id: 'm10-arrival-testing-v1',
+      mode: 'explicit_travel',
+      interventions: {
+        testing_probability: 1,
+        test_sensitivity: 1,
+        test_specificity: 1,
+        test_result_delay_days: 0,
+        quarantine_positive_only: true,
+        quarantine_all_arrivals: false,
+        quarantine_duration_days: 7,
+        quarantine_start_delay_days: 0,
+        quarantine_adherence: 1,
+        terminal_contact_multiplier: 1,
+      },
+    };
   }
   return { mode: 'explicit_travel' };
 }

@@ -3,8 +3,8 @@
  *
  * Rules (decided once per browser session, then remembered):
  *   1. `VITE_JOS_MOCK === '1'`  -> always the mock.
- *   2. otherwise a `health()` probe against the real API decides;
- *      if it fails, the app silently falls back to the mock.
+ *   2. otherwise the session stays on the real API. A failed health probe is
+ *      reported as an API error; it never silently changes the data source.
  *
  * `api` is a stable proxy: every call awaits the (memoized) resolution first,
  * so views can import it at module scope and never think about the switch.
@@ -88,8 +88,8 @@ export function resolveClient(): Promise<JosClient> {
       return httpClient as JosClient;
     })
     .catch(() => {
-      setMode({ usingMock: true, resolved: true, reason: 'unreachable' });
-      return mockClient as JosClient;
+      setMode({ usingMock: false, resolved: true, reason: 'unreachable' });
+      return httpClient as JosClient;
     });
   return resolution;
 }

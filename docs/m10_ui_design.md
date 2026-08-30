@@ -1,7 +1,7 @@
 # M10 interactive application — UI/UX design
 
-Status: design specification (no frontend implementation). Verified backend
-baseline: `93b316a` (M9.2). Interactive mockup:
+Status: M10 frontend design and M10.1 corrective implementation specification.
+Verified backend baseline: current M9 artifact/API contracts. Interactive mockup:
 <https://claude.ai/code/artifact/bbcad36a-b4bf-4936-a6a3-d5bf84a359b1>
 (source snapshot kept alongside the design session; the mockup uses
 deterministic fake data and no backend).
@@ -137,7 +137,7 @@ see the exact contract values.
 
 **Intervention cards** show only human concepts on their face (Start,
 Duration, Strength, Scope, Adherence); route multipliers appear only inside
-the card's Edit → Advanced. Detection-triggered families (case isolation,
+the card's Advanced disclosure. Detection-triggered families (case isolation,
 household quarantine) show "Trigger: on detection" instead of a start date,
 mirroring `ActivationRule`.
 
@@ -155,12 +155,16 @@ double-click cannot create duplicate jobs.
   map fills, headline metrics, "what's driving transmission" panel, epicurve
   day marker, intervention-timeline cursor, travel stats. An intervention
   strip sits directly under the slider so cause and time never separate.
-- **Map metric picker** (left): Active infectious, Cumulative, Detected,
-  Attack rate, Visitor-linked — each a `daily_parish`/travel dataset column,
-  normalized per 1,000 residents where applicable.
+- **Map metric picker** (left): New infections, cumulative infected, active,
+  detected, attack rate and visitor-linked values, but only when the selected
+  job publishes the corresponding parish field. Counts are not normalized
+  without a run-published parish denominator; unavailable metrics remain
+  visibly unshaded.
 - **Parish selection**: click (or keyboard-activate) a parish → the right
-  panel swaps from island drivers to parish detail: active count, attack
-  rate, mini epicurve with band, top routes, and a "vs Jersey average" line.
+  panel swaps from island drivers to the published parish counts. Active,
+  attack-rate, route and uncertainty details appear only when their own
+  fields/artifacts exist; daily incidence is labelled as new infections, not
+  active infectious state.
   Deselect restores island view. No separate page.
 - **Analysis tabs** (one visible at a time): Epidemic curve (metric toggle +
   ensemble band), Transmission routes (ranked bars, resident and travel
@@ -261,7 +265,7 @@ checklist with plain-language descriptions:
 - Status by polling `GET /jobs/{id}` (~2 s) and `/events` for the phase log.
 - **States**: QUEUED (position note), RUNNING (pulse chip), SUCCEEDED
   (green, "Open results"), FAILED (error summary from `error`, worker-log
-  access, "Duplicate & edit"), CANCELLED (who/when), INTERRUPTED ("the server
+  unavailable, "New scenario"), CANCELLED (who/when), INTERRUPTED ("the server
   stopped mid-run; it is never silently re-run" + Re-run action),
   CANCEL_REQUESTED renders as Cancelling…. Cancellation available whenever
   queued/running.
@@ -393,34 +397,38 @@ None of these block the M10 v1 flows; every primary screen maps onto
 existing endpoints and datasets.
 
 Findings from live M10-implementation testing against the real M9 API
-(2026-08-30, engine `93b316a`):
+(2026-08-30):
 
-9. **Unsupported start dates pass validation but kill the worker** — the
-   engine calendar (school terms, seasonality) is anchored to 2025; a 2026
-   `start_date` is accepted by `/scenarios/validate` and job submission,
-   then fails during scientific execution with an empty worker log. The UI
-   pins its default to 2025-01-06; the API should validate the supported
-   date range at submission.
-10. **Travel-composed artifacts publish empty core breakdowns** — for a
-    scenario_run with the travel layer active, `daily_route`,
-    `daily_parish`, and `daily_age` are listed but contain zero rows; route
-    attribution must be derived client-side from `transmission_events`
-    (which carries no parish or age columns, so those breakdowns are
-    genuinely unavailable and the UI states so honestly). Plain m5/m7 runs
-    populate `daily_route` normally.
-11. **`daily_epidemic` schema varies by artifact type** — travel runs have
-    no cumulative or detected columns (`new_infections` must be summed;
-    detections come from `detection_events`), and the resident denominator
-    should come from `resident_present`, not an assumed constant.
-12. **`scenario_compare` publishes single-arm datasets** — no comparison
-    table, no arm column; the Compare screen cannot be fully truthful until
-    per-arm or matched-comparison datasets are exposed.
+9. **Unsupported start dates pass validation but can kill the worker** — the
+   engine calendar (school terms, seasonality) is anchored to 2025. The
+   frontend therefore constrains start dates to 2025 and reports the boundary;
+   this milestone does not change backend validation.
+10. **Travel-composed artifacts vary in breakdown coverage** — parish and age
+    outputs may be absent because travel event tables do not carry those
+    dimensions. Route displays use actual daily local-route fields or explicit
+    local event rows; parish/age views remain unavailable when their tables are
+    absent.
+11. **Dataset shape depends on job kind** — single runs use `daily_epidemic`
+    and related tidy tables; ensembles use persisted `ensemble_summary`,
+    `replicate_grid` and `replicate_trajectories`; comparisons use namespaced
+    baseline/treated artifacts and `matched_seed_comparison`.
+12. **`scenario_compare` arm data is available in current M9** — when more
+    than one artifact is published, the API namespaces names such as
+    `baseline:ensemble_summary`, `treated:ensemble_summary` and
+    `comparison:matched_seed_comparison`. The frontend consumes those exact
+    names and shows unavailable state if they are not present.
 13. **No scenario name field** — names survive only as `scenario_id` /
     `ensemble_id` slugs; a display-name field would remove the slug
     round-trip.
 14. **No worker-log endpoint** — the failed-run screen renders "View worker
     log" disabled; M9 keeps bounded log tails on disk but does not serve
     them.
+15. **Calendar-intervention finalization defect** — the live M9 API accepts and
+    normalizes the corrected school-closure payload and writes its M7 artifact
+    files, but the current finalizer rejects the serialized calendar
+    `start_date` under strict `ScenarioConfig` validation. M10.1 cannot repair
+    this protected backend lifecycle path; the live gate remains blocked until
+    M9 fixes the artifact serialization/verifier contract.
 
 ---
 

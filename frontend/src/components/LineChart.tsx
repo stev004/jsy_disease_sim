@@ -3,8 +3,8 @@ export type Point = [number, number];
 
 export interface Series {
   pts: Point[];
-  /** Draw an ensemble band (±14% / +16%, matching the mockup) behind the line. */
-  band?: boolean;
+  /** Draw an artifact-published band behind the line. */
+  band?: { low: Point[]; high: Point[] };
   /** Extra class on the polyline, e.g. `"base"` for the dashed baseline. */
   cls?: string;
 }
@@ -26,8 +26,6 @@ export interface LineChartProps {
   formatDay?: (day: number) => string;
   /** Format a y value (default: en-GB thousands). */
   formatValue?: (value: number) => string;
-  /** Band factors, default [0.86, 1.16]. */
-  bandFactors?: [number, number];
   className?: string;
 }
 
@@ -35,9 +33,9 @@ const defaultFormatValue = (n: number): string => Math.round(n).toLocaleString('
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-/** Default tick label: day index offset from 6 Jan 2026 (the mockup's start). */
+/** Default tick label: day index offset from the supported 6 Jan 2025 start. */
 function defaultFormatDay(d: number): string {
-  const dt = new Date(Date.UTC(2026, 0, 6));
+  const dt = new Date(Date.UTC(2025, 0, 6));
   dt.setUTCDate(dt.getUTCDate() + d);
   return `${dt.getUTCDate()} ${MONTHS[dt.getUTCMonth()]}`;
 }
@@ -56,7 +54,6 @@ export function LineChart({
   pct = false,
   formatDay = defaultFormatDay,
   formatValue = defaultFormatValue,
-  bandFactors = [0.86, 1.16],
   className,
 }: LineChartProps) {
   const W = width;
@@ -73,7 +70,6 @@ export function LineChart({
   const X = (d: number): number => padL + ((W - padL - padR) * d) / Math.max(1, days - 1);
   const Y = (v: number): number => padT + (H - padT - padB) * (1 - v / yMax);
 
-  const [loF, hiF] = bandFactors;
   const gridValues = [0, 1, 2, 3].map((i) => (yMax * i) / 3);
 
   return (
@@ -103,15 +99,15 @@ export function LineChart({
 
       {series.map((sr, i) => (
         <g key={`series-${i}`}>
-          {sr.band && (
+          {sr.band && sr.band.low.length > 0 && sr.band.high.length > 0 && (
             <polygon
               className="bandfill"
               points={
-                sr.pts.map(([d, v]) => `${X(d)},${Y(v * hiF)}`).join(' ') +
+                sr.band.high.map(([d, v]) => `${X(d)},${Y(v)}`).join(' ') +
                 ' ' +
-                [...sr.pts]
+                [...sr.band.low]
                   .reverse()
-                  .map(([d, v]) => `${X(d)},${Y(v * loF)}`)
+                  .map(([d, v]) => `${X(d)},${Y(v)}`)
                   .join(' ')
               }
             />

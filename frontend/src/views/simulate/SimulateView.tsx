@@ -51,15 +51,22 @@ const POPULATION_NAME: Record<PopulationMode, string> = {
 };
 
 const DEFAULT_STATE: BuilderState = {
-  name: 'Winter respiratory baseline',
-  population: 'full',
-  seeded: 5,
+  name: 'Quick respiratory baseline',
+  population: 'ci',
+  seeded: 1,
   startDate: '2025-01-06', // engine calendar (school terms, seasonality) is anchored to 2025
-  duration: 60,
-  ivs: ['school', 'isolation'],
-  travel: 'default',
-  uncertainty: 'ensemble',
+  duration: 30,
+  ivs: [],
+  travel: 'off',
+  uncertainty: 'single',
 };
+
+export const SUPPORTED_START_DATE_MIN = '2025-01-01';
+export const SUPPORTED_START_DATE_MAX = '2025-12-31';
+
+export function isSupportedStartDate(value: string): boolean {
+  return value >= SUPPORTED_START_DATE_MIN && value <= SUPPORTED_START_DATE_MAX;
+}
 
 const TRAVEL_OPTIONS: SegOption<TravelMode>[] = [
   { value: 'default', label: 'Default' },
@@ -177,8 +184,8 @@ export function SimulateView() {
   const engineLine = useMemo(() => {
     const engine = (caps?.engine ?? {}) as JsonObject;
     const commit = typeof engine.git_commit === 'string' ? engine.git_commit : 'unknown';
-    const dirty = engine.dirty_worktree === true ? 'dirty' : 'clean';
-    const starsim = typeof engine.starsim === 'string' ? engine.starsim : '3.5.2';
+    const dirty = engine.dirty_worktree_flag === true ? 'dirty' : 'clean';
+    const starsim = typeof engine.version === 'string' ? engine.version : 'unknown';
     return `${commit} ${dirty} · starsim ${starsim}`;
   }, [caps]);
 
@@ -189,6 +196,14 @@ export function SimulateView() {
   const requestSeq = useRef(0);
   useEffect(() => {
     const seq = ++requestSeq.current;
+    if (!isSupportedStartDate(state.startDate)) {
+      setValidation({
+        status: 'invalid',
+        hash: null,
+        message: 'The current M9 engine supports start dates in 2025 only.',
+      });
+      return undefined;
+    }
     setValidation((v) => ({ ...v, status: 'checking' }));
     const timer = window.setTimeout(() => {
       void api
@@ -211,7 +226,7 @@ export function SimulateView() {
         });
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [scenarioKey]);
+  }, [scenarioKey, state.startDate]);
 
   const applyTemplate = useCallback((index: number) => {
     const t = TEMPLATES[index];
@@ -229,7 +244,8 @@ export function SimulateView() {
     setState((s) => ({ ...s, ivs: s.ivs.filter((k) => k !== key) }));
   }, []);
 
-  const canRun = validation.status === 'valid' && !submitting;
+  const dateSupported = isSupportedStartDate(state.startDate);
+  const canRun = validation.status === 'valid' && dateSupported && !submitting;
 
   const run = useCallback(async () => {
     if (!canRun) return;
@@ -258,8 +274,7 @@ export function SimulateView() {
         <div className="b-head">
           <h1>New scenario</h1>
           <span className="sub">
-            Defaults give a complete, runnable outbreak. Open a section only if you want to change
-            it.
+            Defaults are a cheap single-seed baseline. Open a section only if you want to change it.
           </span>
         </div>
 
@@ -391,6 +406,8 @@ export function SimulateView() {
               <input
                 type="date"
                 value={state.startDate}
+                min={SUPPORTED_START_DATE_MIN}
+                max={SUPPORTED_START_DATE_MAX}
                 style={{ width: 150 }}
                 aria-label="Start date"
                 onChange={(e) =>
@@ -398,6 +415,9 @@ export function SimulateView() {
                 }
               />
             </div>
+            <p className="desc" style={{ marginTop: 8 }}>
+              M9 engine support: 1 Jan–31 Dec 2025. Dates outside 2025 cannot be submitted.
+            </p>
             <div className="slider-row">
               <input
                 type="range"
@@ -448,13 +468,6 @@ export function SimulateView() {
                       <div className="top">
                         <span className="nm">{preset.name}</span>
                         <span>
-                          <Btn
-                            variant="ghost"
-                            style={{ padding: '3px 8px', fontSize: 12 }}
-                            title={`Edit ${preset.name}`}
-                          >
-                            Edit
-                          </Btn>
                           <button
                             type="button"
                             className="close-x"
@@ -668,8 +681,8 @@ export function SimulateView() {
               {submitting ? 'Submitting…' : 'Run simulation'}
             </Btn>
             <p className="runtime-note">
-              Runs in the background on this machine. A full-island ensemble can take a while — you
-              can keep working and will find it under <b>Runs</b>.
+              Runs in the background on this machine. Full Jersey and ensembles take longer than
+              this quick baseline — you can keep working and will find it under <b>Runs</b>.
             </p>
           </Card>
         </aside>

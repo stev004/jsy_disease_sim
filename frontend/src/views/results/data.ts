@@ -1,22 +1,15 @@
 /**
  * Results workspace data layer.
  *
- * On open the workspace pages every tidy dataset the job published through the
- * bounded `readDataset` endpoint into typed in-memory arrays, then derives the
- * per-day / per-parish / per-route series the whole view scrubs over. After
- * this module resolves, no further network calls happen — every interaction is
- * client-side and instant.
+ * This module is deliberately conservative: a missing scientific column is
+ * represented as null and every derivation records its source in the
+ * availability metadata. The UI must never turn an absent metric into zero.
  */
 
 import { api, MAX_DATASET_ROWS } from '../../api';
 import type { DatasetRow, JobStatusResponse, JsonObject } from '../../api';
-import { ISLAND_POP, PARISHES, parishIdFromName, type ParishId } from '../../map/geometry';
+import { PARISHES, parishIdFromName, type ParishId } from '../../map/geometry';
 
-/**
- * The tidy per-day tables the workspace reads first. Older / simpler artifacts
- * (m5, m7) publish all of these; the travel-composed artifacts publish only
- * `daily_epidemic` with rows and leave the rest as empty schemas.
- */
 export const CORE_DATASETS = [
   'daily_epidemic',
   'daily_parish',
@@ -25,11 +18,6 @@ export const CORE_DATASETS = [
   'daily_travel',
 ] as const;
 
-/**
- * Event-level and travel tables the workspace falls back to when a per-day
- * table exists but carries no rows. These are only fetched when they are
- * actually needed, and always with a column projection.
- */
 export const AUX_DATASETS = [
   'transmission_events',
   'detection_events',
@@ -39,11 +27,17 @@ export const AUX_DATASETS = [
 ] as const;
 
 export const DATASETS = [...CORE_DATASETS, ...AUX_DATASETS] as const;
+export type DatasetName = string;
 
-export type DatasetName = (typeof DATASETS)[number];
+/** A scientific value keeps absence distinct from a measured/derived zero. */
+export interface ScientificValue<T> {
+  value: T | null;
+  available: boolean;
+  source: string | null;
+  reason: string | null;
+}
 
-/** Map metric ids (left picker). */
-export type MapMetric = 'active' | 'cum' | 'detected' | 'attack' | 'visitor';
+export type MapMetric = 'new' | 'active' | 'cum' | 'detected' | 'attack' | 'visitor';
 
 export interface MapMetricSpec {
   id: MapMetric;
@@ -52,87 +46,100 @@ export interface MapMetricSpec {
 }
 
 export const MAP_METRICS: MapMetricSpec[] = [
-  { id: 'active', label: 'Active infectious', title: 'Active infectious per 1,000 residents' },
-  { id: 'cum', label: 'Cumulative infected', title: 'Cumulative infected per 1,000' },
-  { id: 'detected', label: 'Detected cases', title: 'Detected cases per 1,000' },
+  { id: 'new', label: 'New infections', title: 'New infections by parish' },
+  { id: 'cum', label: 'Cumulative infected', title: 'Cumulative infected by parish' },
+  { id: 'active', label: 'Active infectious', title: 'Active infectious by parish' },
+  { id: 'detected', label: 'Detected cases', title: 'Detected cases by parish' },
   { id: 'attack', label: 'Attack rate', title: 'Attack rate by parish' },
-  { id: 'visitor', label: 'Visitor-linked', title: 'Visitor-linked infections' },
+  { id: 'visitor', label: 'Visitor-linked', title: 'Visitor-linked infections by parish' },
 ];
 
 /* ============================== row helpers ============================== */
 
-/** First numeric value among candidate column names (real + mock spellings). */
-function num(row: DatasetRow, ...keys: string[]): number {
-  for (const k of keys) {
-    const v = row[k];
-    if (typeof v === 'number' && Number.isFinite(v)) return v;
-    if (typeof v === 'string' && v !== '' && Number.isFinite(Number(v))) return Number(v);
+export function optionalNumber(row: DatasetRow | undefined, ...keys: string[]): number | null {
+  if (!row) return null;
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) {
+      return Number(value);
+    }
   }
-  return 0;
+  return null;
 }
 
-function str(row: DatasetRow, ...keys: string[]): string {
-  for (const k of keys) {
-    const v = row[k];
-    if (typeof v === 'string' && v) return v;
+export function scientificNumber(
+  row: DatasetRow | undefined,
+  source: string,
+  ...keys: string[]
+): ScientificValue<number> {
+  const value = optionalNumber(row, ...keys);
+  return value == null
+    ? { value: null, available: false, source: null, reason: `${source} did not publish ${keys.join(' / ')}` }
+    : { value, available: true, source, reason: null };
+}
+
+function optionalString(row: DatasetRow | undefined, ...keys: string[]): string | null {
+  if (!row) return null;
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === 'string' && value.trim()) return value;
   }
-  return '';
+  return null;
 }
 
-function has(row: DatasetRow | undefined, key: string): boolean {
-  return Boolean(row) && key in (row as DatasetRow);
+function hasAny(rows: DatasetRow[], ...keys: string[]): boolean {
+  return rows.some((row) => keys.some((key) => key in row));
 }
 
-/** Truthy test that accepts the several ways a parquet bool reaches JSON. */
-function flag(row: DatasetRow, key: string): boolean {
-  const v = row[key];
-  if (typeof v === 'boolean') return v;
-  if (typeof v === 'number') return v !== 0;
-  if (typeof v === 'string') return v === 'true' || v === 'True' || v === '1';
-  return false;
+function boolValue(row: DatasetRow, key: string): boolean {
+  const value = row[key];
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  return typeof value === 'string' && ['true', 'True', '1'].includes(value);
 }
 
-/** Largest finite value of the first present column across every row. */
-function maxNum(rows: DatasetRow[], ...keys: string[]): number {
-  let m = 0;
-  for (const r of rows) {
-    const v = num(r, ...keys);
-    if (v > m) m = v;
+function sumPresent(row: DatasetRow, keys: string[]): number | null {
+  const values = keys.map((key) => optionalNumber(row, key));
+  return values.every((value) => value !== null) ? values.reduce((a, b) => a + (b as number), 0) : null;
+}
+
+function dateOf(row: DatasetRow): string | null {
+  return optionalString(row, 'date', 'infection_date', 'detection_date');
+}
+
+function distinctDates(rowsets: DatasetRow[][]): string[] {
+  const dates = new Set<string>();
+  for (const rows of rowsets) {
+    for (const row of rows) {
+      const date = dateOf(row);
+      if (date) dates.add(date);
+    }
   }
-  return m;
+  return [...dates].sort();
 }
 
-/** Pages a whole dataset through the bounded endpoint. */
 export async function readAllRows(
   jobId: string,
   name: string,
   columns?: string[],
 ): Promise<DatasetRow[]> {
-  const out: DatasetRow[] = [];
+  const rows: DatasetRow[] = [];
   let offset = 0;
-  // Guard: 200 pages x 10k rows is far beyond any M9 artifact.
   for (let page = 0; page < 200; page += 1) {
-    const res = await api.readDataset(jobId, name, {
+    const response = await api.readDataset(jobId, name, {
       limit: MAX_DATASET_ROWS,
       offset,
-      ...(columns && columns.length ? { columns } : {}),
+      ...(columns?.length ? { columns } : {}),
     });
-    out.push(...res.rows);
-    if (!res.has_more || res.rows.length === 0) break;
-    offset = res.next_offset ?? offset + res.rows.length;
+    rows.push(...response.rows);
+    if (!response.has_more || response.rows.length === 0) break;
+    offset = response.next_offset ?? offset + response.rows.length;
   }
-  return out;
+  return rows;
 }
 
-/**
- * Reads an event table with a column projection, retrying unprojected if the
- * server rejects the projection (older API builds, or a renamed column).
- */
-async function readProjected(
-  jobId: string,
-  name: string,
-  columns: string[],
-): Promise<DatasetRow[]> {
+async function readProjected(jobId: string, name: string, columns: string[]): Promise<DatasetRow[]> {
   try {
     return await readAllRows(jobId, name, columns);
   } catch {
@@ -140,183 +147,37 @@ async function readProjected(
   }
 }
 
-/* ============================== derived shapes ============================== */
-
-export interface EpiPoint {
-  day: number;
-  date: string;
-  active: number;
-  cum: number;
-  detected: number;
-  attack: number;
-  newInfections: number;
-  /** Replicate-range columns when the artifact carries them. */
-  bandLow: number | null;
-  bandHigh: number | null;
-}
-
-export interface ParishPoint {
-  active: number;
-  cum: number;
-  detected: number;
-  attack: number;
-  visitor: number;
-}
-
-export interface ParishSeries {
-  id: ParishId;
-  name: string;
-  pop: number;
-  points: ParishPoint[];
-}
-
-export interface RouteSeries {
-  id: string;
-  name: string;
-  family: 'resident' | 'travel';
-  /** New infection events attributed to this route on each day. */
-  perDay: number[];
-  /** Cumulative infection events up to and including each day. */
-  cumulative: number[];
-}
-
-export interface AgeSeries {
-  band: string;
-  pop: number;
-  cum: number[];
-  newInfections: number[];
-}
-
-export interface TravelPoint {
-  arrivals: number;
-  activeVisitors: number;
-  /** Legacy per-day columns (`visitor_infections` / `resident_infections`). */
-  visitorInfections: number;
-  residentInfections: number;
-  /** Real travel-artifact flows, summed across travel routes for the day. */
-  visitorToResident: number;
-  residentToVisitor: number;
-  travelLocalInfections: number;
-  /** Residents who acquired infection abroad and returned that day. */
-  returningAcquisitions: number;
-}
-
-export interface TravelSeries {
-  points: TravelPoint[];
-  hasArrivals: boolean;
-  hasActiveVisitors: boolean;
-  /** `visitor_to_resident` / `resident_to_visitor` came from daily_travel_route. */
-  hasFlows: boolean;
-  hasReturning: boolean;
-  /** Legacy mock-shaped visitor/resident infection split. */
-  hasLegacyLinked: boolean;
-  source: string;
-}
-
-/**
- * Which derived surfaces this run can honestly show, and where each came from.
- * Every consumer must check these before rendering a number — a metric the run
- * did not publish is shown as "not published", never as zero.
- */
-export interface Availability {
-  detected: boolean;
-  detectedSource: string | null;
-  parish: boolean;
-  parishNote: string | null;
-  routes: boolean;
-  routeSource: string | null;
-  routeNote: string | null;
-  ages: boolean;
-  ageSource: string | null;
-  ageNote: string | null;
-  /** Age bands carry their own denominators (so "% of band" is meaningful). */
-  agePopulations: boolean;
-}
-
-export interface ResultsData {
-  job: JobStatusResponse;
-  /** ISO dates, one per simulated day, in order. */
-  dates: string[];
-  dayCount: number;
-  startDate: string;
-  population: number;
-  seeds: number;
-  epi: EpiPoint[];
-  parishes: ParishSeries[];
-  routes: RouteSeries[];
-  ages: AgeSeries[];
-  travel: TravelSeries | null;
-  availability: Availability;
-  /** Map metrics this run can actually colour (empty when no parish table). */
-  mapMetrics: MapMetricSpec[];
-  /** Where the resident denominator came from, for the honesty strip. */
-  populationSource: string;
-  /** Datasets actually available on this job (for the provenance strip). */
-  datasetNames: string[];
-  /** Raw rows, kept for honest CSV export of exactly what was loaded. */
-  raw: Partial<Record<DatasetName, DatasetRow[]>>;
-}
-
-/* ============================== loading ============================== */
-
-function distinctDates(rowsets: DatasetRow[][]): string[] {
-  const seen = new Set<string>();
-  for (const rows of rowsets) {
-    for (const r of rows) {
-      const d = str(r, 'date');
-      if (d) seen.add(d);
-    }
-  }
-  return [...seen].sort();
-}
-
-function seedCount(job: JobStatusResponse): number {
-  const seeds = (job.request as JsonObject).replicate_seeds;
-  if (Array.isArray(seeds)) return seeds.length;
-  return 1;
-}
-
-function emptyParishPoints(n: number): ParishPoint[] {
-  return Array.from({ length: n }, () => ({
-    active: 0,
-    cum: 0,
-    detected: 0,
-    attack: 0,
-    visitor: 0,
-  }));
-}
-
-/* ---------------------------- dataset listing ---------------------------- */
-
 interface DatasetInfo {
   name: string;
-  /** null when the listing reports no row count at all. */
   rowCount: number | null;
   columns: string[];
 }
 
-/** Normalises the real API listing and the mock listing into one shape. */
 function normalizeListing(listing: unknown): Map<string, DatasetInfo> {
   const out = new Map<string, DatasetInfo>();
   const entries = (listing as { datasets?: unknown } | null)?.datasets;
   if (!Array.isArray(entries)) return out;
-  for (const entry of entries) {
-    const e = (entry ?? {}) as JsonObject;
-    const name = typeof e.name === 'string' ? e.name : '';
+  for (const raw of entries) {
+    const entry = (raw ?? {}) as JsonObject;
+    const name = typeof entry.name === 'string' ? entry.name : '';
     if (!name) continue;
-    const meta = (typeof e.metadata === 'object' && e.metadata ? e.metadata : {}) as JsonObject;
+    const metadata = (entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {}) as JsonObject;
     const rowCount =
-      typeof meta.row_count === 'number'
-        ? meta.row_count
-        : typeof e.rows === 'number'
-          ? e.rows
+      typeof metadata.row_count === 'number'
+        ? metadata.row_count
+        : typeof entry.rows === 'number'
+          ? entry.rows
           : null;
-    const rawCols = Array.isArray(meta.columns) ? meta.columns : Array.isArray(e.columns) ? e.columns : [];
-    const columns = rawCols
-      .map((c) => {
-        if (typeof c === 'string') return c;
-        const o = c as JsonObject | null;
-        return o && typeof o.name === 'string' ? o.name : '';
+    const rawColumns = Array.isArray(metadata.columns)
+      ? metadata.columns
+      : Array.isArray(entry.columns)
+        ? entry.columns
+        : [];
+    const columns = rawColumns
+      .map((column) => {
+        if (typeof column === 'string') return column;
+        const object = column as JsonObject | null;
+        return object && typeof object.name === 'string' ? object.name : '';
       })
       .filter(Boolean);
     out.set(name, { name, rowCount, columns });
@@ -324,11 +185,336 @@ function normalizeListing(listing: unknown): Map<string, DatasetInfo> {
   return out;
 }
 
-/**
- * Travel-family route ids. The composed travel artifacts name them explicitly
- * in `daily_travel_route`; this set is the fallback for artifacts that do not
- * publish that table.
- */
+function seedCount(job: JobStatusResponse): number {
+  const seeds = (job.request as JsonObject).replicate_seeds;
+  return Array.isArray(seeds) ? seeds.filter((seed) => typeof seed === 'number').length : 1;
+}
+
+/* ============================== derived shapes ============================== */
+
+export interface EpiPoint {
+  day: number;
+  date: string;
+  active: number | null;
+  exposed: number | null;
+  cum: number | null;
+  detected: number | null;
+  attack: number | null;
+  newInfections: number | null;
+  bandLow: number | null;
+  bandHigh: number | null;
+}
+
+export interface ParishPoint {
+  newInfections: number | null;
+  active: number | null;
+  cum: number | null;
+  detected: number | null;
+  attack: number | null;
+  visitor: number | null;
+}
+
+export interface ParishSeries {
+  id: ParishId;
+  name: string;
+  pop: number | null;
+  points: ParishPoint[];
+}
+
+export interface RouteSeries {
+  id: string;
+  name: string;
+  family: 'resident' | 'travel';
+  perDay: number[];
+  cumulative: number[];
+}
+
+export interface AgeSeries {
+  band: string;
+  pop: number | null;
+  cum: Array<number | null>;
+  newInfections: Array<number | null>;
+}
+
+export interface TravelPoint {
+  arrivals: number | null;
+  activeVisitors: number | null;
+  visitorInfections: number | null;
+  residentInfections: number | null;
+  visitorToResident: number | null;
+  residentToVisitor: number | null;
+  travelLocalInfections: number | null;
+  returningAcquisitions: number | null;
+}
+
+export interface TravelSeries {
+  points: TravelPoint[];
+  hasArrivals: boolean;
+  hasActiveVisitors: boolean;
+  hasFlows: boolean;
+  hasReturning: boolean;
+  hasLegacyLinked: boolean;
+  source: string;
+}
+
+export interface Availability {
+  detected: boolean;
+  detectedSource: string | null;
+  activeState: boolean;
+  exposedState: boolean;
+  parish: boolean;
+  parishNote: string | null;
+  parishActive: boolean;
+  parishAttack: boolean;
+  parishRoutes: boolean;
+  routes: boolean;
+  routeSource: string | null;
+  routeNote: string | null;
+  ages: boolean;
+  ageSource: string | null;
+  ageNote: string | null;
+  agePopulations: boolean;
+}
+
+export interface ResultsData {
+  job: JobStatusResponse;
+  dates: string[];
+  dayCount: number;
+  startDate: string;
+  population: number | null;
+  seeds: number;
+  epi: EpiPoint[];
+  parishes: ParishSeries[];
+  routes: RouteSeries[];
+  ages: AgeSeries[];
+  travel: TravelSeries | null;
+  availability: Availability;
+  mapMetrics: MapMetricSpec[];
+  populationSource: string | null;
+  cumulativeSource: string | null;
+  cumulativeLabel: string;
+  datasetNames: string[];
+  raw: Partial<Record<DatasetName, DatasetRow[]>>;
+}
+
+/* ============================== common builders ============================== */
+
+function parishPoints(dayCount: number): ParishPoint[] {
+  return Array.from({ length: dayCount }, () => ({
+    newInfections: null,
+    active: null,
+    cum: null,
+    detected: null,
+    attack: null,
+    visitor: null,
+  }));
+}
+
+function emptyAvailability(): Availability {
+  return {
+    detected: false,
+    detectedSource: null,
+    activeState: false,
+    exposedState: false,
+    parish: false,
+    parishNote: null,
+    parishActive: false,
+    parishAttack: false,
+    parishRoutes: false,
+    routes: false,
+    routeSource: null,
+    routeNote: null,
+    ages: false,
+    ageSource: null,
+    ageNote: null,
+    agePopulations: false,
+  };
+}
+
+function summaryValue(row: DatasetRow | undefined, primary = 'median', fallback = 'value'): number | null {
+  return optionalNumber(row, primary, fallback, 'value');
+}
+
+function summaryRowsBy(rows: DatasetRow[], scope: string, metric: string): DatasetRow[] {
+  return rows.filter((row) => optionalString(row, 'scope') === scope && optionalString(row, 'metric') === metric);
+}
+
+function summaryKey(row: DatasetRow): string {
+  return optionalString(row, 'key', 'parish', 'route_id', 'age_band') ?? '';
+}
+
+function buildSummaryIndex(rows: DatasetRow[]): Map<string, DatasetRow> {
+  const out = new Map<string, DatasetRow>();
+  for (const row of rows) {
+    const scope = optionalString(row, 'scope') ?? '';
+    const key = summaryKey(row);
+    const metric = optionalString(row, 'metric') ?? '';
+    const date = optionalString(row, 'date') ?? '';
+    out.set(`${scope}|${key}|${metric}|${date}`, row);
+  }
+  return out;
+}
+
+function buildResultsFromSummary(job: JobStatusResponse, rows: DatasetRow[], datasetNames: string[]): ResultsData {
+  const dates = distinctDates([rows]);
+  if (!dates.length) throw new Error('This ensemble published no ensemble_summary rows.');
+  const index = buildSummaryIndex(rows);
+  const lookup = (scope: string, key: string, metric: string, date: string): DatasetRow | undefined =>
+    index.get(`${scope}|${key}|${metric}|${date}`);
+
+  let population: number | null = null;
+  for (const date of dates) {
+    const cumulative = summaryValue(lookup('epidemic', 'all', 'latent_cumulative_infections', date));
+    const attack = summaryValue(lookup('epidemic', 'all', 'latent_attack_rate', date));
+    if (cumulative != null && attack != null && attack > 0) {
+      const candidate = cumulative / attack;
+      if (Number.isFinite(candidate) && candidate > 0) population = candidate;
+    }
+  }
+
+  const epi: EpiPoint[] = dates.map((date, day) => {
+    const prevalenceRow = lookup('epidemic', 'all', 'latent_prevalence', date);
+    const cumulativeRow = lookup('epidemic', 'all', 'latent_cumulative_infections', date);
+    const incidenceRow = lookup('epidemic', 'all', 'latent_new_infections', date);
+    const attackRow = lookup('epidemic', 'all', 'latent_attack_rate', date);
+    const prevalence = summaryValue(prevalenceRow);
+    const active = prevalence != null && population != null ? prevalence * population : null;
+    return {
+      day,
+      date,
+      active,
+      exposed: null,
+      cum: summaryValue(cumulativeRow),
+      detected: null,
+      attack: summaryValue(attackRow),
+      newInfections: summaryValue(incidenceRow),
+      bandLow: (() => {
+        const value = summaryValue(prevalenceRow, 'lower_value', 'lower_quantile');
+        return value != null && population != null ? value * population : null;
+      })(),
+      bandHigh: (() => {
+        const value = summaryValue(prevalenceRow, 'upper_value', 'upper_quantile');
+        return value != null && population != null ? value * population : null;
+      })(),
+    };
+  });
+
+  const parishes: ParishSeries[] = PARISHES.map((parish) => ({ id: parish.id, name: parish.name, pop: null, points: parishPoints(dates.length) }));
+  const parishById = new Map(parishes.map((parish) => [parish.id, parish]));
+  const parishRows = summaryRowsBy(rows, 'parish', 'latent_new_infections');
+  for (const row of parishRows) {
+    const id = parishIdFromName(summaryKey(row));
+    const day = dates.indexOf(optionalString(row, 'date') ?? '');
+    if (!id || day < 0) continue;
+    const series = parishById.get(id);
+    if (!series) continue;
+    const value = summaryValue(row);
+    series.points[day].newInfections = value;
+  }
+  for (const series of parishes) {
+    let running: number | null = null;
+    for (const point of series.points) {
+      if (point.newInfections != null) {
+        running = (running ?? 0) + point.newInfections;
+        point.cum = running;
+      }
+    }
+  }
+
+  const routeMap = new Map<string, RouteSeries>();
+  for (const row of summaryRowsBy(rows, 'route', 'latent_local_infections')) {
+    const id = summaryKey(row);
+    const day = dates.indexOf(optionalString(row, 'date') ?? '');
+    const value = summaryValue(row);
+    if (!id || isIntroductionRoute(id) || day < 0 || value == null) continue;
+    const current = routeMap.get(id) ?? {
+      id,
+      name: prettyRouteName(id),
+      family: id.startsWith('visitor_') ? 'travel' : 'resident',
+      perDay: new Array<number>(dates.length).fill(0),
+      cumulative: new Array<number>(dates.length).fill(0),
+    };
+    current.perDay[day] = value;
+    routeMap.set(id, current);
+  }
+  const routes = [...routeMap.values()];
+  for (const route of routes) {
+    let running = 0;
+    route.perDay.forEach((value, day) => {
+      running += value;
+      route.cumulative[day] = running;
+    });
+  }
+
+  const ageMap = new Map<string, AgeSeries>();
+  for (const row of summaryRowsBy(rows, 'age', 'latent_new_infections')) {
+    const band = summaryKey(row);
+    const day = dates.indexOf(optionalString(row, 'date') ?? '');
+    const value = summaryValue(row);
+    if (!band || day < 0 || value == null) continue;
+    const series = ageMap.get(band) ?? {
+      band,
+      pop: null,
+      cum: new Array<number | null>(dates.length).fill(null),
+      newInfections: new Array<number | null>(dates.length).fill(null),
+    };
+    series.newInfections[day] = value;
+    ageMap.set(band, series);
+  }
+  const ages = [...ageMap.values()].sort((a, b) => a.band.localeCompare(b.band, 'en'));
+  for (const age of ages) {
+    let running = 0;
+    age.newInfections.forEach((value, day) => {
+      if (value != null) {
+        running += value;
+        age.cum[day] = running;
+      }
+    });
+  }
+
+  const availability = emptyAvailability();
+  availability.activeState = epi.some((point) => point.active != null);
+  availability.parish = parishRows.length > 0;
+  availability.parishNote = availability.parish
+    ? 'This ensemble publishes parish incidence; parish active, attack rate and route tables are unavailable.'
+    : 'Parish breakdown was not published by this ensemble.';
+  availability.routes = routes.length > 0;
+  availability.routeSource = availability.routes ? 'ensemble_summary.latent_local_infections' : null;
+  availability.routeNote = availability.routes
+    ? 'Local infections attributed to resident routes; seeded and imported infections are excluded.'
+    : null;
+  availability.ages = ages.length > 0;
+  availability.ageSource = availability.ages ? 'ensemble_summary.latent_new_infections' : null;
+  availability.ageNote = availability.ages ? 'Age populations are not published by this ensemble.' : 'This ensemble published no age breakdown.';
+  const mapMetrics = availability.parish ? MAP_METRICS.filter((metric) => metric.id === 'new' || metric.id === 'cum') : [];
+  return {
+    job,
+    dates,
+    dayCount: dates.length,
+    startDate: dates[0],
+    population,
+    seeds: seedCount(job),
+    epi,
+    parishes,
+    routes,
+    ages,
+    travel: null,
+    availability,
+    mapMetrics,
+    populationSource: population != null ? 'ensemble_summary latent_attack_rate + latent_cumulative_infections' : null,
+    cumulativeSource: 'ensemble_summary.latent_cumulative_infections',
+    cumulativeLabel: 'Cumulative infected',
+    datasetNames,
+    raw: { ensemble_summary: rows },
+  };
+}
+
+export function buildResultsFromEnsembleSummary(job: JobStatusResponse, rows: DatasetRow[], datasetNames = ['ensemble_summary']): ResultsData {
+  return buildResultsFromSummary(job, rows, datasetNames);
+}
+
+/* ============================== single-run loading ============================== */
+
 const TRAVEL_ROUTE_IDS = new Set([
   'arrival_terminal',
   'visitor_accommodation',
@@ -339,564 +525,371 @@ const TRAVEL_ROUTE_IDS = new Set([
   'visitor_transit',
 ]);
 
-/** Loads and derives everything the workspace needs for one job. */
-export async function loadResults(job: JobStatusResponse): Promise<ResultsData> {
-  const jobId = job.job_id;
+export function isIntroductionRoute(id: string): boolean {
+  return id === 'seeded' || id === 'imported' || id === 'exogenous_import';
+}
 
-  let listing = new Map<string, DatasetInfo>();
-  try {
-    listing = normalizeListing(await api.getJobDatasets(jobId));
-  } catch {
-    /* fall back to attempting the canonical per-day tables */
+function prettyRouteName(id: string): string {
+  const text = id.replace(/[_-]+/g, ' ').trim();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : id;
+}
+
+function isTravelRoute(id: string, family: string): boolean {
+  return family === 'travel' || TRAVEL_ROUTE_IDS.has(id) || id.startsWith('visitor_');
+}
+
+function populationFromEpi(rows: DatasetRow[]): { value: number | null; source: string | null } {
+  let maxState = 0;
+  for (const row of rows) {
+    const state = sumPresent(row, ['susceptible', 'exposed', 'infectious', 'recovered', 'dead']);
+    if (state != null && state > maxState) maxState = state;
   }
-
-  const known = (name: string): DatasetInfo | undefined => listing.get(name);
-  /** Listed with at least one row (unknown counts are treated as "maybe"). */
-  const hasRows = (name: string): boolean => {
-    const info = known(name);
-    if (!info) return false;
-    return info.rowCount === null || info.rowCount > 0;
-  };
-  const hasColumn = (name: string, column: string): boolean =>
-    (known(name)?.columns ?? []).includes(column);
-
-  // Empty listing => older/mock server: just try the canonical per-day tables.
-  const coreWanted = CORE_DATASETS.filter((n) => (listing.size === 0 ? true : hasRows(n)));
-
-  const raw: Partial<Record<DatasetName, DatasetRow[]>> = {};
-  await Promise.all(
-    coreWanted.map(async (name) => {
-      try {
-        raw[name] = await readAllRows(jobId, name);
-      } catch {
-        // A missing optional table (e.g. daily_travel) must not fail the view.
-        if (name === 'daily_epidemic') throw new Error(`Could not read ${name}`);
-      }
-    }),
-  );
-
-  const epiRows = raw.daily_epidemic ?? [];
-  if (epiRows.length === 0) {
-    throw new Error('This run published no daily_epidemic rows, so there is nothing to show.');
+  if (maxState > 0) return { value: maxState, source: 'daily_epidemic state compartments' };
+  for (const row of rows) {
+    const resident = optionalNumber(row, 'resident_present', 'present_population');
+    if (resident != null && resident > 0) return { value: resident, source: 'daily_epidemic published denominator' };
   }
-
-  /* ---- decide which event tables we still need, then fetch only those ---- */
-  const epiCols = new Set(Object.keys(epiRows[0]));
-  const detectedCol = ['detected_cases', 'cumulative_detected', 'detected', 'reported_cases'].find(
-    (c) => epiCols.has(c),
-  );
-
-  const needRoutes = (raw.daily_route?.length ?? 0) === 0 && hasRows('transmission_events');
-  const needDetected = !detectedCol && hasRows('detection_events');
-  const needAges =
-    (raw.daily_age?.length ?? 0) === 0 &&
-    hasRows('observation_events') &&
-    hasColumn('observation_events', 'age_band');
-  const needTravelRoute = !raw.daily_travel?.length && hasRows('daily_travel_route');
-  const needTravelPop = !raw.daily_travel?.length && hasRows('daily_travel_population');
-
-  await Promise.all([
-    needRoutes
-      ? readProjected(jobId, 'transmission_events', [
-          'date',
-          'attributed_route_id',
-          'route_id',
-          'seeded',
-          'imported',
-          'travel_linked',
-          'source_kind',
-        ])
-          .then((rows) => {
-            raw.transmission_events = rows;
-          })
-          .catch(() => undefined)
-      : null,
-    needDetected
-      ? readProjected(jobId, 'detection_events', ['detection_date', 'detection_time_index'])
-          .then((rows) => {
-            raw.detection_events = rows;
-          })
-          .catch(() => undefined)
-      : null,
-    needAges
-      ? readProjected(jobId, 'observation_events', ['infection_date', 'age_band'])
-          .then((rows) => {
-            raw.observation_events = rows;
-          })
-          .catch(() => undefined)
-      : null,
-    needTravelRoute
-      ? readAllRows(jobId, 'daily_travel_route')
-          .then((rows) => {
-            raw.daily_travel_route = rows;
-          })
-          .catch(() => undefined)
-      : null,
-    needTravelPop
-      ? readAllRows(jobId, 'daily_travel_population')
-          .then((rows) => {
-            raw.daily_travel_population = rows;
-          })
-          .catch(() => undefined)
-      : null,
-  ]);
-
-  const dates = distinctDates([epiRows, raw.daily_parish ?? []]);
-  const dayOf = new Map(dates.map((d, i) => [d, i]));
-  const dayCount = dates.length;
-
-  /* ---- population ------------------------------------------------------
-     Never assume the island's real headcount: a run simulates whatever
-     synthetic population it was given. Prefer the run's own denominator. */
-  const parishRows = raw.daily_parish ?? [];
-  let population = 0;
-  let populationSource = '';
-  const residentPresent = maxNum(epiRows, 'resident_present');
-  const presentPop = maxNum(epiRows, 'present_population');
-  if (residentPresent > 0) {
-    population = residentPresent;
-    populationSource = 'daily_epidemic.resident_present';
-  } else if (presentPop > 0) {
-    population = presentPop;
-    populationSource = 'daily_epidemic.present_population';
-  }
-  if (!population && parishRows.length && has(parishRows[0], 'population')) {
-    const perParish = new Map<string, number>();
-    for (const r of parishRows) {
-      const name = str(r, 'parish', 'parish_name');
-      if (name && !perParish.has(name)) perParish.set(name, num(r, 'population'));
+  for (const row of rows) {
+    const total = optionalNumber(row, 'cumulative_total_infections');
+    const attack = optionalNumber(row, 'attack_rate', 'resident_attack_rate');
+    if (total != null && attack != null && attack > 0) {
+      const value = total / attack;
+      if (Number.isFinite(value) && value > 0) return { value, source: 'daily_epidemic cumulative_total_infections ÷ attack_rate' };
     }
-    population = [...perParish.values()].reduce((a, b) => a + b, 0);
-    if (population) populationSource = 'daily_parish.population';
   }
-  if (!population) {
-    const first = epiRows[0];
-    population =
-      num(first, 'susceptible') + num(first, 'cumulative_infections', 'cumulative_total_infections');
-    if (population) populationSource = 'daily_epidemic day 0 susceptible + cumulative';
-  }
-  if (!population) {
-    population = ISLAND_POP;
-    populationSource = 'Jersey resident population (no denominator published)';
-  }
+  return { value: null, source: null };
+}
 
-  /* ---- detected: a cumulative count of detection events by date ---- */
-  const detectionRows = raw.detection_events ?? [];
-  const detectedByDay = new Array<number>(dayCount).fill(0);
-  let detectedAvailable = Boolean(detectedCol);
-  let detectedSource: string | null = detectedCol ? `daily_epidemic.${detectedCol}` : null;
-  if (!detectedCol && detectionRows.length) {
-    for (const r of detectionRows) {
-      const day = dayOf.get(str(r, 'detection_date', 'date'));
-      if (day == null) continue;
-      detectedByDay[day] += 1;
-    }
-    let running = 0;
-    for (let d = 0; d < dayCount; d += 1) {
-      running += detectedByDay[d];
-      detectedByDay[d] = running;
-    }
-    detectedAvailable = true;
-    detectedSource = 'detection_events';
-  }
-
-  /* ---- epidemic ---- */
-  const hasBand = has(epiRows[0], 'band_low') && has(epiRows[0], 'band_high');
-  const hasCumColumn = epiCols.has('cumulative_infections') || epiCols.has('cumulative_total_infections');
-  const seededCol = ['seeded_infections', 'new_seeded_infections'].find((c) => epiCols.has(c));
-  const attackCol = ['resident_attack_rate', 'attack_rate'].find((c) => epiCols.has(c));
-  const epiByDate = new Map<string, DatasetRow>();
-  for (const r of epiRows) {
-    const d = str(r, 'date');
-    if (d) epiByDate.set(d, r);
-  }
-
-  let runningCumulative = 0;
-  const epi: EpiPoint[] = dates.map((date, day) => {
-    const r = epiByDate.get(date);
-    if (!r) {
-      return {
-        day,
-        date,
-        active: 0,
-        cum: runningCumulative,
-        detected: detectedAvailable && !detectedCol ? detectedByDay[day] : 0,
-        attack: population ? runningCumulative / population : 0,
-        newInfections: 0,
-        bandLow: null,
-        bandHigh: null,
-      };
-    }
-    const newInfections = num(r, 'new_infections', 'new_local_infections');
-    // Seeded infections are reported in their own column and are NOT included
-    // in `new_infections`, so a derived cumulative must add them back.
-    const seeded = seededCol ? num(r, seededCol) : 0;
-    runningCumulative = hasCumColumn
-      ? num(r, 'cumulative_infections', 'cumulative_total_infections')
-      : runningCumulative + newInfections + seeded;
-    const cum = runningCumulative;
+function buildSingleEpi(
+  rows: DatasetRow[],
+  dates: string[],
+  detectionByDay: Array<number | null>,
+  detectedColumn: string | null,
+  population: number | null,
+): { epi: EpiPoint[]; cumulativeSource: string | null; cumulativeLabel: string } {
+  const byDate = new Map(rows.map((row) => [optionalString(row, 'date'), row]));
+  const hasTotal = hasAny(rows, 'cumulative_total_infections');
+  const hasExcluding = hasAny(rows, 'cumulative_infections');
+  const hasComponents = hasAny(rows, 'new_infections', 'new_local_infections') && hasAny(rows, 'new_seeded_infections', 'seeded_infections');
+  const cumulativeSource = hasTotal
+    ? 'daily_epidemic.cumulative_total_infections'
+    : hasComponents
+      ? 'derived: daily_epidemic new_infections + new_seeded_infections'
+      : hasExcluding
+        ? 'daily_epidemic.cumulative_infections (excluding seeded infections)'
+        : null;
+  const cumulativeLabel = hasTotal || hasComponents ? 'Cumulative infected' : 'Locally acquired infections';
+  let running: number | null = 0;
+  const epi = dates.map((date, day) => {
+    const row = byDate.get(date);
+    if (!row) return { day, date, active: null, exposed: null, cum: null, detected: null, attack: null, newInfections: null, bandLow: null, bandHigh: null };
+    const localOrImported = optionalNumber(row, 'new_infections', 'new_local_infections');
+    const seeded = optionalNumber(row, 'new_seeded_infections', 'seeded_infections');
+    const newTotal = localOrImported != null && seeded != null ? localOrImported + seeded : localOrImported;
+    let cum: number | null;
+    if (hasTotal) cum = optionalNumber(row, 'cumulative_total_infections');
+    else if (hasComponents) {
+      running = running == null || newTotal == null ? null : running + newTotal;
+      cum = running;
+    } else if (hasExcluding) cum = optionalNumber(row, 'cumulative_infections');
+    else cum = null;
+    const attackPublished = optionalNumber(row, 'attack_rate', 'resident_attack_rate');
+    const attack = attackPublished ?? (cum != null && population != null && cumulativeLabel === 'Cumulative infected' ? cum / population : null);
     return {
       day,
       date,
-      active: num(r, 'infectious', 'active_infectious', 'n_infectious'),
+      active: optionalNumber(row, 'infectious', 'active_infectious', 'n_infectious'),
+      exposed: optionalNumber(row, 'exposed', 'n_exposed'),
       cum,
-      detected: detectedCol ? num(r, detectedCol) : detectedAvailable ? detectedByDay[day] : 0,
-      // `resident_attack_rate` / `attack_rate` are already fractions of the
-      // run's own resident denominator — use them verbatim.
-      attack: attackCol ? num(r, attackCol) : population ? cum / population : 0,
-      newInfections,
-      bandLow: hasBand ? num(r, 'band_low') : null,
-      bandHigh: hasBand ? num(r, 'band_high') : null,
+      detected: detectedColumn ? optionalNumber(row, detectedColumn) : detectionByDay[day] ?? null,
+      attack,
+      newInfections: newTotal,
+      bandLow: optionalNumber(row, 'band_low'),
+      bandHigh: optionalNumber(row, 'band_high'),
     };
   });
+  return { epi, cumulativeSource, cumulativeLabel };
+}
 
-  /* ---- parishes ----
-     When the run published no parish rows we still build the (zeroed) series so
-     geometry code keeps working, but flag it so nothing renders those zeros as
-     if they were measurements. */
-  const parishAvailable = parishRows.length > 0;
-  const parishMap = new Map<ParishId, ParishSeries>();
-  for (const p of PARISHES) {
-    parishMap.set(p.id, { id: p.id, name: p.name, pop: p.pop, points: emptyParishPoints(dayCount) });
-  }
-  const parishHasActive = parishRows.length > 0 && has(parishRows[0], 'active_infectious');
-  const parishHasDetected = parishRows.length > 0 && has(parishRows[0], 'detected_cases');
-  const runningCum = new Map<ParishId, number>();
-  for (const r of parishRows) {
-    const day = dayOf.get(str(r, 'date'));
-    const name = str(r, 'parish', 'parish_name');
-    const id = parishIdFromName(name);
-    if (day == null || !id) continue;
-    const series = parishMap.get(id);
+function buildParishes(rows: DatasetRow[], dates: string[]): { parishes: ParishSeries[]; available: boolean; active: boolean; attack: boolean } {
+  const parishes: ParishSeries[] = PARISHES.map((parish) => ({ id: parish.id, name: parish.name, pop: null, points: parishPoints(dates.length) }));
+  const byId = new Map(parishes.map((parish) => [parish.id, parish]));
+  const running = new Map<ParishId, number>();
+  let validRows = 0;
+  let hasActive = false;
+  let hasAttack = false;
+  for (const row of rows) {
+    const id = parishIdFromName(optionalString(row, 'parish', 'parish_name') ?? '');
+    const day = dates.indexOf(optionalString(row, 'date') ?? '');
+    if (!id || day < 0) continue;
+    const series = byId.get(id);
     if (!series) continue;
-    const pop = num(r, 'population') || series.pop;
-    series.pop = pop;
-    let cum = num(r, 'cumulative_infections', 'cumulative_total_infections');
-    if (!cum) {
-      // Some artifacts only carry daily increments — accumulate them.
-      cum = (runningCum.get(id) ?? 0) + num(r, 'new_infections', 'new_local_infections');
-      runningCum.set(id, cum);
-    }
-    const attack = num(r, 'attack_rate') || (pop ? cum / pop : 0);
-    series.points[day] = {
-      active: parishHasActive
-        ? num(r, 'active_infectious', 'infectious')
-        : num(r, 'new_infections', 'new_local_infections'),
-      cum,
-      detected: num(r, 'detected_cases'),
-      attack,
-      visitor: num(r, 'visitor_linked_infections', 'travel_linked_infections'),
-    };
+    const newValue = optionalNumber(row, 'new_infections') ?? sumPresent(row, ['new_local_infections', 'new_imported_infections', 'new_seeded_infections']);
+    const publishedCum = optionalNumber(row, 'cumulative_total_infections', 'cumulative_infections');
+    const cum = publishedCum ?? (newValue == null ? null : (running.get(id) ?? 0) + newValue);
+    if (cum != null) running.set(id, cum);
+    const pop = optionalNumber(row, 'population');
+    if (pop != null) series.pop = pop;
+    const active = optionalNumber(row, 'active_infectious', 'infectious');
+    const attack = optionalNumber(row, 'attack_rate') ?? (cum != null && pop != null ? cum / pop : null);
+    hasActive ||= active != null;
+    hasAttack ||= attack != null;
+    if (newValue != null || cum != null) validRows += 1;
+    series.points[day] = { newInfections: newValue, active, cum, detected: optionalNumber(row, 'detected_cases', 'detected'), attack, visitor: optionalNumber(row, 'visitor_linked_infections', 'travel_linked_infections') };
   }
-  const parishes = PARISHES.map((p) => parishMap.get(p.id)!).filter(Boolean);
+  return { parishes, available: validRows > 0, active: hasActive, attack: hasAttack };
+}
 
-  /* ---- routes ----
-     Preferred source is the tidy `daily_route` table. Travel-composed
-     artifacts publish that table with zero rows, so the event-level
-     `transmission_events` table is attributed per day instead. */
-  const travelRouteIds = new Set(TRAVEL_ROUTE_IDS);
-  for (const r of raw.daily_travel_route ?? []) {
-    const id = str(r, 'route_id');
-    if (id) travelRouteIds.add(id);
-  }
-  const isTravelRoute = (id: string, familyCol: string): boolean =>
-    familyCol === 'travel' || travelRouteIds.has(id) || id.startsWith('visitor_');
-
-  const routeMap = new Map<string, RouteSeries>();
-  const ensureRoute = (id: string, name: string, familyCol: string): RouteSeries => {
-    let series = routeMap.get(id);
-    if (!series) {
-      series = {
-        id,
-        name: name || prettyRouteName(id),
-        family: isTravelRoute(id, familyCol) ? 'travel' : 'resident',
-        perDay: new Array<number>(dayCount).fill(0),
-        cumulative: new Array<number>(dayCount).fill(0),
-      };
-      routeMap.set(id, series);
-    }
-    return series;
+function buildRoutes(dailyRows: DatasetRow[], eventRows: DatasetRow[], dates: string[]): { routes: RouteSeries[]; source: string | null; note: string | null } {
+  const map = new Map<string, RouteSeries>();
+  const ensure = (id: string, name: string, family: string): RouteSeries => {
+    const existing = map.get(id);
+    if (existing) return existing;
+    const created: RouteSeries = { id, name: name || prettyRouteName(id), family: isTravelRoute(id, family) ? 'travel' : 'resident', perDay: new Array<number>(dates.length).fill(0), cumulative: new Array<number>(dates.length).fill(0) };
+    map.set(id, created);
+    return created;
   };
-
-  const dailyRouteRows = raw.daily_route ?? [];
-  const eventRouteRows = dailyRouteRows.length ? [] : (raw.transmission_events ?? []);
-  let routeSource: string | null = null;
-  let routeNote: string | null = null;
-  let seededExcluded = 0;
-
-  for (const r of dailyRouteRows) {
-    const day = dayOf.get(str(r, 'date'));
-    const id = str(r, 'route_id', 'route');
-    if (day == null || !id) continue;
-    const series = ensureRoute(id, str(r, 'route_name'), str(r, 'route_family'));
-    series.perDay[day] = num(r, 'new_events', 'new_infections', 'new_local_infections');
-    series.cumulative[day] = num(r, 'cumulative_infections', 'cumulative_events');
-  }
-  if (dailyRouteRows.length) {
-    routeSource = 'daily_route';
-    routeNote =
-      'Counts are simulated infection events attributed to the route where transmission occurred.';
-  }
-
-  for (const r of eventRouteRows) {
-    const day = dayOf.get(str(r, 'date'));
-    if (day == null) continue;
-    const kind = str(r, 'source_kind');
-    const id = str(r, 'attributed_route_id', 'route_id');
-    const isSeed =
-      flag(r, 'seeded') ||
-      flag(r, 'imported') ||
-      kind === 'seeded' ||
-      kind === 'imported' ||
-      id === 'seeded' ||
-      id === 'imported';
-    if (isSeed) {
-      seededExcluded += 1;
-      continue;
+  let source: string | null = null;
+  let note: string | null = null;
+  if (dailyRows.length && hasAny(dailyRows, 'new_local_infections')) {
+    for (const row of dailyRows) {
+      const id = optionalString(row, 'route_id', 'route');
+      const day = dates.indexOf(optionalString(row, 'date') ?? '');
+      const local = optionalNumber(row, 'new_local_infections');
+      if (!id || isIntroductionRoute(id) || day < 0 || local == null) continue;
+      ensure(id, optionalString(row, 'route_name') ?? '', optionalString(row, 'route_family') ?? '').perDay[day] = local;
     }
-    if (!id) continue;
-    ensureRoute(id, '', flag(r, 'travel_linked') ? 'travel' : '').perDay[day] += 1;
+    source = 'daily_route.new_local_infections';
+    note = 'Local infections attributed to resident routes; seeded and imported infections are excluded.';
+  } else if (eventRows.length) {
+    let excluded = 0;
+    for (const row of eventRows) {
+      const kind = optionalString(row, 'source_kind')?.toLowerCase();
+      const day = dates.indexOf(optionalString(row, 'date') ?? '');
+      const id = optionalString(row, 'attributed_route_id', 'route_id');
+      if (day < 0 || !id) continue;
+      if (kind !== 'local' || boolValue(row, 'seeded') || boolValue(row, 'imported')) {
+        excluded += 1;
+        continue;
+      }
+      ensure(id, '', boolValue(row, 'travel_linked') ? 'travel' : '').perDay[day] += 1;
+    }
+    if (map.size) {
+      source = 'transmission_events.source_kind=local';
+      note = `Local attributed transmission events only; ${excluded.toLocaleString('en-GB')} seeded, imported or non-local rows excluded.`;
+    }
   }
-  if (eventRouteRows.length) {
-    routeSource = 'transmission_events';
-    routeNote =
-      `This run published no daily_route rows, so routes are attributed per day from the ` +
-      `${fmt(eventRouteRows.length)} rows of transmission_events (attributed_route_id, falling ` +
-      `back to route_id).` +
-      (seededExcluded
-        ? ` ${fmt(seededExcluded)} seeded or imported ${seededExcluded === 1 ? 'infection is' : 'infections are'} excluded from the ranking — they had no within-island route.`
-        : '');
-  }
-
-  const routes = [...routeMap.values()];
-  for (const s of routes) {
-    // Backfill cumulative when the artifact only reports daily counts.
+  const routes = [...map.values()];
+  for (const route of routes) {
     let running = 0;
-    const anyCum = s.cumulative.some((v) => v > 0);
-    for (let d = 0; d < dayCount; d += 1) {
-      running += s.perDay[d];
-      if (!anyCum) s.cumulative[d] = running;
-      else if (s.cumulative[d] === 0 && d > 0) s.cumulative[d] = s.cumulative[d - 1];
-    }
+    route.perDay.forEach((value, day) => { running += value; route.cumulative[day] = running; });
   }
+  return { routes, source, note };
+}
 
-  /* ---- ages ---- */
-  const ageMap = new Map<string, AgeSeries>();
-  for (const r of raw.daily_age ?? []) {
-    const day = dayOf.get(str(r, 'date'));
-    const band = str(r, 'age_band', 'band');
-    if (day == null || !band) continue;
-    let series = ageMap.get(band);
-    if (!series) {
-      series = {
-        band,
-        pop: num(r, 'population'),
-        cum: new Array<number>(dayCount).fill(0),
-        newInfections: new Array<number>(dayCount).fill(0),
-      };
-      ageMap.set(band, series);
-    }
-    if (!series.pop) series.pop = num(r, 'population');
-    series.cum[day] = num(r, 'cumulative_infections', 'cumulative_total_infections');
-    series.newInfections[day] = num(r, 'new_infections', 'new_local_infections');
-  }
-  let ageSource: string | null = ageMap.size ? 'daily_age' : null;
-  let ageNote: string | null = null;
-
-  // Fallback: the per-infection line list carries an age band per case.
-  const ageEventRows = ageMap.size ? [] : (raw.observation_events ?? []);
-  for (const r of ageEventRows) {
-    const day = dayOf.get(str(r, 'infection_date', 'date'));
-    const band = str(r, 'age_band', 'band');
-    if (day == null || !band) continue;
-    let series = ageMap.get(band);
-    if (!series) {
-      series = {
-        band,
-        pop: 0,
-        cum: new Array<number>(dayCount).fill(0),
-        newInfections: new Array<number>(dayCount).fill(0),
-      };
-      ageMap.set(band, series);
-    }
-    series.newInfections[day] += 1;
-  }
-  if (ageEventRows.length) {
-    ageSource = 'observation_events';
-    ageNote =
-      'This run published no daily_age table. Bands are counted from the per-infection ' +
-      'observation_events line list; it carries no per-band denominators, so these are ' +
-      'infection counts and shares of all infections, not attack rates.';
-  }
-
-  // Bands sort by their lower bound ("0-4" < "5-17" < "18-64" < "65+").
-  const bandLowerBound = (band: string): number => {
-    const m = /-?\d+/.exec(band);
-    return m ? Number(m[0]) : Number.MAX_SAFE_INTEGER;
+function buildAges(rows: DatasetRow[], eventRows: DatasetRow[], dates: string[]): { ages: AgeSeries[]; source: string | null; note: string | null; populations: boolean } {
+  const map = new Map<string, AgeSeries>();
+  const add = (band: string, day: number, value: number | null, pop: number | null) => {
+    if (!band || day < 0 || value == null) return;
+    const series = map.get(band) ?? { band, pop: null, cum: new Array<number | null>(dates.length).fill(null), newInfections: new Array<number | null>(dates.length).fill(null) };
+    if (pop != null) series.pop = pop;
+    series.newInfections[day] = value;
+    map.set(band, series);
   };
-  const ages = [...ageMap.values()].sort(
-    (a, b) => bandLowerBound(a.band) - bandLowerBound(b.band) || a.band.localeCompare(b.band, 'en'),
-  );
-  for (const a of ages) {
-    const noCumulativeColumn = a.cum.reduce((s, v) => s + v, 0) === 0;
-    if (noCumulativeColumn) {
-      let running = 0;
-      for (let d = 0; d < dayCount; d += 1) {
-        running += a.newInfections[d];
-        a.cum[d] = running;
-      }
+  for (const row of rows) add(optionalString(row, 'age_band', 'band') ?? '', dates.indexOf(optionalString(row, 'date') ?? ''), optionalNumber(row, 'new_infections', 'new_local_infections') ?? sumPresent(row, ['new_local_infections', 'new_imported_infections', 'new_seeded_infections']), optionalNumber(row, 'population'));
+  let source = map.size ? 'daily_age' : null;
+  let note: string | null = null;
+  if (!map.size) {
+    for (const row of eventRows) add(optionalString(row, 'age_band', 'band') ?? '', dates.indexOf(optionalString(row, 'infection_date', 'date') ?? ''), 1, null);
+    if (map.size) {
+      source = 'observation_events';
+      note = 'Age bands counted from observation_events; no per-band population denominator is published.';
     }
   }
-  const agePopulations = ages.length > 0 && ages.every((a) => a.pop > 0);
-  if (!ages.length) {
-    ageNote = 'This run published no age breakdown (daily_age has no rows).';
+  const ages = [...map.values()].sort((a, b) => a.band.localeCompare(b.band, 'en'));
+  for (const age of ages) {
+    let running = 0;
+    age.newInfections.forEach((value, day) => { if (value != null) { running += value; age.cum[day] = running; } });
   }
+  if (!ages.length) note = 'This run published no age breakdown.';
+  return { ages, source, note, populations: ages.length > 0 && ages.every((age) => age.pop != null && age.pop > 0) };
+}
 
-  /* ---- travel ----
-     Legacy shape is one `daily_travel` table. Real travel artifacts spread the
-     same facts across daily_epidemic, daily_travel_population and
-     daily_travel_route; prefer those real columns when they exist. */
-  const legacyTravelRows = raw.daily_travel ?? [];
-  const travelPopRows = raw.daily_travel_population ?? [];
-  const travelRouteRows = raw.daily_travel_route ?? [];
-  const epiHasVisitors = epiCols.has('active_visitors');
-  const epiHasReturning = epiCols.has('returning_resident_travel_acquisitions');
-
-  let travel: TravelSeries | null = null;
-  if (legacyTravelRows.length || travelPopRows.length || travelRouteRows.length || epiHasVisitors) {
-    const points: TravelPoint[] = Array.from({ length: dayCount }, () => ({
-      arrivals: 0,
-      activeVisitors: 0,
-      visitorInfections: 0,
-      residentInfections: 0,
-      visitorToResident: 0,
-      residentToVisitor: 0,
-      travelLocalInfections: 0,
-      returningAcquisitions: 0,
-    }));
-    let hasArrivals = false;
-    let hasLegacyLinked = false;
-
-    for (const r of legacyTravelRows) {
-      const day = dayOf.get(str(r, 'date'));
-      if (day == null) continue;
-      const pt = points[day];
-      pt.arrivals = num(r, 'arrivals', 'daily_arrivals');
-      pt.activeVisitors = num(r, 'active_visitors', 'visitors_on_island');
-      pt.visitorInfections = num(r, 'visitor_infections', 'visitor_linked_infections');
-      pt.residentInfections = num(r, 'resident_infections');
-      if (has(r, 'arrivals') || has(r, 'daily_arrivals')) hasArrivals = true;
-      if (has(r, 'visitor_infections') || has(r, 'visitor_linked_infections')) hasLegacyLinked = true;
-    }
-    for (const r of travelPopRows) {
-      const day = dayOf.get(str(r, 'date'));
-      if (day == null) continue;
-      points[day].arrivals = num(r, 'arrivals', 'daily_arrivals');
-      points[day].activeVisitors = num(r, 'active_visitors', 'visitors_on_island');
-      hasArrivals = true;
-    }
-    for (const r of travelRouteRows) {
-      const day = dayOf.get(str(r, 'date'));
-      if (day == null) continue;
-      points[day].visitorToResident += num(r, 'visitor_to_resident');
-      points[day].residentToVisitor += num(r, 'resident_to_visitor');
-      points[day].travelLocalInfections += num(r, 'new_local_infections');
-    }
-    if (epiHasVisitors || epiHasReturning) {
-      for (const r of epiRows) {
-        const day = dayOf.get(str(r, 'date'));
-        if (day == null) continue;
-        if (epiHasVisitors) points[day].activeVisitors = num(r, 'active_visitors');
-        if (epiHasReturning) {
-          points[day].returningAcquisitions = num(r, 'returning_resident_travel_acquisitions');
-        }
-      }
-    }
-
-    const sources = [
-      legacyTravelRows.length ? 'daily_travel' : '',
-      travelPopRows.length ? 'daily_travel_population' : '',
-      travelRouteRows.length ? 'daily_travel_route' : '',
-      epiHasVisitors || epiHasReturning ? 'daily_epidemic' : '',
-    ].filter(Boolean);
-
-    travel = {
-      points,
-      hasArrivals,
-      hasActiveVisitors: epiHasVisitors || travelPopRows.length > 0 || legacyTravelRows.length > 0,
-      hasFlows: travelRouteRows.length > 0,
-      hasReturning: epiHasReturning,
-      hasLegacyLinked,
-      source: sources.join(' · '),
-    };
+function buildTravel(legacyRows: DatasetRow[], populationRows: DatasetRow[], routeRows: DatasetRow[], epiRows: DatasetRow[], dates: string[]): TravelSeries | null {
+  const hasEpiVisitors = hasAny(epiRows, 'active_visitors');
+  const hasEpiReturning = hasAny(epiRows, 'returning_resident_travel_acquisitions');
+  if (!legacyRows.length && !populationRows.length && !routeRows.length && !hasEpiVisitors && !hasEpiReturning) return null;
+  const points: TravelPoint[] = Array.from({ length: dates.length }, () => ({ arrivals: null, activeVisitors: null, visitorInfections: null, residentInfections: null, visitorToResident: null, residentToVisitor: null, travelLocalInfections: null, returningAcquisitions: null }));
+  let hasArrivals = false;
+  let hasLegacyLinked = false;
+  for (const row of legacyRows) {
+    const day = dates.indexOf(optionalString(row, 'date') ?? '');
+    if (day < 0) continue;
+    const point = points[day];
+    point.arrivals = optionalNumber(row, 'arrivals', 'daily_arrivals');
+    point.activeVisitors = optionalNumber(row, 'active_visitors', 'visitors_on_island');
+    point.visitorInfections = optionalNumber(row, 'visitor_infections', 'visitor_linked_infections');
+    point.residentInfections = optionalNumber(row, 'resident_infections');
+    hasArrivals ||= point.arrivals != null;
+    hasLegacyLinked ||= point.visitorInfections != null || point.residentInfections != null;
   }
-
-  const availability: Availability = {
-    detected: detectedAvailable,
-    detectedSource,
-    parish: parishAvailable,
-    parishNote: parishAvailable ? null : 'Parish breakdown was not published by this run.',
-    routes: routes.length > 0,
-    routeSource,
-    routeNote,
-    ages: ages.length > 0,
-    ageSource,
-    ageNote,
-    agePopulations,
+  for (const row of populationRows) {
+    const day = dates.indexOf(optionalString(row, 'date') ?? '');
+    if (day < 0) continue;
+    points[day].arrivals = optionalNumber(row, 'arrivals', 'daily_arrivals');
+    points[day].activeVisitors = optionalNumber(row, 'active_visitors', 'visitors_on_island');
+    hasArrivals ||= points[day].arrivals != null;
+  }
+  for (const row of routeRows) {
+    const day = dates.indexOf(optionalString(row, 'date') ?? '');
+    if (day < 0) continue;
+    const visitorToResident = optionalNumber(row, 'visitor_to_resident');
+    const residentToVisitor = optionalNumber(row, 'resident_to_visitor');
+    const local = optionalNumber(row, 'new_local_infections');
+    if (visitorToResident != null) points[day].visitorToResident = (points[day].visitorToResident ?? 0) + visitorToResident;
+    if (residentToVisitor != null) points[day].residentToVisitor = (points[day].residentToVisitor ?? 0) + residentToVisitor;
+    if (local != null) points[day].travelLocalInfections = (points[day].travelLocalInfections ?? 0) + local;
+  }
+  for (const row of epiRows) {
+    const day = dates.indexOf(optionalString(row, 'date') ?? '');
+    if (day < 0) continue;
+    if (hasEpiVisitors) points[day].activeVisitors = optionalNumber(row, 'active_visitors');
+    if (hasEpiReturning) points[day].returningAcquisitions = optionalNumber(row, 'returning_resident_travel_acquisitions');
+  }
+  return {
+    points,
+    hasArrivals,
+    hasActiveVisitors: points.some((point) => point.activeVisitors != null),
+    hasFlows: routeRows.length > 0,
+    hasReturning: points.some((point) => point.returningAcquisitions != null),
+    hasLegacyLinked,
+    source: [legacyRows.length ? 'daily_travel' : '', populationRows.length ? 'daily_travel_population' : '', routeRows.length ? 'daily_travel_route' : '', hasEpiVisitors || hasEpiReturning ? 'daily_epidemic' : ''].filter(Boolean).join(' · '),
   };
+}
 
-  const mapMetrics = parishAvailable
-    ? MAP_METRICS.filter((m) => (m.id === 'detected' ? parishHasDetected : true))
-    : [];
+export async function loadResults(job: JobStatusResponse): Promise<ResultsData> {
+  const listing = normalizeListing(await api.getJobDatasets(job.job_id).catch(() => ({ datasets: [] })));
+  const names = [...listing.keys()];
+  if (job.kind === 'ensemble' || names.includes('ensemble_summary')) {
+    const summaryRows = await readAllRows(job.job_id, 'ensemble_summary');
+    return buildResultsFromSummary(job, summaryRows, names.length ? names : ['ensemble_summary']);
+  }
 
-  const loadedNames = DATASETS.filter((n) => (raw[n]?.length ?? 0) > 0);
+  const hasRows = (name: string): boolean => {
+    const info = listing.get(name);
+    return !listing.size || Boolean(info && (info.rowCount == null || info.rowCount > 0));
+  };
+  const raw: Partial<Record<DatasetName, DatasetRow[]>> = {};
+  await Promise.all(CORE_DATASETS.filter((name) => hasRows(name)).map(async (name) => {
+    try {
+      raw[name] = await readAllRows(job.job_id, name);
+    } catch {
+      if (name === 'daily_epidemic') throw new Error(`Could not read ${name}`);
+    }
+  }));
+  const epiRows = raw.daily_epidemic ?? [];
+  if (!epiRows.length) throw new Error('This run published no daily_epidemic rows, so there is nothing to show.');
 
+  const needRoutes = !raw.daily_route?.length && hasRows('transmission_events');
+  const needDetected = !hasAny(epiRows, 'detected_cases', 'cumulative_detected', 'detected', 'reported_cases') && hasRows('detection_events');
+  const needAges = !raw.daily_age?.length && hasRows('observation_events');
+  const needTravelRoute = !raw.daily_travel?.length && hasRows('daily_travel_route');
+  const needTravelPop = !raw.daily_travel?.length && hasRows('daily_travel_population');
+  await Promise.all([
+    needRoutes ? readProjected(job.job_id, 'transmission_events', ['date', 'attributed_route_id', 'route_id', 'seeded', 'imported', 'travel_linked', 'source_kind']).then((rows) => { raw.transmission_events = rows; }).catch(() => undefined) : null,
+    needDetected ? readProjected(job.job_id, 'detection_events', ['detection_date', 'detection_time_index']).then((rows) => { raw.detection_events = rows; }).catch(() => undefined) : null,
+    needAges ? readProjected(job.job_id, 'observation_events', ['infection_date', 'age_band']).then((rows) => { raw.observation_events = rows; }).catch(() => undefined) : null,
+    needTravelRoute ? readAllRows(job.job_id, 'daily_travel_route').then((rows) => { raw.daily_travel_route = rows; }).catch(() => undefined) : null,
+    needTravelPop ? readAllRows(job.job_id, 'daily_travel_population').then((rows) => { raw.daily_travel_population = rows; }).catch(() => undefined) : null,
+  ]);
+
+  const parishRows = raw.daily_parish ?? [];
+  const dates = distinctDates([epiRows, parishRows, raw.daily_route ?? [], raw.daily_travel ?? []]);
+  const dayOf = new Map(dates.map((date, day) => [date, day]));
+  const detectedColumn = ['detected_cases', 'cumulative_detected', 'detected', 'reported_cases'].find((column) => hasAny(epiRows, column)) ?? null;
+  const detectionRows = raw.detection_events ?? [];
+  const detectionByDay: Array<number | null> = new Array(dates.length).fill(null);
+  if (!detectedColumn && detectionRows.length) {
+    const counts = new Array<number>(dates.length).fill(0);
+    for (const row of detectionRows) {
+      const day = dayOf.get(optionalString(row, 'detection_date', 'date') ?? '');
+      if (day != null) counts[day] += 1;
+    }
+    let running = 0;
+    counts.forEach((value, day) => { running += value; detectionByDay[day] = running; });
+  }
+  const { value: population, source: populationSource } = populationFromEpi(epiRows);
+  const { epi, cumulativeSource, cumulativeLabel } = buildSingleEpi(epiRows, dates, detectionByDay, detectedColumn, population);
+  const parish = buildParishes(parishRows, dates);
+  const route = buildRoutes(raw.daily_route ?? [], raw.transmission_events ?? [], dates);
+  const age = buildAges(raw.daily_age ?? [], raw.observation_events ?? [], dates);
+  const travel = buildTravel(raw.daily_travel ?? [], raw.daily_travel_population ?? [], raw.daily_travel_route ?? [], epiRows, dates);
+
+  const availability = emptyAvailability();
+  availability.detected = Boolean(detectedColumn || detectionRows.length);
+  availability.detectedSource = detectedColumn ? `daily_epidemic.${detectedColumn}` : detectionRows.length ? 'detection_events' : null;
+  availability.activeState = hasAny(epiRows, 'infectious', 'active_infectious', 'n_infectious');
+  availability.exposedState = hasAny(epiRows, 'exposed', 'n_exposed');
+  availability.parish = parish.available;
+  availability.parishNote = parish.available
+    ? 'This run publishes parish incidence. Parish active, attack rate or route data are shown only when their own fields are present.'
+    : 'Parish breakdown was not published by this run.';
+  availability.parishActive = parish.active;
+  availability.parishAttack = parish.attack;
+  availability.parishRoutes = false;
+  availability.routes = route.routes.length > 0;
+  availability.routeSource = route.source;
+  availability.routeNote = route.note;
+  availability.ages = age.ages.length > 0;
+  availability.ageSource = age.source;
+  availability.ageNote = age.note;
+  availability.agePopulations = age.populations;
+  const hasParishMetric = (metric: MapMetric): boolean => parish.parishes.some((series) => series.points.some((point) => parishMetricValue(point, metric) != null));
+  const mapMetrics = parish.available ? MAP_METRICS.filter((metric) => hasParishMetric(metric.id)) : [];
   return {
     job,
     dates,
-    dayCount,
+    dayCount: dates.length,
     startDate: dates[0] ?? '',
     population,
     seeds: seedCount(job),
     epi,
-    parishes,
-    routes,
-    ages,
+    parishes: parish.parishes,
+    routes: route.routes,
+    ages: age.ages,
     travel,
     availability,
     mapMetrics,
     populationSource,
-    datasetNames: loadedNames,
+    cumulativeSource,
+    cumulativeLabel,
+    datasetNames: names.length ? names : Object.keys(raw),
     raw,
   };
 }
 
-function prettyRouteName(id: string): string {
-  const s = id.replace(/[_-]+/g, ' ').trim();
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : id;
+function parishMetricValue(point: ParishPoint, metric: MapMetric): number | null {
+  if (metric === 'new') return point.newInfections;
+  if (metric === 'active') return point.active;
+  if (metric === 'cum') return point.cum;
+  if (metric === 'detected') return point.detected;
+  if (metric === 'attack') return point.attack;
+  return point.visitor;
 }
 
-/* ============================== derivations ============================== */
-
-/** Per-1,000-resident value for the map, for one parish on one day. */
-export function parishMetricPer1k(p: ParishSeries, day: number, metric: MapMetric): number {
-  const pt = p.points[day];
-  if (!pt) return 0;
-  if (metric === 'attack') return pt.attack * 1000;
-  const raw = metric === 'active' ? pt.active : metric === 'cum' ? pt.cum : metric === 'detected' ? pt.detected : pt.visitor;
-  return p.pop ? (raw / p.pop) * 1000 : 0;
+export function parishMetricPer1k(p: ParishSeries, day: number, metric: MapMetric): number | null {
+  return parishMetricValue(p.points[day] ?? { newInfections: null, active: null, cum: null, detected: null, attack: null, visitor: null }, metric);
 }
 
-/** Run-wide maximum of a metric, so the bins never flicker during playback. */
 export function metricMax(parishes: ParishSeries[], dayCount: number, metric: MapMetric): number {
-  let m = 0;
-  for (const p of parishes) {
-    for (let d = 0; d < dayCount; d += 1) {
-      const v = parishMetricPer1k(p, d, metric);
-      if (v > m) m = v;
+  let max = 0;
+  for (const parish of parishes) {
+    for (let day = 0; day < dayCount; day += 1) {
+      const value = parishMetricPer1k(parish, day, metric);
+      if (value != null && value > max) max = value;
     }
   }
-  return m;
+  return max;
 }
 
 export interface RouteCount {
@@ -907,80 +900,63 @@ export interface RouteCount {
   share: number;
 }
 
-/** Route counts for the selected day, either cumulative or that day only. */
-export function routeCounts(
-  routes: RouteSeries[],
-  day: number,
-  win: 'cum' | 'day',
-): RouteCount[] {
-  const values = routes.map((r) => (win === 'cum' ? r.cumulative[day] ?? 0 : r.perDay[day] ?? 0));
+export function routeCounts(routes: RouteSeries[], day: number, win: 'cum' | 'day'): RouteCount[] {
+  const values = routes.map((route) => win === 'cum' ? route.cumulative[day] ?? 0 : route.perDay[day] ?? 0);
   const total = values.reduce((a, b) => a + b, 0);
-  return routes.map((r, i) => ({
-    key: r.id,
-    name: r.name,
-    family: r.family,
-    count: values[i],
-    share: total ? values[i] / total : 0,
-  }));
+  return routes.map((route, index) => ({ key: route.id, name: route.name, family: route.family, count: values[index], share: total > 0 ? values[index] / total : 0 }));
 }
 
-/** Cumulative < 0.1% of population at the end of the run. */
 export interface Fizzle {
   cumulative: number;
   dieOutDay: number;
 }
 
 export function detectFizzle(data: ResultsData): Fizzle | null {
-  if (!data.epi.length) return null;
+  if (!data.epi.length || !data.availability.activeState || !data.availability.exposedState) return null;
   const last = data.epi[data.epi.length - 1];
-  if (last.cum >= data.population * 0.001) return null;
-  let dieOut = 0;
-  for (let d = 0; d < data.epi.length; d += 1) {
-    if (data.epi[d].active > 0) dieOut = d;
+  if (last.exposed !== 0 || last.active !== 0 || last.cum == null || last.cum <= 0) return null;
+  let dieOutDay = 0;
+  for (let day = 0; day < data.epi.length; day += 1) {
+    if ((data.epi[day].exposed ?? 0) > 0 || (data.epi[day].active ?? 0) > 0) dieOutDay = day;
   }
-  return { cumulative: Math.round(last.cum), dieOutDay: dieOut };
+  return { cumulative: Math.round(last.cum), dieOutDay };
 }
 
 /* ============================== formatting ============================== */
 
-export const fmt = (n: number): string => Math.round(n).toLocaleString('en-GB');
+export const fmt = (value: number | null | undefined): string => value == null || !Number.isFinite(value) ? '—' : Math.round(value).toLocaleString('en-GB');
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function parseISO(iso: string): Date | null {
   if (!iso) return null;
-  const dt = new Date(`${iso}T00:00:00Z`);
-  return Number.isNaN(dt.getTime()) ? null : dt;
+  const date = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
-/** "9 Feb" / "Mon 9 Feb 2026". */
 export function formatDate(iso: string, long = false): string {
-  const dt = parseISO(iso);
-  if (!dt) return iso;
-  const day = dt.getUTCDate();
-  const mo = MONTHS[dt.getUTCMonth()];
-  if (!long) return `${day} ${mo}`;
-  return `${WEEKDAYS[dt.getUTCDay()]} ${day} ${mo} ${dt.getUTCFullYear()}`;
+  const date = parseISO(iso);
+  if (!date) return iso;
+  const day = date.getUTCDate();
+  const month = MONTHS[date.getUTCMonth()];
+  return long ? `${WEEKDAYS[date.getUTCDay()]} ${day} ${month} ${date.getUTCFullYear()}` : `${day} ${month}`;
 }
 
-/** "6 Jan 2026". */
 export function formatDateYear(iso: string): string {
-  const dt = parseISO(iso);
-  if (!dt) return iso;
-  return `${dt.getUTCDate()} ${MONTHS[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
+  const date = parseISO(iso);
+  if (!date) return iso;
+  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 export function isoPlusDays(iso: string, days: number): string {
-  const dt = parseISO(iso);
-  if (!dt) return iso;
-  dt.setUTCDate(dt.getUTCDate() + days);
-  return dt.toISOString().slice(0, 10);
+  const date = parseISO(iso);
+  if (!date) return iso;
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
-/** Short hash pair for the provenance strip: "a3f2c9…e41b". */
 export function shortHash(hash: string | null | undefined): string {
   if (!hash) return '—';
-  if (hash.length <= 12) return hash;
-  return `${hash.slice(0, 6)}…${hash.slice(-4)}`;
+  return hash.length <= 12 ? hash : `${hash.slice(0, 6)}…${hash.slice(-4)}`;
 }

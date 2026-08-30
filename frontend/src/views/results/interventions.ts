@@ -5,8 +5,8 @@
  * Gantt read the scenario the run was submitted with. Calendar interventions
  * have their dates converted to day offsets against the run start; detection-
  * triggered ones cannot have a real start day (it depends on the stochastic
- * detection time), so they are drawn hatched from day 0 plus their declared
- * start delay and labelled as triggered.
+ * detection time), so they have no fabricated calendar bar and are labelled
+ * as triggered.
  */
 
 import type { JobStatusResponse, JsonObject } from '../../api';
@@ -139,7 +139,7 @@ export function deriveInterventions(
     const token = FAMILY_TOKEN[family];
     const color = token ? `var(--iv-${token})` : FALLBACK_COLORS[i % FALLBACK_COLORS.length];
 
-    const trigger = (pickString(entry, 'trigger', 'activation', 'release_rule') ?? '').toLowerCase();
+    const trigger = (pickString(entry, 'trigger', 'activation', 'activation_rule', 'release_rule') ?? '').toLowerCase();
     const triggeredFlag = entry.detection_triggered === true || trigger.includes('detect');
     const startDelay = pickNumber(entry, 'start_delay_days', 'delay_days') ?? 0;
 
@@ -151,15 +151,15 @@ export function deriveInterventions(
     let from: number;
     let to: number;
     if (triggeredFlag) {
-      from = Math.max(0, Math.min(last, Math.round(startDelay)));
-      to = last;
+      from = 0;
+      to = 0;
     } else {
       const resolvedStart =
         (startIso ? dayOffset(startDate, startIso, dayCount) : null) ??
         (startDay != null ? Math.max(0, Math.min(last, Math.round(startDay))) : 0);
       const resolvedEnd =
         (endIso ? dayOffset(startDate, endIso, dayCount) : null) ??
-        (duration != null ? Math.min(last, resolvedStart + Math.round(duration)) : last);
+        (duration != null ? Math.min(last, resolvedStart + Math.max(0, Math.round(duration) - 1)) : last);
       from = resolvedStart;
       to = Math.max(from, resolvedEnd);
     }

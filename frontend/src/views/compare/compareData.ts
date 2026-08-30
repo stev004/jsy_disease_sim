@@ -1,85 +1,28 @@
 /**
- * Compare data layer.
+ * Comparison data adapter for the current M9 namespaced artifact contract.
  *
- * A `scenario_compare` job is supposed to publish *two arms* of the same
- * matched-seed experiment. The M9 dataset contract, however, does not name the
- * arm anywhere in the tidy tables it serves today (see `datasetGap` below), so
- * this module does three things, in order of decreasing honesty:
- *
- *   1. If the job serves a dedicated comparison dataset
- *      (`matched_seed_comparison` / `scenario_comparison` / `comparison`),
- *      it is read and used verbatim.
- *   2. Otherwise, if the tidy tables carry an arm column
- *      (`arm` / `scenario_arm` / `branch` / `scope`), the rows are split on it
- *      and both arms come straight from the artifact.
- *   3. Otherwise there is only one served arm. It is treated as the baseline
- *      and the intervention arm is *derived* by a declared, deterministic
- *      attenuation rule (below). Everything derived this way is flagged
- *      `derived: true` so the view can say so on screen.
- *
- * The derivation is deliberately simple and fully described in the UI:
- * declared measures reduce daily incidence by up to `effect` after a short
- * adherence ramp, and delay the peak by `peakShiftDays`. No secondary
- * transmission dynamics are re-simulated — this is an illustration of the
- * declared assumption, not a second model run.
+ * A comparison is displayable only when both arms are served by the job, or
+ * when the persisted matched_seed_comparison artifact contains both values.
+ * There is intentionally no synthetic treated arm and no route/parish
+ * attenuation fallback here.
  */
 
 import { api } from '../../api';
-import type {
-  DatasetRow,
-  JobStatusResponse,
-  JsonObject,
-} from '../../api/types';
-import { ISLAND_POP, parishIdFromName, type ParishId } from '../../map/geometry';
+import type { DatasetRow, JobStatusResponse, JsonObject } from '../../api/types';
+import { parishIdFromName, type ParishId } from '../../map/geometry';
+import { isIntroductionRoute, optionalNumber, readAllRows } from '../results/data';
 
-/* ============================= primitives ============================= */
-
-const COMPARISON_DATASETS = [
-  'matched_seed_comparison',
-  'scenario_comparison',
-  'comparison',
-  'comparison_summary',
-];
-
-const ARM_COLUMNS = ['arm', 'scenario_arm', 'branch', 'scope', 'variant'];
-
-const BASELINE_TOKENS = ['baseline', 'base', 'control', 'a'];
-const TREATED_TOKENS = ['treated', 'treatment', 'intervention', 'b'];
-
-/** Reads every page of a dataset into memory (bounded by the API's row cap). */
-export async function readAllRows(
-  jobId: string,
-  dataset: string,
-  extra: Record<string, unknown> = {},
-): Promise<DatasetRow[]> {
-  const rows: DatasetRow[] = [];
-  let offset = 0;
-  for (let page = 0; page < 40; page++) {
-    const res = await api.readDataset(jobId, dataset, {
-      ...extra,
-      limit: 5_000,
-      offset,
-    });
-    rows.push(...res.rows);
-    if (!res.has_more || res.rows.length === 0) break;
-    offset = res.next_offset ?? offset + res.rows.length;
-  }
-  return rows;
+export interface BandSeries {
+  low: Array<number | null>;
+  high: Array<number | null>;
 }
 
-const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
-
-/* ============================== arms ============================== */
-
 export interface ArmSeries {
-  /** Active infectious by day index. */
-  active: number[];
-  /** Cumulative infections by day index. */
-  cumulative: number[];
-  /** New infections by day index. */
-  incidence: number[];
-  /** Attack rate (0..1) by day index. */
-  attack: number[];
+  active: Array<number | null>;
+  cumulative: Array<number | null>;
+  incidence: Array<number | null>;
+  attack: Array<number | null>;
+  activeBand: BandSeries | null;
 }
 
 export interface RouteShift {
@@ -90,6 +33,7 @@ export interface RouteShift {
   treated: number;
 }
 
+/** Parish values are cumulative infection counts, not attack rates. */
 export interface ParishAttack {
   id: ParishId;
   name: string;
@@ -100,7 +44,6 @@ export interface ParishAttack {
 export interface BurdenLine {
   label: string;
   value: string;
-  /** True when the number is not served by the artifact. */
   placeholder: boolean;
 }
 
@@ -111,501 +54,330 @@ export interface CompareModel {
   seeds: number[];
   startDate: string;
   days: number;
-  population: number;
+  population: number | null;
   baseline: ArmSeries;
   treated: ArmSeries;
   routes: RouteShift[];
   parishes: ParishAttack[];
   burden: BurdenLine[];
   measures: string[];
-  /** Assumed combined incidence reduction used by the derivation (0..1). */
-  effect: number;
-  peakShiftDays: number;
-  /** True when the treated arm was derived, not served. */
-  derived: boolean;
-  /** Human-readable list of what the artifact did not serve. */
+  derived: false;
   datasetGap: string[];
-  /** Dataset names the job actually serves. */
   servedDatasets: string[];
 }
 
-/* ====================== declared intervention effects ====================== */
-
-/**
- * Assumed incidence reduction per intervention family. These are *scenario
- * assumptions*, not fitted effects — the drawer labels them as such.
- */
-const FAMILY_EFFECT: Record<string, number> = {
-  school_closure: 0.12,
-  case_isolation: 0.06,
-  household_quarantine: 0.05,
-  work_from_home: 0.1,
-  community_reduction: 0.1,
-  care_home_protection: 0.02,
-  vaccination: 0.08,
-  travel_measure: 0.03,
-};
-
-const FAMILY_LABEL: Record<string, string> = {
-  school_closure: 'School closure',
-  case_isolation: 'Case isolation',
-  household_quarantine: 'Household quarantine',
-  work_from_home: 'Working from home',
-  community_reduction: 'Community contact reduction',
-  care_home_protection: 'Care home protection',
-  vaccination: 'Vaccination',
-  travel_measure: 'Travel measure',
-};
-
-/** Keywords that let a free-text scenario id name a family. */
-const FAMILY_KEYWORDS: Array<[string, RegExp]> = [
-  ['school_closure', /school|classroom/i],
-  ['work_from_home', /\bwfh\b|work[ -]?from[ -]?home|remote work/i],
-  ['case_isolation', /isolat/i],
-  ['household_quarantine', /quarantine/i],
-  ['community_reduction', /community|gathering|distanc/i],
-  ['care_home_protection', /care home|care-home/i],
-  ['vaccination', /vaccin|booster/i],
-  ['travel_measure', /travel|border|arrival/i],
-];
-
-/** Families named by an explicit `interventions` array, else by keyword. */
-function declaredFamilies(treated: JsonObject | undefined): {
-  families: string[];
-  explicit: boolean;
-} {
-  const list = treated?.interventions;
-  if (Array.isArray(list) && list.length) {
-    const families = list
-      .map((item) => {
-        if (typeof item === 'string') return item;
-        if (item && typeof item === 'object') {
-          const o = item as JsonObject;
-          const f = o.family ?? o.type ?? o.kind ?? o.intervention_family;
-          if (typeof f === 'string') return f;
-        }
-        return null;
-      })
-      .filter((f): f is string => Boolean(f));
-    if (families.length) return { families, explicit: true };
-  }
-  const text = treated ? JSON.stringify(treated) : '';
-  const families = FAMILY_KEYWORDS.filter(([, re]) => re.test(text)).map(([f]) => f);
-  return { families, explicit: false };
-}
-
-function combinedEffect(families: string[]): number {
-  if (!families.length) return 0.18;
-  const remaining = families.reduce(
-    (acc, f) => acc * (1 - (FAMILY_EFFECT[f] ?? 0.05)),
-    1,
-  );
-  return Math.min(0.55, 1 - remaining);
-}
-
-/* ========================= served-arm extraction ========================= */
-
-function armOf(row: DatasetRow, column: string): 'baseline' | 'treated' | null {
-  const raw = row[column];
-  if (typeof raw !== 'string') return null;
-  const v = raw.trim().toLowerCase();
-  if (BASELINE_TOKENS.includes(v)) return 'baseline';
-  if (TREATED_TOKENS.includes(v)) return 'treated';
-  return null;
-}
-
-function findArmColumn(rows: DatasetRow[]): string | null {
-  const first = rows[0];
-  if (!first) return null;
-  for (const c of ARM_COLUMNS) {
-    if (c in first) {
-      const seen = new Set(rows.map((r) => armOf(r, c)).filter(Boolean));
-      if (seen.has('baseline') && seen.has('treated')) return c;
-    }
+function text(row: DatasetRow | undefined, ...keys: string[]): string | null {
+  if (!row) return null;
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === 'string' && value.trim()) return value;
   }
   return null;
 }
 
-/** Builds the per-day series from `daily_epidemic`-shaped rows. */
-function seriesFromEpidemic(rows: DatasetRow[], population: number): ArmSeries {
-  const byDay = new Map<number, DatasetRow>();
-  for (const r of rows) byDay.set(num(r.time_index), r);
-  const days = Math.max(...byDay.keys(), 0) + 1;
-  const active: number[] = [];
-  const cumulative: number[] = [];
-  const incidence: number[] = [];
-  const attack: number[] = [];
-  for (let d = 0; d < days; d++) {
-    const r = byDay.get(d);
-    const cum = r ? num(r.cumulative_infections) : 0;
-    active.push(r ? num(r.infectious) : 0);
+function datesOf(rows: DatasetRow[]): string[] {
+  return [...new Set(rows.map((row) => text(row, 'date')).filter((date): date is string => Boolean(date)))].sort();
+}
+
+function median(values: number[]): number | null {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function summaryRows(rows: DatasetRow[], scope: string, metric: string): DatasetRow[] {
+  return rows.filter((row) => text(row, 'scope') === scope && text(row, 'metric') === metric);
+}
+
+function keyOf(row: DatasetRow): string {
+  return text(row, 'key', 'route_id', 'parish') ?? '';
+}
+
+function summaryMetric(row: DatasetRow | undefined, field = 'median'): number | null {
+  return optionalNumber(row, field, 'value', 'median');
+}
+
+function populationFromSummary(rows: DatasetRow[]): number | null {
+  const values: number[] = [];
+  for (const row of summaryRows(rows, 'epidemic', 'latent_attack_rate')) {
+    const attack = summaryMetric(row);
+    if (attack == null || attack <= 0) continue;
+    const date = text(row, 'date');
+    const cumulative = summaryRows(rows, 'epidemic', 'latent_cumulative_infections').find((candidate) => text(candidate, 'date') === date);
+    const total = summaryMetric(cumulative);
+    if (total != null && total > 0) values.push(total / attack);
+  }
+  return values.length ? median(values) : null;
+}
+
+function rowFor(rows: DatasetRow[], metric: string, date: string): DatasetRow | undefined {
+  return summaryRows(rows, 'epidemic', metric).find((row) => text(row, 'date') === date);
+}
+
+export function armFromSummary(rows: DatasetRow[], dates: string[], population: number | null): ArmSeries {
+  const active: Array<number | null> = [];
+  const cumulative: Array<number | null> = [];
+  const incidence: Array<number | null> = [];
+  const attack: Array<number | null> = [];
+  const low: Array<number | null> = [];
+  const high: Array<number | null> = [];
+  for (const date of dates) {
+    const prevalence = summaryMetric(rowFor(rows, 'latent_prevalence', date));
+    const cum = summaryMetric(rowFor(rows, 'latent_cumulative_infections', date));
+    const inc = summaryMetric(rowFor(rows, 'latent_new_infections', date));
+    const ar = summaryMetric(rowFor(rows, 'latent_attack_rate', date));
+    active.push(prevalence != null && population != null ? prevalence * population : null);
     cumulative.push(cum);
-    incidence.push(r ? num(r.new_infections) : 0);
-    attack.push(r && num(r.attack_rate) > 0 ? num(r.attack_rate) : cum / population);
-  }
-  return { active, cumulative, incidence, attack };
-}
-
-/** Population implied by the artifact (attack rate ÷ cumulative), else island. */
-function populationFrom(rows: DatasetRow[]): number {
-  for (const r of rows) {
-    const cum = num(r.cumulative_infections);
-    const ar = num(r.attack_rate);
-    if (cum > 0 && ar > 0) return Math.round(cum / ar);
-    const s = num(r.susceptible);
-    if (s > 0 && cum > 0) return Math.round(s + cum);
-  }
-  return ISLAND_POP;
-}
-
-/* ============================ the derivation ============================ */
-
-const RAMP_START_DAY = 4;
-const RAMP_DAYS = 8;
-
-function adherenceRamp(day: number): number {
-  return Math.max(0, Math.min(1, (day - RAMP_START_DAY) / RAMP_DAYS));
-}
-
-/**
- * Derives the intervention arm from the served baseline: daily incidence is
- * attenuated by up to `effect` after the adherence ramp, and the whole curve
- * is lagged by `shift` days to represent the delayed peak.
- */
-function deriveTreatedArm(base: ArmSeries, effect: number, shift: number): ArmSeries {
-  const n = base.active.length;
-  const active: number[] = [];
-  const incidence: number[] = [];
-  const cumulative: number[] = [];
-  const attack: number[] = [];
-  const pop = base.cumulative[n - 1] && base.attack[n - 1]
-    ? base.cumulative[n - 1] / base.attack[n - 1]
-    : ISLAND_POP;
-  let running = 0;
-  for (let d = 0; d < n; d++) {
-    const src = Math.max(0, d - shift);
-    const f = 1 - effect * adherenceRamp(d);
-    active.push(base.active[src] * f);
-    const inc = base.incidence[src] * f;
     incidence.push(inc);
-    running += inc;
-    cumulative.push(running);
-    attack.push(running / pop);
+    attack.push(ar);
+    const prevalenceRow = rowFor(rows, 'latent_prevalence', date);
+    const lower = optionalNumber(prevalenceRow, 'lower_value', 'lower_quantile');
+    const upper = optionalNumber(prevalenceRow, 'upper_value', 'upper_quantile');
+    low.push(lower != null && population != null ? lower * population : null);
+    high.push(upper != null && population != null ? upper * population : null);
   }
-  return { active, cumulative, incidence, attack };
+  const hasBand = low.some((value) => value != null) && high.some((value) => value != null);
+  return { active, cumulative, incidence, attack, activeBand: hasBand ? { low, high } : null };
 }
 
-/** Per-route sensitivity to the declared measures (0 = untouched, 1 = closed). */
-function routeSensitivity(routeId: string, family: string): number {
-  if (/^school/.test(routeId)) return 0.95;
-  if (/^workplace/.test(routeId)) return 0.6;
-  if (routeId === 'bus' || routeId === 'shared_vehicle') return 0.5;
-  if (routeId === 'community_indoor') return 0.35;
-  if (routeId === 'community_outdoor') return 0.2;
-  if (routeId === 'household') return -0.15; // household mixing rises
-  if (/^care/.test(routeId)) return 0.1;
-  if (family === 'travel') return 0.15;
-  return 0.3;
-}
-
-/**
- * Route-level shift: each route is scaled by its sensitivity, then the whole
- * set is renormalised so the treated totals equal the treated arm's
- * cumulative infections (a redistribution plus a reduction, never a
- * free-floating second total).
- */
-function deriveRouteShifts(
-  baseRoutes: Array<{ routeId: string; name: string; family: string; count: number }>,
-  effect: number,
-  totalRatio: number,
-): RouteShift[] {
-  const scaled = baseRoutes.map((r) => {
-    const s = routeSensitivity(r.routeId, r.family);
-    const mult = Math.max(0.05, Math.min(1.3, 1 - s * effect * 3.2));
-    return { ...r, raw: r.count * mult };
+function armFromComparison(rows: DatasetRow[], dates: string[], side: 'a' | 'b', population: number | null): ArmSeries {
+  const byDateMetric = (metric: string, date: string): number | null => {
+    const values = rows
+      .filter((row) => text(row, 'scope') === 'epidemic' && text(row, 'metric') === metric && text(row, 'date') === date)
+      .map((row) => optionalNumber(row, side === 'a' ? 'value_a' : 'value_b'))
+      .filter((value): value is number => value != null);
+    return median(values);
+  };
+  const cumulative = dates.map((date) => byDateMetric('latent_cumulative_infections', date));
+  const attack = dates.map((date) => byDateMetric('latent_attack_rate', date));
+  const incidence = dates.map((date) => byDateMetric('latent_new_infections', date));
+  const active = dates.map((date) => {
+    const prevalence = byDateMetric('latent_prevalence', date);
+    return prevalence != null && population != null ? prevalence * population : null;
   });
-  const baseTotal = scaled.reduce((a, r) => a + r.count, 0) || 1;
-  const rawTotal = scaled.reduce((a, r) => a + r.raw, 0) || 1;
-  const norm = (totalRatio * baseTotal) / rawTotal;
-  return scaled.map((r) => ({
-    routeId: r.routeId,
-    name: r.name,
-    family: r.family,
-    base: r.count,
-    treated: r.raw * norm,
-  }));
+  return { active, cumulative, incidence, attack, activeBand: null };
 }
 
-/* ============================== assembly ============================== */
+function populationFromComparison(rows: DatasetRow[]): number | null {
+  const values: number[] = [];
+  for (const row of rows.filter((candidate) => text(candidate, 'scope') === 'epidemic' && text(candidate, 'metric') === 'latent_attack_rate')) {
+    const attack = optionalNumber(row, 'value_a');
+    const date = text(row, 'date');
+    const cumulative = rows.find((candidate) => text(candidate, 'scope') === 'epidemic' && text(candidate, 'metric') === 'latent_cumulative_infections' && text(candidate, 'date') === date);
+    const total = optionalNumber(cumulative, 'value_a');
+    if (attack != null && attack > 0 && total != null && total > 0) values.push(total / attack);
+  }
+  return values.length ? median(values) : null;
+}
+
+function shiftsFromComparison(rows: DatasetRow[]): { routes: RouteShift[]; parishes: ParishAttack[] } {
+  const collect = (scope: string, metric: string, side: 'a' | 'b'): Map<string, number> => {
+    const output = new Map<string, number>();
+    for (const row of rows.filter((candidate) => text(candidate, 'scope') === scope && text(candidate, 'metric') === metric)) {
+      const key = keyOf(row);
+      const value = optionalNumber(row, side === 'a' ? 'value_a' : 'value_b');
+      if (key && !isIntroductionRoute(key) && value != null) output.set(key, (output.get(key) ?? 0) + value);
+    }
+    return output;
+  };
+  const baseRoutes = collect('route', 'latent_local_infections', 'a');
+  const treatedRoutes = collect('route', 'latent_local_infections', 'b');
+  const routes = [...new Set([...baseRoutes.keys(), ...treatedRoutes.keys()])]
+    .filter((routeId) => baseRoutes.has(routeId) && treatedRoutes.has(routeId))
+    .map((routeId) => ({ routeId, name: routeId.replace(/[_-]+/g, ' '), family: routeId.startsWith('visitor_') ? 'travel' : 'resident', base: baseRoutes.get(routeId) as number, treated: treatedRoutes.get(routeId) as number }))
+    .sort((a, b) => b.base - a.base);
+  const baseParishes = collect('parish', 'latent_new_infections', 'a');
+  const treatedParishes = collect('parish', 'latent_new_infections', 'b');
+  const parishes = [...baseParishes.entries()]
+    .filter(([id]) => treatedParishes.has(id))
+    .map(([id, base]) => ({ id: parishIdFromName(id) as ParishId, name: id, base, treated: treatedParishes.get(id) ?? 0 }))
+    .filter((parish): parish is ParishAttack => Boolean(parish.id));
+  return { routes, parishes };
+}
+
+function routesFromSummary(baseRows: DatasetRow[], treatedRows: DatasetRow[]): RouteShift[] {
+  const collect = (rows: DatasetRow[]): Map<string, number> => {
+    const output = new Map<string, number>();
+    for (const row of summaryRows(rows, 'route', 'latent_local_infections')) {
+      const id = keyOf(row);
+      const value = summaryMetric(row);
+      if (!id || isIntroductionRoute(id) || value == null) continue;
+      output.set(id, (output.get(id) ?? 0) + value);
+    }
+    return output;
+  };
+  const base = collect(baseRows);
+  const treated = collect(treatedRows);
+  return [...new Set([...base.keys(), ...treated.keys()])]
+    .filter((routeId) => base.has(routeId) && treated.has(routeId))
+    .map((routeId) => ({ routeId, name: routeId.replace(/[_-]+/g, ' '), family: routeId.startsWith('visitor_') ? 'travel' : 'resident', base: base.get(routeId) as number, treated: treated.get(routeId) as number }))
+    .sort((a, b) => b.base - a.base);
+}
+
+function parishesFromSummary(baseRows: DatasetRow[], treatedRows: DatasetRow[]): ParishAttack[] {
+  const collect = (rows: DatasetRow[]): Map<ParishId, { name: string; value: number }> => {
+    const output = new Map<ParishId, { name: string; value: number }>();
+    for (const row of summaryRows(rows, 'parish', 'latent_new_infections')) {
+      const id = parishIdFromName(keyOf(row));
+      const value = summaryMetric(row);
+      if (!id || value == null) continue;
+      const current = output.get(id) ?? { name: keyOf(row), value: 0 };
+      current.value += value;
+      output.set(id, current);
+    }
+    return output;
+  };
+  const base = collect(baseRows);
+  const treated = collect(treatedRows);
+  return [...base.entries()]
+    .filter(([id]) => treated.has(id))
+    .map(([id, value]) => ({ id, name: value.name, base: value.value, treated: treated.get(id)?.value ?? 0 }));
+}
 
 function scenarioName(value: unknown, fallback: string): string {
   if (value && typeof value === 'object') {
-    const id = (value as JsonObject).scenario_id ?? (value as JsonObject).name;
-    if (typeof id === 'string' && id.trim()) return id.trim();
+    const record = value as JsonObject;
+    const name = record.scenario_id ?? record.name;
+    if (typeof name === 'string' && name.trim()) return name.trim();
   }
   return fallback;
 }
 
-/** Burden rows a comparison dataset serves directly, if it serves any. */
-function burdenFromComparison(rows: DatasetRow[]): BurdenLine[] {
-  const lines: BurdenLine[] = [];
-  for (const r of rows) {
-    const metric = r.metric ?? r.key ?? r.name;
-    if (typeof metric !== 'string') continue;
-    if (!/burden|agent_days|setting_days|doses|closed|isolation/i.test(metric)) continue;
-    const raw = r.value ?? r.count ?? r.total;
-    if (raw == null) continue;
-    lines.push({
-      label: metric.replace(/[_-]+/g, ' ').replace(/^./, (c) => c.toUpperCase()),
-      value: typeof raw === 'number' ? raw.toLocaleString('en-GB') : String(raw),
-      placeholder: false,
-    });
-  }
-  return lines;
+function declaredMeasures(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    if (typeof item === 'string') return item;
+    if (item && typeof item === 'object') {
+      const record = item as JsonObject;
+      return String(record.type ?? record.family ?? record.kind ?? 'measure');
+    }
+    return 'measure';
+  });
 }
 
-function burdenLines(
-  families: string[],
-  explicit: boolean,
-  treated: JsonObject | undefined,
-  comparisonRows: DatasetRow[],
-): BurdenLine[] {
-  const served = burdenFromComparison(comparisonRows);
-  if (served.length) return served;
-  const list = treated?.interventions;
-  if (explicit && Array.isArray(list)) {
-    return list.map((item, i) => {
-      const o = (item && typeof item === 'object' ? item : {}) as JsonObject;
-      const fam = String(o.family ?? o.type ?? o.kind ?? families[i] ?? 'measure');
-      const days = o.duration_days ?? o.days;
-      const cov = o.coverage ?? o.adherence;
-      const parts: string[] = [];
-      if (typeof days === 'number') parts.push(`${days} days`);
-      if (typeof cov === 'number') parts.push(`${Math.round(cov * 100)}% coverage`);
-      return {
-        label: FAMILY_LABEL[fam] ?? fam,
-        value: parts.length ? parts.join(' · ') : 'declared, burden not reported',
-        placeholder: parts.length === 0,
-      };
-    });
-  }
-  if (!families.length) {
-    return [
-      {
-        label: 'No measures declared in the request',
-        value: 'nothing to report',
-        placeholder: true,
-      },
-    ];
-  }
-  return families.map((f) => ({
-    label: FAMILY_LABEL[f] ?? f,
-    value: 'agent-days not served by this job',
-    placeholder: true,
-  }));
+function placeholderBurden(measures: string[]): BurdenLine[] {
+  return measures.length
+    ? measures.map((measure) => ({ label: measure.replace(/[_-]+/g, ' '), value: 'not reported by this job', placeholder: true }))
+    : [{ label: 'Intervention burden', value: 'not reported by this job', placeholder: true }];
 }
 
-/** Loads and assembles everything the compare view renders. */
-export async function loadCompare(job: JobStatusResponse): Promise<CompareModel> {
-  const req = job.request as JsonObject;
-  const treatedSpec = (req.treated ?? undefined) as JsonObject | undefined;
-  const baselineSpec = (req.baseline ?? undefined) as JsonObject | undefined;
-  const seeds = Array.isArray(req.replicate_seeds)
-    ? (req.replicate_seeds as unknown[]).filter((s): s is number => typeof s === 'number')
-    : [];
-
-  const datasetsRes = await api.getJobDatasets(job.job_id);
-  const servedDatasets = datasetsRes.datasets
-    .map((d) => (d as JsonObject).name)
-    .filter((n): n is string => typeof n === 'string');
-
-  const gap: string[] = [];
-
-  // (1) A dedicated comparison table, if the job publishes one.
-  const comparisonName = COMPARISON_DATASETS.find((n) => servedDatasets.includes(n));
-  let comparisonRows: DatasetRow[] = [];
-  if (comparisonName) {
-    comparisonRows = await readAllRows(job.job_id, comparisonName);
-  } else {
-    gap.push(
-      `no matched-seed comparison table (looked for ${COMPARISON_DATASETS.join(', ')})`,
-    );
-  }
-
-  // (2) Epidemic curves — split by arm when the artifact names one.
-  const epidemicRows = await readAllRows(job.job_id, 'daily_epidemic');
-  const population = populationFrom(epidemicRows);
-  const epiArmCol = findArmColumn(epidemicRows);
-  let baseline: ArmSeries;
-  let treatedArm: ArmSeries;
-  let derived = false;
-
-  const { families, explicit } = declaredFamilies(treatedSpec);
-  const effect = combinedEffect(families);
-  const peakShiftDays = Math.max(0, Math.round(effect * 20));
-
-  if (epiArmCol) {
-    baseline = seriesFromEpidemic(
-      epidemicRows.filter((r) => armOf(r, epiArmCol) === 'baseline'),
-      population,
-    );
-    treatedArm = seriesFromEpidemic(
-      epidemicRows.filter((r) => armOf(r, epiArmCol) === 'treated'),
-      population,
-    );
-  } else {
-    gap.push('`daily_epidemic` carries no arm column — only one arm is served');
-    baseline = seriesFromEpidemic(epidemicRows, population);
-    treatedArm = deriveTreatedArm(baseline, effect, peakShiftDays);
-    derived = true;
-  }
-
-  // (3) Route shifts.
-  let routes: RouteShift[] = [];
-  if (servedDatasets.includes('daily_route')) {
-    const routeRows = await readAllRows(job.job_id, 'daily_route');
-    const routeArmCol = findArmColumn(routeRows);
-    const lastDay = Math.max(...routeRows.map((r) => num(r.time_index)), 0);
-    const collect = (rows: DatasetRow[]) => {
-      const acc = new Map<string, { routeId: string; name: string; family: string; count: number }>();
-      for (const r of rows) {
-        if (num(r.time_index) !== lastDay) continue;
-        const routeId = String(r.route_id ?? '');
-        if (!routeId) continue;
-        acc.set(routeId, {
-          routeId,
-          name: String(r.route_name ?? routeId),
-          family: String(r.route_family ?? 'resident'),
-          count: num(r.cumulative_infections),
-        });
-      }
-      return [...acc.values()];
-    };
-    if (routeArmCol) {
-      const b = collect(routeRows.filter((r) => armOf(r, routeArmCol) === 'baseline'));
-      const t = new Map(
-        collect(routeRows.filter((r) => armOf(r, routeArmCol) === 'treated')).map((r) => [
-          r.routeId,
-          r.count,
-        ]),
-      );
-      routes = b.map((r) => ({
-        routeId: r.routeId,
-        name: r.name,
-        family: r.family,
-        base: r.count,
-        treated: t.get(r.routeId) ?? 0,
-      }));
-    } else {
-      const baseRoutes = collect(routeRows);
-      const bTotal = baseline.cumulative[baseline.cumulative.length - 1] || 1;
-      const tTotal = treatedArm.cumulative[treatedArm.cumulative.length - 1] || 0;
-      routes = deriveRouteShifts(baseRoutes, effect, tTotal / bTotal);
-    }
-    routes.sort((a, b) => b.base - a.base);
-  } else {
-    gap.push('`daily_route` is not served by this job');
-  }
-
-  // (4) Parish attack rates.
-  let parishes: ParishAttack[] = [];
-  if (servedDatasets.includes('daily_parish')) {
-    const parishRows = await readAllRows(job.job_id, 'daily_parish');
-    const parishArmCol = findArmColumn(parishRows);
-    const lastDay = Math.max(...parishRows.map((r) => num(r.time_index)), 0);
-    const attackOf = (rows: DatasetRow[]) => {
-      const acc = new Map<ParishId, { name: string; value: number }>();
-      for (const r of rows) {
-        if (num(r.time_index) !== lastDay) continue;
-        const name = String(r.parish ?? '');
-        const id = parishIdFromName(name);
-        if (!id) continue;
-        const pop = num(r.population);
-        const value =
-          num(r.attack_rate) > 0
-            ? num(r.attack_rate)
-            : pop > 0
-              ? num(r.cumulative_infections) / pop
-              : 0;
-        acc.set(id, { name, value });
-      }
-      return acc;
-    };
-    if (parishArmCol) {
-      const b = attackOf(parishRows.filter((r) => armOf(r, parishArmCol) === 'baseline'));
-      const t = attackOf(parishRows.filter((r) => armOf(r, parishArmCol) === 'treated'));
-      parishes = [...b.entries()].map(([id, v]) => ({
-        id,
-        name: v.name,
-        base: v.value,
-        treated: t.get(id)?.value ?? v.value,
-      }));
-    } else {
-      const b = attackOf(parishRows);
-      const values = [...b.values()].map((v) => v.value);
-      const lo = Math.min(...values);
-      const hi = Math.max(...values);
-      const span = hi - lo || 1;
-      parishes = [...b.entries()].map(([id, v]) => {
-        // Parishes with more transmission to avert benefit slightly more.
-        const local = 0.8 + 0.5 * ((v.value - lo) / span);
-        return { id, name: v.name, base: v.value, treated: v.value * (1 - effect * local) };
-      });
-    }
-  } else {
-    gap.push('`daily_parish` is not served by this job');
-  }
-
-  if (!comparisonName) gap.push('no intervention-burden dataset (agent-days, setting-days, doses)');
-
+/** Builds a comparison from the real namespaced M9 summary artifacts. */
+export function buildCompareFromSummary(
+  job: JobStatusResponse,
+  baselineRows: DatasetRow[],
+  treatedRows: DatasetRow[],
+  servedDatasets: string[],
+): CompareModel {
+  const dates = [...new Set([...datesOf(baselineRows), ...datesOf(treatedRows)])].sort();
+  if (!dates.length) throw new Error('The comparison arms contain no dated ensemble_summary rows.');
+  const population = populationFromSummary(baselineRows);
+  const baseline = armFromSummary(baselineRows, dates, population);
+  const treated = armFromSummary(treatedRows, dates, population);
+  const request = job.request as JsonObject;
+  const treatedSpec = request.treated as JsonObject | undefined;
+  const measures = declaredMeasures(treatedSpec?.interventions);
   return {
     job,
-    baselineName: scenarioName(baselineSpec, 'Baseline — no interventions'),
-    treatedName: scenarioName(treatedSpec, 'Intervention arm'),
-    seeds,
-    startDate: typeof req.start_date === 'string' ? req.start_date : '2026-01-06',
-    days: baseline.active.length,
+    baselineName: scenarioName(request.baseline, 'Baseline'),
+    treatedName: scenarioName(request.treated, 'Intervention'),
+    seeds: Array.isArray(request.replicate_seeds) ? request.replicate_seeds.filter((seed): seed is number => typeof seed === 'number') : [],
+    startDate: typeof request.start_date === 'string' ? request.start_date : dates[0],
+    days: dates.length,
     population,
     baseline,
-    treated: treatedArm,
-    routes,
-    parishes,
-    burden: burdenLines(families, explicit, treatedSpec, comparisonRows),
-    measures: families.map((f) => FAMILY_LABEL[f] ?? f),
-    effect,
-    peakShiftDays,
-    derived,
-    datasetGap: gap,
+    treated,
+    routes: routesFromSummary(baselineRows, treatedRows),
+    parishes: parishesFromSummary(baselineRows, treatedRows),
+    burden: placeholderBurden(measures),
+    measures,
+    derived: false,
+    datasetGap: ['Intervention-burden values are not published by the current M9 artifacts.'],
     servedDatasets,
   };
 }
 
-/* ============================== metrics ============================== */
+export function buildCompareFromMatchedComparison(job: JobStatusResponse, rows: DatasetRow[], servedDatasets: string[]): CompareModel {
+  const dates = datesOf(rows);
+  if (!dates.length) throw new Error('The matched_seed_comparison artifact contains no dated rows.');
+  const request = job.request as JsonObject;
+  const population = populationFromComparison(rows);
+  const treatedSpec = request.treated as JsonObject | undefined;
+  const shifts = shiftsFromComparison(rows);
+  return {
+    job,
+    baselineName: scenarioName(request.baseline, 'Baseline'),
+    treatedName: scenarioName(request.treated, 'Intervention'),
+    seeds: Array.isArray(request.replicate_seeds) ? request.replicate_seeds.filter((seed): seed is number => typeof seed === 'number') : [],
+    startDate: typeof request.start_date === 'string' ? request.start_date : dates[0],
+    days: dates.length,
+    population,
+    baseline: armFromComparison(rows, dates, 'a', population),
+    treated: armFromComparison(rows, dates, 'b', population),
+    routes: shifts.routes,
+    parishes: shifts.parishes,
+    burden: placeholderBurden(declaredMeasures(treatedSpec?.interventions)),
+    measures: declaredMeasures(treatedSpec?.interventions),
+    derived: false,
+    datasetGap: ['Persisted comparison values do not include intervention-burden fields.'],
+    servedDatasets,
+  };
+}
 
-export function peakIndex(series: number[]): number {
-  let best = 0;
-  for (let i = 1; i < series.length; i++) if (series[i] > series[best]) best = i;
+export async function loadCompare(job: JobStatusResponse): Promise<CompareModel> {
+  const listing = await api.getJobDatasets(job.job_id);
+  const servedDatasets = listing.datasets
+    .map((dataset) => (dataset as JsonObject).name)
+    .filter((name): name is string => typeof name === 'string');
+  const comparisonName = servedDatasets.includes('comparison:matched_seed_comparison') ? 'comparison:matched_seed_comparison' : null;
+  if (comparisonName) {
+    const comparisonRows = await readAllRows(job.job_id, comparisonName);
+    if (comparisonRows.some((row) => text(row, 'scope') === 'epidemic' && text(row, 'metric') === 'latent_cumulative_infections')) {
+      return buildCompareFromMatchedComparison(job, comparisonRows, servedDatasets);
+    }
+  }
+  const baselineSummary = servedDatasets.includes('baseline:ensemble_summary') ? 'baseline:ensemble_summary' : null;
+  const treatedSummary = servedDatasets.includes('treated:ensemble_summary') ? 'treated:ensemble_summary' : null;
+  if (baselineSummary && treatedSummary) {
+    const [baselineRows, treatedRows] = await Promise.all([
+      readAllRows(job.job_id, baselineSummary),
+      readAllRows(job.job_id, treatedSummary),
+    ]);
+    return buildCompareFromSummary(job, baselineRows, treatedRows, servedDatasets);
+  }
+
+  if (comparisonName) {
+    const rows = await readAllRows(job.job_id, comparisonName);
+    return buildCompareFromMatchedComparison(job, rows, servedDatasets);
+  }
+  throw new Error('This comparison job does not publish both namespaced arms or a matched_seed_comparison artifact.');
+}
+
+export function peakIndex(series: Array<number | null>): number {
+  let best = -1;
+  for (let index = 0; index < series.length; index += 1) {
+    const value = series[index];
+    if (value != null && (best < 0 || value > (series[best] ?? -Infinity))) best = index;
+  }
   return best;
 }
 
 export function dayDate(startDate: string, day: number): Date {
-  const [y, m, d] = startDate.split('-').map((v) => Number(v));
-  const dt = new Date(Date.UTC(y || 2026, (m || 1) - 1, d || 6));
-  dt.setUTCDate(dt.getUTCDate() + day);
-  return dt;
+  const [year, month, date] = startDate.split('-').map((value) => Number(value));
+  const result = new Date(Date.UTC(year || 2025, (month || 1) - 1, date || 1));
+  result.setUTCDate(result.getUTCDate() + day);
+  return result;
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export function formatDay(startDate: string, day: number): string {
-  const dt = dayDate(startDate, day);
-  return `${dt.getUTCDate()} ${MONTHS[dt.getUTCMonth()]}`;
+  const date = dayDate(startDate, day);
+  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]}`;
 }
 
-export const fmt = (n: number): string => Math.round(n).toLocaleString('en-GB');
+export const fmt = (value: number | null | undefined): string => value == null || !Number.isFinite(value) ? '—' : Math.round(value).toLocaleString('en-GB');
 
-export const signed = (n: number): string =>
-  `${n < 0 ? '−' : '+'}${fmt(Math.abs(n))}`;
+export const signed = (value: number): string => `${value < 0 ? '−' : '+'}${fmt(Math.abs(value))}`;
 
-export const signedPct = (n: number, digits = 1): string =>
-  `${n < 0 ? '−' : '+'}${Math.abs(n).toFixed(digits)}%`;
+export const signedPct = (value: number, digits = 1): string => `${value < 0 ? '−' : '+'}${Math.abs(value).toFixed(digits)}%`;

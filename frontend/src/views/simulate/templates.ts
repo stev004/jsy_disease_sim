@@ -3,9 +3,7 @@
  *
  * Ported from the M10 design mockup (`TEMPLATES` / `IV_PRESETS`). The face of
  * every card is a human concept; `sci` is the scientific-mode line and
- * `toConfig` is the (deliberately minimal) `InterventionConfig` the request
- * carries — richer UI concepts such as "Strength: Full closure" stay visual
- * because the M7 contract has no field for them.
+ * `toConfig` is the exact supported M7/M8 configuration the request carries.
  */
 
 import type { JsonObject } from '../../api';
@@ -94,6 +92,8 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
       duration_days: 14,
       release_rule: 'duration',
       adherence: 1.0,
+      class_multiplier: 0,
+      cross_class_multiplier: 0,
     }),
   },
   isolation: {
@@ -117,6 +117,19 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
       release_rule: 'duration',
       start_delay_days: 1,
       adherence: 0.8,
+      route_effects: {
+        household: 0.5,
+        school_class: 0.1,
+        school_cross_class: 0.1,
+        workplace_team: 0.1,
+        workplace_transient: 0.1,
+        care_resident: 0.1,
+        care_staff: 0.1,
+        shared_vehicle: 0.1,
+        bus: 0.1,
+        community_indoor: 0.1,
+        community_outdoor: 0.1,
+      },
     }),
   },
   quarantine: {
@@ -139,6 +152,19 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
       duration_days: 10,
       release_rule: 'duration',
       adherence: 0.7,
+      route_effects: {
+        household: 1.0,
+        school_class: 0.15,
+        school_cross_class: 0.15,
+        workplace_team: 0.15,
+        workplace_transient: 0.15,
+        care_resident: 0.15,
+        care_staff: 0.15,
+        shared_vehicle: 0.15,
+        bus: 0.15,
+        community_indoor: 0.15,
+        community_outdoor: 0.15,
+      },
     }),
   },
   wfh: {
@@ -149,11 +175,12 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
     meta: (start) => [
       { k: 'Start', v: start },
       { k: 'Duration', v: '28 days' },
-      { k: 'Uptake', v: '45% of workers', badge: 'assumption' },
+      { k: 'Adherence', v: '80% of targeted workers', badge: 'assumption' },
+      { k: 'Home-working schedule', v: '50% of weekdays', badge: 'assumption' },
     ],
     sci:
-      'work_from_home · calendar · workplace_team ×0.55 · workplace_transient ×0.55 · ' +
-      'bus ×0.70 · shared_vehicle ×0.70 · household ×1.10',
+      'workplace_reduction · calendar · adherence=0.80 · workplace_multiplier ×0.50 · ' +
+      'commute_multiplier ×0.00 · additional_wfh_fraction=0.50',
     toConfig: (startDate) => ({
       intervention_id: 'working-from-home',
       type: 'workplace_reduction',
@@ -161,7 +188,10 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
       start_date: startDate,
       duration_days: 28,
       release_rule: 'duration',
-      adherence: 0.45,
+      adherence: 0.8,
+      workplace_multiplier: 0.5,
+      commute_multiplier: 0,
+      additional_wfh_fraction: 0.5,
     }),
   },
   community: {
@@ -172,11 +202,11 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
     meta: (start) => [
       { k: 'Start', v: start },
       { k: 'Duration', v: '21 days' },
-      { k: 'Strength', v: 'Indoor mixing −40%' },
+      { k: 'Strength', v: 'Indoor mixing −50%' },
     ],
     sci:
-      'community_reduction · calendar · community_indoor ×0.60 · community_outdoor ×0.90 · ' +
-      'visitor_community_indoor ×0.60',
+      'community_reduction · calendar · indoor_multiplier ×0.50 · outdoor_multiplier ×1.00 · ' +
+      'community_scope=everyone_present',
     toConfig: (startDate) => ({
       intervention_id: 'community-reduction',
       type: 'community_reduction',
@@ -185,6 +215,9 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
       duration_days: 21,
       release_rule: 'duration',
       adherence: 1.0,
+      indoor_multiplier: 0.5,
+      outdoor_multiplier: 1.0,
+      community_scope: 'everyone_present',
     }),
   },
   care: {
@@ -198,8 +231,8 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
       { k: 'Scope', v: 'Residents & staff' },
     ],
     sci:
-      'care_home_protection · calendar · care_resident ×0.35 · care_staff ×0.45 · ' +
-      'staff testing cadence 2/week (scenario assumption)',
+      'care_home_protection · calendar · care_contact ×0.50 · external_resident ×0.50 · ' +
+      'external_staff ×0.75 · target=both',
     toConfig: (startDate) => ({
       intervention_id: 'care-home-protection',
       type: 'care_home_protection',
@@ -207,6 +240,10 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
       start_date: startDate,
       release_rule: 'simulation_end',
       adherence: 1.0,
+      care_target: 'both',
+      care_contact_multiplier: 0.5,
+      care_external_resident_multiplier: 0.5,
+      care_external_staff_multiplier: 0.75,
     }),
   },
   vacc: {
@@ -216,12 +253,15 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
     offsetDays: 7,
     meta: (start) => [
       { k: 'Start', v: start },
-      { k: 'Rate', v: '1,200 doses/day' },
+      { k: 'Rollout', v: '10% of target/day' },
+      { k: 'Coverage target', v: '70%', badge: 'assumption' },
+      { k: 'Uptake', v: '80%', badge: 'assumption' },
       { k: 'Protection after', v: '14 days', badge: 'assumption' },
+      { k: 'Waning', v: '365 days' },
     ],
     sci:
-      'vaccination · rolling · daily_doses=1200 · onset_delay_days=14 · efficacy=0.62 · ' +
-      'oldest-first targeting · waning applies (M5)',
+      'vaccination · rollout_rate=0.10 · coverage_target=0.70 · uptake_probability=0.80 · ' +
+      'protection_delay_days=14 · efficacy_susceptibility=0.60 · efficacy_infectiousness=0.00 · waning_days=365',
     toConfig: (startDate) => ({
       intervention_id: 'vaccination-campaign',
       type: 'vaccination',
@@ -229,7 +269,13 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
       start_date: startDate,
       release_rule: 'simulation_end',
       adherence: 1.0,
+      rollout_rate: 0.1,
+      coverage_target: 0.7,
+      uptake_probability: 0.8,
       protection_delay_days: 14,
+      efficacy_susceptibility: 0.6,
+      efficacy_infectiousness: 0,
+      waning_days: 365,
     }),
   },
   travel: {
@@ -239,14 +285,15 @@ export const IV_PRESETS: Record<IvKey, IvPreset> = {
     offsetDays: 0,
     meta: () => [
       { k: 'Start', v: 'Day 0' },
-      { k: 'Coverage', v: '60% of arrivals' },
-      { k: 'Positive arrivals', v: 'Isolated 7 days' },
+      { k: 'Testing', v: '100% of arrivals' },
+      { k: 'Sensitivity', v: '100%' },
+      { k: 'Positive result', v: 'Quarantine 7 days' },
     ],
     sci:
-      'travel_measure · arrival_testing · coverage=0.60 · sensitivity=0.75 · ' +
-      'arrival_terminal ×0.70 · positives diverted to isolation (M8)',
-    // No M7 InterventionType covers arrival testing; it is an M8 travel
-    // measure, so the request carries it as a custom travel configuration.
+      'M8 TravelConfig.interventions · testing_probability=1.00 · test_sensitivity=1.00 · ' +
+      'test_result_delay_days=0 · quarantine_positive_only=true · quarantine_duration_days=7 · ' +
+      'quarantine_adherence=1.00',
+    // Arrival testing is an M8 travel configuration, not an M7 intervention.
     toConfig: null,
   },
 };
@@ -335,6 +382,8 @@ export const TEMPLATES: ScenarioTemplate[] = [
 
 /** The "+ Add intervention" picker, in mockup order. */
 export const IV_PICKER: Array<{ key: IvKey; label: string; desc: string }> = [
+  { key: 'school', label: 'School closure', desc: 'Close school-class and cross-class routes' },
+  { key: 'isolation', label: 'Case isolation', desc: 'Reduce detected-case route contacts' },
   { key: 'quarantine', label: 'Household quarantine', desc: "Quarantine a detected case's household" },
   { key: 'wfh', label: 'Working from home', desc: 'Reduce workplace & commute contact' },
   { key: 'community', label: 'Community reduction', desc: 'Indoor / outdoor mixing controls' },

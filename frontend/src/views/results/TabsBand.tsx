@@ -52,15 +52,21 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
 
   const lastDay = data.dayCount - 1;
   const multiSeed = data.seeds > 1;
+  const hasPublishedBand = data.epi.some((point) => point.bandLow != null && point.bandHigh != null);
   const formatDay = (d: number): string => formatDate(data.dates[d] ?? '');
 
   /* ------------------------------- epi ------------------------------- */
   const epiSeries = useMemo(() => {
-    const pts = data.epi.map(
-      (p) => [p.day, epiMetric === 'active' ? p.active : epiMetric === 'cum' ? p.cum : p.detected] as [number, number],
-    );
-    return [{ pts, band: multiSeed }];
-  }, [data.epi, epiMetric, multiSeed]);
+    const valueOf = (p: (typeof data.epi)[number]): number | null =>
+      epiMetric === 'active' ? p.active : epiMetric === 'cum' ? p.cum : p.detected;
+    const pts = data.epi.flatMap((p) => {
+      const value = valueOf(p);
+      return value == null ? [] : [[p.day, value] as [number, number]];
+    });
+    const low = data.epi.flatMap((p) => p.bandLow == null ? [] : [[p.day, p.bandLow] as [number, number]]);
+    const high = data.epi.flatMap((p) => p.bandHigh == null ? [] : [[p.day, p.bandHigh] as [number, number]]);
+    return [{ pts, band: low.length && high.length ? { low, high } : undefined }];
+  }, [data.epi, epiMetric]);
 
   /* ------------------------------ routes ------------------------------ */
   const routeRows = useMemo(
@@ -154,9 +160,13 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
     const pts = travel.points;
     const pt = pts[day];
     const dash = '—';
-    const sumTo = (pick: (p: (typeof pts)[number]) => number): number => {
+    const sumTo = (pick: (p: (typeof pts)[number]) => number | null): number | null => {
       let total = 0;
-      for (let d = 0; d <= day; d += 1) total += pts[d] ? pick(pts[d]) : 0;
+      for (let d = 0; d <= day; d += 1) {
+        const value = pts[d] ? pick(pts[d]) : null;
+        if (value == null) return null;
+        total += value;
+      }
       return total;
     };
     const cumVisitor = sumTo((p) => p.visitorInfections);
@@ -195,7 +205,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
         ['Resident-linked infections', fmt(cumResident), 'cumulative'],
         [
           'Visitor share of infections',
-          cumVisitor + cumResident > 0
+          cumVisitor != null && cumResident != null && cumVisitor + cumResident > 0
             ? `${((100 * cumVisitor) / (cumVisitor + cumResident)).toFixed(1)}%`
             : dash,
           'cumulative',
@@ -209,17 +219,17 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
     if (!travel) return [];
     const series: Array<{ pts: Array<[number, number]>; cls?: string }> = [];
     if (travel.hasArrivals) {
-      series.push({ pts: travel.points.map((t, d) => [d, t.arrivals] as [number, number]), cls: 'base' });
+      series.push({ pts: travel.points.flatMap((t, d) => t.arrivals == null ? [] : [[d, t.arrivals] as [number, number]]), cls: 'base' });
     }
     if (travel.hasActiveVisitors) {
-      series.push({ pts: travel.points.map((t, d) => [d, t.activeVisitors] as [number, number]) });
+      series.push({ pts: travel.points.flatMap((t, d) => t.activeVisitors == null ? [] : [[d, t.activeVisitors] as [number, number]]) });
     }
     return series;
   }, [travel]);
 
   const travelFlows: HBarRow[] = ((): HBarRow[] => {
     if (!travel || !travelStats) return [];
-    const rows: Array<[string, number]> = travel.hasFlows
+    const rows: Array<[string, number | null]> = travel.hasFlows
       ? [
           ['Visitor → resident', travelStats.cumV2R],
           ['Resident → visitor', travelStats.cumR2V],
@@ -231,18 +241,19 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
             ['Resident-linked infections', travelStats.cumResident],
           ]
         : [];
-    const total = rows.reduce((s, [, v]) => s + v, 0) || 1;
-    return rows.map(([name, count]) => ({
+    const present = rows.filter((row): row is [string, number] => row[1] != null);
+    const total = present.reduce((s, [, v]) => s + v, 0);
+    return present.map(([name, count]) => ({
       name,
       count,
-      share: count / total,
+      share: total > 0 ? count / total : 0,
       color: 'var(--seq3)',
     }));
   })();
 
   /* --------------------------- interventions --------------------------- */
   const ivSpark = useMemo(
-    () => [{ pts: data.epi.map((p) => [p.day, p.active] as [number, number]) }],
+    () => [{ pts: data.epi.flatMap((p) => p.active == null ? [] : [[p.day, p.active] as [number, number]]) }],
     [data.epi],
   );
 
@@ -277,7 +288,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
       {/* ---------------- epidemic curve ---------------- */}
       <div className={`tabpane${tab === 'epi' ? ' active' : ''}`} role="tabpanel">
         <div className="chart-head">
-          <h3>{EPI_TITLE[epiMetric]}</h3>
+          <h3>{epiMetric === 'cum' ? data.cumulativeLabel : EPI_TITLE[epiMetric]}</h3>
           <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
             <Seg
               label="Curve metric"
@@ -296,7 +307,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
                 <span className="sw" style={{ background: 'var(--accent)' }} />
                 {multiSeed ? 'Ensemble median' : 'Single replicate'}
               </span>
-              {multiSeed && (
+              {hasPublishedBand && (
                 <span>
                   <span className="swb" style={{ background: 'var(--band)' }} />
                   Replicate range
@@ -323,9 +334,11 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
           {epiMetric === 'detected' && data.availability.detectedSource === 'detection_events'
             ? 'Detected is a running count of detection_events rows by detection date. '
             : ''}
-          {multiSeed
-            ? `Band spans the lower–upper replicate quantiles of ${data.seeds} seeds. It is a stochastic spread under fixed assumptions, not a confidence interval.`
-            : 'A single replicate — one stochastic realisation under fixed assumptions, with no spread to show. Run an ensemble for a replicate range.'}
+          {hasPublishedBand
+            ? `Band spans the persisted lower–upper replicate quantiles of ${data.seeds} seeds. It is a stochastic spread under fixed assumptions, not a confidence interval.`
+            : multiSeed
+              ? `This ensemble has ${data.seeds} persisted replicates, but no quantile band is available for this metric.`
+              : 'A single replicate — one stochastic realisation under fixed assumptions, with no spread to show. Run an ensemble for a replicate range.'}
         </p>
       </div>
 
@@ -389,24 +402,24 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
           <>
             <div className="age-grid">
               {(() => {
-                const totalAge = data.ages.reduce((s, a) => s + (a.cum[day] ?? 0), 0) || 1;
+                const totalAge = data.ages.reduce((s, a) => s + (a.cum[day] ?? 0), 0);
                 return data.ages.map((a) => {
-                  const inf = a.cum[day] ?? 0;
-                  const atk = a.pop ? inf / a.pop : 0;
-                  const share = inf / totalAge;
+                  const inf = a.cum[day];
+                  const atk = inf != null && a.pop ? inf / a.pop : null;
+                  const share = inf != null && totalAge > 0 ? inf / totalAge : null;
                   return (
                     <div className="card age-card" key={a.band}>
                       <div className="k">AGE {a.band}</div>
                       <div className="v">{fmt(inf)}</div>
                       <div className="s">
                         {data.availability.agePopulations
-                          ? `${(atk * 100).toFixed(1)}% of ${fmt(a.pop)}`
-                          : `${(share * 100).toFixed(1)}% of infections`}
+                          ? atk == null ? 'not available' : `${(atk * 100).toFixed(1)}% of ${fmt(a.pop)}`
+                          : share == null ? 'not available' : `${(share * 100).toFixed(1)}% of infections`}
                       </div>
                       <div className="age-bar">
                         <i
                           style={{
-                            width: `${Math.min(100, (data.availability.agePopulations ? atk * 400 : share * 100))}%`,
+                            width: `${Math.min(100, data.availability.agePopulations ? (atk ?? 0) * 400 : (share ?? 0) * 100)}%`,
                           }}
                         />
                       </div>
@@ -490,7 +503,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
       <div className={`tabpane${tab === 'iv' ? ' active' : ''}`} role="tabpanel">
         <div className="chart-head">
           <h3>Interventions against the outbreak</h3>
-          <span className="chart-note">Hatched = detection-triggered, per-agent</span>
+          <span className="chart-note">Calendar windows are shown; detection-triggered timing is not known in advance.</span>
         </div>
         <div style={{ margin: '0 0 6px 182px' }}>
           <LineChart
@@ -514,20 +527,23 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
                   {iv.name}
                 </span>
                 <span className="gantt-track">
-                  <span
-                    className={`gantt-bar${iv.triggered ? ' dashed' : ''}`}
-                    style={{
-                      left: `${(100 * iv.from) / Math.max(1, lastDay)}%`,
-                      width: `${(100 * Math.max(1, iv.to - iv.from)) / Math.max(1, lastDay)}%`,
-                      background: iv.color,
-                    }}
-                    title={iv.detail}
-                  />
+                  {!iv.triggered && (
+                    <span
+                      className="gantt-bar"
+                      style={{
+                        left: `${(100 * iv.from) / Math.max(1, lastDay)}%`,
+                        width: `${(100 * Math.max(1, iv.to - iv.from + 1)) / Math.max(1, lastDay)}%`,
+                        background: iv.color,
+                      }}
+                      title={iv.detail}
+                    />
+                  )}
                   <span
                     className="gantt-cursor"
                     style={{ left: `${(100 * day) / Math.max(1, lastDay)}%` }}
                   />
                 </span>
+                {iv.triggered && <span className="chart-note">{iv.detail}</span>}
               </div>
             ))}
           </div>

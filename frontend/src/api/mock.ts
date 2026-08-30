@@ -41,7 +41,7 @@ import {
 
 export const MOCK_DAYS = 60;
 export const MOCK_POP = ISLAND_POP;
-export const MOCK_START_DATE = '2026-01-06';
+export const MOCK_START_DATE = '2025-01-06';
 
 const gauss = (d: number, peak: number, sigma: number, amp: number): number =>
   amp * Math.exp(-((d - peak) ** 2) / (2 * sigma * sigma));
@@ -63,11 +63,8 @@ export function detected(d: number): number {
   return d < 3 ? 0 : 0.38 * cum(d - 3);
 }
 
-export const bandLo = (v: number): number => v * 0.86;
-export const bandHi = (v: number): number => v * 1.16;
-
 function isoDate(dayOffset: number): string {
-  const dt = new Date(Date.UTC(2026, 0, 6));
+  const dt = new Date(Date.UTC(2025, 0, 6));
   dt.setUTCDate(dt.getUTCDate() + dayOffset);
   return dt.toISOString().slice(0, 10);
 }
@@ -227,28 +224,27 @@ function dailyEpidemicRows(): DatasetRow[] {
   const rows: DatasetRow[] = [];
   for (let d = 0; d < MOCK_DAYS; d++) {
     const infectious = Math.round(active(d));
-    const cumulative = Math.round(cum(d));
-    const prev = d === 0 ? 0 : Math.round(cum(d - 1));
+    const totalCumulative = Math.round(cum(d));
+    const nonSeededCumulative = Math.max(0, totalCumulative - 5);
+    const prevNonSeeded = d === 0 ? 0 : Math.max(0, Math.round(cum(d - 1)) - 5);
     rows.push({
       date: isoDate(d),
       time_index: d,
-      susceptible: MOCK_POP - cumulative,
+      susceptible: MOCK_POP - totalCumulative,
       exposed: Math.round(active(d) * 0.42),
       infectious,
-      recovered: Math.max(0, cumulative - infectious),
+      recovered: Math.max(0, totalCumulative - infectious),
       severe: 0,
       dead: 0,
-      new_infections: Math.max(0, cumulative - prev),
-      new_local_infections: Math.max(0, cumulative - prev - (d < 3 ? 5 : 0)),
+      new_infections: Math.max(0, nonSeededCumulative - prevNonSeeded),
+      new_local_infections: Math.max(0, nonSeededCumulative - prevNonSeeded),
       new_imported_infections: 0,
       new_seeded_infections: d === 0 ? 5 : 0,
-      cumulative_infections: cumulative,
-      cumulative_total_infections: cumulative,
+      cumulative_infections: nonSeededCumulative,
+      cumulative_total_infections: totalCumulative,
       prevalence: infectious / MOCK_POP,
-      attack_rate: cumulative / MOCK_POP,
+      attack_rate: totalCumulative / MOCK_POP,
       detected_cases: Math.round(detected(d)),
-      band_low: Math.round(bandLo(active(d))),
-      band_high: Math.round(bandHi(active(d))),
     });
   }
   return rows;
@@ -348,20 +344,52 @@ function dailyTravelRows(): DatasetRow[] {
   return rows;
 }
 
+/** Demo-only M6-shaped summary rows used to exercise the real ensemble loader. */
+function ensembleSummaryRows(): DatasetRow[] {
+  const rows: DatasetRow[] = [];
+  const add = (scope: string, key: string, metric: string, date: string, value: number) => {
+    rows.push({
+      scope,
+      key,
+      metric,
+      metric_semantic: metric.includes('prevalence') || metric.includes('attack') ? 'state' : 'incidence',
+      date,
+      cell_semantic: 'median',
+      median: value,
+      replicate_count: 5,
+    });
+  };
+  const epi = dailyEpidemicRows();
+  for (const row of epi) {
+    const date = String(row.date);
+    add('epidemic', 'all', 'latent_new_infections', date, Number(row.new_infections));
+    add('epidemic', 'all', 'latent_prevalence', date, Number(row.prevalence));
+    add('epidemic', 'all', 'latent_cumulative_infections', date, Number(row.cumulative_total_infections));
+    add('epidemic', 'all', 'latent_attack_rate', date, Number(row.attack_rate));
+  }
+  for (const row of dailyParishRows()) add('parish', String(row.parish), 'latent_new_infections', String(row.date), Number(row.new_infections));
+  for (const row of dailyRouteRows()) add('route', String(row.route_id), 'latent_local_infections', String(row.date), Number(row.new_local_infections));
+  for (const row of dailyAgeRows()) add('age', String(row.age_band), 'latent_new_infections', String(row.date), Number(row.new_infections));
+  return rows;
+}
+
 const DATASETS: Record<string, () => DatasetRow[]> = {
   daily_epidemic: dailyEpidemicRows,
   daily_parish: dailyParishRows,
   daily_route: dailyRouteRows,
   daily_age: dailyAgeRows,
   daily_travel: dailyTravelRows,
+  ensemble_summary: ensembleSummaryRows,
+  matched_seed_comparison: () => [],
 };
 
 const datasetCache = new Map<string, DatasetRow[]>();
 
 function datasetRows(name: string): DatasetRow[] {
+  const baseName = name.includes(':') ? name.slice(name.indexOf(':') + 1) : name;
   const cached = datasetCache.get(name);
   if (cached) return cached;
-  const build = DATASETS[name];
+  const build = DATASETS[baseName];
   if (!build) throw new ApiError(404, `Unknown dataset "${name}"`, {
     code: 'dataset_not_found',
     message: `Unknown dataset "${name}"`,
@@ -373,7 +401,7 @@ function datasetRows(name: string): DatasetRow[] {
 
 /* ============================== jobs ============================== */
 
-const REQUEST_HASH = 'mock-9c41d2c07b8f4a1e9d5c6b0a3f2e1d0c88af';
+const REQUEST_HASH = 'demo-session';
 
 function ts(offsetMinutes: number): string {
   return new Date(Date.now() - offsetMinutes * 60_000).toISOString();
@@ -387,18 +415,18 @@ function makeJob(partial: Partial<JobStatusResponse> & Pick<JobStatusResponse, '
     progress_fraction: null,
     request_hash: REQUEST_HASH,
     request: {},
-    scenario_hash: 'a3f2c9e41b',
-    latent_hash: '57be031c9d',
-    bundle_hash: 'e802fa73b6',
+    scenario_hash: null,
+    latent_hash: null,
+    bundle_hash: null,
     error: null,
-    artifact_count: 6,
-    verification_status: 'passed',
+    artifact_count: 0,
+    verification_status: null,
     worker_pid: null,
     last_heartbeat: null,
     exit_status: 0,
     result_manifest_path: null,
     result_manifest_hash: null,
-    engine_git_commit: '93b316a',
+    engine_git_commit: null,
     dirty_worktree_flag: false,
     status_url: `/api/v1/jobs/${partial.job_id}`,
     ...partial,
@@ -508,7 +536,7 @@ export class MockJosClient implements JosClient {
       api_version: 'v1',
       api_schema_version: 'm9-1.0',
       package_version: '0.9.2+mock',
-      engine: { git_commit: '93b316a', dirty_worktree: false, starsim: '3.5.2' },
+      engine: { name: 'Demo engine', version: 'demo', git_commit: null, dirty_worktree_flag: null },
       artifact_schema_versions: { outbreak: '1.0', ensemble: '1.0', travel: '1.0' },
       population_presets: { ci: 3_000, scaled: 15_000, full: MOCK_POP },
       job_kinds: ['scenario_run', 'scenario_compare', 'ensemble'],
@@ -527,7 +555,7 @@ export class MockJosClient implements JosClient {
       ],
       travel_modes: ['air', 'ferry'],
       parishes: MOCK_PARISHES.map((p) => p.name),
-      dataset_names: Object.keys(DATASETS),
+      dataset_names: ['daily_epidemic', 'daily_parish', 'daily_route', 'daily_age', 'daily_travel', 'ensemble_summary'],
       scheduler: { max_concurrent_jobs: 1, queue_policy: 'fifo' },
       limits: { max_dataset_rows: 10_000, default_dataset_limit: DEFAULT_DATASET_LIMIT },
       state_directory: '(mock — no local state directory)',
@@ -607,14 +635,14 @@ export class MockJosClient implements JosClient {
         state: 'SUCCEEDED',
         phase: 'complete',
         finished_at: new Date().toISOString(),
-        artifact_count: 6,
-        verification_status: 'passed',
-        scenario_hash: 'a3f2c9e41b',
-        latent_hash: '57be031c9d',
-        bundle_hash: 'e802fa73b6',
+        artifact_count: 0,
+        verification_status: null,
+        scenario_hash: null,
+        latent_hash: null,
+        bundle_hash: null,
         exit_status: 0,
       });
-      this.pushEvent(jobId, 'job_completed', 'All artifacts verified and published');
+      this.pushEvent(jobId, 'job_completed', 'Demo job completed in memory');
       return;
     }
     const [phase, delay] = entry;
@@ -680,24 +708,8 @@ export class MockJosClient implements JosClient {
   }
 
   async getJobArtifacts(jobId: string): Promise<JobArtifactsResponse> {
-    const job = await this.getJob(jobId);
-    if (job.state !== 'SUCCEEDED') return { job_id: jobId, artifacts: [] };
-    return {
-      job_id: jobId,
-      artifacts: Object.keys(DATASETS).map((name, i) => ({
-        role: 'primary',
-        artifact_type: 'outbreak_run',
-        artifact_id: `${jobId}-artifact-${i + 1}`,
-        manifest_path: `artifacts/${jobId}/${name}/manifest.json`,
-        scenario_hash: 'a3f2c9e41b',
-        latent_hash: '57be031c9d',
-        bundle_hash: 'e802fa73b6',
-        logical_content_hash: `mock-${name}-hash`,
-        verification_status: 'passed' as const,
-        size_bytes: 128_000,
-        datasets: [name],
-      })),
-    };
+    await this.getJob(jobId);
+    return { job_id: jobId, artifacts: [] };
   }
 
   async getJobDatasets(jobId: string): Promise<JobDatasetsResponse> {
@@ -706,7 +718,11 @@ export class MockJosClient implements JosClient {
     return {
       job_id: jobId,
       available: true,
-      datasets: Object.keys(DATASETS).map((name) => {
+      datasets: (job.kind === 'ensemble'
+        ? ['ensemble_summary']
+        : job.kind === 'scenario_compare'
+          ? ['baseline:ensemble_summary', 'treated:ensemble_summary', 'comparison:matched_seed_comparison']
+          : Object.keys(DATASETS).filter((name) => name !== 'ensemble_summary')).map((name) => {
         const rows = datasetRows(name);
         return {
           name,

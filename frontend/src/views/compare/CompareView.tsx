@@ -85,6 +85,7 @@ function useCompareJob(jobId: string | undefined) {
     })();
     return () => {
       cancelled = true;
+      setProvenanceJobId(null);
     };
   }, [jobId]);
 
@@ -217,35 +218,45 @@ function CompareBody({
   setMapMode: (m: MapMode) => void;
 }) {
   const last = model.days - 1;
-  const banded = model.seeds.length > 1;
+  const banded = Boolean(model.baseline.activeBand && model.treated.activeBand);
 
-  const cumBase = model.baseline.cumulative[last] ?? 0;
-  const cumTreated = model.treated.cumulative[last] ?? 0;
-  const cumDelta = cumTreated - cumBase;
-  const cumPct = cumBase ? (100 * cumDelta) / cumBase : 0;
+  const cumBase = model.baseline.cumulative[last] ?? null;
+  const cumTreated = model.treated.cumulative[last] ?? null;
+  const cumDelta = cumBase != null && cumTreated != null ? cumTreated - cumBase : null;
+  const cumPct = cumDelta != null && cumBase ? (100 * cumDelta) / cumBase : null;
 
   const peakBaseIdx = peakIndex(model.baseline.active);
   const peakTreatIdx = peakIndex(model.treated.active);
-  const peakBase = model.baseline.active[peakBaseIdx] ?? 0;
-  const peakTreat = model.treated.active[peakTreatIdx] ?? 0;
-  const peakDelta = peakTreat - peakBase;
-  const peakPct = peakBase ? (100 * peakDelta) / peakBase : 0;
-  const peakShift = peakTreatIdx - peakBaseIdx;
+  const peakBase = peakBaseIdx >= 0 ? model.baseline.active[peakBaseIdx] : null;
+  const peakTreat = peakTreatIdx >= 0 ? model.treated.active[peakTreatIdx] : null;
+  const peakDelta = peakBase != null && peakTreat != null ? peakTreat - peakBase : null;
+  const peakPct = peakDelta != null && peakBase ? (100 * peakDelta) / peakBase : null;
+  const peakShift = peakBaseIdx >= 0 && peakTreatIdx >= 0 ? peakTreatIdx - peakBaseIdx : null;
 
-  const arBase = (model.baseline.attack[last] ?? 0) * 100;
-  const arTreated = (model.treated.attack[last] ?? 0) * 100;
-  const arDelta = arTreated - arBase;
+  const arBase = model.baseline.attack[last] != null ? model.baseline.attack[last] * 100 : null;
+  const arTreated = model.treated.attack[last] != null ? model.treated.attack[last] * 100 : null;
+  const arDelta = arBase != null && arTreated != null ? arTreated - arBase : null;
 
   const chart = useMemo(
     () => [
       {
-        pts: model.baseline.active.map((v, d) => [d, v] as [number, number]),
+        pts: model.baseline.active.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
         cls: 'base',
-        band: banded,
+        band: model.baseline.activeBand
+          ? {
+              low: model.baseline.activeBand.low.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
+              high: model.baseline.activeBand.high.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
+            }
+          : undefined,
       },
       {
-        pts: model.treated.active.map((v, d) => [d, v] as [number, number]),
-        band: banded,
+        pts: model.treated.active.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
+        band: model.treated.activeBand
+          ? {
+              low: model.treated.activeBand.low.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
+              high: model.treated.activeBand.high.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
+            }
+          : undefined,
       },
     ],
     [model, banded],
@@ -258,23 +269,24 @@ function CompareBody({
     () => new Map(model.parishes.map((p) => [p.id, p])),
     [model.parishes],
   );
-  const attackCeiling = Math.max(...model.parishes.map((p) => p.base), 0.0001) * 1.05;
+  const parishCeiling = Math.max(...model.parishes.map((p) => p.base), 1) * 1.05;
 
   const colorFor = (id: ParishId): string => {
     const p = parishById.get(id);
     if (!p) return 'var(--panel-2)';
-    if (mapMode === 'a') return seqColor(Math.min(0.999, p.base / attackCeiling));
-    if (mapMode === 'b') return seqColor(Math.min(0.999, p.treated / attackCeiling));
-    const rel = p.base ? (p.treated - p.base) / p.base : 0;
+    if (mapMode === 'a') return seqColor(Math.min(0.999, p.base / parishCeiling));
+    if (mapMode === 'b') return seqColor(Math.min(0.999, p.treated / parishCeiling));
+    if (!p.base) return 'var(--panel-2)';
+    const rel = (p.treated - p.base) / p.base;
     return divColor(Math.min(0.999, Math.max(0, (rel + 0.3) / 0.6)));
   };
 
   const mapTitle =
     mapMode === 'diff'
-      ? 'Difference in attack rate by parish'
+      ? 'Difference in cumulative infections by parish'
       : mapMode === 'a'
-        ? 'Baseline — attack rate by parish'
-        : 'Intervention — attack rate by parish';
+        ? 'Baseline — cumulative infections by parish'
+        : 'Intervention — cumulative infections by parish';
 
   return (
     <section className="view view-compare">
@@ -295,51 +307,50 @@ function CompareBody({
           <Btn to="/runs">Change runs</Btn>
         </div>
 
-        {model.derived && <DerivationNote model={model} />}
-
         <div className="deltas">
           <Card className="delta-card">
             <div className="k">Cumulative infections</div>
-            <div className={`v ${cumDelta < 0 ? 'down' : 'up'}`}>
-              {signed(cumDelta)} <span className="pct">{signedPct(cumPct)}</span>
+              <div className={`v ${cumDelta != null && cumDelta < 0 ? 'down' : 'up'}`}>
+              {cumDelta == null ? '—' : signed(cumDelta)} <span className="pct">{cumPct == null ? 'not available' : signedPct(cumPct)}</span>
             </div>
             <div className="s">
-              {fmt(cumBase)} → {fmt(cumTreated)} by day {last}
+              {cumBase == null || cumTreated == null ? 'Cumulative values are not published for both arms.' : `${fmt(cumBase)} → ${fmt(cumTreated)} by day ${last}`}
             </div>
           </Card>
 
           <Card className="delta-card">
             <div className="k">Peak infectious</div>
-            <div className={`v ${peakDelta < 0 ? 'down' : 'up'}`}>
-              {signedPct(peakPct, 0)} <span className="pct">{signed(peakDelta)}</span>
+            <div className={`v ${peakDelta != null && peakDelta < 0 ? 'down' : 'up'}`}>
+              {peakPct == null ? '—' : signedPct(peakPct, 0)} <span className="pct">{peakDelta == null ? 'not available' : signed(peakDelta)}</span>
             </div>
             <div className="s">
-              {fmt(peakBase)} → {fmt(peakTreat)} residents
+              {peakBase == null || peakTreat == null ? 'Active infectious state is not published by both arms.' : `${fmt(peakBase)} → ${fmt(peakTreat)} residents`}
             </div>
           </Card>
 
           <Card className="delta-card">
             <div className="k">Peak date</div>
             <div className="v">
-              {peakShift === 0
+              {peakShift == null
+                ? '—'
+                : peakShift === 0
                 ? 'unchanged'
                 : `${peakShift > 0 ? '+' : '−'}${Math.abs(peakShift)} day${
                     Math.abs(peakShift) === 1 ? '' : 's'
                   }`}
             </div>
             <div className="s">
-              {formatDay(model.startDate, peakBaseIdx)} → {formatDay(model.startDate, peakTreatIdx)}
+              {peakShift == null ? 'Peak date is not available for both arms.' : `${formatDay(model.startDate, peakBaseIdx)} → ${formatDay(model.startDate, peakTreatIdx)}`}
             </div>
           </Card>
 
           <Card className="delta-card">
             <div className="k">Attack rate</div>
-            <div className={`v ${arDelta < 0 ? 'down' : 'up'}`}>
-              {arDelta < 0 ? '−' : '+'}
-              {Math.abs(arDelta).toFixed(1)} pts
+            <div className={`v ${arDelta != null && arDelta < 0 ? 'down' : 'up'}`}>
+              {arDelta == null ? '—' : `${arDelta < 0 ? '−' : '+'}${Math.abs(arDelta).toFixed(1)} pts`}
             </div>
             <div className="s">
-              {arBase.toFixed(1)}% → {arTreated.toFixed(1)}% of residents
+              {arBase == null || arTreated == null ? 'Attack rate is not published for both arms.' : `${arBase.toFixed(1)}% → ${arTreated.toFixed(1)}% of residents`}
             </div>
           </Card>
         </div>
@@ -382,7 +393,7 @@ function CompareBody({
                 <div className="drv">
                   {topRoutes.map((r) => {
                     const d = r.treated - r.base;
-                    const pct = r.base ? (100 * d) / r.base : 0;
+                    const pct = r.base ? (100 * d) / r.base : null;
                     return (
                       <div className="drv-row cmp-route-row" key={r.routeId}>
                         <span className="nm" title={r.name}>
@@ -422,7 +433,7 @@ function CompareBody({
                             ))}
                         </span>
                         <span className={`val ${d < 0 ? 'down' : 'up'}`}>
-                          {signed(d)} <small>({pct.toFixed(0)}%)</small>
+                          {signed(d)} <small>({pct == null ? 'not available' : `${pct.toFixed(0)}%`})</small>
                         </span>
                       </div>
                     );
@@ -436,13 +447,15 @@ function CompareBody({
             <div className="cmp-map-card mapground">
               <div className="cmp-map-head">
                 <span style={{ fontWeight: 650, fontSize: 13 }}>{mapTitle}</span>
-                <Seg
-                  options={MAP_MODES}
-                  value={mapMode}
-                  onChange={setMapMode}
-                  label="Map mode"
-                  title="Which arm the choropleth shows"
-                />
+                  {model.parishes.length > 0 && (
+                    <Seg
+                      options={MAP_MODES}
+                      value={mapMode}
+                      onChange={setMapMode}
+                      label="Map mode"
+                      title="Which arm the choropleth shows"
+                    />
+                  )}
               </div>
               {model.parishes.length === 0 ? (
                 <div className="cmp-note">This job serves no per-parish table.</div>
@@ -493,31 +506,10 @@ function CompareBody({
         </div>
 
         <p className="cmp-footnote">
-          <b>{FOOTNOTE_LEAD}</b> — matched-seed runs of a synthetic population with assumed
-          intervention effects. They are not predictions of real policy effectiveness in Jersey.
-        </p>
+          <b>{FOOTNOTE_LEAD}</b> — matched-seed runs of a synthetic population using the declared
+          intervention mechanics. They are not predictions of real policy effectiveness in Jersey.
+      </p>
       </div>
     </section>
-  );
-}
-
-/** Honest note shown whenever the intervention arm was derived, not served. */
-function DerivationNote({ model }: { model: CompareModel }) {
-  return (
-    <div className="cmp-derived" role="note">
-      <b>The intervention arm on this page is derived, not read from the artifact.</b> This job
-      publishes a single set of tidy tables with no arm column and no matched-seed comparison
-      dataset, so only the baseline is served.{' '}
-      {model.measures.length
-        ? `The declared measures (${model.measures.join(', ')})`
-        : 'The declared scenario'}{' '}
-      are applied as a stated assumption: daily incidence is reduced by up to{' '}
-      {(model.effect * 100).toFixed(0)}% after a short adherence ramp, with a{' '}
-      {model.peakShiftDays}-day peak delay. No second epidemic is simulated here, and these
-      differences carry no more evidence than the assumption itself.
-      {model.datasetGap.length > 0 && (
-        <span className="mono sci-only cmp-gap"> Not served: {model.datasetGap.join('; ')}.</span>
-      )}
-    </div>
   );
 }
