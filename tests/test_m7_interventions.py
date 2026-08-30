@@ -266,5 +266,5 @@ def test_vaccination_delay_and_artifact_contract(m7_calendar_run, tmp_path: Path
     ):
         assert (artifact.artifact_directory / filename).exists()
     manifest = json.loads((artifact.artifact_directory / "manifest.json").read_text())
-    assert manifest["intervention_framework_version"] == "7.0.0"
+    assert manifest["intervention_framework_version"] == "7.1.0"
     assert manifest["m4_logical_content_hash"] == result.generated.logical_content_hash

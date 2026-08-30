@@ -245,7 +245,7 @@ def write_intervention_artifact(
     config_hashes = result.intervention_diagnostics.get("intervention_config_hashes", {})
     manifest = InterventionArtifactManifest(
         artifact_id=artifact_id,
-        framework_version=result.intervention_diagnostics.get("framework_version", "7.0.0"),
+        framework_version=result.intervention_diagnostics.get("framework_version", "7.1.0"),
         scenario_id=scenario.scenario_id,
         scenario_hash=result.scenario_hash,
         scenario_config_hash=scenario.config_hash,
@@ -267,7 +267,7 @@ def write_intervention_artifact(
         c4_observation_scheduler_version=("6.0.0" if result.observation_schedule else None),
         c4_observation_config_hash=observation_hash,
         intervention_framework_version=result.intervention_diagnostics.get(
-            "framework_version", "7.0.0"
+            "framework_version", "7.1.0"
         ),
         intervention_config_hashes=config_hashes,
         sensitivity_config_ids=scenario.sensitivity_config_ids,
@@ -409,7 +409,7 @@ def write_intervention_comparison_artifact(
     )
     manifest = {
         "artifact_id": artifact_directory.name,
-        "framework_version": "7.0.0",
+        "framework_version": "7.1.0",
         "comparison_id": comparison.comparison_id,
         "logical_content_hash": logical_hash,
         "created_at": datetime.now(UTC).isoformat(),

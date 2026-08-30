@@ -51,7 +51,7 @@ class NetworkGenerationConfig(StrictModel):
     """Stable configuration for seeded route and network construction."""
 
     schema_version: Literal["1.0"] = "1.0"
-    generator_version: NonEmptyString = "4.1.1"
+    generator_version: NonEmptyString = "4.2.0"
     mode: PopulationMode
     seed: StrictInt
     start_date: date = date(2025, 1, 6)
@@ -66,6 +66,8 @@ class NetworkGenerationConfig(StrictModel):
     workplace_transient_contacts: StrictInt = Field(default=3, ge=0, le=20)
     community_indoor_contacts: StrictInt = Field(default=3, ge=0, le=20)
     community_outdoor_contacts: StrictInt = Field(default=2, ge=0, le=20)
+    activity_cv: StrictFloat = Field(default=0.0, ge=0)
+    contact_activity_distribution_version: NonEmptyString = "1.0"
     bus_cohort_capacity: StrictInt = Field(default=24, ge=2, le=60)
     shared_vehicle_capacity: StrictInt = Field(default=4, ge=2, le=8)
     care_cohort_capacity: StrictInt = Field(default=8, ge=2, le=20)

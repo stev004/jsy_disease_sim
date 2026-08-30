@@ -1,11 +1,18 @@
 import json
+import statistics
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
 import pytest
 
 from jersey_outbreak.network_artifacts import write_network_artifact
-from jersey_outbreak.network_generator import generate_networks
+from jersey_outbreak.network_generator import (
+    CONTACT_ACTIVITY_ROUTES,
+    _activity_participation_probabilities,
+    _persistent_contact_activity,
+    generate_networks,
+)
 from jersey_outbreak.network_schemas import ROUTE_FAMILIES, NetworkGenerationConfig
 from jersey_outbreak.population_artifacts import write_population_artifact
 from jersey_outbreak.population_generator import generate_population
@@ -64,6 +71,142 @@ def test_network_is_deterministic_and_seed_sensitive(network_inputs) -> None:
     assert changed.route_snapshot("community_indoor", config.snapshot_dates[0]).edges != (
         first.route_snapshot("community_indoor", config.snapshot_dates[0]).edges
     )
+
+
+def test_zero_activity_cv_is_exact_m11b_projection(network_inputs) -> None:
+    m2_input, m3_input = network_inputs
+    implicit = generate_networks(NetworkGenerationConfig(mode="ci", seed=123), m2_input, m3_input)
+    explicit = generate_networks(
+        NetworkGenerationConfig(mode="ci", seed=123, activity_cv=0.0),
+        m2_input,
+        m3_input,
+    )
+    assert implicit.logical_content_hash == explicit.logical_content_hash
+    assert implicit.route_specs == explicit.route_specs
+    for when in implicit.config.snapshot_dates:
+        assert implicit.snapshot(when) == explicit.snapshot(when)
+    diagnostic = explicit.diagnostics["contact_activity"]
+    assert diagnostic["zero_cv_exact_bypass"] is True
+    assert diagnostic["approved_routes"] == list(CONTACT_ACTIVITY_ROUTES)
+    assert diagnostic["realised_mean"] == 1.0
+    assert diagnostic["realised_cv"] == 0.0
+
+
+def test_synthetic_contact_activity_moments_and_route_scope(network_inputs, generated) -> None:
+    values = [
+        _persistent_contact_activity(20260830, f"fixture-{index}", 0.5, "1.0")
+        for index in range(10_000)
+    ]
+    mean = statistics.fmean(values)
+    cv = statistics.pstdev(values) / mean
+    assert mean == pytest.approx(1.0, rel=0.02)
+    assert cv == pytest.approx(0.5, rel=0.03)
+    assert _persistent_contact_activity(123, "person-1", 0.5, "1.0") == (
+        _persistent_contact_activity(123, "person-1", 0.5, "1.0")
+    )
+    fixture_config = NetworkGenerationConfig(mode="ci", seed=20260830, activity_cv=0.5)
+    probabilities = _activity_participation_probabilities(
+        (f"fixture-{index}" for index in range(100)),
+        41.25,
+        config=fixture_config,
+    )
+    assert sum(probabilities.values()) == pytest.approx(41.25, abs=1e-10)
+    assert all(0.0 <= probability <= 1.0 for probability in probabilities.values())
+
+    m2_input, m3_input = network_inputs
+    sensitivity = generate_networks(
+        NetworkGenerationConfig(mode="ci", seed=123, activity_cv=0.5),
+        m2_input,
+        m3_input,
+    )
+    assert sensitivity.config.community_age_mixing == generated.config.community_age_mixing
+    assert sensitivity.config.activity_cv == 0.5
+    assert NetworkGenerationConfig(mode="ci", seed=123).activity_cv == 0.0
+    school_staff = {row["agent_id"] for row in generated.school_staff_assignments}
+    for when in generated.config.snapshot_dates:
+        assert sensitivity.route_snapshot("bus", when) == generated.route_snapshot("bus", when)
+        baseline_staff_edges = {
+            (edge["p1"], edge["p2"])
+            for edge in generated.route_snapshot("school_cross_class", when).edges
+            if {edge["p1"], edge["p2"]} & school_staff
+        }
+        sensitivity_staff_edges = {
+            (edge["p1"], edge["p2"])
+            for edge in sensitivity.route_snapshot("school_cross_class", when).edges
+            if {edge["p1"], edge["p2"]} & school_staff
+        }
+        assert sensitivity_staff_edges == baseline_staff_edges
+    assert sensitivity.route_snapshot(
+        "community_indoor", sensitivity.config.snapshot_dates[0]
+    ) != generated.route_snapshot("community_indoor", generated.config.snapshot_dates[0])
+    diagnostic = sensitivity.diagnostics["contact_activity"]
+    assert diagnostic["application"] == "participation_once"
+    activity_provenance = diagnostic["provenance"]["activity_cv"]
+    assert activity_provenance["value"] == 0.5
+    assert activity_provenance["status"] == "scenario_assumption"
+    assert activity_provenance["role"] == "structural_assumption"
+    assert activity_provenance["sensitivity_required"] is True
+
+
+def test_full_mode_contract_excludes_only_care_and_medical_from_community(
+    network_inputs,
+) -> None:
+    m2_input, m3_input = network_inputs
+    full_m2 = replace(
+        m2_input,
+        manifest=m2_input.manifest.model_copy(update={"mode": "full"}),
+    )
+    full_m3 = replace(
+        m3_input,
+        manifest=m3_input.manifest.model_copy(update={"mode": "full"}),
+    )
+    bounded_full = generate_networks(
+        NetworkGenerationConfig(mode="full", seed=123), full_m2, full_m3
+    )
+    setting_type_by_id = {
+        row["setting_id"]: row["setting_type"] for row in full_m2.communal_settings
+    }
+    care_or_medical = {
+        row["agent_id"]
+        for row in full_m2.residents
+        if isinstance(row.get("care_setting_id"), str)
+        and any(
+            token in setting_type_by_id[row["care_setting_id"]].lower()
+            for token in ("care", "medical")
+        )
+    }
+    other_communal = {
+        row["agent_id"]
+        for row in full_m2.residents
+        if isinstance(row.get("care_setting_id"), str) and row["agent_id"] not in care_or_medical
+    }
+    memberships = {
+        row["agent_id"]
+        for route_id in ("community_indoor", "community_outdoor")
+        for row in bounded_full.route_memberships[route_id]
+    }
+    endpoints = {
+        endpoint
+        for when in bounded_full.config.snapshot_dates
+        for route_id in ("community_indoor", "community_outdoor")
+        for edge in bounded_full.route_snapshot(route_id, when).edges
+        for endpoint in (edge["p1"], edge["p2"])
+    }
+    care_staff = {row["agent_id"] for row in bounded_full.care_staff_assignments}
+    assert care_or_medical
+    assert other_communal
+    assert not care_or_medical & memberships
+    assert not care_or_medical & endpoints
+    assert other_communal <= memberships
+    assert care_staff <= memberships
+    assert care_staff & endpoints
+    residence_diagnostics = bounded_full.diagnostics["cross_route"][
+        "community_participation_by_residence_type"
+    ]
+    for setting_type, row in residence_diagnostics.items():
+        if "care" in setting_type.lower() or "medical" in setting_type.lower():
+            assert row["eligible_pool_count"] == 0
+            assert not any(row["baseline_endpoint_count_by_route"].values())
 
 
 def test_edge_invariants_and_route_membership_boundaries(generated) -> None:
