@@ -3,6 +3,33 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
+## 2026-08-30 — M9.4 closure and final M10.1 implementation verification
+
+**History preserved.** The M10 implementation was independently audited and
+failed. The frontend-only M10.1 correction was checkpointed at
+`4ae6008871922bf7f1d820bf04294d477c55c14c` after 63 of 64 gates passed; its
+remaining real School-closure gate exposed a protected backend calendar-date
+reload defect, so that checkpoint deliberately did not claim PASS.
+
+**M9.4 correction.** A clean branch from the verified M9 baseline fixed the
+authoritative JSON deserialization mismatch without weakening Python-mode or
+malformed-date validation. Commit
+`37af56ea9a368b599f3c89bbbb399b13b465f8f2` preserves exact School `0 / 0`
+multipliers and calendar activation semantics across persistence and verifier
+reload. Real job `2c4191e8-b732-41a8-9072-bc989a7385a9` reached verified
+`SUCCEEDED`; focused and protected backend regressions passed.
+
+**M10.1 integration.** The exact M9.4 commit was merged without squashing;
+merge commit `2dc29b5d7bcee8430b00c94928070172095e17d5` retains the checkpoint and
+backend correction as ancestors. Fresh real baseline, School, M6 ensemble,
+scenario comparison and M8 travel jobs all reached verified `SUCCEEDED` and
+were reconciled with the rendered frontend. The School job
+`442edefa-5855-4fbb-93bf-a0f9114c376e` retained its requested, normalized and
+persisted `0 / 0` multipliers. All 64 M10.1 implementation gates now pass.
+
+**Status.** M10.1 implementation PASS; independent final audit pending. This
+does not record release approval, a merge to `main`, or a release tag.
+
 ## 2026-08-30 — M10.1 corrective milestone implementation
 
 **Scope.** Frontend-only corrective work on `codex/m10.1-scientific-truth`,

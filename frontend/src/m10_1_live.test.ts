@@ -138,8 +138,27 @@ describe('M10.1 live M9 contract checks', () => {
   }, 240_000);
 
   it.skipIf(!liveApi)('loads a real namespaced M9 comparison without synthesizing the treated arm', async () => {
-    const status = await json('/api/v1/jobs/cd966cd2-5a3e-41a4-a6c8-c27259537e6f');
-    expect(status.state).toBe('SUCCEEDED');
+    const duration = 8;
+    const baseline = buildScenario({ ...base, name: 'M10.1 comparison baseline', duration });
+    const treated = buildScenario({
+      ...base,
+      name: 'M10.1 comparison school closure',
+      duration,
+      ivs: ['school'],
+    });
+    const { status } = await submitAndWait(
+      {
+        kind: 'scenario_compare',
+        mode: 'ci',
+        replicate_seeds: [123],
+        start_date: base.startDate,
+        duration_days: duration,
+        baseline,
+        treated,
+        comparison_id: 'm10-1-live-comparison',
+      },
+      'm10-1-live-comparison-execution',
+    );
     const model = await loadCompare((status as unknown) as JobStatusResponse);
     expect(model.derived).toBe(false);
     expect(model.servedDatasets).toContain('baseline:ensemble_summary');
@@ -147,5 +166,5 @@ describe('M10.1 live M9 contract checks', () => {
     expect(model.servedDatasets).toContain('comparison:matched_seed_comparison');
     expect(model.baseline.cumulative.length).toBeGreaterThan(0);
     expect(model.treated.cumulative.length).toBe(model.baseline.cumulative.length);
-  });
+  }, 240_000);
 });

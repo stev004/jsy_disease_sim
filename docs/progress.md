@@ -1,11 +1,13 @@
 # Jersey Outbreak Simulator progress ledger
 
-**Last verified:** 29 August 2026
-**Current verified milestone:** M9.2 provenance closure
+**Last verified:** 30 August 2026
+**Current verified milestone:** M10.1 implementation closure
 **M9.2 implementation commit:** `5be3bbf494f5ae85d7f9c3181fc9bcc73212294a`
+**M9.4 implementation commit:** `37af56ea9a368b599f3c89bbbb399b13b465f8f2`
+**M10.1 scientific-truth checkpoint:** `4ae6008871922bf7f1d820bf04294d477c55c14c`
 **C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
-**M9 status:** functional PASS; final evidence/documentation closure in progress
-**M10:** CLOSED pending the final independent M9 gate
+**M9 status:** PASS through the M9.4 calendar-finalization correction
+**M10 status:** M10.1 implementation PASS; independent final audit pending
 
 This ledger records the current implementation and verification state. The
 project charter remains the authoritative specification; this file records
@@ -26,6 +28,9 @@ which gates have actually passed and the evidence supporting them.
 | C4 | PASS | Runtime detection delivery, metric-aware ensemble grids, truthful fallback workers and zero-contact boundary verified on a fresh full-island path |
 | M7 | PASS | Typed composable interventions, causal detection effects, route composition, vaccination, artifacts, comparisons and bounded ensembles |
 | M8 | PASS | M8.2 closes the three blockers remaining after the independent M8.1 FAIL: episode-safe observations, departed-result lifecycle and typed combined-event artifacts |
+| M9 / M9.1 / M9.2 | PASS | Local API/jobs, strict finalization/content verification and immutable provenance closure |
+| M9.4 | PASS | Canonical calendar-intervention JSON round-trips through strict scientific verifier reload |
+| M10.1 implementation | PASS | All 64 scientific/UI truth gates pass; independent final release-candidate audit remains pending |
 
 The C3 implementation was committed in `0f6667791e481fd2ed5d389d2ea0cb05b8a0d7e9`;
 its final integrity hardening is the C3 verification commit recorded above.
@@ -688,3 +693,149 @@ and clean-commit smoke evidence is recorded with the M9.2 completion report.
 provenance blocker is closed and functional M9 verification passes. Final
 independent evidence/documentation closure remains in progress; M10 remains
 closed.
+
+## M9.4 calendar finalization and M10.1 implementation closure
+
+The M10 implementation lineage at `bf7669eb5f0b3a315a227a3194726dfafe0ae32c`
+subsequently failed an independent M10 audit. M10.1 corrected the frontend
+scientific-truth blockers and was preserved at
+`4ae6008871922bf7f1d820bf04294d477c55c14c` with 63 of 64 implementation gates
+passing. The remaining live School-closure gate exposed a protected backend
+defect: the canonical M7 writer persisted nested intervention dates as ISO JSON
+strings, while strict nested `InterventionConfig` validation did not decode
+those strings during `ScenarioConfig.model_validate_json` verifier reload.
+
+M9.4 fixes that single authoritative deserialization mismatch at
+`37af56ea9a368b599f3c89bbbb399b13b465f8f2`. JSON-mode reload now decodes the
+canonical nested `start_date`/`end_date` representation; ordinary Python-mode
+strictness and malformed-date rejection remain unchanged. Explicit end-date
+and duration activation windows, exact School multipliers, a second calendar
+family, baseline scenarios and detection-triggered scenarios all round-trip
+through scientific verification. The focused M9.4 suite passes 5 tests; the
+protected M7/M8/M9 suite passes 81 tests. Ruff, format check, targeted mypy,
+`uv lock --check`, compileall and `git diff --check` pass.
+
+A real M9.4 School job, `2c4191e8-b732-41a8-9072-bc989a7385a9`, passed
+validation, queueing, worker execution, artifact writing, content-aware
+verification and the strict finalizer. It ended `SUCCEEDED` with exact `0 / 0`
+School class/cross-class multipliers and inclusive `2025-01-06` start/end
+semantics. M9.2 request, engine and artifact provenance binding remained
+enforced.
+
+The exact M9.4 commit was merged without squashing; integration commit
+`2dc29b5d7bcee8430b00c94928070172095e17d5` retains both the M10.1 checkpoint
+and M9.4 commit as ancestors. The merged frontend passes 11 focused tests, 6
+real live tests, strict TypeScript checking and the production build. The live
+test now submits its own cheap comparison instead of depending on an ephemeral
+historical job ID.
+
+Fresh merged-state application evidence:
+
+- baseline `e24d526c-060a-453e-9937-cdad95a88ab9`: verified `SUCCEEDED`;
+- School closure `442edefa-5855-4fbb-93bf-a0f9114c376e`: verified
+  `SUCCEEDED`, request/persisted/verifier-reloaded multipliers `0 / 0`, duration
+  release from 12 January 2025;
+- M6 ensemble `4d38f237-0d00-4a9a-9198-e7f8af52f76d`: verified
+  `SUCCEEDED`, five successful replicates and persisted lower/upper quantiles;
+- M8 travel `925fa453-7563-448a-981f-6091b2e55f17`: verified
+  `SUCCEEDED`, real arrival/visitor fields and explicit unavailable parish and
+  absent route metrics;
+- comparison `1f69cad7-6346-4850-ab44-6371f40f832a`: verified
+  `SUCCEEDED`, namespaced baseline/treated artifacts and 564 persisted matched
+  rows, including 25 nonzero deltas.
+
+Baseline numeric reconciliation:
+
+| UI metric | UI value | Backend source | Independent value | Result |
+|---|---:|---|---:|---|
+| Active infectious | `0` | `daily_epidemic.infectious` | `0` | Match |
+| Cumulative infected | `2` | `daily_epidemic.cumulative_total_infections` | seeded `1` + local `1` = `2` | Match |
+| Attack rate | `0.0006666666666666666` | `daily_epidemic.attack_rate` | `2 / 3000` | Match |
+| Route total | `1` | sum of `daily_route.new_local_infections` | `1` | Match |
+| Household route count | `0` | household `daily_route` rows | `0` | Match |
+| Household route share | `0` | household / local-route total | `0 / 1` | Match |
+
+The rendered School provenance drawer is bound to that job and displays its
+request, scenario, latent, bundle and result-manifest hashes plus engine commit
+and passed verification status. Explicit demo mode is labelled `Demo data`,
+uses a memory-only queued/running/succeeded lifecycle, and states that it has
+no artifact verification, hashes or engine provenance. API loss without the
+explicit demo flag remains an error rather than a silent data-source switch.
+
+### M10.1 final 64-gate ledger
+
+| # | Gate | Result |
+|---:|---|---|
+| 1 | School payload truth | PASS |
+| 2 | WFH payload truth | PASS |
+| 3 | Community payload truth | PASS |
+| 4 | Care payload truth | PASS |
+| 5 | Vaccination payload truth | PASS |
+| 6 | Isolation payload truth | PASS |
+| 7 | Quarantine payload truth | PASS |
+| 8 | Arrival-testing payload truth | PASS |
+| 9 | Intervention Edit affordance | PASS |
+| 10 | Backend normalized template validation | PASS |
+| 11 | Cumulative total semantics | PASS |
+| 12 | Attack-rate consistency | PASS |
+| 13 | Seeded infection handling | PASS |
+| 14 | Explicit missing-value model | PASS |
+| 15 | No missing→zero coercion | PASS |
+| 16 | Parish incidence semantics | PASS |
+| 17 | Parish active-state semantics | PASS |
+| 18 | Parish denominator semantics | PASS |
+| 19 | Parish route non-fabrication | PASS |
+| 20 | Choropleth missing-data semantics | PASS |
+| 21 | Fizzle active-state requirement | PASS |
+| 22 | No fabricated uncertainty | PASS |
+| 23 | Real ensemble quantiles | PASS |
+| 24 | Current M6 ensemble loading | PASS |
+| 25 | Current namespaced comparison loading | PASS |
+| 26 | No fabricated treated trajectory | PASS |
+| 27 | Comparison delta correctness | PASS |
+| 28 | Difference-map evidence requirement | PASS |
+| 29 | Local route scope consistency | PASS |
+| 30 | Import/seed route exclusion | PASS |
+| 31 | Age unavailable semantics | PASS |
+| 32 | Travel data semantics | PASS |
+| 33 | Calendar timeline semantics | PASS |
+| 34 | Triggered timeline semantics | PASS |
+| 35 | Supported-date constraint | PASS |
+| 36 | Failed job phase wording | PASS |
+| 37 | Duplicate/edit truthfulness | PASS |
+| 38 | Provenance job binding | PASS |
+| 39 | Provenance real artifact identities | PASS |
+| 40 | Capability-field correctness | PASS |
+| 41 | Mock provenance clearly demo | PASS |
+| 42 | Real/mock isolation | PASS |
+| 43 | API-loss behavior | PASS |
+| 44 | Mock session-only disclosure | PASS |
+| 45 | Scientific disclaimer | PASS |
+| 46 | Default scenario simplicity | PASS |
+| 47 | Workload default safety | PASS |
+| 48 | Real baseline reconciliation | PASS |
+| 49 | Real intervention execution | PASS |
+| 50 | Real ensemble execution | PASS |
+| 51 | Real comparison execution | PASS |
+| 52 | Real travel result | PASS |
+| 53 | Real provenance reconciliation | PASS |
+| 54 | Mock journey | PASS |
+| 55 | Time synchronization regression | PASS |
+| 56 | Map regression | PASS |
+| 57 | Export regression | PASS |
+| 58 | Accessibility basics | PASS |
+| 59 | Frontend test coverage | PASS |
+| 60 | Production build | PASS |
+| 61 | TypeScript correctness | PASS |
+| 62 | Backend contract preservation | PASS |
+| 63 | Documentation accuracy | PASS |
+| 64 | Repository hygiene | PASS |
+
+**M10.1 implementation status: PASS. Independent final audit pending.** This
+does not claim release approval, merge to `main`, or a release tag. The final
+independent audit must run in a fresh GPT-5.6 Sol High thread against the exact
+release-candidate commit.
+
+Post-release performance follow-up: deterministic M2/M3/M4 parent construction
+dominates full-island runtime. Verified parent-artifact caching remains a future
+optimization and is not a release blocker.

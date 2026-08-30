@@ -1,6 +1,6 @@
 # M10 interactive application — UI/UX design
 
-Status: M10 frontend design and M10.1 corrective implementation specification.
+Status: M10.1 implementation PASS; independent final audit pending.
 Verified backend baseline: current M9 artifact/API contracts. Interactive mockup:
 <https://claude.ai/code/artifact/bbcad36a-b4bf-4936-a6a3-d5bf84a359b1>
 (source snapshot kept alongside the design session; the mockup uses
@@ -423,12 +423,14 @@ Findings from live M10-implementation testing against the real M9 API
 14. **No worker-log endpoint** — the failed-run screen renders "View worker
     log" disabled; M9 keeps bounded log tails on disk but does not serve
     them.
-15. **Calendar-intervention finalization defect** — the live M9 API accepts and
-    normalizes the corrected school-closure payload and writes its M7 artifact
-    files, but the current finalizer rejects the serialized calendar
-    `start_date` under strict `ScenarioConfig` validation. M10.1 cannot repair
-    this protected backend lifecycle path; the live gate remains blocked until
-    M9 fixes the artifact serialization/verifier contract.
+15. **Calendar-intervention finalization defect (closed by M9.4)** — the live
+    M9 API accepted and normalized the corrected school-closure payload, but
+    verifier reload originally rejected the canonical serialized calendar
+    `start_date`. M9.4 commit
+    `37af56ea9a368b599f3c89bbbb399b13b465f8f2` repairs the JSON reload contract
+    without weakening initial validation. Merged-state School job
+    `442edefa-5855-4fbb-93bf-a0f9114c376e` reached verified `SUCCEEDED` with
+    exact `0 / 0` School multipliers.
 
 ---
 

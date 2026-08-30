@@ -51,7 +51,8 @@ dependencies — charts and the parish map are hand-rolled SVG.
 - The API has no scenario display-name field or worker-log endpoint. The UI
   uses the persisted scenario identifier and labels worker-log access as
   unavailable.
-- The current M9 finalizer rejects calendar-intervention artifacts after
-  writing them because strict scenario verification does not accept the
-  serialized ISO `start_date`; this is a backend lifecycle gap outside the
-  frontend-only milestone.
+- Historical note: strict M9 verifier reload originally rejected canonical
+  calendar-intervention ISO dates after artifact writing. M9.4 commit
+  `37af56ea9a368b599f3c89bbbb399b13b465f8f2` closes that backend round-trip
+  defect; the corrected M10.1 School closure now reaches verified `SUCCEEDED`
+  with exact `0 / 0` multipliers.
