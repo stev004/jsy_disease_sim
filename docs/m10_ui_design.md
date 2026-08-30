@@ -1,6 +1,6 @@
 # M10 interactive application — UI/UX design
 
-Status: M10.1 implementation PASS; independent final audit pending.
+Status: M10.2 implementation PASS; independent final audit pending.
 Verified backend baseline: current M9 artifact/API contracts. Interactive mockup:
 <https://claude.ai/code/artifact/bbcad36a-b4bf-4936-a6a3-d5bf84a359b1>
 (source snapshot kept alongside the design session; the mockup uses
@@ -186,6 +186,10 @@ double-click cannot create duplicate jobs.
   "A → B" values in small text. Decreases render in the diverging blue,
   increases in the diverging red; direction is also carried by sign and
   wording, never color alone.
+- Headline metrics resolve from their own paired persisted date horizons. The
+  global latest comparison date remains visible, and an earlier metric endpoint
+  is labelled with its actual "As of" date rather than presented as a later
+  observation.
 - Paired epicurve: baseline dashed neutral, treated accent, both with bands.
 - **Route shifts**: overlaid base/treated bars with absolute change and
   percent — absolute counts always accompany shares (a share can rise while

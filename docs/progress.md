@@ -1,13 +1,13 @@
 # Jersey Outbreak Simulator progress ledger
 
 **Last verified:** 30 August 2026
-**Current verified milestone:** M10.1 implementation closure
+**Current verified milestone:** M10.2 implementation closure
 **M9.2 implementation commit:** `5be3bbf494f5ae85d7f9c3181fc9bcc73212294a`
 **M9.4 implementation commit:** `37af56ea9a368b599f3c89bbbb399b13b465f8f2`
 **M10.1 scientific-truth checkpoint:** `4ae6008871922bf7f1d820bf04294d477c55c14c`
 **C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
 **M9 status:** PASS through the M9.4 calendar-finalization correction
-**M10 status:** M10.1 implementation PASS; independent final audit pending
+**M10 status:** M10.2 implementation PASS; independent final audit pending
 
 This ledger records the current implementation and verification state. The
 project charter remains the authoritative specification; this file records
@@ -835,6 +835,32 @@ explicit demo flag remains an error rather than a silent data-source switch.
 does not claim release approval, merge to `main`, or a release tag. The final
 independent audit must run in a fresh GPT-5.6 Sol High thread against the exact
 release-candidate commit.
+
+## M10.2 comparison horizon and synchronization closure
+
+The final independent M10.1 audit left only comparison gates 27 (delta
+correctness) and 55 (time synchronization) open. Both traced to the frontend
+using the last index of the global date union for every headline metric. The
+M10.2 correction keeps the global date union for charts, but resolves each
+headline metric from its own paired persisted dates. It records the metric
+horizon, actual date and `exact`/`as_of`/`unavailable` status, and displays an
+explicit selected-date mismatch. No missing values are filled or carried
+forward by the frontend.
+
+The focused M10.2 fixture covers independent 1–8 and 1–10 metric horizons,
+same-date pairing, the persisted `85 -> 63 = -22` cumulative comparison, the
+persisted attack-rate delta, as-of metadata and null beyond-horizon values. The
+fresh real M9 comparison job `97211bc8-3f2f-44aa-ac64-a9a6d8283e4d` reached
+`SUCCEEDED`; its namespaced baseline, treated and matched-comparison datasets
+were loaded, with cumulative and attack-rate endpoints at 2025-01-13 and the
+observation tail through 2025-01-15. The frontend live comparison assertion
+reconciled `85 -> 63 / -22` and
+`0.028333333333333332 -> 0.021 / -0.007333333333333331`.
+
+**M10.2 implementation status: PASS; final independent audit pending.** This
+does not claim release approval, merge to `main`, or a release tag. The final
+independent audit must verify the exact comparison regression against the
+M10.2 release-candidate commit.
 
 Post-release performance follow-up: deterministic M2/M3/M4 parent construction
 dominates full-island runtime. Verified parent-artifact caching remains a future

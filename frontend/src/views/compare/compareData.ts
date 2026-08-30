@@ -41,6 +41,27 @@ export interface ParishAttack {
   treated: number;
 }
 
+export interface ComparisonMetricPoint {
+  date: string;
+  baseline: number;
+  treated: number;
+  delta: number;
+}
+
+export type ComparisonMetricStatus = 'exact' | 'as_of' | 'unavailable';
+
+export interface ComparisonMetricSummary {
+  metric: string;
+  selectedDate: string;
+  actualDate: string | null;
+  horizonStart: string | null;
+  horizonEnd: string | null;
+  baseline: number | null;
+  treated: number | null;
+  delta: number | null;
+  status: ComparisonMetricStatus;
+}
+
 export interface BurdenLine {
   label: string;
   value: string;
@@ -54,9 +75,14 @@ export interface CompareModel {
   seeds: number[];
   startDate: string;
   days: number;
+  latestDate: string;
   population: number | null;
   baseline: ArmSeries;
   treated: ArmSeries;
+  comparisonMetrics: {
+    cumulative: ComparisonMetricSummary;
+    attack: ComparisonMetricSummary;
+  };
   routes: RouteShift[];
   parishes: ParishAttack[];
   burden: BurdenLine[];
@@ -96,6 +122,108 @@ function keyOf(row: DatasetRow): string {
 
 function summaryMetric(row: DatasetRow | undefined, field = 'median'): number | null {
   return optionalNumber(row, field, 'value', 'median');
+}
+
+/** Returns the latest persisted point, without extending the metric horizon. */
+export function latestAvailableMetricPoint(
+  points: ComparisonMetricPoint[],
+): ComparisonMetricPoint | null {
+  return points.reduce<ComparisonMetricPoint | null>(
+    (latest, point) => (latest == null || point.date > latest.date ? point : latest),
+    null,
+  );
+}
+
+/** Returns the latest persisted point that is not later than the selected date. */
+export function metricPointAtOrBefore(
+  points: ComparisonMetricPoint[],
+  selectedDate: string,
+): ComparisonMetricPoint | null {
+  return points.reduce<ComparisonMetricPoint | null>((latest, point) => {
+    if (point.date > selectedDate) return latest;
+    return latest == null || point.date > latest.date ? point : latest;
+  }, null);
+}
+
+export function percentDifference(baseline: number | null, treated: number | null): number | null {
+  if (baseline == null || treated == null || baseline === 0) return null;
+  return (100 * (treated - baseline)) / baseline;
+}
+
+function summaryMetricPoints(
+  baselineRows: DatasetRow[],
+  treatedRows: DatasetRow[],
+  metric: string,
+): ComparisonMetricPoint[] {
+  const valuesByDate = (rows: DatasetRow[]): Map<string, number> => {
+    const values = new Map<string, number>();
+    for (const row of summaryRows(rows, 'epidemic', metric)) {
+      const date = text(row, 'date');
+      const value = summaryMetric(row);
+      if (date != null && value != null) values.set(date, value);
+    }
+    return values;
+  };
+  const baseline = valuesByDate(baselineRows);
+  const treated = valuesByDate(treatedRows);
+  return [...baseline.keys()]
+    .filter((date) => treated.has(date))
+    .sort()
+    .map((date) => {
+      const baselineValue = baseline.get(date) as number;
+      const treatedValue = treated.get(date) as number;
+      return {
+        date,
+        baseline: baselineValue,
+        treated: treatedValue,
+        delta: treatedValue - baselineValue,
+      };
+    });
+}
+
+function matchedMetricPoints(
+  rows: DatasetRow[],
+  metric: string,
+): ComparisonMetricPoint[] {
+  const valuesByDate = new Map<string, { baseline: number[]; treated: number[] }>();
+  for (const row of rows) {
+    if (text(row, 'scope') !== 'epidemic' || text(row, 'metric') !== metric) continue;
+    const date = text(row, 'date');
+    const baseline = optionalNumber(row, 'value_a');
+    const treated = optionalNumber(row, 'value_b');
+    if (date == null || baseline == null || treated == null) continue;
+    const values = valuesByDate.get(date) ?? { baseline: [], treated: [] };
+    values.baseline.push(baseline);
+    values.treated.push(treated);
+    valuesByDate.set(date, values);
+  }
+  return [...valuesByDate.entries()]
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+    .map(([date, values]) => {
+      const baseline = median(values.baseline) as number;
+      const treated = median(values.treated) as number;
+      return { date, baseline, treated, delta: treated - baseline };
+    });
+}
+
+function comparisonMetricSummary(
+  metric: string,
+  points: ComparisonMetricPoint[],
+  selectedDate: string,
+): ComparisonMetricSummary {
+  const latest = latestAvailableMetricPoint(points);
+  const point = metricPointAtOrBefore(points, selectedDate);
+  return {
+    metric,
+    selectedDate,
+    actualDate: point?.date ?? null,
+    horizonStart: points.length ? points.reduce((first, item) => item.date < first ? item.date : first, points[0].date) : null,
+    horizonEnd: latest?.date ?? null,
+    baseline: point?.baseline ?? null,
+    treated: point?.treated ?? null,
+    delta: point?.delta ?? null,
+    status: point == null ? 'unavailable' : point.date === selectedDate ? 'exact' : 'as_of',
+  };
 }
 
 function populationFromSummary(rows: DatasetRow[]): number | null {
@@ -271,6 +399,7 @@ export function buildCompareFromSummary(
 ): CompareModel {
   const dates = [...new Set([...datesOf(baselineRows), ...datesOf(treatedRows)])].sort();
   if (!dates.length) throw new Error('The comparison arms contain no dated ensemble_summary rows.');
+  const latestDate = dates[dates.length - 1];
   const population = populationFromSummary(baselineRows);
   const baseline = armFromSummary(baselineRows, dates, population);
   const treated = armFromSummary(treatedRows, dates, population);
@@ -284,9 +413,22 @@ export function buildCompareFromSummary(
     seeds: Array.isArray(request.replicate_seeds) ? request.replicate_seeds.filter((seed): seed is number => typeof seed === 'number') : [],
     startDate: typeof request.start_date === 'string' ? request.start_date : dates[0],
     days: dates.length,
+    latestDate,
     population,
     baseline,
     treated,
+    comparisonMetrics: {
+      cumulative: comparisonMetricSummary(
+        'latent_cumulative_infections',
+        summaryMetricPoints(baselineRows, treatedRows, 'latent_cumulative_infections'),
+        latestDate,
+      ),
+      attack: comparisonMetricSummary(
+        'latent_attack_rate',
+        summaryMetricPoints(baselineRows, treatedRows, 'latent_attack_rate'),
+        latestDate,
+      ),
+    },
     routes: routesFromSummary(baselineRows, treatedRows),
     parishes: parishesFromSummary(baselineRows, treatedRows),
     burden: placeholderBurden(measures),
@@ -300,6 +442,7 @@ export function buildCompareFromSummary(
 export function buildCompareFromMatchedComparison(job: JobStatusResponse, rows: DatasetRow[], servedDatasets: string[]): CompareModel {
   const dates = datesOf(rows);
   if (!dates.length) throw new Error('The matched_seed_comparison artifact contains no dated rows.');
+  const latestDate = dates[dates.length - 1];
   const request = job.request as JsonObject;
   const population = populationFromComparison(rows);
   const treatedSpec = request.treated as JsonObject | undefined;
@@ -311,9 +454,22 @@ export function buildCompareFromMatchedComparison(job: JobStatusResponse, rows: 
     seeds: Array.isArray(request.replicate_seeds) ? request.replicate_seeds.filter((seed): seed is number => typeof seed === 'number') : [],
     startDate: typeof request.start_date === 'string' ? request.start_date : dates[0],
     days: dates.length,
+    latestDate,
     population,
     baseline: armFromComparison(rows, dates, 'a', population),
     treated: armFromComparison(rows, dates, 'b', population),
+    comparisonMetrics: {
+      cumulative: comparisonMetricSummary(
+        'latent_cumulative_infections',
+        matchedMetricPoints(rows, 'latent_cumulative_infections'),
+        latestDate,
+      ),
+      attack: comparisonMetricSummary(
+        'latent_attack_rate',
+        matchedMetricPoints(rows, 'latent_attack_rate'),
+        latestDate,
+      ),
+    },
     routes: shifts.routes,
     parishes: shifts.parishes,
     burden: placeholderBurden(declaredMeasures(treatedSpec?.interventions)),
@@ -374,6 +530,21 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 export function formatDay(startDate: string, day: number): string {
   const date = dayDate(startDate, day);
   return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]}`;
+}
+
+export function formatDate(date: string): string {
+  const [, month, day] = date.split('-').map((value) => Number(value));
+  return month >= 1 && month <= 12 && day >= 1 && day <= 31
+    ? `${day} ${MONTHS[month - 1]}`
+    : date;
+}
+
+export function metricDateLabel(metric: ComparisonMetricSummary): string {
+  if (metric.actualDate == null) return `Unavailable at ${formatDate(metric.selectedDate)}`;
+  const actual = `As of ${formatDate(metric.actualDate)}`;
+  return metric.status === 'as_of'
+    ? `${actual} (selected ${formatDate(metric.selectedDate)})`
+    : actual;
 }
 
 export const fmt = (value: number | null | undefined): string => value == null || !Number.isFinite(value) ? '—' : Math.round(value).toLocaleString('en-GB');

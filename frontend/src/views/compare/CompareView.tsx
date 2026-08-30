@@ -21,9 +21,12 @@ import { divColor, seqColor, type ParishId } from '../../map/geometry';
 import { setProvenanceJobId } from '../drawer/provenanceStore';
 import {
   fmt,
+  formatDate,
   formatDay,
   loadCompare,
+  metricDateLabel,
   peakIndex,
+  percentDifference,
   signed,
   signedPct,
   type CompareModel,
@@ -217,13 +220,13 @@ function CompareBody({
   mapMode: MapMode;
   setMapMode: (m: MapMode) => void;
 }) {
-  const last = model.days - 1;
   const banded = Boolean(model.baseline.activeBand && model.treated.activeBand);
 
-  const cumBase = model.baseline.cumulative[last] ?? null;
-  const cumTreated = model.treated.cumulative[last] ?? null;
-  const cumDelta = cumBase != null && cumTreated != null ? cumTreated - cumBase : null;
-  const cumPct = cumDelta != null && cumBase ? (100 * cumDelta) / cumBase : null;
+  const cumulative = model.comparisonMetrics.cumulative;
+  const cumBase = cumulative.baseline;
+  const cumTreated = cumulative.treated;
+  const cumDelta = cumulative.delta;
+  const cumPct = percentDifference(cumBase, cumTreated);
 
   const peakBaseIdx = peakIndex(model.baseline.active);
   const peakTreatIdx = peakIndex(model.treated.active);
@@ -233,9 +236,10 @@ function CompareBody({
   const peakPct = peakDelta != null && peakBase ? (100 * peakDelta) / peakBase : null;
   const peakShift = peakBaseIdx >= 0 && peakTreatIdx >= 0 ? peakTreatIdx - peakBaseIdx : null;
 
-  const arBase = model.baseline.attack[last] != null ? model.baseline.attack[last] * 100 : null;
-  const arTreated = model.treated.attack[last] != null ? model.treated.attack[last] * 100 : null;
-  const arDelta = arBase != null && arTreated != null ? arTreated - arBase : null;
+  const attack = model.comparisonMetrics.attack;
+  const arBase = attack.baseline != null ? attack.baseline * 100 : null;
+  const arTreated = attack.treated != null ? attack.treated * 100 : null;
+  const arDelta = attack.delta != null ? attack.delta * 100 : null;
 
   const chart = useMemo(
     () => [
@@ -303,6 +307,7 @@ function CompareBody({
                 : 'Matched-seed comparison'}
             </Chip>
           </div>
+          <span className="cmp-date-note">Latest comparison date: {formatDate(model.latestDate)}</span>
           <span style={{ flex: 1 }} />
           <Btn to="/runs">Change runs</Btn>
         </div>
@@ -314,7 +319,9 @@ function CompareBody({
               {cumDelta == null ? '—' : signed(cumDelta)} <span className="pct">{cumPct == null ? 'not available' : signedPct(cumPct)}</span>
             </div>
             <div className="s">
-              {cumBase == null || cumTreated == null ? 'Cumulative values are not published for both arms.' : `${fmt(cumBase)} → ${fmt(cumTreated)} by day ${last}`}
+              {cumBase == null || cumTreated == null
+                ? `Cumulative values are unavailable at the same persisted date. ${metricDateLabel(cumulative)}`
+                : `${fmt(cumBase)} → ${fmt(cumTreated)} · ${metricDateLabel(cumulative)}`}
             </div>
           </Card>
 
@@ -350,7 +357,9 @@ function CompareBody({
               {arDelta == null ? '—' : `${arDelta < 0 ? '−' : '+'}${Math.abs(arDelta).toFixed(1)} pts`}
             </div>
             <div className="s">
-              {arBase == null || arTreated == null ? 'Attack rate is not published for both arms.' : `${arBase.toFixed(1)}% → ${arTreated.toFixed(1)}% of residents`}
+              {arBase == null || arTreated == null
+                ? `Attack rate is unavailable at the same persisted date. ${metricDateLabel(attack)}`
+                : `${arBase.toFixed(1)}% → ${arTreated.toFixed(1)}% of residents · ${metricDateLabel(attack)}`}
             </div>
           </Card>
         </div>

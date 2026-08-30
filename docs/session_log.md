@@ -3,6 +3,39 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
+## 2026-08-30 — M10.2 comparison horizon and synchronization closure
+
+**Scope.** Frontend-only corrective work on the required clean M10.1 base
+`1688106ad490abce46c86a0483aaa6c4f8fa948a` and branch
+`codex/m10.2-comparison-sync`. Backend/scientific code, M9.4, namespaced
+loading, provenance, missing-value semantics and the difference-map contract
+remain protected.
+
+**Root cause.** `CompareView` used `model.days - 1` for cumulative infections
+and attack rate. The global date union includes the observation tail through
+2025-01-15, while the real matched latent comparison endpoints end on
+2025-01-13.
+
+**Correction.** `compareData.ts` now builds paired metric points from the same
+persisted date, resolves the latest point at or before the selected/latest
+global date, and exposes each metric's horizon, actual date and availability
+status. `CompareView.tsx` displays the metric's actual as-of date and selected
+date when they differ. No zero fill or frontend carry-forward was added.
+
+**Verification.** The focused M10.2 fixture and full frontend tests pass;
+TypeScript and the production build pass. Real job
+`97211bc8-3f2f-44aa-ac64-a9a6d8283e4d` reached `SUCCEEDED` with request hash
+`2e32ef6f1430d1f68c0f200e46689d83c2f063446394612493b33ab103262335`, baseline
+artifact `afad384684e0ba0d78a14c0f279927e864b062ef561c40fac3fd974ca7671ecf`,
+treated artifact `90e99de251443e179863477ace030f2612c7b2f1e66070d5bcf4f08349ebda7a`,
+and matched comparison artifact `d57a8ccf63d0f3e6dcc622332dcd04734a0e402a3a02e9d16869555112ab5ea8`.
+Its persisted endpoints reconcile to cumulative `85 -> 63 / -22` and attack
+rate `0.028333333333333332 -> 0.021 / -0.007333333333333331`, both as of
+2025-01-13, with global latest date 2025-01-15.
+
+**Status.** M10.2 implementation PASS; final independent audit pending. No
+release approval, merge to `main`, tag, or branch cleanup is recorded.
+
 ## 2026-08-30 — M9.4 closure and final M10.1 implementation verification
 
 **History preserved.** The M10 implementation was independently audited and

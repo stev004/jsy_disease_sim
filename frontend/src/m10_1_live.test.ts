@@ -166,5 +166,34 @@ describe('M10.1 live M9 contract checks', () => {
     expect(model.servedDatasets).toContain('comparison:matched_seed_comparison');
     expect(model.baseline.cumulative.length).toBeGreaterThan(0);
     expect(model.treated.cumulative.length).toBe(model.baseline.cumulative.length);
+    expect(model.latestDate).toBe('2025-01-15');
+    expect(model.comparisonMetrics.cumulative).toMatchObject({
+      actualDate: '2025-01-13',
+      horizonEnd: '2025-01-13',
+      baseline: 85,
+      treated: 63,
+      delta: -22,
+      status: 'as_of',
+    });
+    expect(model.comparisonMetrics.attack).toMatchObject({
+      actualDate: '2025-01-13',
+      horizonEnd: '2025-01-13',
+      baseline: 0.028333333333333332,
+      treated: 0.021,
+      delta: -0.007333333333333331,
+      status: 'as_of',
+    });
+    const cumulative = model.comparisonMetrics.cumulative;
+    const attack = model.comparisonMetrics.attack;
+    if (
+      cumulative.baseline == null ||
+      cumulative.treated == null ||
+      attack.baseline == null ||
+      attack.treated == null
+    ) {
+      throw new Error('Real comparison endpoint values were unavailable.');
+    }
+    expect(cumulative.delta).toBe(cumulative.treated - cumulative.baseline);
+    expect(attack.delta).toBe(attack.treated - attack.baseline);
   }, 240_000);
 });
