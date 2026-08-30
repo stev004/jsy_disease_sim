@@ -392,6 +392,36 @@ Features the design keeps, defers, or flags because M9 does not serve them:
 None of these block the M10 v1 flows; every primary screen maps onto
 existing endpoints and datasets.
 
+Findings from live M10-implementation testing against the real M9 API
+(2026-08-30, engine `93b316a`):
+
+9. **Unsupported start dates pass validation but kill the worker** — the
+   engine calendar (school terms, seasonality) is anchored to 2025; a 2026
+   `start_date` is accepted by `/scenarios/validate` and job submission,
+   then fails during scientific execution with an empty worker log. The UI
+   pins its default to 2025-01-06; the API should validate the supported
+   date range at submission.
+10. **Travel-composed artifacts publish empty core breakdowns** — for a
+    scenario_run with the travel layer active, `daily_route`,
+    `daily_parish`, and `daily_age` are listed but contain zero rows; route
+    attribution must be derived client-side from `transmission_events`
+    (which carries no parish or age columns, so those breakdowns are
+    genuinely unavailable and the UI states so honestly). Plain m5/m7 runs
+    populate `daily_route` normally.
+11. **`daily_epidemic` schema varies by artifact type** — travel runs have
+    no cumulative or detected columns (`new_infections` must be summed;
+    detections come from `detection_events`), and the resident denominator
+    should come from `resident_present`, not an assumed constant.
+12. **`scenario_compare` publishes single-arm datasets** — no comparison
+    table, no arm column; the Compare screen cannot be fully truthful until
+    per-arm or matched-comparison datasets are exposed.
+13. **No scenario name field** — names survive only as `scenario_id` /
+    `ensemble_id` slugs; a display-name field would remove the slug
+    round-trip.
+14. **No worker-log endpoint** — the failed-run screen renders "View worker
+    log" disabled; M9 keeps bounded log tails on disk but does not serve
+    them.
+
 ---
 
 ### First-run acceptance check

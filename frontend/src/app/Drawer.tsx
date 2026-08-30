@@ -7,8 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Badge, PROVENANCE_MEANING } from '../components/Badge';
-import { OSM_ATTRIBUTION } from '../map/geometry';
+import { ProvenanceContent } from '../views/drawer';
 
 interface DrawerApi {
   open: boolean;
@@ -73,53 +72,8 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
             ×
           </button>
         </div>
-        <div className="body">{content ?? <DrawerPlaceholder />}</div>
+        <div className="body">{content ?? <ProvenanceContent />}</div>
       </aside>
     </DrawerContext.Provider>
-  );
-}
-
-/**
- * Default drawer body: the permanent claim boundary, the provenance-label
- * legend and the map attribution. A results/compare view replaces this with
- * the live verification and hash panels via `setDrawerContent`.
- */
-function DrawerPlaceholder() {
-  return (
-    <>
-      <div className="dnote">
-        This is a <b>synthetic research simulation</b> of a generated Jersey population. It is not a
-        forecast, a surveillance product, or a policy recommendation. No real people are represented.
-      </div>
-
-      <div className="dsec">
-        <h2>Verification</h2>
-        <div className="dnote">
-          Open a run to see its engine commit, request hash, scientific hashes and artifact
-          verification status.
-        </div>
-      </div>
-
-      <div className="dsec">
-        <h2>What the labels mean</h2>
-        <div className="kv">
-          {(['observed', 'derived', 'literature', 'calibrated', 'assumption'] as const).map((k) => (
-            <div className="li" key={k}>
-              <span className="k">
-                <Badge kind={k} />
-              </span>
-              <span className="v" style={{ fontWeight: 400, color: 'var(--ink-2)' }}>
-                {PROVENANCE_MEANING[k]}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="dsec">
-        <h2>Map</h2>
-        <div className="dnote">{OSM_ATTRIBUTION}</div>
-      </div>
-    </>
   );
 }

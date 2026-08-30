@@ -1,0 +1,17 @@
+/* Simulate-view additions to the ported builder styles in styles/views.css.
+   Only states the mockup implies but does not draw: the in-flight and invalid
+   validation notes, and the disabled Run button. */
+
+.view-simulate .valid-note.checking {
+  color: var(--ink-3);
+}
+.view-simulate .valid-note.bad {
+  color: var(--bad);
+}
+.view-simulate .b-summary .btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.view-simulate .iv-card .meta b {
+  margin-left: 2px;
+}

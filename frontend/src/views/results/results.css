@@ -1,0 +1,55 @@
+/* Results workspace — styles the shared sheets do not carry.
+   Scoped to `.view-results`; owned by the results view folder. */
+
+.view-results .rs-status {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  padding: 32px;
+  text-align: center;
+  gap: 10px;
+}
+.view-results .rs-status .rs-msg {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  max-width: 56ch;
+  line-height: 1.55;
+}
+.view-results .rs-status h1 {
+  font-size: 17px;
+  font-weight: 700;
+}
+.view-results .rs-status .rs-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* The play button reads as active while the timeline is running. */
+.view-results .tbtn[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.view-results .tbtn[aria-pressed='true'] svg {
+  fill: var(--accent-ink);
+}
+
+/* Intervention strip labels sit above their bar without stealing clicks. */
+.view-results .iv-strip .ib {
+  pointer-events: auto;
+}
+.view-results .iv-strip .ib.dashed {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 3px,
+    rgba(255, 255, 255, 0.45) 3px 6px
+  );
+}
+
+/* Parish mini-curve keeps the panel from growing on tall charts. */
+.view-results .parish-mini svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}

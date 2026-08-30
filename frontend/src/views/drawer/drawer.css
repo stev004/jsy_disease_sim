@@ -1,0 +1,46 @@
+/* Drawer body + shortcuts-overlay extras. Base classes live in styles/. */
+
+/* Hash rows are buttons so they can be copied; they must still read as text. */
+.prov-copy {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: right;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: 1px dashed var(--line-strong);
+}
+.prov-copy:hover {
+  color: var(--accent-ink);
+  border-bottom-color: var(--accent);
+}
+.prov-copy:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.prov-verify-other {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--warn);
+}
+
+.prov-jobline {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The overlay sits above the drawer scrim but below the .ks card (z-index 61). */
+.ks-scrim {
+  z-index: 60;
+}

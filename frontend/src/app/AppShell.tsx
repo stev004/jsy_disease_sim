@@ -7,6 +7,7 @@ import { useDetail, type DetailLevel } from './DetailProvider';
 import { useDrawer } from './Drawer';
 import { useScenarioContext } from './ScenarioContextProvider';
 import { useTheme } from './ThemeProvider';
+import { ShortcutsOverlay } from '../views/drawer';
 
 /** Permanent claim boundary, rendered in the top bar under the product name. */
 export const CLAIM_BOUNDARY = 'Synthetic research simulation — not a forecast';
@@ -129,6 +130,8 @@ export function AppShell() {
       <main className="stage">
         <Outlet />
       </main>
+
+      <ShortcutsOverlay />
     </div>
   );
 }

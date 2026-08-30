@@ -1,0 +1,63 @@
+/* Compare-view extras — everything else lives in src/styles/views.css. */
+
+.view-compare .cmp-loading {
+  padding: 48px 4px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.view-compare .cmp-empty {
+  padding: 28px 28px;
+  display: grid;
+  gap: 10px;
+  max-width: 72ch;
+}
+.view-compare .cmp-empty h1 {
+  font-size: 19px;
+  font-weight: 700;
+}
+.view-compare .cmp-empty p {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+.view-compare .cmp-empty-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Wider name / value columns than the shared .drv-row, per the mockup. */
+.view-compare .cmp-route-row {
+  grid-template-columns: 150px 1fr 130px;
+}
+body.sci .view-compare .cmp-route-row {
+  grid-template-columns: 190px 1fr 130px;
+}
+
+.view-compare .cmp-note {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+.view-compare .cmp-derived {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 12px 16px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  max-width: 100ch;
+}
+.view-compare .cmp-derived b {
+  color: var(--ink);
+}
+.view-compare .cmp-gap {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
