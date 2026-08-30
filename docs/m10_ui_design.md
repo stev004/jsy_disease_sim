@@ -103,15 +103,17 @@ Filter chips + one card of rows (state chip, name, kind, meta line, actions).
    multipliers (11 resident + 7 travel), observation model, explicit seeds.
    Every advanced value carries its provenance badge inline.
 
-**Template gallery**: the builder opens with a "Start from a template" grid —
-nine tiles derived from the repository's demo configs (`configs/scenarios/`,
-`configs/travel/`): blank, winter baseline, school closure, isolation +
-quarantine, working from home, community reduction, care-home protection,
-vaccination campaign, and high-season travel with arrival testing. A tile
-pre-fills the scenario (name, intervention cards, travel mode) and everything
-stays editable; the gallery reminds the user these are synthetic demo
-assumptions, and scientific mode shows each tile's source config filename.
-Home links here via a "Browse templates" action.
+**Template picker**: the builder opens with a single compact "Start from"
+chip row — nine templates derived from the repository's demo configs
+(`configs/scenarios/`, `configs/travel/`): blank, winter baseline, school
+closure, isolation + quarantine, working from home, community reduction,
+care-home protection, vaccination campaign, and high-season travel with
+arrival testing. Selecting a chip pre-fills the scenario (name, intervention
+cards, travel mode) and shows the template's one-line description beneath the
+row; everything stays editable, values are synthetic demo assumptions, and
+scientific mode appends the source config filename. Deliberately chips, not
+a tile gallery — one glance, zero learning curve, no wall of choices before
+the form. Home links here via a "Browse templates" action.
 
 **Simple / Scientific switch** (global, top bar, persisted per user): one
 control that moves the whole application between two detail levels without
@@ -324,6 +326,10 @@ checklist with plain-language descriptions:
 - **Status**: good green / warn amber / bad red soft-chip pairs, always with
   words, never reused as series colors.
 - Radius 8 px, single soft shadow level; no gradients, no glassmorphism.
+- **Spacing scale**: structural spacing (card padding, section gaps, margins)
+  sits on a 4 px grid — 8 / 12 / 16 / 20 / 24 / 28 / 32. Micro spacing
+  inside components (chip padding, icon gaps, 2–7 px) is optical and exempt.
+  Audited across the whole mockup; nothing structural is off-grid.
 
 ## 12. Responsive / accessibility behavior
 
