@@ -218,7 +218,10 @@ def _assign_housing_attributes(
         raise DataBuildError("parish car-access controls cannot be satisfied")
     other_targets = allocate_proportional(
         residual,
-        {parish: controls.parish_no_car_weights.get(parish, 0.01) for parish in other_parishes},
+        {
+            parish: controls.parish_no_car_weights.get(parish, 0.01) * len(indices)
+            for parish, indices in other_parishes.items()
+        },
     )
     if any(other_targets[parish] > len(indices) for parish, indices in other_parishes.items()):
         raise DataBuildError("parish car-access allocation exceeded a parish household count")
@@ -853,8 +856,12 @@ def _validate_generated(
         key: sum(resident.age == key[0] and resident.sex == key[1] for resident in resident_models)
         for key in target_age_sex
     }
-    for key, expected in target_age_sex.items():
-        check(f"age_sex_{key[0]}_{key[1]}", generated_age_sex[key], expected)
+    for age_sex_key, expected in target_age_sex.items():
+        check(
+            f"age_sex_{age_sex_key[0]}_{age_sex_key[1]}",
+            generated_age_sex[age_sex_key],
+            expected,
+        )
     generated_parish_age_sex = {
         key: sum(
             resident["home_parish"] == key[0]
@@ -864,8 +871,15 @@ def _validate_generated(
         )
         for key in target_parish_age_sex
     }
-    for key, expected in target_parish_age_sex.items():
-        check(f"parish_age_sex_{key[0]}_{key[1]}_{key[2]}", generated_parish_age_sex[key], expected)
+    for parish_age_sex_key, expected in target_parish_age_sex.items():
+        check(
+            (
+                f"parish_age_sex_{parish_age_sex_key[0]}_"
+                f"{parish_age_sex_key[1]}_{parish_age_sex_key[2]}"
+            ),
+            generated_parish_age_sex[parish_age_sex_key],
+            expected,
+        )
     generated_types = {
         household_type: sum(row["household_type"] == household_type for row in households)
         for household_type in target_household_types
@@ -1111,14 +1125,14 @@ def _build_diagnostics(
         },
     }
     communal_rows = []
-    for setting_type, target in target_communal_categories.items():
+    for setting_type, communal_target in target_communal_categories.items():
         generated = [row for row in settings if row["setting_type"] == setting_type]
         communal_rows.append(
             {
                 "setting_type": setting_type,
-                "target_establishments": target["establishments"],
+                "target_establishments": communal_target["establishments"],
                 "generated_establishments": len(generated),
-                "target_residents": target["residents"],
+                "target_residents": communal_target["residents"],
                 "generated_residents": sum(row["resident_count"] for row in generated),
                 "status": "derived_2021_control_scaled",
             }
@@ -1173,6 +1187,43 @@ def _build_diagnostics(
         summary["under_18"] = int(summary["under_18"] or 0) + (age < 18)
         summary["65_plus"] = int(summary["65_plus"] or 0) + (age >= 65)
     all_checks = list(validation_checks)
+    for category, rows in (
+        ("dwelling_type", housing["dwelling_type"]),
+        ("crowding_band", housing["crowding_band"]),
+    ):
+        for label, values in rows.items():
+            difference = values["generated_proportion"] - values["target_proportion"]
+            all_checks.append(
+                {
+                    "name": f"housing_{category}_{label}",
+                    "status": (
+                        "passed"
+                        if abs(difference) <= TOLERANCES["housing_proportion"]
+                        else "failed"
+                    ),
+                    "actual": values["generated_proportion"],
+                    "expected": values["target_proportion"],
+                    "difference": difference,
+                    "tolerance": TOLERANCES["housing_proportion"],
+                    "diagnostic_kind": "measurement",
+                }
+            )
+    for label in ("all_island_no_car", "st_helier_no_car"):
+        values = housing["car_access"][label]
+        difference = values["generated_proportion"] - values["target_proportion"]
+        all_checks.append(
+            {
+                "name": f"housing_car_access_{label}",
+                "status": (
+                    "passed" if abs(difference) <= TOLERANCES["housing_proportion"] else "failed"
+                ),
+                "actual": values["generated_proportion"],
+                "expected": values["target_proportion"],
+                "difference": difference,
+                "tolerance": TOLERANCES["housing_proportion"],
+                "diagnostic_kind": "measurement",
+            }
+        )
     all_checks.extend(
         [
             {
