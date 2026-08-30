@@ -19,6 +19,7 @@ from jersey_outbreak.population_structure_generator import generate_structure
 from jersey_outbreak.population_structure_schemas import StructureGenerationConfig
 from jersey_outbreak.starsim_adapter import (
     agent_uid_mapping,
+    build_starsim_sim,
     run_starsim_network_compatibility,
 )
 
@@ -163,6 +164,56 @@ def test_calendar_and_wfh_suppression(generated) -> None:
             for endpoint in (edge["p1"], edge["p2"])
         }
         assert not endpoints & wfh_agents
+
+
+def test_fixed_route_persistence_is_measured_from_realised_snapshots(generated) -> None:
+    route_id = "workplace_team"
+    edge_sets = [
+        {(edge["p1"], edge["p2"]) for edge in generated.route_snapshot(route_id, when).edges}
+        for when in generated.config.snapshot_dates
+    ]
+    realised = [
+        len(previous & current) / max(1, len(previous | current))
+        for previous, current in zip(edge_sets, edge_sets[1:], strict=False)
+    ]
+    diagnostic = generated.diagnostics["routes"][route_id]
+    assert diagnostic["persistence_diagnostic_kind"] == "measurement"
+    assert diagnostic["cross_day_jaccard"] == pytest.approx(realised)
+    assert diagnostic["repeated_edge_rate"] == pytest.approx(sum(realised) / len(realised))
+
+
+def test_running_sim_calendar_edges_align_across_weekend_and_term_boundary(generated) -> None:
+    start = date(2025, 2, 15)
+    duration_days = 10
+    sim = build_starsim_sim(generated, start_date=start, duration_days=duration_days)
+    mapping = agent_uid_mapping(generated)
+    dynamic_routes = {
+        route_id
+        for route_id, spec in generated.route_specs.items()
+        if route_id in generated._dynamic_builders or spec["active_calendar"] != "always"
+    }
+    observed_dates: list[date] = []
+
+    def assert_live_edges(_sim) -> None:
+        raw_date = str(sim.t.now("str"))[:10].replace(".", "-")
+        when = date.fromisoformat(raw_date)
+        observed_dates.append(when)
+        for route_id in dynamic_routes:
+            network = sim.networks[route_id]
+            actual = {
+                (int(left), int(right))
+                for left, right in zip(network.edges.p1, network.edges.p2, strict=True)
+            }
+            expected = {
+                (mapping[edge["p1"]], mapping[edge["p2"]])
+                for edge in generated.route_snapshot(route_id, when).edges
+            }
+            assert actual == expected, (route_id, when)
+
+    final_network = sorted(generated.route_specs)[-1]
+    sim.loop.insert(assert_live_edges, label=f"{final_network}.step")
+    sim.run(verbose=0)
+    assert observed_dates == [start + i * (date.resolution) for i in range(duration_days)]
 
 
 def test_route_family_removal_is_independent(generated, network_inputs) -> None:

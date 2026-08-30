@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from jersey_outbreak.network_artifacts import write_network_artifact
-from jersey_outbreak.network_generator import generate_networks
+from jersey_outbreak.network_generator import _occupational_staffing_audit, generate_networks
 from jersey_outbreak.network_schemas import NetworkGenerationConfig
 from jersey_outbreak.population_artifacts import write_population_artifact
 from jersey_outbreak.population_generator import generate_population
@@ -240,6 +240,18 @@ def test_institutional_staff_primary_workplaces_are_reinterpreted(
         assert result["ordinary_workplace_route_participants_any_snapshot"] <= len(secondary_ids)
     assert audit["household_community_transport_preserved"] is True
     assert audit["unintended_occupational_double_counting"] == 0
+    assert audit["double_counting_diagnostic_kind"] == "measurement"
+
+
+def test_occupational_double_counting_diagnostic_detects_realised_route_defect() -> None:
+    audit = _occupational_staffing_audit(
+        {"staff-1"},
+        {"staff-1": [{"job_role": "primary"}]},
+        {"staff-1": []},
+        {"staff-1"},
+    )
+    assert audit["double_counting_diagnostic_kind"] == "measurement"
+    assert audit["unintended_occupational_double_counting"] == 1
 
 
 def test_staffing_artifacts_persist_assignments_and_statuses(

@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import date
 
 import pytest
 
+import jersey_outbreak.travel as travel_module
 from jersey_outbreak.intervention_schemas import InterventionConfig, ScenarioConfig
-from jersey_outbreak.travel import TravelManager, generate_travel_episodes, run_travel_outbreak
+from jersey_outbreak.travel import (
+    TravelManager,
+    generate_travel_episodes,
+    provenance_table,
+    run_travel_outbreak,
+)
 from jersey_outbreak.travel_artifacts import verify_travel_artifact, write_travel_artifact
 from jersey_outbreak.travel_schemas import TravelConfig, TravelInterventionConfig
 
@@ -181,6 +188,57 @@ def test_hashes_include_material_travel_controls() -> None:
     )
 
 
+def test_travel_edge_weights_are_configurable_and_provenanced(m6_network) -> None:
+    config = _small_travel_config(arrival_terminal_edge_weight=0.12)
+    plan = generate_travel_episodes(
+        config,
+        seed=123,
+        start_date=date(2025, 1, 6),
+        duration_days=3,
+        residents=m6_network.m2_input.residents,
+        households=m6_network.m2_input.households,
+    )
+    manager = TravelManager(
+        m6_network,
+        plan,
+        config,
+        seed=123,
+        start_date=date(2025, 1, 6),
+        duration_days=3,
+    )
+    terminal_edges = manager.route_edges("arrival_terminal", date(2025, 1, 6))
+    assert terminal_edges
+    assert all(edge["weight"] == pytest.approx(0.12) for edge in terminal_edges)
+
+    expected = {
+        "arrival_terminal_edge_weight": 0.12,
+        "visitor_party_edge_weight": 0.60,
+        "visitor_accommodation_edge_weight": 0.55,
+        "visitor_host_household_edge_weight": 0.80,
+        "visitor_transit_bus_edge_weight": 0.35,
+        "visitor_transit_vehicle_edge_weight": 0.25,
+        "visitor_community_indoor_edge_weight": 0.35,
+        "visitor_community_outdoor_edge_weight": 0.18,
+    }
+    resolved = config.resolved_parameter_provenance()
+    compact = {row["parameter"]: row for row in provenance_table(config)}
+    for name, value in expected.items():
+        assert resolved[name]["value"] == value
+        assert resolved[name]["status"] == "scenario_assumption"
+        assert resolved[name]["sensitivity_required"] is True
+        assert compact[name]["value_or_distribution"] == value
+        assert compact[name]["provenance_status"] == "scenario_assumption"
+        assert compact[name]["sensitivity_required"] is True
+
+    route_specs = manager.route_view().route_specs
+    assert route_specs["arrival_terminal"]["relative_weight"] == 0.12
+    assert route_specs["visitor_party"]["relative_weight"] == 0.60
+    assert route_specs["visitor_transit"]["relative_weight_components"] == {
+        "bus": 0.35,
+        "vehicle": 0.25,
+    }
+
+
 def test_returning_resident_absence_is_separate_from_visitor_presence(m6_network) -> None:
     config = TravelConfig(
         mode="explicit_travel",
@@ -260,6 +318,71 @@ def test_returning_resident_is_absent_from_routes_until_return(
         away_id in {edge["p1"], edge["p2"]}
         for edge in view.route_snapshot("household", date(2025, 1, 8)).edges
     )
+
+
+@pytest.mark.parametrize("testing_enabled", [False, True])
+def test_repeat_returning_resident_trips_reconcile_without_person_key_collision(
+    monkeypatch, m6_network, m6_base_config, m6_parameters, testing_enabled
+) -> None:
+    config = TravelConfig(
+        mode="explicit_travel",
+        daily_arrivals={"2025-01-06:AIRPORT": 1, "2025-01-10:AIRPORT": 1},
+        visitor_fraction=0.0,
+        returning_resident_fraction=1.0,
+        party_sizes=(1,),
+        party_probabilities=(1.0,),
+        stay_duration_days=2,
+        interventions=TravelInterventionConfig(
+            testing_probability=1.0 if testing_enabled else 0.0,
+            test_sensitivity=1.0,
+            test_specificity=1.0,
+        ),
+    )
+    resident = next(row for row in m6_network.m2_input.residents if row["household_id"] is not None)
+    household = next(
+        row
+        for row in m6_network.m2_input.households
+        if row["household_id"] == resident["household_id"]
+    )
+    plan = generate_travel_episodes(
+        config,
+        seed=123,
+        start_date=date(2025, 1, 6),
+        duration_days=7,
+        residents=[resident],
+        households=[household],
+    )
+    assert len(plan.returning_resident_episodes) == 2
+    assert len({row.resident_agent_id for row in plan.returning_resident_episodes}) == 1
+    assert len({row.trip_id for row in plan.returning_resident_episodes}) == 2
+    resident_count = len(m6_network.agent_ids)
+    adjusted_stream = tuple(
+        {
+            **row,
+            "resident_present": resident_count - row["resident_away"],
+            "present_population": resident_count - row["resident_away"],
+        }
+        for row in plan.daily_stream
+    )
+    plan = replace(plan, daily_stream=adjusted_stream)
+    monkeypatch.setattr(travel_module, "generate_travel_episodes", lambda *args, **kwargs: plan)
+
+    result = run_travel_outbreak(
+        m6_network,
+        m6_base_config.model_copy(update={"duration_days": 7}),
+        m6_parameters,
+        config,
+    )
+    planned = [row["resident_away"] for row in result.daily_travel_population]
+    realised = [row["resident_away"] for row in result.daily_travel_intervention_state]
+    assert planned == realised
+    returned = [row for row in result.visitor_events if row["action"] == "resident_returned"]
+    assert len(returned) == 2
+    assert len({row["trip_id"] for row in returned}) == 2
+    administered = [
+        row for row in result.visitor_events if row["action"] == "arrival_test_administered"
+    ]
+    assert len(administered) == (2 if testing_enabled else 0)
 
 
 def test_m8_artifact_verification_detects_tampering(

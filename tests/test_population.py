@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 from pydantic import ValidationError
 from typer.testing import CliRunner
@@ -71,6 +72,32 @@ def test_ci_population_is_deterministic_and_preserves_membership_invariants() ->
         row["member_count"]
         == sum(resident["household_id"] == row["household_id"] for resident in first.residents)
         for row in first.households
+    )
+
+    household_counts: dict[str, int] = {}
+    no_car_counts: dict[str, int] = {}
+    for household in first.households:
+        parish = household["home_parish"]
+        if parish == "St Helier":
+            continue
+        household_counts[parish] = household_counts.get(parish, 0) + 1
+        no_car_counts[parish] = no_car_counts.get(parish, 0) + (household["car_access"] == "no_car")
+    parishes = sorted(household_counts)
+    realised_rates = [no_car_counts[parish] / household_counts[parish] for parish in parishes]
+    intended_weights = [first.controls.parish_no_car_weights[parish] for parish in parishes]
+    assert np.corrcoef(realised_rates, intended_weights)[0, 1] > 0
+
+    housing_checks = {
+        row["name"]: row
+        for row in first.diagnostics["checks"]
+        if row["name"].startswith("housing_")
+    }
+    assert housing_checks
+    assert all(row["diagnostic_kind"] == "measurement" for row in housing_checks.values())
+    assert all(
+        row["difference"] == pytest.approx(row["actual"] - row["expected"])
+        and abs(row["difference"]) <= row["tolerance"]
+        for row in housing_checks.values()
     )
 
 

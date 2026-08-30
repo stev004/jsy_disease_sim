@@ -778,31 +778,28 @@ def _route_diagnostics(
         route["indoor"] = spec["indoor"]
         route["baseline_date"] = baseline_date.isoformat()
         route["age_mixing_matrix"] = _age_mixing_matrix(snapshot.edges, agent_info)
-        if spec["persistence"] != "fixed":
-            dynamic_dates = generated.config.snapshot_dates
-            snapshots = [generated.route_snapshot(route_id, when) for when in dynamic_dates]
-            edge_sets = [
-                {(edge["p1"], edge["p2"]) for edge in snapshot.edges} for snapshot in snapshots
-            ]
-            if len(edge_sets) > 1:
-                previous = edge_sets[0]
-                overlaps = []
-                new_edge_rates = []
-                for current in edge_sets[1:]:
-                    overlaps.append(len(previous & current) / max(1, len(previous | current)))
-                    new_edge_rates.append(len(current - previous) / max(1, len(current)))
-                    previous = current
-                route["repeated_edge_rate"] = sum(overlaps) / len(overlaps)
-                route["cross_day_jaccard"] = overlaps
-                route["new_edge_rate"] = new_edge_rates
-            else:
-                route["repeated_edge_rate"] = 0.0
-                route["cross_day_jaccard"] = []
-                route["new_edge_rate"] = []
-            route["diagnostic_snapshot_dates"] = [when.isoformat() for when in dynamic_dates]
+        diagnostic_dates = generated.config.snapshot_dates
+        snapshots = [generated.route_snapshot(route_id, when) for when in diagnostic_dates]
+        edge_sets = [
+            {(edge["p1"], edge["p2"]) for edge in snapshot.edges} for snapshot in snapshots
+        ]
+        if len(edge_sets) > 1:
+            previous = edge_sets[0]
+            overlaps = []
+            new_edge_rates = []
+            for current in edge_sets[1:]:
+                overlaps.append(len(previous & current) / max(1, len(previous | current)))
+                new_edge_rates.append(len(current - previous) / max(1, len(current)))
+                previous = current
+            route["repeated_edge_rate"] = sum(overlaps) / len(overlaps)
+            route["cross_day_jaccard"] = overlaps
+            route["new_edge_rate"] = new_edge_rates
         else:
-            route["repeated_edge_rate"] = 1.0
-            route["diagnostic_snapshot_dates"] = [baseline_date.isoformat()]
+            route["repeated_edge_rate"] = 0.0
+            route["cross_day_jaccard"] = []
+            route["new_edge_rate"] = []
+        route["diagnostic_snapshot_dates"] = [when.isoformat() for when in diagnostic_dates]
+        route["persistence_diagnostic_kind"] = "measurement"
         output[route_id] = route
     return output
 
@@ -857,6 +854,9 @@ def _occupational_staffing_audit(
             job["job_role"] == "primary" for job in effective_work_jobs_by_agent.get(agent_id, [])
         )
     }
+    unexpected_route_participants = (
+        staff_ids & ordinary_workplace_participants
+    ) - secondary_membership
     return {
         "endpoints": len(staff_ids),
         "m3_primary_job_membership": len(primary_membership),
@@ -866,7 +866,8 @@ def _occupational_staffing_audit(
         "ordinary_workplace_route_participants_any_snapshot": len(
             staff_ids & ordinary_workplace_participants
         ),
-        "unintended_occupational_double_counting": len(unmapped_primary),
+        "unintended_occupational_double_counting": len(unexpected_route_participants),
+        "double_counting_diagnostic_kind": "measurement",
         "mapping_rule": (
             "institutional school/care staff keep M3 identity and job rows, but their "
             "primary job is reinterpreted as the institutional role for ordinary workplace "
@@ -1577,6 +1578,18 @@ def generate_networks(
     household_work_connectivity = sum(
         bool(set(group) & worker_agents) for group in households.values()
     )
+    school_occupational_audit = _occupational_staffing_audit(
+        school_staff_ids,
+        jobs_by_agent,
+        work_route_jobs_by_agent,
+        ordinary_workplace_participants,
+    )
+    care_occupational_audit = _occupational_staffing_audit(
+        care_staff_ids,
+        jobs_by_agent,
+        work_route_jobs_by_agent,
+        ordinary_workplace_participants,
+    )
     staffing_diagnostics = {
         **staffing.diagnostics,
         "school": {
@@ -1602,20 +1615,14 @@ def generate_networks(
             "staff_with_community_bridge_membership": len(care_staff_ids & community_members),
         },
         "occupational_staff_mapping": {
-            "school": _occupational_staffing_audit(
-                school_staff_ids,
-                jobs_by_agent,
-                work_route_jobs_by_agent,
-                ordinary_workplace_participants,
-            ),
-            "care": _occupational_staffing_audit(
-                care_staff_ids,
-                jobs_by_agent,
-                work_route_jobs_by_agent,
-                ordinary_workplace_participants,
-            ),
+            "school": school_occupational_audit,
+            "care": care_occupational_audit,
             "household_community_transport_preserved": True,
-            "unintended_occupational_double_counting": 0,
+            "unintended_occupational_double_counting": (
+                school_occupational_audit["unintended_occupational_double_counting"]
+                + care_occupational_audit["unintended_occupational_double_counting"]
+            ),
+            "double_counting_diagnostic_kind": "measurement",
             "institutional_staff_commute_metadata": institutional_staff_commute,
         },
     }

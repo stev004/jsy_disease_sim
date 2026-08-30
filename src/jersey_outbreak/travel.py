@@ -643,12 +643,15 @@ def generate_travel_episodes(
             and item.arrival_date == when
             for item in episodes
         )
-        away = sum(
-            item.resident_agent_id is not None
-            and item.absence_start_date is not None
-            and item.return_date is not None
-            and item.absence_start_date <= when < item.return_date
-            for item in episodes
+        away = len(
+            {
+                item.resident_agent_id
+                for item in episodes
+                if item.resident_agent_id is not None
+                and item.absence_start_date is not None
+                and item.return_date is not None
+                and item.absence_start_date <= when < item.return_date
+            }
         )
         arrivals = sum(item.arrival_date == when for item in episodes)
         departures = sum(
@@ -871,8 +874,15 @@ def benchmark_travel_generation(config: TravelConfig, *, year: int = 2025) -> di
     }
 
 
-def _travel_spec(route_id: str, indoor: bool, weight: float, semantics: str) -> dict[str, Any]:
-    return {
+def _travel_spec(
+    route_id: str,
+    indoor: bool,
+    weight: float,
+    semantics: str,
+    *,
+    weight_components: dict[str, float] | None = None,
+) -> dict[str, Any]:
+    spec: dict[str, Any] = {
         "route_id": route_id,
         "route_family": "transport"
         if route_id in {"arrival_terminal", "visitor_transit"}
@@ -893,6 +903,21 @@ def _travel_spec(route_id: str, indoor: bool, weight: float, semantics: str) -> 
             "Synthetic temporary route; no named venue, passenger manifest or "
             "itinerary is represented."
         ],
+    }
+    if weight_components is not None:
+        spec["relative_weight_components"] = weight_components
+    return spec
+
+
+def _configured_route_weights(config: TravelConfig) -> dict[str, float]:
+    return {
+        "arrival_terminal": config.arrival_terminal_edge_weight,
+        "visitor_party": config.visitor_party_edge_weight,
+        "visitor_accommodation": config.visitor_accommodation_edge_weight,
+        "visitor_host_household": config.visitor_host_household_edge_weight,
+        "visitor_transit": config.visitor_transit_bus_edge_weight,
+        "visitor_community_indoor": config.visitor_community_indoor_edge_weight,
+        "visitor_community_outdoor": config.visitor_community_outdoor_edge_weight,
     }
 
 
@@ -927,8 +952,9 @@ class TravelManager:
         self.present_resident_ids: set[str] = set(base_generated.agent_ids)
         self.away_resident_ids: set[str] = set()
         self.quarantine_until: dict[str, int] = {}
+        self._quarantine_episode_by_person: dict[str, tuple[str, str]] = {}
         self.pending_tests: list[ScheduledArrivalTest] = []
-        self.pending_quarantines: list[tuple[int, str, str]] = []
+        self.pending_quarantines: list[tuple[int, str, str, str]] = []
         self.current_date: date = start_date
         self.current_ti = 0
         self._all_resident_uids = set(range(len(base_generated.agent_ids)))
@@ -940,12 +966,17 @@ class TravelManager:
         self._identity_by_uid_ti: dict[tuple[int, int], dict[str, Any]] = {}
         self._traveller_vaccine_effective_from: dict[str, int] = {}
         self._traveller_vaccine_until: dict[str, int | None] = {}
-        self._processed_arrival_people: set[str] = set()
+        self._processed_arrival_episodes: set[tuple[str, str]] = set()
         self.state_snapshots: list[dict[str, Any]] = []
         self._initialised = False
         self._episodes_by_arrival: dict[date, list[TravelEpisode]] = defaultdict(list)
         self._episodes_by_departure: dict[date, list[TravelEpisode]] = defaultdict(list)
-        self._episode_by_person = {item.person_id: item for item in plan.episodes}
+        self._episode_by_trip_person = {
+            (item.trip_id, item.person_id): item for item in plan.episodes
+        }
+        self._episode_by_person = {
+            item.person_id: item for item in plan.episodes if item.visitor_uid is not None
+        }
         for episode in plan.episodes:
             self._episodes_by_arrival[episode.arrival_date].append(episode)
             self._episodes_by_departure[episode.departure_date].append(episode)
@@ -1137,7 +1168,7 @@ class TravelManager:
         if controls.testing_probability <= 0:
             return
         tested = (
-            _stable_uniform(self.seed, "arrival-test", episode.person_id)
+            _stable_uniform(self.seed, "arrival-test", episode.trip_id, episode.person_id)
             < controls.testing_probability
         )
         if not tested:
@@ -1149,7 +1180,8 @@ class TravelManager:
             infected = bool(self.disease.exposed.raw[uid] or self.disease.infected.raw[uid])
         probability = controls.test_sensitivity if infected else 1.0 - controls.test_specificity
         detected = (
-            _stable_uniform(self.seed, "arrival-test-result", episode.person_id) < probability
+            _stable_uniform(self.seed, "arrival-test-result", episode.trip_id, episode.person_id)
+            < probability
         )
         result_ti = self.current_ti + controls.test_result_delay_days
         runtime_slot_uid = (
@@ -1198,7 +1230,7 @@ class TravelManager:
             self._append_event("quarantine_declined", episode, cause="adherence")
             return
         activation_ti = anchor_ti + controls.quarantine_start_delay_days
-        self.pending_quarantines.append((activation_ti, episode.person_id, cause))
+        self.pending_quarantines.append((activation_ti, episode.trip_id, episode.person_id, cause))
         self._append_event(
             "quarantine_scheduled",
             episode,
@@ -1211,8 +1243,8 @@ class TravelManager:
         self.pending_quarantines = [
             item for item in self.pending_quarantines if item[0] > self.current_ti
         ]
-        for activation_ti, person_id, cause in sorted(due):
-            episode = self._episode_by_person[person_id]
+        for activation_ti, trip_id, person_id, cause in sorted(due):
+            episode = self._episode_by_trip_person[(trip_id, person_id)]
             if episode.visitor_uid is not None:
                 uid = self.visitor_slot_by_id[episode.visitor_uid]
                 active_episode = self._active_episode_by_uid.get(uid)
@@ -1232,6 +1264,10 @@ class TravelManager:
                     continue
             until = activation_ti + self.config.interventions.quarantine_duration_days
             self.quarantine_until[person_id] = max(until, self.quarantine_until.get(person_id, -1))
+            self._quarantine_episode_by_person[person_id] = (
+                episode.trip_id,
+                episode.person_id,
+            )
             self._append_event(
                 "quarantine_activated",
                 episode,
@@ -1245,7 +1281,7 @@ class TravelManager:
                 continue
             self._append_event(
                 "quarantine_released",
-                self._episode_by_person[person_id],
+                self._episode_by_trip_person[self._quarantine_episode_by_person[person_id]],
                 release_time_index=until,
             )
 
@@ -1256,7 +1292,7 @@ class TravelManager:
             item for item in self.pending_tests if item.result_time_index > self.current_ti
         ]
         for scheduled in sorted(due):
-            episode = self._episode_by_person[scheduled.person_id]
+            episode = self._episode_by_trip_person[(scheduled.trip_id, scheduled.person_id)]
             if (
                 scheduled.trip_id != episode.trip_id
                 or scheduled.travel_party_id != episode.travel_party_id
@@ -1413,6 +1449,7 @@ class TravelManager:
         self.sim.people.female[uid] = False
         self._active_episode_by_uid.pop(uid, None)
         self.quarantine_until.pop(episode.person_id, None)
+        self._quarantine_episode_by_person.pop(episode.person_id, None)
         self._traveller_vaccine_effective_from.pop(episode.person_id, None)
         self._traveller_vaccine_until.pop(episode.person_id, None)
         self._append_event(
@@ -1485,6 +1522,26 @@ class TravelManager:
         raw_date = str(self.sim.t.now("str"))[:10].replace(".", "-")
         self.current_date = date.fromisoformat(raw_date)
         self.current_ti = int(self.disease.ti)
+        planned_away_ids = {
+            str(episode.resident_agent_id)
+            for episode in self.plan.returning_resident_episodes
+            if episode.resident_agent_id is not None
+            and episode.absence_start_date is not None
+            and episode.return_date is not None
+            and episode.absence_start_date <= self.current_date < episode.return_date
+        }
+        travel_resident_ids = {
+            str(episode.resident_agent_id)
+            for episode in self.plan.returning_resident_episodes
+            if episode.resident_agent_id is not None
+        }
+        self.present_resident_ids.difference_update(travel_resident_ids)
+        self.present_resident_ids.update(travel_resident_ids - planned_away_ids)
+        self.away_resident_ids = planned_away_ids
+        for resident_id in travel_resident_ids:
+            self.sim.people.alive[self.uid_by_id[resident_id]] = (
+                resident_id in self.present_resident_ids
+            )
         self._release_quarantines()
         self._process_test_results()
         self._process_quarantines()
@@ -1508,15 +1565,18 @@ class TravelManager:
                     "resident departure episodes are unsupported in the M8 return-event contract"
                 )
         for episode in self._episodes_by_arrival.get(self.current_date, []):
-            if episode.person_id in self._processed_arrival_people:
+            episode_key = (episode.trip_id, episode.person_id)
+            if episode_key in self._processed_arrival_episodes:
                 continue
-            self._processed_arrival_people.add(episode.person_id)
+            self._processed_arrival_episodes.add(episode_key)
             if episode.resident_agent_id is not None:
                 resident_id = episode.resident_agent_id
-                self.present_resident_ids.add(resident_id)
-                self.away_resident_ids.discard(resident_id)
                 uid = self.uid_by_id[resident_id]
-                self.sim.people.alive[uid] = True
+                resident_is_present = resident_id not in planned_away_ids
+                if resident_is_present:
+                    self.present_resident_ids.add(resident_id)
+                    self.away_resident_ids.discard(resident_id)
+                self.sim.people.alive[uid] = resident_is_present
                 self._returning_acquisition(episode)
                 self._arrival_test(episode)
                 if self.config.interventions.quarantine_all_arrivals:
@@ -1534,25 +1594,34 @@ class TravelManager:
                 self._episode_by_person[visitor_id], uid
             )
         self._sync_traveller_modifiers()
+        planned_away = int(self.plan.daily_stream[self.current_ti]["resident_away"])
+        if len(self.away_resident_ids) != planned_away:
+            raise RuntimeError(
+                "planned and runtime resident-away counts differ: "
+                f"date={self.current_date.isoformat()}, planned={planned_away}, "
+                f"runtime={len(self.away_resident_ids)}"
+            )
         self._set_auids(self._active_uid_set())
         for route_id in TRAVEL_ROUTE_IDS:
             self.route_edge_history[(self.current_ti, route_id)] = self.route_edges(
                 route_id, self.current_date
             )
-        self.intervention_state.append(
-            {
-                "date": _iso(self.current_date),
-                "time_index": self.current_ti,
-                "active_visitors": len(self.active_visitor_ids),
-                "resident_present": len(self.present_resident_ids),
-                "resident_away": len(self.away_resident_ids),
-                "quarantined_travellers": sum(
-                    value > self.current_ti for value in self.quarantine_until.values()
-                ),
-                "testing_pending": len(self.pending_tests),
-                "config_hash": self.config.intervention_hash,
-            }
-        )
+        state = {
+            "date": _iso(self.current_date),
+            "time_index": self.current_ti,
+            "active_visitors": len(self.active_visitor_ids),
+            "resident_present": len(self.present_resident_ids),
+            "resident_away": len(self.away_resident_ids),
+            "quarantined_travellers": sum(
+                value > self.current_ti for value in self.quarantine_until.values()
+            ),
+            "testing_pending": len(self.pending_tests),
+            "config_hash": self.config.intervention_hash,
+        }
+        if self.intervention_state and self.intervention_state[-1]["time_index"] == self.current_ti:
+            self.intervention_state[-1] = state
+        else:
+            self.intervention_state.append(state)
 
     def capture(self, _sim: Any) -> None:
         """Capture post-transmission active-state counts for dated outputs."""
@@ -1659,7 +1728,9 @@ class TravelManager:
                     "St Helier", terminal, self.config.terminal_mixing_contacts
                 )
                 ids = [*group, *resident_pool]
-                edge_weight = 0.30 * self._edge_factor(route_id, ids)
+                edge_weight = self.config.arrival_terminal_edge_weight * self._edge_factor(
+                    route_id, ids
+                )
                 edges.extend(_ring_edges(ids, self.config.terminal_mixing_contacts, edge_weight, 1))
         elif route_id == "visitor_party":
             if self.config.visitor_party_contacts == 0:
@@ -1670,7 +1741,8 @@ class TravelManager:
                     _ring_edges(
                         ordered,
                         min(self.config.visitor_party_contacts, len(ordered) - 1),
-                        0.60 * self._edge_factor(route_id, ordered),
+                        self.config.visitor_party_edge_weight
+                        * self._edge_factor(route_id, ordered),
                         1,
                     )
                 )
@@ -1695,7 +1767,8 @@ class TravelManager:
                         _ring_edges(
                             members,
                             min(self.config.visitor_accommodation_contacts, len(members) - 1),
-                            0.55 * self._edge_factor(route_id, members),
+                            self.config.visitor_accommodation_edge_weight
+                            * self._edge_factor(route_id, members),
                             7,
                         )
                     )
@@ -1710,7 +1783,8 @@ class TravelManager:
                         {
                             "p1": visitor_id,
                             "p2": resident_id,
-                            "weight": 0.80 * self._edge_factor(route_id, (visitor_id, resident_id)),
+                            "weight": self.config.visitor_host_household_edge_weight
+                            * self._edge_factor(route_id, (visitor_id, resident_id)),
                             "duration_days": 1,
                         }
                     )
@@ -1732,7 +1806,8 @@ class TravelManager:
                         _ring_edges(
                             sorted(group),
                             self.config.visitor_transit_contacts,
-                            0.35 * self._edge_factor(route_id, group),
+                            self.config.visitor_transit_bus_edge_weight
+                            * self._edge_factor(route_id, group),
                             1,
                         )
                     )
@@ -1749,7 +1824,10 @@ class TravelManager:
                         edges.extend(
                             {**edge, "transport_unit_id": unit_id}
                             for edge in _complete_group(
-                                unit, 0.25 * self._edge_factor(route_id, unit), 1
+                                unit,
+                                self.config.visitor_transit_vehicle_edge_weight
+                                * self._edge_factor(route_id, unit),
+                                1,
                             )
                         )
                 elif key[1] == "PRIVATE_RENTAL_CAR":
@@ -1760,7 +1838,8 @@ class TravelManager:
                             edges.extend(
                                 _complete_group(
                                     vehicle,
-                                    0.25 * self._edge_factor(route_id, vehicle),
+                                    self.config.visitor_transit_vehicle_edge_weight
+                                    * self._edge_factor(route_id, vehicle),
                                     1,
                                 )
                             )
@@ -1777,7 +1856,7 @@ class TravelManager:
                                 {
                                     "p1": visitor_id,
                                     "p2": host_id,
-                                    "weight": 0.25
+                                    "weight": self.config.visitor_transit_vehicle_edge_weight
                                     * self._edge_factor(route_id, (visitor_id, host_id)),
                                     "duration_days": 1,
                                 }
@@ -1804,7 +1883,11 @@ class TravelManager:
                     _ring_edges(
                         sorted(ids),
                         self.config.visitor_community_contacts,
-                        (0.35 if route_id.endswith("indoor") else 0.18)
+                        (
+                            self.config.visitor_community_indoor_edge_weight
+                            if route_id.endswith("indoor")
+                            else self.config.visitor_community_outdoor_edge_weight
+                        )
                         * self._edge_factor(route_id, ids),
                         1,
                     )
@@ -1900,13 +1983,22 @@ class TravelManager:
         }
         view._dynamic_builders = dict(self.base_generated._dynamic_builders)
         view._snapshot_cache = {}
+        route_weights = _configured_route_weights(self.config)
         for route_id in TRAVEL_ROUTE_IDS:
             view.route_specs[route_id] = _travel_spec(
                 route_id,
                 route_id
                 in {"visitor_accommodation", "visitor_host_household", "visitor_community_indoor"},
-                0.35,
+                route_weights[route_id],
                 "M8 synthetic temporary episode/activity membership",
+                weight_components=(
+                    {
+                        "bus": self.config.visitor_transit_bus_edge_weight,
+                        "vehicle": self.config.visitor_transit_vehicle_edge_weight,
+                    }
+                    if route_id == "visitor_transit"
+                    else None
+                ),
             )
             view.structural_edges[route_id] = []
             view.route_memberships[route_id] = []
@@ -3054,6 +3146,45 @@ def provenance_table(config: TravelConfig) -> list[dict[str, Any]]:
             "derivation": "Sparse route construction; no manifests or venue histories are used.",
             "sensitivity_required": True,
         },
+        *[
+            {
+                "parameter": name,
+                "value_or_distribution": value,
+                "units": "relative contact-opportunity weight",
+                "provenance_status": "scenario_assumption",
+                "source_id": None,
+                "derivation": (
+                    "V1 numeric value promoted unchanged from the temporary-route constructor; "
+                    "not an observed contact rate or measured transmission coefficient."
+                ),
+                "sensitivity_required": True,
+            }
+            for name, value in (
+                ("arrival_terminal_edge_weight", config.arrival_terminal_edge_weight),
+                ("visitor_party_edge_weight", config.visitor_party_edge_weight),
+                (
+                    "visitor_accommodation_edge_weight",
+                    config.visitor_accommodation_edge_weight,
+                ),
+                (
+                    "visitor_host_household_edge_weight",
+                    config.visitor_host_household_edge_weight,
+                ),
+                ("visitor_transit_bus_edge_weight", config.visitor_transit_bus_edge_weight),
+                (
+                    "visitor_transit_vehicle_edge_weight",
+                    config.visitor_transit_vehicle_edge_weight,
+                ),
+                (
+                    "visitor_community_indoor_edge_weight",
+                    config.visitor_community_indoor_edge_weight,
+                ),
+                (
+                    "visitor_community_outdoor_edge_weight",
+                    config.visitor_community_outdoor_edge_weight,
+                ),
+            )
+        ],
         *[
             {
                 "parameter": name,
