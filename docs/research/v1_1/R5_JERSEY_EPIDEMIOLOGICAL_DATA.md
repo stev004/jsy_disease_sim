@@ -1,7 +1,7 @@
 # R5 — Jersey epidemiological data landscape
 
-**Status:** forward-looking, nonblocking research dossier for V1.1 synthesis  
-**Research date:** 30 August 2026  
+**Status:** forward-looking, nonblocking research dossier for V1.1 synthesis
+**Research date:** 30 August 2026
 **Scope:** aggregate public evidence only; no restricted, patient-level, or personally identifiable data were accessed or acquired
 
 ## Scope and decision boundary

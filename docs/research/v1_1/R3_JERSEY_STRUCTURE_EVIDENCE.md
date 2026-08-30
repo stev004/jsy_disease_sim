@@ -1,7 +1,7 @@
 # R3 — Jersey structure evidence
 
-**Status:** research complete for the V1.1 scientific-hardening programme  
-**Evidence cut-off and access date:** 2026-08-30  
+**Status:** research complete for the V1.1 scientific-hardening programme
+**Evidence cut-off and access date:** 2026-08-30
 **Scope:** `STR-01`, `STR-02`, `POP-07`, and the evidence needed to plan `POP-04`, `POP-05`, `POP-09`, `POP-10`, `STR-05`, `STR-06`, `STR-07`, `STR-09`, `STA-05`, and `STA-06`.
 
 ## 1. Decision summary

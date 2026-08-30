@@ -1,8 +1,8 @@
 # R1 — Natural history, observation timing, and adherence
 
-**Status:** research dossier for V1.1 synthesis; not an implementation specification  
-**Research date:** 30 August 2026  
-**Primary audit findings:** `D-01`, `O-02`, `I-01`  
+**Status:** research dossier for V1.1 synthesis; not an implementation specification
+**Research date:** 30 August 2026
+**Primary audit findings:** `D-01`, `O-02`, `I-01`
 **Interacting findings:** `D-02`, `D-03`, `I-02`, `I-04`, `E-01`
 
 ## Scope and decision boundary

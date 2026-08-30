@@ -1,10 +1,10 @@
 # R2 — Contact Network Heterogeneity and Mixing
 
-**Programme:** Jersey Outbreak Simulator V1.1 scientific hardening  
-**Research lane:** R2  
-**Status:** research recommendation; no implementation or calibration  
-**Frozen baseline:** `jos-v1.0.0`, commit `9e9ce3abc4201cd8303c723015462d21ca237800`  
-**Evidence reviewed:** the V1 scientific audit, technical report and roadmap on `docs/jos-v1-scientific-review`; frozen full-scale pilot `run-20260830T180202Z`; frozen implementation and tests; external sources listed below  
+**Programme:** Jersey Outbreak Simulator V1.1 scientific hardening
+**Research lane:** R2
+**Status:** research recommendation; no implementation or calibration
+**Frozen baseline:** `jos-v1.0.0`, commit `9e9ce3abc4201cd8303c723015462d21ca237800`
+**Evidence reviewed:** the V1 scientific audit, technical report and roadmap on `docs/jos-v1-scientific-review`; frozen full-scale pilot `run-20260830T180202Z`; frozen implementation and tests; external sources listed below
 **Literature access date:** 2026-08-30
 
 ## 1. Goal, non-goals and decision summary

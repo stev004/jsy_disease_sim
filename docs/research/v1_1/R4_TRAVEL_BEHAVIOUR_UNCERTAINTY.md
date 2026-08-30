@@ -1,7 +1,7 @@
 # R4 — Travel, behaviour and uncertainty
 
-**Status:** research complete for the V1.1 scientific-hardening programme  
-**Evidence cut-off and access date:** 2026-08-30  
+**Status:** research complete for the V1.1 scientific-hardening programme
+**Evidence cut-off and access date:** 2026-08-30
 **Scope:** immediate defects `T-11` and `T-12`; evidence/design for `T-03`, `T-08`, `T-13`, `T-14`, `T-15`, `T-19`, `T-20`, `T-21`, `T-23`, `T-24`, `T-28`, `E-01`, `E-02`, and `E-03`.
 
 ## 1. Decision summary

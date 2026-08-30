@@ -1,7 +1,7 @@
 # JOS V1.1 scientific design synthesis
 
-**Decision date:** 30 August 2026  
-**Frozen V1 base:** `9e9ce3abc4201cd8303c723015462d21ca237800` (`jos-v1.0.0`)  
+**Decision date:** 30 August 2026
+**Frozen V1 base:** `9e9ce3abc4201cd8303c723015462d21ca237800` (`jos-v1.0.0`)
 **Inputs:** R1–R6, the V1 audit/technical report/roadmap on
 `docs/jos-v1-scientific-review`, the frozen full-scale pilot at
 `/Users/stevenmatson/Documents/JOS_v1_full_scale_evidence/run-20260830T180202Z/`,
