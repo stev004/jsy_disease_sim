@@ -30,7 +30,7 @@ class StructureGenerationConfig(StrictModel):
     """Stable configuration for a seeded Milestone 3 structure build."""
 
     schema_version: Literal["1.0"] = "1.0"
-    generator_version: NonEmptyString = "3.0.0"
+    generator_version: NonEmptyString = "3.1.0"
     mode: PopulationMode
     seed: StrictInt
     target_population: StrictInt | None = None

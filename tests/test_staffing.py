@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 from jersey_outbreak.network_artifacts import write_network_artifact
@@ -14,9 +16,24 @@ from jersey_outbreak.population_structure_artifacts import (
     load_m3_structure_artifact,
     write_structure_artifact,
 )
-from jersey_outbreak.population_structure_generator import generate_structure
+from jersey_outbreak.population_structure_controls import (
+    load_structure_controls,
+    scaled_structure_targets,
+)
+from jersey_outbreak.population_structure_generator import (
+    NON_GEOGRAPHIC_SCHOOL_PARISH,
+    _build_schools,
+    _school_age_allowed,
+    _school_kind,
+    generate_structure,
+)
 from jersey_outbreak.population_structure_schemas import StructureGenerationConfig
-from jersey_outbreak.staffing_evidence import care_minimums, nursing_nurse_minimum
+from jersey_outbreak.staffing_evidence import (
+    care_minimums,
+    load_staffing_evidence,
+    nursing_nurse_minimum,
+)
+from jersey_outbreak.staffing_generator import _care_staff
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -81,6 +98,7 @@ def test_school_staff_assignments_resolve_and_have_required_role_breakdown(
     assert generated.staffing_diagnostics["school"]["duplicate_staff_assignments"] == 0
     for row in generated.school_staff_assignments:
         assert row["school_id"] in schools
+        assert row["institution_parish"].startswith(f"{NON_GEOGRAPHIC_SCHOOL_PARISH}:")
         if row["class_id"] is not None:
             assert row["class_id"] in classes
             assert classes[row["class_id"]]["school_id"] == row["school_id"]
@@ -131,6 +149,83 @@ def test_care_regulatory_boundary_rules_and_staffed_settings(staffing_network) -
     assert staffing_network.route_snapshot(
         "care_staff", staffing_network.config.snapshot_dates[0]
     ).edges
+
+
+def test_full_mode_institutional_inventory_age_bounds_and_nursing_roles() -> None:
+    controls = load_structure_controls(ROOT)
+    school_targets, _workers, _workplaces, _secondary_jobs = scaled_structure_targets(
+        controls, 104_540
+    )
+    residents = [
+        {
+            "agent_id": f"pupil-{age:02d}-{index:04d}",
+            "age": age,
+            "home_parish": "St Helier",
+        }
+        for age in range(4, 19)
+        for index in range(1_500)
+    ]
+    schools, _classes, assignments, _by_agent = _build_schools(
+        SimpleNamespace(residents=residents),
+        controls,
+        school_targets,
+        np.random.default_rng(123),
+    )
+    assert len(schools) == 48
+    assert sum(row["pupil_count"] for row in schools) == controls.full_school_target
+    assert {
+        school_type: sum(row["school_type"] == school_type for row in assignments)
+        for school_type in school_targets
+    } == school_targets
+    assert all(
+        _school_age_allowed(row["age"], _school_kind(row["school_type"])) for row in assignments
+    )
+
+    care_residents = [
+        {
+            "agent_id": f"care-{index:02d}",
+            "household_id": None,
+            "care_setting_id": "nursing-1",
+        }
+        for index in range(41)
+    ]
+    workers = [
+        {
+            "agent_id": f"worker-{index:02d}",
+            "household_id": f"household-{index:02d}",
+            "care_setting_id": None,
+        }
+        for index in range(20)
+    ]
+    worker_structure = [
+        {
+            "agent_id": row["agent_id"],
+            "economic_status": "employed",
+            "age": 35,
+            "school_id": None,
+            "employment_sector": "Education, health, and other services",
+        }
+        for row in workers
+    ]
+    care_assignments, _by_setting, diagnostics, _selected = _care_staff(
+        SimpleNamespace(
+            residents=care_residents + workers,
+            communal_settings=[
+                {
+                    "setting_id": "nursing-1",
+                    "setting_type": "Care home (with nursing)",
+                    "home_parish": "St Helier",
+                }
+            ],
+        ),
+        SimpleNamespace(resident_structure=worker_structure),
+        load_staffing_evidence(ROOT).care,
+        seed=123,
+        coverage_multiplier=1.0,
+        used_agents=set(),
+    )
+    assert {row["role"] for row in care_assignments} == {"care_support_worker", "nurse"}
+    assert diagnostics["synthetic_nurses"] == 3
 
 
 def test_staffing_is_seed_reproducible_and_seed_sensitive(staffing_inputs) -> None:

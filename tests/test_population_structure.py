@@ -14,7 +14,10 @@ from jersey_outbreak.population_structure_artifacts import (
     load_m2_population_artifact,
     write_structure_artifact,
 )
-from jersey_outbreak.population_structure_generator import generate_structure
+from jersey_outbreak.population_structure_generator import (
+    NON_GEOGRAPHIC_SCHOOL_PARISH,
+    generate_structure,
+)
 from jersey_outbreak.population_structure_schemas import (
     ResidentStructureRecord,
     StructureGenerationConfig,
@@ -86,6 +89,25 @@ def test_ci_structure_is_deterministic_and_preserves_references(tmp_path: Path) 
         for row in first.resident_structure
     )
     assert all(row["age"] >= 4 for row in first.school_assignments)
+    school_locations = {row["school_parish"] for row in first.schools}
+    assert len(school_locations) == len(first.schools)
+    assert all(value.startswith(f"{NON_GEOGRAPHIC_SCHOOL_PARISH}:") for value in school_locations)
+    assert {row["school_parish"] for row in first.school_assignments} == school_locations
+    school_diagnostics = first.diagnostics["schools"]
+    assert school_diagnostics["age_structure_status"].startswith("blocked_pending_frozen")
+    assert {row["school_type"] for row in school_diagnostics["age_distribution_by_type"]} == {
+        row["school_type"] for row in school_diagnostics["type_rows"]
+    }
+    assert all(
+        row["coverage_status"] in {"complete", "age_collapse_detected"}
+        for row in school_diagnostics["age_distribution_by_type"]
+    )
+    assert school_diagnostics["geography"] == {
+        "status": "non_geographic_synthetic",
+        "school_parish_value_pattern": (f"{NON_GEOGRAPHIC_SCHOOL_PARISH}:<synthetic_school_id>"),
+        "source_status": "blocked_pending_frozen_school_site_parish_inventory",
+        "household_school_parish_association_status": "not_applicable",
+    }
 
 
 def test_structure_artifact_writes_manifest_tables_and_provenance(tmp_path: Path) -> None:
