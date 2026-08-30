@@ -633,7 +633,9 @@ performance item and is not implemented in M9.1.
 
 **Historical M9.1 implementation status: PASS.** The three independently
 reproduced M9 blockers were closed by the implementation, before the later
-independent audit recorded below; M10 remains closed.
+independent audit recorded below; M10 was closed at that time. (As of
+2026-08-30 M10 implementation is in progress on `codex/m10-interactive-app`;
+no M10 gate has been run and no M10 PASS is recorded here.)
 
 The required API full-island smoke submitted one `scenario_run` at `full`
 scale (104,540 residents), seed 123, one dated output point. Job

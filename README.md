@@ -44,7 +44,12 @@ independent M9.1 audit still found one restart provenance substitution, so
 corrective M9.2 binds submission identity into the request hash, persists
 submitted and worker-observed commit/dirty identities as separate immutable
 SQLite anchors, and requires every candidate, scientific artifact, and result
-manifest to match them. M10 remains closed. The
+manifest to match them. M10 (interactive application) is in progress on
+branch `codex/m10-interactive-app`: a designed and implemented React/Vite
+frontend under `frontend/` that drives the M9 API (see
+[`docs/m10_ui_design.md`](docs/m10_ui_design.md) and
+[`frontend/README.md`](frontend/README.md)); its milestone gate has not
+been run and no M10 PASS is claimed. The
 quantitative gate record is in
 [`docs/progress.md`](docs/progress.md), and the API contract is in
 [`docs/api.md`](docs/api.md).
