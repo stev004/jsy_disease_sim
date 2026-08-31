@@ -84,7 +84,7 @@ describe('M10.1 live M9 contract checks', () => {
     const lastUi = loaded.epi[loaded.epi.length - 1];
     expect(lastUi.active).toBe(lastApi.infectious);
     expect(lastUi.cum).toBe(lastApi.cumulative_total_infections);
-    expect(lastUi.attack).toBe(lastApi.attack_rate);
+    expect(lastUi.attack).toBe(lastApi.ever_infected_fraction);
     const household = routeRows
       .filter((row) => row.route_id === 'household')
       .reduce((sum, row) => sum + Number(row.new_local_infections), 0);

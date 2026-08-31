@@ -139,6 +139,13 @@ def test_recovery_and_configurable_waning(outbreak_network, parameters) -> None:
     assert result.daily_epidemic[1]["infectious"] == 1
     assert result.daily_epidemic[3]["recovered"] == 1
     assert result.daily_epidemic[4]["susceptible"] == 3000
+    assert result.daily_epidemic[0]["cumulative_incidence_per_capita"] == pytest.approx(1 / 3000)
+    assert result.daily_epidemic[0]["ever_infected_fraction"] == pytest.approx(1 / 3000)
+    assert (
+        result.daily_epidemic[0]["attack_rate"]
+        == result.daily_epidemic[0]["cumulative_incidence_per_capita"]
+    )
+    assert result.diagnostics["output_semantics"]["attack_rate"].startswith("deprecated")
 
     disabled = run_outbreak(
         outbreak_network,

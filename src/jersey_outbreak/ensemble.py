@@ -41,6 +41,8 @@ METRIC_SEMANTICS: dict[str, MetricSemantic] = {
     "observed_reported_cases": "incidence",
     "latent_cumulative_infections": "cumulative",
     "latent_attack_rate": "cumulative",
+    "latent_cumulative_incidence_per_capita": "cumulative",
+    "latent_ever_infected_fraction": "cumulative",
     "latent_prevalence": "state",
     "intervention_active_agents": "state",
     "intervention_active_households": "state",
@@ -58,6 +60,12 @@ METRIC_SEMANTICS: dict[str, MetricSemantic] = {
     "intervention_protection_effective": "incidence",
     "intervention_protection_waned": "incidence",
 }
+
+
+def _empirical_quantile_resolvable(sample_count: int, quantile: float) -> bool:
+    """Return whether an empirical interior quantile has one observation in its tail."""
+
+    return quantile in {0.0, 1.0} or sample_count * min(quantile, 1.0 - quantile) >= 1.0
 
 
 @dataclass(frozen=True)
@@ -103,6 +111,7 @@ class ComparisonResult:
     ensemble_a: EnsembleResult
     ensemble_b: EnsembleResult
     paired_rows: tuple[dict[str, Any], ...]
+    paired_summary: tuple[dict[str, Any], ...]
     diagnostics: dict[str, Any]
     logical_content_hash: str
     runtime_seconds: float
@@ -153,6 +162,22 @@ def _trajectory_rows(
                     "metric": "latent_attack_rate",
                     "date": row["date"],
                     "value": row["attack_rate"],
+                },
+                {
+                    "seed": seed,
+                    "scope": "epidemic",
+                    "key": "all",
+                    "metric": "latent_cumulative_incidence_per_capita",
+                    "date": row["date"],
+                    "value": row["cumulative_incidence_per_capita"],
+                },
+                {
+                    "seed": seed,
+                    "scope": "epidemic",
+                    "key": "all",
+                    "metric": "latent_ever_infected_fraction",
+                    "date": row["date"],
+                    "value": row["ever_infected_fraction"],
                 },
             ]
         )
@@ -364,13 +389,27 @@ def _summary_rows(
         present_semantics = [name for name, count in semantics.items() if count]
         cell_semantic = present_semantics[0] if len(present_semantics) == 1 else "mixed"
         lower_value = median = upper_value = None
+        tail_ranks = [
+            len(values) * min(quantile, 1.0 - quantile)
+            for quantile in (lower_quantile, upper_quantile)
+            if quantile not in {0.0, 1.0}
+        ]
+        tail_rank = min(tail_ranks, default=float(len(values)))
+        median_resolvable = _empirical_quantile_resolvable(len(values), 0.5)
+        tails_resolvable = all(
+            _empirical_quantile_resolvable(len(values), quantile)
+            for quantile in (lower_quantile, upper_quantile)
+        )
         if values:
-            quantiles = np.quantile(
-                np.asarray(values, dtype=float),
-                [lower_quantile, 0.5, upper_quantile],
-                method="linear",
-            )
-            lower_value, median, upper_value = (float(value) for value in quantiles)
+            if median_resolvable:
+                median = float(np.quantile(np.asarray(values, dtype=float), 0.5, method="linear"))
+            if tails_resolvable:
+                quantiles = np.quantile(
+                    np.asarray(values, dtype=float),
+                    [lower_quantile, upper_quantile],
+                    method="linear",
+                )
+                lower_value, upper_value = (float(value) for value in quantiles)
         summary.append(
             {
                 "scope": scope,
@@ -384,6 +423,11 @@ def _summary_rows(
                 "upper_quantile": upper_quantile,
                 "lower_value": lower_value,
                 "upper_value": upper_value,
+                "interval_class": (
+                    "stochastic_replicate_quantile" if tails_resolvable else "insufficient_tail"
+                ),
+                "quantile_method": "numpy.quantile(method='linear')",
+                "tail_rank": tail_rank,
                 "replicate_count": len(values),
                 "requested_replicates": requested,
                 "successful_replicates": successful_replicates,
@@ -839,6 +883,67 @@ def compare_ensembles(
                     else None,
                 }
             )
+    paired_groups: dict[tuple[str, str, str, str], list[float]] = {}
+    for row in rows:
+        if row["status"] != "paired" or row["difference"] is None:
+            continue
+        group_key = (row["scope"], row["key"], row["metric"], row["date"])
+        paired_groups.setdefault(group_key, []).append(float(row["difference"]))
+    paired_summary: list[dict[str, Any]] = []
+    lower_quantile = ensemble_a.config.lower_quantile
+    upper_quantile = ensemble_a.config.upper_quantile
+    for (scope, summary_key, metric, when), differences in sorted(paired_groups.items()):
+        values = np.asarray(differences, dtype=float)
+        median_resolvable = _empirical_quantile_resolvable(len(differences), 0.5)
+        median = float(np.quantile(values, 0.5, method="linear")) if median_resolvable else None
+        tail_ranks = [
+            len(differences) * min(quantile, 1.0 - quantile)
+            for quantile in (lower_quantile, upper_quantile)
+            if quantile not in {0.0, 1.0}
+        ]
+        tail_rank = min(tail_ranks, default=float(len(differences)))
+        tails_resolvable = all(
+            _empirical_quantile_resolvable(len(differences), quantile)
+            for quantile in (lower_quantile, upper_quantile)
+        )
+        lower: float | None = None
+        upper: float | None = None
+        if tails_resolvable:
+            lower_value, upper_value = np.quantile(
+                values, [lower_quantile, upper_quantile], method="linear"
+            )
+            lower, upper = float(lower_value), float(upper_value)
+        paired_summary.append(
+            {
+                "scope": scope,
+                "key": summary_key,
+                "metric": metric,
+                "date": when,
+                "paired_count": len(differences),
+                "requested_pair_count": len(seeds),
+                "missing_or_failed_pair_count": len(seeds) - len(differences),
+                "lower_quantile": lower_quantile,
+                "lower_difference": lower,
+                "median_difference": median,
+                "upper_quantile": upper_quantile,
+                "upper_difference": upper,
+                "interval_class": (
+                    "paired_stochastic_replicate_quantile"
+                    if tails_resolvable
+                    else "insufficient_tail"
+                ),
+                "quantile_method": "numpy.quantile(method='linear')",
+                "tail_rank": tail_rank,
+                "mean_difference": float(values.mean()),
+                "fraction_negative": float(np.mean(values < 0)),
+                "fraction_zero": float(np.mean(values == 0)),
+                "fraction_positive": float(np.mean(values > 0)),
+                "coupling_caveat": (
+                    "Equal seeds provide matched starts; event-path divergence may break "
+                    "later common-random-number coupling."
+                ),
+            }
+        )
     status = "passed" if missing == 0 else ("partial" if paired else "failed")
     paired_records = [
         (a_by_seed[seed], b_by_seed[seed])
@@ -874,6 +979,7 @@ def compare_ensembles(
         "seed_order": list(seeds),
         "paired_seed_count": paired,
         "missing_or_failed_pair_count": missing,
+        "paired_summary_row_count": len(paired_summary),
         "pairing_preserved": True,
         "stream_coupling": {
             "population": m2_coupled,
@@ -894,12 +1000,14 @@ def compare_ensembles(
         config_a_hash=_ensemble_config_hash(ensemble_a),
         config_b_hash=_ensemble_config_hash(ensemble_b),
         rows=rows,
+        summary=paired_summary,
     )
     return ComparisonResult(
         comparison_id=comparison_id,
         ensemble_a=ensemble_a,
         ensemble_b=ensemble_b,
         paired_rows=tuple(rows),
+        paired_summary=tuple(paired_summary),
         diagnostics=diagnostics,
         logical_content_hash=logical_content_hash,
         runtime_seconds=time.perf_counter() - started,

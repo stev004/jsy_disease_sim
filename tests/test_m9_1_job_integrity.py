@@ -307,7 +307,7 @@ def test_m6_content_tamper_fails_even_with_updated_file_checksum(
     table_path = artifact.artifact_directory / "ensemble_summary.parquet"
     table = pq.read_table(table_path)
     rows = table.to_pylist()
-    rows[0]["median"] = float(rows[0]["median"]) + 1.0
+    rows[0]["tail_rank"] = float(rows[0]["tail_rank"]) + 1.0
     pq.write_table(pa.Table.from_pylist(rows, schema=table.schema), table_path)
     _update_checksum(artifact.artifact_directory / "manifest.json", table_path)
     with pytest.raises(ValueError, match="logical content hash"):

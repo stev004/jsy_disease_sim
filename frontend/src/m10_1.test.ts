@@ -116,8 +116,8 @@ describe('M10.1 scientific truth regressions', () => {
       artifact_id: 'daily',
       metadata: {},
       rows: [
-        { date: '2025-01-06', susceptible: 990, exposed: 5, infectious: 5, recovered: 0, dead: 0, new_infections: 10, new_seeded_infections: 5, cumulative_infections: 10, cumulative_total_infections: 15, attack_rate: 0.015 },
-        { date: '2025-01-07', susceptible: 985, exposed: 5, infectious: 5, recovered: 5, dead: 0, new_infections: 0, new_seeded_infections: 0, cumulative_infections: 10, cumulative_total_infections: 15, attack_rate: 0.015 },
+        { date: '2025-01-06', susceptible: 990, exposed: 5, infectious: 5, recovered: 0, dead: 0, new_infections: 10, new_seeded_infections: 5, cumulative_infections: 10, cumulative_total_infections: 15, cumulative_incidence_per_capita: 0.015, ever_infected_fraction: 0.014, attack_rate: 0.99 },
+        { date: '2025-01-07', susceptible: 985, exposed: 5, infectious: 5, recovered: 5, dead: 0, new_infections: 0, new_seeded_infections: 0, cumulative_infections: 10, cumulative_total_infections: 15, cumulative_incidence_per_capita: 0.015, ever_infected_fraction: 0.014, attack_rate: 0.99 },
       ],
       total: 2,
       has_more: false,
@@ -129,7 +129,7 @@ describe('M10.1 scientific truth regressions', () => {
       const results = await loadResults(job('scenario_run'));
       expect(results.epi[0].cum).toBe(15);
       expect(results.cumulativeLabel).toBe('Cumulative infected');
-      expect(results.epi[0].attack).toBe(0.015);
+      expect(results.epi[0].attack).toBe(0.014);
       expect(results.epi[0].bandLow).toBeNull();
       expect(results.epi[0].bandHigh).toBeNull();
     } finally {
@@ -141,11 +141,15 @@ describe('M10.1 scientific truth regressions', () => {
     const rows = [
       row('epidemic', 'all', 'latent_prevalence', '2025-01-06', 0.01, { lower_value: 0.008, upper_value: 0.012 }),
       row('epidemic', 'all', 'latent_cumulative_infections', '2025-01-06', 100),
-      row('epidemic', 'all', 'latent_attack_rate', '2025-01-06', 0.1),
+      row('epidemic', 'all', 'latent_cumulative_incidence_per_capita', '2025-01-06', 0.1),
+      row('epidemic', 'all', 'latent_ever_infected_fraction', '2025-01-06', 0.09),
+      row('epidemic', 'all', 'latent_attack_rate', '2025-01-06', 0.99),
       row('epidemic', 'all', 'latent_new_infections', '2025-01-06', 10),
-      row('epidemic', 'all', 'latent_prevalence', '2025-01-07', 0.012, { lower_value: 0.01, upper_value: 0.014 }),
+      row('epidemic', 'all', 'latent_prevalence', '2025-01-07', 0.012, { lower_value: null, upper_value: null, lower_quantile: 0.025, upper_quantile: 0.975 }),
       row('epidemic', 'all', 'latent_cumulative_infections', '2025-01-07', 120),
-      row('epidemic', 'all', 'latent_attack_rate', '2025-01-07', 0.12),
+      row('epidemic', 'all', 'latent_cumulative_incidence_per_capita', '2025-01-07', 0.12),
+      row('epidemic', 'all', 'latent_ever_infected_fraction', '2025-01-07', 0.1),
+      row('epidemic', 'all', 'latent_attack_rate', '2025-01-07', 0.99),
       row('epidemic', 'all', 'latent_new_infections', '2025-01-07', 20),
       row('parish', 'St Helier', 'latent_new_infections', '2025-01-06', 3),
       row('parish', 'St Helier', 'latent_new_infections', '2025-01-07', 4),
@@ -159,6 +163,8 @@ describe('M10.1 scientific truth regressions', () => {
     expect(results.epi[0].active).toBe(10);
     expect(results.epi[0].bandLow).toBe(8);
     expect(results.epi[0].bandHigh).toBe(12);
+    expect(results.epi[1].bandLow).toBeNull();
+    expect(results.epi[1].bandHigh).toBeNull();
     expect(results.parishes.find((p) => p.id === 'helier')?.points[1].cum).toBe(7);
     expect(results.routes[0].cumulative[1]).toBe(5);
     expect(results.routes.some((route) => isIntroductionRoute(route.id))).toBe(false);
@@ -191,7 +197,8 @@ describe('M10.1 scientific truth regressions', () => {
     const base = [
       row('epidemic', 'all', 'latent_prevalence', '2025-01-06', 0.01),
       row('epidemic', 'all', 'latent_cumulative_infections', '2025-01-06', 100),
-      row('epidemic', 'all', 'latent_attack_rate', '2025-01-06', 0.1),
+      row('epidemic', 'all', 'latent_cumulative_incidence_per_capita', '2025-01-06', 0.1),
+      row('epidemic', 'all', 'latent_ever_infected_fraction', '2025-01-06', 0.09),
       row('epidemic', 'all', 'latent_new_infections', '2025-01-06', 10),
       row('route', 'household', 'latent_local_infections', '2025-01-06', 6),
       row('parish', 'St Helier', 'latent_new_infections', '2025-01-06', 5),
@@ -199,7 +206,8 @@ describe('M10.1 scientific truth regressions', () => {
     const treated = [
       row('epidemic', 'all', 'latent_prevalence', '2025-01-06', 0.005),
       row('epidemic', 'all', 'latent_cumulative_infections', '2025-01-06', 50),
-      row('epidemic', 'all', 'latent_attack_rate', '2025-01-06', 0.05),
+      row('epidemic', 'all', 'latent_cumulative_incidence_per_capita', '2025-01-06', 0.05),
+      row('epidemic', 'all', 'latent_ever_infected_fraction', '2025-01-06', 0.045),
       row('epidemic', 'all', 'latent_new_infections', '2025-01-06', 5),
       row('route', 'household', 'latent_local_infections', '2025-01-06', 2),
       row('parish', 'St Helier', 'latent_new_infections', '2025-01-06', 2),

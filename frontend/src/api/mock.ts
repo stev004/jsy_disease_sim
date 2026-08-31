@@ -243,6 +243,8 @@ function dailyEpidemicRows(): DatasetRow[] {
       cumulative_infections: nonSeededCumulative,
       cumulative_total_infections: totalCumulative,
       prevalence: infectious / MOCK_POP,
+      cumulative_incidence_per_capita: totalCumulative / MOCK_POP,
+      ever_infected_fraction: totalCumulative / MOCK_POP,
       attack_rate: totalCumulative / MOCK_POP,
       detected_cases: Math.round(detected(d)),
     });
@@ -269,6 +271,7 @@ function dailyParishRows(): DatasetRow[] {
         active_infectious: Math.round(parishMetric(p, d, 'active')),
         cumulative_infections: Math.round(cumToday),
         detected_cases: Math.round(parishMetric(p, d, 'detected')),
+        ever_infected_fraction: parishMetric(p, d, 'attack'),
         attack_rate: parishMetric(p, d, 'attack'),
         visitor_linked_infections: Math.round(parishMetric(p, d, 'visitor')),
         population: p.pop,
@@ -352,7 +355,11 @@ function ensembleSummaryRows(): DatasetRow[] {
       scope,
       key,
       metric,
-      metric_semantic: metric.includes('prevalence') || metric.includes('attack') ? 'state' : 'incidence',
+      metric_semantic: metric.includes('prevalence')
+        ? 'state'
+        : metric.includes('cumulative') || metric.includes('ever_infected') || metric.includes('attack')
+          ? 'cumulative'
+          : 'incidence',
       date,
       cell_semantic: 'median',
       median: value,
@@ -365,6 +372,8 @@ function ensembleSummaryRows(): DatasetRow[] {
     add('epidemic', 'all', 'latent_new_infections', date, Number(row.new_infections));
     add('epidemic', 'all', 'latent_prevalence', date, Number(row.prevalence));
     add('epidemic', 'all', 'latent_cumulative_infections', date, Number(row.cumulative_total_infections));
+    add('epidemic', 'all', 'latent_cumulative_incidence_per_capita', date, Number(row.cumulative_incidence_per_capita));
+    add('epidemic', 'all', 'latent_ever_infected_fraction', date, Number(row.ever_infected_fraction));
     add('epidemic', 'all', 'latent_attack_rate', date, Number(row.attack_rate));
   }
   for (const row of dailyParishRows()) add('parish', String(row.parish), 'latent_new_infections', String(row.date), Number(row.new_infections));

@@ -353,8 +353,14 @@ def run_outbreak(
 
     n_points = len(disease.results.n_susceptible)
     dates = _date_range(config.start_date, n_points)
+    infected_ids_by_date: dict[str, set[str]] = defaultdict(set)
+    for event in events:
+        infected_ids_by_date[str(event["date"])].add(str(event["infected_agent_id"]))
+    ever_infected_ids: set[str] = set()
     daily_epidemic: list[dict[str, Any]] = []
     for index, when in enumerate(dates):
+        ever_infected_ids.update(infected_ids_by_date[when.isoformat()])
+        cumulative_incidence = float(disease.results.attack_rate[index])
         daily_epidemic.append(
             {
                 "date": when.isoformat(),
@@ -372,7 +378,9 @@ def run_outbreak(
                 "cumulative_infections": _state_count(disease, "cum_infections", index),
                 "cumulative_total_infections": _state_count(disease, "cum_total_infections", index),
                 "prevalence": float(disease.results.prevalence[index]),
-                "attack_rate": float(disease.results.attack_rate[index]),
+                "cumulative_incidence_per_capita": cumulative_incidence,
+                "ever_infected_fraction": len(ever_infected_ids) / len(agent_ids),
+                "attack_rate": cumulative_incidence,
             }
         )
 
@@ -589,6 +597,15 @@ def run_outbreak(
             "realized_imports": attribution_totals["imported"],
         },
         "parameter_provenance": parameters.model_dump(mode="json"),
+        "output_semantics": {
+            "cumulative_incidence_per_capita": (
+                "infection episodes divided by the fixed resident population; may exceed one"
+            ),
+            "ever_infected_fraction": (
+                "unique resident identities ever infected divided by the fixed resident population"
+            ),
+            "attack_rate": "deprecated alias of cumulative_incidence_per_capita",
+        },
         "online_observation_scheduler": (
             {
                 "attached": True,

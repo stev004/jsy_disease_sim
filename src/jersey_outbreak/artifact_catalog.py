@@ -13,7 +13,7 @@ SCIENTIFIC_DATASET_CATALOG: dict[str, frozenset[str]] = {
         }
     ),
     "m6_ensemble": frozenset({"ensemble_summary", "replicate_trajectories", "replicate_grid"}),
-    "m6_comparison": frozenset({"matched_seed_comparison"}),
+    "m6_comparison": frozenset({"matched_seed_comparison", "paired_difference_summary"}),
     "m7_intervention": frozenset(
         {
             "daily_epidemic",

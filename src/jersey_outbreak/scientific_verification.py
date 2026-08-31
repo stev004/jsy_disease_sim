@@ -470,13 +470,23 @@ def verify_m6_comparison_artifact(artifact_directory: Path) -> VerifiedScientifi
     )
     payload = manifest.model_dump(mode="json")
     files = _record_files(artifact_directory, payload)
-    _required_files(
-        files, {"matched_seed_comparison.parquet", "comparison_config.json", "diagnostics.json"}
-    )
+    required_files = {
+        "matched_seed_comparison.parquet",
+        "comparison_config.json",
+        "diagnostics.json",
+    }
+    if manifest.manifest_schema_version == "1.1":
+        required_files.add("paired_difference_summary.parquet")
+    _required_files(files, required_files)
     if manifest.status != "passed":
         raise ValueError("M6 comparison did not pass")
     config = json.loads((artifact_directory / "comparison_config.json").read_text())
     rows = _rows(artifact_directory, "matched_seed_comparison.parquet")
+    summary = (
+        _rows(artifact_directory, "paired_difference_summary.parquet")
+        if manifest.manifest_schema_version == "1.1"
+        else None
+    )
     for key in ("comparison_id", "config_a_hash", "config_b_hash"):
         if config.get(key) != getattr(manifest, key):
             raise ValueError(f"M6 comparison configuration mismatch for {key}")
@@ -487,6 +497,7 @@ def verify_m6_comparison_artifact(artifact_directory: Path) -> VerifiedScientifi
         config_a_hash=manifest.config_a_hash,
         config_b_hash=manifest.config_b_hash,
         rows=rows,
+        summary=summary,
     )
     if logical_hash != manifest.logical_content_hash:
         raise ValueError("M6 comparison scientific logical content hash mismatch")

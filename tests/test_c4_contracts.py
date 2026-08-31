@@ -353,7 +353,8 @@ def test_failed_replicates_are_visible_noncontributors_and_quantiles_exclude_the
         for row in failed_cells
     )
     summary = _summary_rows(trajectories, 0.25, 0.75, requested_replicates=2)
-    assert summary[0]["median"] == 7.0
+    assert summary[0]["median"] is None
+    assert summary[0]["interval_class"] == "insufficient_tail"
     assert summary[0]["requested_replicates"] == 2
     assert summary[0]["successful_replicates"] == 1
     assert summary[0]["failed_replicates"] == 1

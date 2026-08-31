@@ -352,13 +352,13 @@ function CompareBody({
           </Card>
 
           <Card className="delta-card">
-            <div className="k">Attack rate</div>
+            <div className="k">Ever infected</div>
             <div className={`v ${arDelta != null && arDelta < 0 ? 'down' : 'up'}`}>
               {arDelta == null ? '—' : `${arDelta < 0 ? '−' : '+'}${Math.abs(arDelta).toFixed(1)} pts`}
             </div>
             <div className="s">
               {arBase == null || arTreated == null
-                ? `Attack rate is unavailable at the same persisted date. ${metricDateLabel(attack)}`
+                ? `Ever-infected fraction is unavailable at the same persisted date. ${metricDateLabel(attack)}`
                 : `${arBase.toFixed(1)}% → ${arTreated.toFixed(1)}% of residents · ${metricDateLabel(attack)}`}
             </div>
           </Card>

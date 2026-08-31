@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -25,30 +26,49 @@ def test_ensemble_config_requires_explicit_unique_seeds(
 
 def test_ensemble_summary_quantiles_use_declared_linear_definition() -> None:
     trajectories = {
-        1: (
+        seed: (
             {
                 "scope": "epidemic",
                 "key": "all",
                 "metric": "latent_new_infections",
                 "date": "2025-01-01",
-                "value": 1,
+                "value": value,
             },
-        ),
-        2: (
-            {
-                "scope": "epidemic",
-                "key": "all",
-                "metric": "latent_new_infections",
-                "date": "2025-01-01",
-                "value": 3,
-            },
-        ),
+        )
+        for seed, value in enumerate((1, 2, 3, 4), start=1)
     }
     rows = _summary_rows(trajectories, 0.25, 0.75)
-    assert rows[0]["lower_value"] == 1.5
-    assert rows[0]["median"] == 2.0
-    assert rows[0]["upper_value"] == 2.5
-    assert rows[0]["replicate_count"] == 2
+    assert rows[0]["lower_value"] == 1.75
+    assert rows[0]["median"] == 2.5
+    assert rows[0]["upper_value"] == 3.25
+    assert rows[0]["replicate_count"] == 4
+    assert rows[0]["interval_class"] == "stochastic_replicate_quantile"
+
+
+def test_ensemble_summary_requires_resolvable_empirical_tails() -> None:
+    def trajectories(count: int) -> dict[int, tuple[dict[str, object], ...]]:
+        return {
+            seed: (
+                {
+                    "scope": "epidemic",
+                    "key": "all",
+                    "metric": "latent_new_infections",
+                    "date": "2025-01-01",
+                    "value": seed,
+                },
+            )
+            for seed in range(count)
+        }
+
+    insufficient = _summary_rows(trajectories(39), 0.025, 0.975)[0]
+    sufficient = _summary_rows(trajectories(40), 0.025, 0.975)[0]
+    assert insufficient["interval_class"] == "insufficient_tail"
+    assert insufficient["lower_value"] is None
+    assert insufficient["upper_value"] is None
+    assert insufficient["median"] is not None
+    assert sufficient["interval_class"] == "stochastic_replicate_quantile"
+    assert sufficient["lower_value"] is not None
+    assert sufficient["upper_value"] is not None
 
 
 def test_sequential_ensemble_persists_seed_results_and_is_reproducible(
@@ -195,6 +215,67 @@ def test_matched_comparison_preserves_seed_pairing(
         row for row in comparison.paired_rows if row["metric"] == "observed_reported_cases"
     ]
     assert any(row["difference"] != 0 for row in observed_differences)
+    assert comparison.paired_summary
+    assert all(row["paired_count"] == 2 for row in comparison.paired_summary)
+    assert all(row["requested_pair_count"] == 2 for row in comparison.paired_summary)
+    assert all(row["missing_or_failed_pair_count"] == 0 for row in comparison.paired_summary)
+    assert all(
+        row["quantile_method"] == "numpy.quantile(method='linear')"
+        for row in comparison.paired_summary
+    )
+    target_summary = next(
+        row
+        for row in comparison.paired_summary
+        if row["metric"] == "observed_reported_cases"
+        and any(
+            candidate["metric"] == row["metric"]
+            and candidate["scope"] == row["scope"]
+            and candidate["key"] == row["key"]
+            and candidate["date"] == row["date"]
+            and candidate["difference"] != 0
+            for candidate in observed_differences
+        )
+    )
+    target_differences = [
+        float(row["difference"])
+        for row in observed_differences
+        if row["scope"] == target_summary["scope"]
+        and row["key"] == target_summary["key"]
+        and row["date"] == target_summary["date"]
+    ]
+    assert target_summary["median_difference"] == pytest.approx(
+        sum(target_differences) / len(target_differences)
+    )
+    assert target_summary["mean_difference"] == pytest.approx(
+        sum(target_differences) / len(target_differences)
+    )
+    assert all(
+        row["fraction_negative"] + row["fraction_zero"] + row["fraction_positive"]
+        == pytest.approx(1.0)
+        for row in comparison.paired_summary
+    )
+
+    failed_record = comparison_ensemble.replicate_records[1].model_copy(
+        update={
+            "status": "failed",
+            "latent_run_logical_content_hash": None,
+            "observation_logical_content_hash": None,
+            "m4_logical_content_hash": None,
+            "error": "controlled failure",
+        }
+    )
+    partial_ensemble = replace(
+        comparison_ensemble,
+        replicate_records=(comparison_ensemble.replicate_records[0], failed_record),
+        replicate_trajectories={
+            123: comparison_ensemble.replicate_trajectories[123],
+        },
+    )
+    partial = compare_ensembles(baseline, partial_ensemble, comparison_id="m6-partial")
+    assert partial.diagnostics["missing_or_failed_pair_count"] == 1
+    assert all(row["paired_count"] == 1 for row in partial.paired_summary)
+    assert all(row["missing_or_failed_pair_count"] == 1 for row in partial.paired_summary)
+    assert all(row["median_difference"] is None for row in partial.paired_summary)
 
 
 def test_ensemble_and_comparison_artifacts_preserve_provenance(
@@ -222,6 +303,11 @@ def test_ensemble_and_comparison_artifacts_preserve_provenance(
         first, Path(__file__).resolve().parents[1], tmp_path
     )
     comparison = compare_ensembles(first, second, comparison_id="m6-artifact-comparison")
+    assert comparison.paired_summary
+    assert all(row["median_difference"] is None for row in comparison.paired_summary)
+    assert all(row["mean_difference"] == 0 for row in comparison.paired_summary)
+    assert all(row["fraction_zero"] == 1 for row in comparison.paired_summary)
+    assert all(row["interval_class"] == "insufficient_tail" for row in comparison.paired_summary)
     comparison_artifact = write_comparison_artifact(
         comparison, Path(__file__).resolve().parents[1], tmp_path
     )
@@ -239,3 +325,4 @@ def test_ensemble_and_comparison_artifacts_preserve_provenance(
     assert comparison_manifest["paired_count"] == 1
     assert (ensemble_artifact.artifact_directory / "ensemble_summary.parquet").exists()
     assert (comparison_artifact.artifact_directory / "matched_seed_comparison.parquet").exists()
+    assert (comparison_artifact.artifact_directory / "paired_difference_summary.parquet").exists()

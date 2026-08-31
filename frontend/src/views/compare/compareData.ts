@@ -228,7 +228,8 @@ function comparisonMetricSummary(
 
 function populationFromSummary(rows: DatasetRow[]): number | null {
   const values: number[] = [];
-  for (const row of summaryRows(rows, 'epidemic', 'latent_attack_rate')) {
+  const incidenceRows = summaryRows(rows, 'epidemic', 'latent_cumulative_incidence_per_capita');
+  for (const row of incidenceRows) {
     const attack = summaryMetric(row);
     if (attack == null || attack <= 0) continue;
     const date = text(row, 'date');
@@ -254,14 +255,14 @@ export function armFromSummary(rows: DatasetRow[], dates: string[], population: 
     const prevalence = summaryMetric(rowFor(rows, 'latent_prevalence', date));
     const cum = summaryMetric(rowFor(rows, 'latent_cumulative_infections', date));
     const inc = summaryMetric(rowFor(rows, 'latent_new_infections', date));
-    const ar = summaryMetric(rowFor(rows, 'latent_attack_rate', date));
+    const ar = summaryMetric(rowFor(rows, 'latent_ever_infected_fraction', date));
     active.push(prevalence != null && population != null ? prevalence * population : null);
     cumulative.push(cum);
     incidence.push(inc);
     attack.push(ar);
     const prevalenceRow = rowFor(rows, 'latent_prevalence', date);
-    const lower = optionalNumber(prevalenceRow, 'lower_value', 'lower_quantile');
-    const upper = optionalNumber(prevalenceRow, 'upper_value', 'upper_quantile');
+    const lower = optionalNumber(prevalenceRow, 'lower_value');
+    const upper = optionalNumber(prevalenceRow, 'upper_value');
     low.push(lower != null && population != null ? lower * population : null);
     high.push(upper != null && population != null ? upper * population : null);
   }
@@ -278,7 +279,7 @@ function armFromComparison(rows: DatasetRow[], dates: string[], side: 'a' | 'b',
     return median(values);
   };
   const cumulative = dates.map((date) => byDateMetric('latent_cumulative_infections', date));
-  const attack = dates.map((date) => byDateMetric('latent_attack_rate', date));
+  const attack = dates.map((date) => byDateMetric('latent_ever_infected_fraction', date));
   const incidence = dates.map((date) => byDateMetric('latent_new_infections', date));
   const active = dates.map((date) => {
     const prevalence = byDateMetric('latent_prevalence', date);
@@ -289,7 +290,8 @@ function armFromComparison(rows: DatasetRow[], dates: string[], side: 'a' | 'b',
 
 function populationFromComparison(rows: DatasetRow[]): number | null {
   const values: number[] = [];
-  for (const row of rows.filter((candidate) => text(candidate, 'scope') === 'epidemic' && text(candidate, 'metric') === 'latent_attack_rate')) {
+  const incidenceRows = rows.filter((candidate) => text(candidate, 'scope') === 'epidemic' && text(candidate, 'metric') === 'latent_cumulative_incidence_per_capita');
+  for (const row of incidenceRows) {
     const attack = optionalNumber(row, 'value_a');
     const date = text(row, 'date');
     const cumulative = rows.find((candidate) => text(candidate, 'scope') === 'epidemic' && text(candidate, 'metric') === 'latent_cumulative_infections' && text(candidate, 'date') === date);
@@ -424,8 +426,8 @@ export function buildCompareFromSummary(
         latestDate,
       ),
       attack: comparisonMetricSummary(
-        'latent_attack_rate',
-        summaryMetricPoints(baselineRows, treatedRows, 'latent_attack_rate'),
+        'latent_ever_infected_fraction',
+        summaryMetricPoints(baselineRows, treatedRows, 'latent_ever_infected_fraction'),
         latestDate,
       ),
     },
@@ -465,8 +467,8 @@ export function buildCompareFromMatchedComparison(job: JobStatusResponse, rows: 
         latestDate,
       ),
       attack: comparisonMetricSummary(
-        'latent_attack_rate',
-        matchedMetricPoints(rows, 'latent_attack_rate'),
+        'latent_ever_infected_fraction',
+        matchedMetricPoints(rows, 'latent_ever_infected_fraction'),
         latestDate,
       ),
     },

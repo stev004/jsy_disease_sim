@@ -316,9 +316,9 @@ export function ResultsView() {
     : [];
 
   const parishRelative = selectedParish && data.availability.parishAttack
-    ? 'Parish attack rate is published for this run.'
+    ? 'Parish ever-infected fraction is published for this run.'
     : selectedParish
-      ? 'Parish route attribution and attack-rate denominator are not published for this run.'
+      ? 'Parish route attribution and ever-infected denominator are not published for this run.'
       : '';
 
   return (
@@ -455,7 +455,7 @@ export function ResultsView() {
               u={data.availability.detected ? undefined : 'not published'}
             />
             <MetricTile
-              k="Attack rate"
+              k="Ever infected"
               v={epiToday.attack == null ? '—' : `${(100 * epiToday.attack).toFixed(1)}%`}
               u={epiToday.attack == null ? 'not published' : undefined}
             />
@@ -482,7 +482,7 @@ export function ResultsView() {
               </h2>
               {!parishAvailable ? (
                 <p className="chart-note" style={{ marginTop: 10 }}>
-                  {parishNote} There are no per-parish counts, attack rates or route splits to show
+                  {parishNote} There are no per-parish counts, ever-infected fractions or route splits to show
                   for {selectedParish.name} in this run.
                 </p>
               ) : (

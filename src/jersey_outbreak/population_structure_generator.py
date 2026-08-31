@@ -572,6 +572,26 @@ def _build_diagnostics(
         "55_to_64": sum(55 <= row["age"] <= 64 for row in worker_rows),
         "65_to_74": sum(65 <= row["age"] <= 74 for row in worker_rows),
     }
+    resident_age_band_denominators = {
+        "18_to_24": sum(18 <= row["age"] <= 24 for row in resident_structure),
+        "25_to_34": sum(25 <= row["age"] <= 34 for row in resident_structure),
+        "35_to_54": sum(35 <= row["age"] <= 54 for row in resident_structure),
+        "55_to_64": sum(55 <= row["age"] <= 64 for row in resident_structure),
+        "65_to_74": sum(65 <= row["age"] <= 74 for row in resident_structure),
+    }
+    employment_age_rows = [
+        {
+            "age_band": band,
+            "employed_residents": worker_age_bands[band],
+            "resident_denominator": resident_age_band_denominators[band],
+            "realised_employment_rate": (
+                worker_age_bands[band] / resident_age_band_denominators[band]
+                if resident_age_band_denominators[band]
+                else None
+            ),
+        }
+        for band in worker_age_bands
+    ]
 
     band_rows = []
     for band, target in target_workplaces.items():
@@ -745,6 +765,7 @@ def _build_diagnostics(
             "sector_rows": sector_rows,
             "sector_sex_rows": sector_sex_rows,
             "age_bands": worker_age_bands,
+            "age_band_realised_rates": employment_age_rows,
             "age_assumption": {
                 "status": "structural_assumption",
                 "weights": {
