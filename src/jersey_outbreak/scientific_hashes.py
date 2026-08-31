@@ -16,6 +16,19 @@ _OPTIONAL_ATTRIBUTION_FIELDS = {
     "attributed_route_id",
 }
 
+V1_1_NATURAL_HISTORY_EVENT_FIELDS = {
+    "natural_history_episode_index",
+    "infection_date",
+    "infectious_start_date",
+    "symptom_onset_date",
+    "recovery_date",
+    "susceptibility_return_date",
+    "latent_duration_draw_days",
+    "infectious_duration_draw_days",
+    "immunity_duration_draw_days",
+    "symptomatic",
+}
+
 
 def canonical_m5_events(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Remove only schema-added null attribution columns absent in runtime events."""
@@ -26,6 +39,15 @@ def canonical_m5_events(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             for key, value in row.items()
             if value is not None or key not in _OPTIONAL_ATTRIBUTION_FIELDS
         }
+        for row in rows
+    ]
+
+
+def v1_m5_event_projection(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Project V1.1 events onto the frozen V1 scientific event schema."""
+
+    return [
+        {key: value for key, value in row.items() if key not in V1_1_NATURAL_HISTORY_EVENT_FIELDS}
         for row in rows
     ]
 

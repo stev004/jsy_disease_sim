@@ -322,10 +322,16 @@ target/timestep draw independent of route insertion order. The run layer maps st
 to synthetic JOS agent IDs and writes daily latent-truth summaries by epidemic
 state, parish, age band and route.
 
-M5 parameter metadata is stored separately from runtime controls. Demonstration
-values are `scenario_assumption`; unsupported symptom, severity, death and
-seasonality families are recorded as deferred rather than assigned fake
-observed values. The run manifest references the M2, M3 and M4.1 logical hashes,
+M5 parameter metadata is stored separately from runtime controls. V1.1 uses one
+versioned duration specification for constant or gamma latent, infectious and
+immunity stages; gamma requires an explicit mean and CV. Draws are keyed by
+infection episode and continuous durations advance on the first daily timestep
+at or after the transition. The pathogen-neutral demonstration remains constant
+and disables complete immunity waning; a separate 30-day reset configuration is
+the explicit V1 sensitivity comparator. Natural history owns symptom status and
+nullable onset, with generic symptomatic onset equal to infectious start.
+Demonstration values remain `scenario_assumption`; severity, death,
+presymptomatic profiles and seasonality remain deferred. The run manifest references the M2, M3 and M4.1 logical hashes,
 the parameter hash, Starsim version, seed, outputs, attribution totals and
 network immutability check. Interventions, visitors, API and UI remain
 later-milestone concerns.
@@ -339,7 +345,7 @@ schedules during the Starsim run:
 infection recorded during M5 + observation config
                     |
                     v
-       stable event-specific schedule sampler
+       stable event-specific detection/report sampler
                     |
                     +--> detection-time priority queue
                     |        |
@@ -358,8 +364,9 @@ infection recorded during M5 + observation config
 ```
 
 C4 integrates the observation scheduler without adding disease biology or
-interventions. Observation events retain separate infection, generic
-symptom-onset, detection and report dates. The daily lifecycle is disease-state
+interventions. Observation consumes authoritative infection, infectious-start,
+symptom-onset and recovery fields from M5, then samples only detection and
+report dates. The daily lifecycle is disease-state
 progression, network refresh, existing intervention step, disease transmission
 and imports, detection delivery, then the intervention consumer. The M7
 consumer can first change contact or intervention state for the next timestep;

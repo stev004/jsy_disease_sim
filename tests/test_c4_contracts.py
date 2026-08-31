@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -46,9 +46,7 @@ def _observation_config(
         key: parameter.model_copy(
             update={
                 "value": (
-                    1.0
-                    if key == "symptomatic_probability"
-                    else detection_probability
+                    detection_probability
                     if key.endswith("detection_probability")
                     else parameter.value
                 )
@@ -60,7 +58,6 @@ def _observation_config(
         update={
             "observation_config_id": "c4-runtime-probe",
             "parameters": parameters,
-            "symptom_onset_delay": _delay(0),
             "detection_delay": detection_delay or _delay(0),
             "reporting_delay": _delay(0),
             "day_of_week_effect": (1.0,) * 7,
@@ -92,11 +89,18 @@ def _scheduler(m6_network, config: ObservationConfig, *, seed: int = 123, consum
 
 
 def _infection(m6_network, uid: int, when: str = "2025-01-06") -> dict:
+    infection_date = date.fromisoformat(when)
+    infectious_start = infection_date + timedelta(days=1)
     return {
         "infected_uid": uid,
         "infected_agent_id": m6_network.agent_ids[uid],
         "infector_uid": None,
         "date": when,
+        "infection_date": when,
+        "infectious_start_date": infectious_start.isoformat(),
+        "symptomatic": True,
+        "symptom_onset_date": infectious_start.isoformat(),
+        "recovery_date": (infectious_start + timedelta(days=3)).isoformat(),
         "source_kind": "seeded",
         "route_id": "seeded",
     }
@@ -124,7 +128,17 @@ def test_causal_interface_exercises_runtime_delivery_and_preserves_m5(
     assert online.observation_schedule is not None
     assert tuple(probe.events) == online.observation_schedule.delivered_detection_events
     assert len(probe.events) == 2
-    assert all(event.detection_time_index == 0 for event in probe.events)
+    natural_history_by_agent = {
+        event["infected_agent_id"]: event for event in online.transmission_events
+    }
+    assert all(
+        event.detection_date
+        == (
+            natural_history_by_agent[event.agent_id]["symptom_onset_date"]
+            or natural_history_by_agent[event.agent_id]["infection_date"]
+        )
+        for event in probe.events
+    )
     assert online.diagnostics["online_observation_scheduler"]["earliest_consumer_effect"] == (
         "next_timestep"
     )
@@ -141,11 +155,22 @@ def test_detection_queue_never_leaks_future_and_delivers_on_declared_day(
     scheduler.schedule_infection(_infection(m6_network, 0))
     assert scheduler.deliver_due(0) == ()
     assert scheduler.deliver_due(1) == ()
+    assert scheduler.deliver_due(2) == ()
     assert probe.events == []
-    delivered = scheduler.deliver_due(2)
+    delivered = scheduler.deliver_due(3)
     assert len(delivered) == 1
-    assert delivered[0].detection_date == "2025-01-08"
+    assert delivered[0].detection_date == "2025-01-09"
     assert probe.events == list(delivered)
+
+
+def test_observation_rejects_preinfectious_natural_history_onset(
+    m6_network, m6_observation_config
+) -> None:
+    scheduler = _scheduler(m6_network, _observation_config(m6_observation_config))
+    event = _infection(m6_network, 0)
+    event["symptom_onset_date"] = event["infection_date"]
+    with pytest.raises(ValueError, match="onset must equal infectious start"):
+        scheduler.schedule_infection(event)
 
 
 def test_variable_delays_reorder_notifications_by_detection_time(
@@ -178,7 +203,7 @@ def test_final_day_detected_and_undetected_infections_remain_represented(
     detected = _scheduler(m6_network, _observation_config(m6_observation_config))
     detected.schedule_infection(final_event)
     detected_snapshot = detected.snapshot()
-    assert detected_snapshot.observation_events[0]["detection_date"] == "2025-01-08"
+    assert detected_snapshot.observation_events[0]["detection_date"] == "2025-01-09"
     assert len(detected_snapshot.detection_events) == 1
 
     undetected = _scheduler(

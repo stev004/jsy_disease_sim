@@ -1,0 +1,75 @@
+schema_version: "1.1"
+parameter_set_id: respiratory-demo-v1-waning-comparator
+module: generic_respiratory_seirs
+durations:
+  latent:
+    family: constant
+    mean_days: 2.0
+    status: scenario_assumption
+    source_ids: []
+    notes: Exact V1 constant latent-duration comparator.
+  infectious:
+    family: constant
+    mean_days: 5.0
+    status: scenario_assumption
+    source_ids: []
+    notes: Exact V1 constant infectious-duration comparator.
+  immunity:
+    family: constant
+    mean_days: 30.0
+    status: scenario_assumption
+    source_ids: []
+    notes: Exact V1 complete-immunity-reset comparator.
+parameters:
+  transmission_beta:
+    value: 0.08
+    distribution: fixed daily per-edge probability before route weight
+    units: probability per active daily edge
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: Frozen V1 demonstration comparator.
+  initial_seed_count:
+    value: 10.0
+    distribution: fixed count
+    units: synthetic agents
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 104540.0]
+    notes: Frozen V1 demonstration comparator.
+  import_rate_per_day:
+    value: 0.0
+    distribution: Poisson rate
+    units: synthetic imports per day
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1000.0]
+    notes: Frozen V1 demonstration comparator.
+  immunity_waning_enabled:
+    value: 1.0
+    distribution: fixed switch
+    units: boolean encoded as 0 or 1
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: Explicit 30-day complete-reset V1 sensitivity comparator; not the V1.1 default.
+  symptom_probability:
+    value: 0.6
+    distribution: fixed Bernoulli prognosis
+    units: probability per infection episode
+    status: scenario_assumption
+    source_ids: []
+    valid_range: [0.0, 1.0]
+    notes: Transferred unchanged from the V1 synthetic observation assumption.
+route_multipliers:
+  household: 1.0
+  school_class: 1.0
+  school_cross_class: 1.0
+  workplace_team: 1.0
+  workplace_transient: 1.0
+  care_resident: 1.0
+  care_staff: 1.0
+  shared_vehicle: 1.0
+  bus: 1.0
+  community_indoor: 1.0
+  community_outdoor: 1.0

@@ -117,14 +117,31 @@ def observe_latent_run(
 
     latent_start = date.fromisoformat(latent_run.daily_epidemic[0]["date"])
     latent_end = date.fromisoformat(latent_run.daily_epidemic[-1]["date"])
-    derived_tail = sum(
+    natural_history_tail = max(
+        (
+            (
+                date.fromisoformat(str(event["symptom_onset_date"]))
+                - date.fromisoformat(str(event["infection_date"]))
+            ).days
+            for event in observation_events
+            if event["symptom_onset_date"] is not None
+        ),
+        default=0,
+    )
+    derived_tail = natural_history_tail + sum(
         _maximum_delay(distribution)
         for distribution in (
-            config.symptom_onset_delay,
             config.detection_delay,
             config.reporting_delay,
         )
     )
+    if (
+        config.analysis_horizon_tail_days is not None
+        and config.analysis_horizon_tail_days < derived_tail
+    ):
+        raise ValueError(
+            "analysis horizon tail must cover realized natural-history and observation delays"
+        )
     horizon_tail = (
         config.analysis_horizon_tail_days
         if config.analysis_horizon_tail_days is not None
@@ -212,8 +229,12 @@ def observe_latent_run(
         event
         for event in observation_events
         if (
-            event["symptom_onset_date"] is not None
-            and event["symptom_onset_date"] < event["infection_date"]
+            not (event["infection_date"] < event["infectious_start_date"] <= event["recovery_date"])
+            or (
+                event["symptomatic"]
+                and event["symptom_onset_date"] != event["infectious_start_date"]
+            )
+            or (not event["symptomatic"] and event["symptom_onset_date"] is not None)
         )
         or (
             event["detection_date"] is not None
@@ -255,9 +276,12 @@ def observe_latent_run(
         "latent_incidence_conservation_difference": latent_conservation_difference,
         "latent_incidence_conservation": latent_conservation_difference == 0,
         "infection_date_semantics": "Copied from immutable M5 latent event date.",
+        "infectious_start_date_semantics": (
+            "Owned by the M5 natural-history prognosis and copied without resampling."
+        ),
         "symptom_onset_date_semantics": (
-            "Optional infection date plus the configured generic symptom-onset delay; "
-            "not a named-pathogen natural-history claim."
+            "Owned by M5 natural history; equals infectious start for symptomatic generic "
+            "episodes and is null for asymptomatic episodes."
         ),
         "detection_date_semantics": (
             "Optional symptom onset (or infection for asymptomatic cases) plus the configured "
@@ -269,6 +293,7 @@ def observe_latent_run(
             "latent_end": latent_end.isoformat(),
             "observation_end": dates[-1].isoformat(),
             "tail_days": horizon_tail,
+            "realised_natural_history_tail_days": natural_history_tail,
             "tail_source": (
                 "explicit_configured_tail"
                 if config.analysis_horizon_tail_days is not None
@@ -307,6 +332,7 @@ def observe_latent_run(
                 "infector_uid",
             ],
             "stream_fingerprint": offline_schedule.stream_fingerprint,
+            "natural_history_resampled": False,
         },
         "parish_semantics": "Grouped by synthetic resident home parish, not infection location.",
         "latent_outputs_untouched": True,

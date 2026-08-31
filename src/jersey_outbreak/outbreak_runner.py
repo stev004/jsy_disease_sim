@@ -31,6 +31,7 @@ from .scientific_hashes import (
     m5_artifact_bundle_hash,
     m5_latent_outcome_hash,
     m5_logical_content_hash,
+    v1_m5_event_projection,
 )
 from .starsim_adapter import build_starsim_disease_sim
 
@@ -105,9 +106,10 @@ def default_run_config(
         initial_seed_count=round(parameters.numeric("initial_seed_count")),
         import_rate_per_day=parameters.numeric("import_rate_per_day"),
         beta=parameters.numeric("transmission_beta"),
-        latent_period_days=parameters.numeric("latent_period_days"),
-        infectious_period_days=parameters.numeric("infectious_period_days"),
-        immunity_duration_days=parameters.numeric("immunity_duration_days"),
+        latent_duration=parameters.durations["latent"],
+        infectious_duration=parameters.durations["infectious"],
+        immunity_duration=parameters.durations["immunity"],
+        symptomatic_probability=parameters.numeric("symptom_probability"),
         waning_enabled=bool(round(parameters.numeric("immunity_waning_enabled"))),
         route_multipliers=dict(parameters.route_multipliers),
     )
@@ -156,6 +158,20 @@ def _age_band(age: int) -> str:
 
 def _date_range(start: date, n_points: int) -> list[date]:
     return [start + timedelta(days=index) for index in range(n_points)]
+
+
+def _duration_summary(values: list[float]) -> dict[str, float | int | None]:
+    if not values:
+        return {"count": 0, "mean_days": None, "cv": None, "min_days": None, "max_days": None}
+    mean = sum(values) / len(values)
+    variance = sum((value - mean) ** 2 for value in values) / max(1, len(values) - 1)
+    return {
+        "count": len(values),
+        "mean_days": mean,
+        "cv": variance**0.5 / mean if len(values) > 1 else 0.0,
+        "min_days": min(values),
+        "max_days": max(values),
+    }
 
 
 def run_outbreak(
@@ -292,9 +308,10 @@ def run_outbreak(
         initial_prevalence=config.initial_prevalence,
         import_schedule=config.import_schedule,
         import_rate_per_day=config.import_rate_per_day,
-        latent_period_days=config.latent_period_days,
-        infectious_period_days=config.infectious_period_days,
-        immunity_duration_days=config.immunity_duration_days,
+        latent_duration=config.latent_duration,
+        infectious_duration=config.infectious_duration,
+        immunity_duration=config.immunity_duration,
+        symptomatic_probability=config.symptomatic_probability,
         waning_enabled=config.waning_enabled,
         observation_scheduler=scheduler,
     )
@@ -477,6 +494,40 @@ def run_outbreak(
             "maximum_conservation_residual": max(abs(value) for value in state_residuals),
             "conserved": all(value == 0 for value in state_residuals),
         },
+        "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": (
+                "advance on the first daily timestep at or after each sampled transition"
+            ),
+            "configured_durations": {
+                "latent": config.latent_duration.model_dump(mode="json"),
+                "infectious": config.infectious_duration.model_dump(mode="json"),
+                "immunity": config.immunity_duration.model_dump(mode="json"),
+            },
+            "waning_enabled": config.waning_enabled,
+            "symptomatic_probability": config.symptomatic_probability,
+            "realized_continuous_draws": {
+                stage: _duration_summary(
+                    [float(event[field]) for event in events if event.get(field) is not None]
+                )
+                for stage, field in (
+                    ("latent", "latent_duration_draw_days"),
+                    ("infectious", "infectious_duration_draw_days"),
+                    ("immunity", "immunity_duration_draw_days"),
+                )
+            },
+            "chronology_passed": all(
+                event["infection_date"] < event["infectious_start_date"] <= event["recovery_date"]
+                and (
+                    event["symptom_onset_date"] == event["infectious_start_date"]
+                    if event["symptomatic"]
+                    else event["symptom_onset_date"] is None
+                )
+                for event in events
+            ),
+            "observation_resamples_symptom_status_or_onset": False,
+        },
         "attribution": {
             "totals": attribution_totals,
             "seeded": attribution_totals["seeded"],
@@ -585,6 +636,18 @@ def run_outbreak(
         daily_age=daily_age,
         transmission_events=events,
     )
+    v1_projection_latent_outcome_hash = m5_latent_outcome_hash(
+        daily_epidemic=daily_epidemic,
+        daily_parish=daily_parish,
+        daily_route=daily_route,
+        daily_age=daily_age,
+        transmission_events=v1_m5_event_projection(events),
+    )
+    diagnostics["compatibility"] = {
+        "event_schema": "1.1",
+        "full_v1_1_hash_expected_to_differ": True,
+        "v1_projection_latent_outcome_hash": v1_projection_latent_outcome_hash,
+    }
     run_config_hash = sha256_bytes(canonical_json_bytes(config.model_dump(mode="json")))
     disease_config_hash = sha256_bytes(canonical_json_bytes(parameters.model_dump(mode="json")))
     observation_config_hash = (

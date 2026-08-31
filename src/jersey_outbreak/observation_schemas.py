@@ -100,18 +100,10 @@ DelayDistribution = ReportingDelayDistribution
 class ObservationConfig(StrictModel):
     """Immutable controls for transforming one latent M5 run into observations."""
 
-    schema_version: Literal["1.1"] = "1.1"
+    schema_version: Literal["1.2"] = "1.2"
     observation_config_id: NonEmptyString
     parameters: dict[NonEmptyString, ObservationParameter]
     reporting_delay: ReportingDelayDistribution
-    symptom_onset_delay: ReportingDelayDistribution = Field(
-        default_factory=lambda: ReportingDelayDistribution(
-            kind="fixed",
-            days=(0,),
-            status="scenario_assumption",
-            notes="Generic same-day symptom-onset anchor for the demonstration.",
-        )
-    )
     detection_delay: ReportingDelayDistribution = Field(
         default_factory=lambda: ReportingDelayDistribution(
             kind="fixed",
@@ -148,7 +140,6 @@ class ObservationConfig(StrictModel):
     @model_validator(mode="after")
     def validate_required_parameters(self) -> ObservationConfig:
         required = {
-            "symptomatic_probability",
             "symptomatic_detection_probability",
             "asymptomatic_detection_probability",
         }
@@ -167,7 +158,6 @@ class ObservationConfig(StrictModel):
             maximum_delay = sum(
                 max(distribution.days)
                 for distribution in (
-                    self.symptom_onset_delay,
                     self.detection_delay,
                     self.reporting_delay,
                 )
@@ -190,9 +180,9 @@ class ObservationConfig(StrictModel):
 class ObservationArtifactManifest(StrictModel):
     """Manifest for a standalone latent-to-observed transformation."""
 
-    manifest_schema_version: Literal["1.1"] = "1.1"
+    manifest_schema_version: Literal["1.2"] = "1.2"
     artifact_id: NonEmptyString
-    generator_version: NonEmptyString = "6.1.0"
+    generator_version: NonEmptyString = "6.2.0"
     latent_run_logical_content_hash: NonEmptyString
     latent_m5_artifact_id: NonEmptyString | None = None
     observation_config_id: NonEmptyString
