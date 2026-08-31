@@ -40,3 +40,5 @@ Reaches Steven, batched in the run digest: irreversible actions, product/taste c
 ## Lessons (symptom -> root cause -> RULE)
 
 - 2026-08-31 (pilot, via terra trail-audit): trail rows cited doc names as evidence -> conclusions are not primary evidence -> RULE: the decisions.tsv evidence column carries resolvable artifacts (full SHA, commit hash of the write-back, log-file path), never just a document title; abbreviate nothing.
+- 2026-08-31 (corrective, via terra trail-audit): two trail rows carried hand-estimated timestamps contradicting machine-stamped ones -> director wrote ts by hand instead of using the helper -> RULE: every trail row goes through `fm.sh log` (it stamps `date`); hand-written timestamps are banned.
+- 2026-08-31 (corrective, via terra trail-audit): executor logs lived only in session scratchpad, so trail evidence pointed at files that die with the session -> RULE: at write-back, file each executor's final report (the `.last.md`) into `docs/runs/` on the state branch, and record the codex session id in the evidence cell.

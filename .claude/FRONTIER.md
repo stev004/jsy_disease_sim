@@ -6,7 +6,7 @@
 
 ## Where the project is
 
-**Tier: V1.1 scientific hardening — final independent audit pending.**
+**Tier: V1.1 scientific hardening — candidate audited PASS (P0 complete); full-scale baseline (P1) next, gated on Steven.**
 
 - **V1.0 released and frozen:** `main` = tag `jos-v1.0.0` = `9e9ce3abc4201cd8303c723015462d21ca237800` (verified 2026-08-31). Immutable until the V1.1 release gate completes.
 - **V1.1 release candidate: `e3609ff288b33444456de960db9e7c6560d0b898`** — tip of `codex/v1.1-o2-denominator` (pushed to origin), parent = the originally audited `461bf038`. **P0 independent audit: COMPLETE and PASSED** — full audit 2026-08-31 returned BLOCKED on one defect (O2 false denominator metadata); minimal corrective (1-line fix + staggered-arrival regression test) implemented, reviewed, and passed a bounded delta re-audit the same day. Reports: `docs/audits/2026-08-31-v1.1-rc-audit-BLOCKED.md` + `docs/audits/2026-08-31-o2-delta-reaudit-PASS.md`. Backend suite is now 215 tests. `codex/v1.1-integration` (`461bf03`) is superseded as candidate; do not merge the fix into it — the corrective branch IS the candidate line.
