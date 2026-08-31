@@ -362,21 +362,21 @@ export function SimulateView() {
             <Adv summary="Disease parameters">
               <div className="adv-grid">
                 <AdvItem name="Transmissibility (β)" value="0.08" badge={<Badge kind="assumption" />} />
-                <AdvItem name="Latent period" value="2.0 d" badge={<Badge kind="literature" />} />
-                <AdvItem name="Infectious period" value="5.0 d" badge={<Badge kind="literature" />} />
-                <AdvItem name="Immunity duration" value="30 d" badge={<Badge kind="assumption" />} />
+                <AdvItem name="Latent duration" value="2.0 d" badge={<Badge kind="assumption" />} />
+                <AdvItem name="Infectious duration" value="5.0 d" badge={<Badge kind="assumption" />} />
+                <AdvItem name="Immunity waning" value="Disabled" badge={<Badge kind="assumption" />} />
               </div>
               <div className="sci-only sci-note" style={{ marginTop: 10 }}>
                 beta = 0.08 · fixed · valid [0, 1] · per-contact daily transmission probability
                 <br />
-                latent_period_days = 2.0 · fixed · E→I
+                latent_duration = constant(mean_days=2.0) · E→I
                 <br />
-                infectious_period_days = 5.0 · fixed · I→R
+                infectious_duration = constant(mean_days=5.0) · I→R
                 <br />
-                immunity_duration_days = 30 · waning_enabled = true · R→S (SEIRS)
+                waning_enabled = false · 30-day full reset available only as the V1 comparator
                 <br />
                 route_multipliers: all 11 M4 routes ×1.0 (neutral) · parameter_set
-                respiratory-demo-v0.1
+                respiratory-demo-v1.1
               </div>
             </Adv>
           </Card>

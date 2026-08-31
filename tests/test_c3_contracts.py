@@ -25,11 +25,19 @@ def _controlled_latent(latent, *, event_count: int = 2, seed: int | None = None)
     start = "2025-01-06"
     events = []
     for index, agent_id in enumerate(latent.generated.agent_ids[:event_count]):
+        infection_date = "2025-01-06" if index == 0 else "2025-01-07"
+        infectious_start = "2025-01-07" if index == 0 else "2025-01-08"
+        recovery_date = "2025-01-10" if index == 0 else "2025-01-11"
         events.append(
             {
                 "infected_agent_id": agent_id,
                 "infected_uid": index,
-                "date": "2025-01-06" if index == 0 else "2025-01-07",
+                "date": infection_date,
+                "infection_date": infection_date,
+                "infectious_start_date": infectious_start,
+                "symptomatic": True,
+                "symptom_onset_date": infectious_start,
+                "recovery_date": recovery_date,
                 "source_kind": "seeded" if index == 0 else "local",
                 "route_id": "household",
             }
@@ -75,20 +83,13 @@ def test_observation_horizon_conserves_latent_events_and_exposes_causal_timeline
     latent = _controlled_latent(m6_latent_run)
     parameters = {
         key: parameter.model_copy(
-            update={
-                "value": (
-                    1.0
-                    if key in {"symptomatic_probability", "symptomatic_detection_probability"}
-                    else 0.0
-                )
-            }
+            update={"value": (1.0 if key == "symptomatic_detection_probability" else 0.0)}
         )
         for key, parameter in m6_observation_config.parameters.items()
     }
     config = m6_observation_config.model_copy(
         update={
             "parameters": parameters,
-            "symptom_onset_delay": _delay(0),
             "detection_delay": _delay(1),
             "reporting_delay": _delay(2),
             "day_of_week_effect": (1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0),
@@ -98,8 +99,8 @@ def test_observation_horizon_conserves_latent_events_and_exposes_causal_timeline
     assert result.diagnostics["latent_incidence_conservation"] is True
     assert result.diagnostics["chronology_violations"] == 0
     assert len(result.detection_events) == 1
-    assert result.detection_events[0].detection_date == "2025-01-07"
-    assert result.daily_observed_cases[-1]["date"] == "2025-01-10"
+    assert result.detection_events[0].detection_date == "2025-01-09"
+    assert result.daily_observed_cases[-1]["date"] == "2025-01-11"
     assert result.diagnostics["detection_event_interface"]["mutates_latent_or_routes"] is False
 
 

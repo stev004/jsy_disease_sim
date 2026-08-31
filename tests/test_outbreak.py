@@ -1,4 +1,5 @@
 import json
+import math
 from datetime import date
 from pathlib import Path
 
@@ -9,10 +10,15 @@ from jersey_outbreak.network_generator import generate_networks
 from jersey_outbreak.network_schemas import NetworkGenerationConfig
 from jersey_outbreak.outbreak_artifacts import write_outbreak_artifact
 from jersey_outbreak.outbreak_runner import (
+    default_run_config,
     load_parameter_set,
     run_outbreak,
 )
-from jersey_outbreak.outbreak_schemas import ROUTE_IDS, OutbreakRunConfig
+from jersey_outbreak.outbreak_schemas import (
+    ROUTE_IDS,
+    DurationSpecification,
+    OutbreakRunConfig,
+)
 from jersey_outbreak.population_artifacts import write_population_artifact
 from jersey_outbreak.population_generator import generate_population
 from jersey_outbreak.population_schemas import PopulationGenerationConfig
@@ -23,7 +29,7 @@ from jersey_outbreak.population_structure_artifacts import (
 )
 from jersey_outbreak.population_structure_generator import generate_structure
 from jersey_outbreak.population_structure_schemas import StructureGenerationConfig
-from jersey_outbreak.respiratory import RespiratorySEIRS
+from jersey_outbreak.respiratory import RespiratorySEIRS, sample_episode_duration
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -51,6 +57,16 @@ def _config(**kwargs) -> OutbreakRunConfig:
     return OutbreakRunConfig(**values)
 
 
+def _duration(mean_days: float, *, family: str = "constant", cv: float | None = None):
+    return DurationSpecification(
+        family=family,
+        mean_days=mean_days,
+        cv=cv,
+        status="scenario_assumption",
+        notes="Controlled M11-A test duration.",
+    )
+
+
 def test_beta_zero_and_no_seed_are_disease_free(outbreak_network, parameters) -> None:
     zero_beta = run_outbreak(
         outbreak_network,
@@ -74,7 +90,9 @@ def test_parameter_bundle_keeps_demo_assumptions_and_deferred_families_explicit(
     assert parameters.module == "generic_respiratory_seirs"
     assert set(parameters.route_multipliers) == set(ROUTE_IDS)
     assert all(entry.status == "scenario_assumption" for entry in parameters.parameters.values())
-    assert parameters.parameters["symptom_probability"].value is None
+    assert parameters.parameters["symptom_probability"].value == 0.6
+    assert all(spec.family == "constant" for spec in parameters.durations.values())
+    assert parameters.numeric("immunity_waning_enabled") == 0.0
     assert parameters.parameters["severe_progression"].value is None
     assert parameters.parameters["disease_death_probability"].value is None
     assert parameters.parameters["transmission_beta"].source_ids == []
@@ -110,9 +128,9 @@ def test_recovery_and_configurable_waning(outbreak_network, parameters) -> None:
             beta=0.0,
             initial_seed_count=1,
             duration_days=7,
-            latent_period_days=1.0,
-            infectious_period_days=2.0,
-            immunity_duration_days=1.0,
+            latent_duration=_duration(1.0),
+            infectious_duration=_duration(2.0),
+            immunity_duration=_duration(1.0),
             waning_enabled=True,
         ),
         parameters,
@@ -128,9 +146,9 @@ def test_recovery_and_configurable_waning(outbreak_network, parameters) -> None:
             beta=0.0,
             initial_seed_count=1,
             duration_days=7,
-            latent_period_days=1.0,
-            infectious_period_days=1.0,
-            immunity_duration_days=1.0,
+            latent_duration=_duration(1.0),
+            infectious_duration=_duration(1.0),
+            immunity_duration=_duration(1.0),
             waning_enabled=False,
         ),
         parameters,
@@ -146,6 +164,91 @@ def test_same_seed_reproduces_disease_and_outputs(outbreak_network, parameters) 
     assert first.transmission_events == second.transmission_events
     assert first.daily_epidemic == second.daily_epidemic
     assert first.diagnostics["network_immutability"]["passed"] is True
+
+
+def test_gamma_duration_fixture_has_declared_moments_and_episode_identity() -> None:
+    specification = _duration(4.0, family="gamma", cv=0.5)
+    draws = np.asarray(
+        [
+            sample_episode_duration(
+                specification,
+                run_seed=20260830,
+                stage="latent",
+                agent_uid=uid,
+                episode_index=0,
+            )
+            for uid in range(10_000)
+        ]
+    )
+    assert abs(float(draws.mean()) / 4.0 - 1.0) < 0.02
+    assert abs(float(draws.std(ddof=1) / draws.mean()) / 0.5 - 1.0) < 0.03
+    first = sample_episode_duration(
+        specification,
+        run_seed=20260830,
+        stage="latent",
+        agent_uid=7,
+        episode_index=0,
+    )
+    assert first == sample_episode_duration(
+        specification,
+        run_seed=20260830,
+        stage="latent",
+        agent_uid=7,
+        episode_index=0,
+    )
+    assert first != sample_episode_duration(
+        specification,
+        run_seed=20260830,
+        stage="latent",
+        agent_uid=7,
+        episode_index=1,
+    )
+
+
+def test_duration_schema_rejects_invalid_family_parameters() -> None:
+    with pytest.raises(ValueError, match="gamma durations require"):
+        _duration(4.0, family="gamma")
+    with pytest.raises(ValueError, match="constant durations must not"):
+        _duration(4.0, cv=0.5)
+
+
+def test_constant_v1_comparator_has_exact_projection(outbreak_network) -> None:
+    comparator = load_parameter_set(
+        ROOT,
+        ROOT / "configs" / "diseases" / "respiratory_seirs_v1_waning_comparator.yaml",
+    )
+    config = default_run_config("ci", 123, comparator, duration_days=8)
+    result = run_outbreak(outbreak_network, config, comparator)
+    assert result.diagnostics["compatibility"]["v1_projection_latent_outcome_hash"] == (
+        "54a675a4546a636ac18a0b904d7fb935e36a5be8fd5a759bd71a789e84525733"
+    )
+    assert (
+        result.latent_outcome_hash
+        != result.diagnostics["compatibility"]["v1_projection_latent_outcome_hash"]
+    )
+    assert config.waning_enabled is True
+
+
+def test_gamma_transition_advances_on_first_daily_timestep_after_draw(
+    outbreak_network, parameters
+) -> None:
+    result = run_outbreak(
+        outbreak_network,
+        _config(
+            beta=0.0,
+            initial_seed_count=1,
+            duration_days=15,
+            latent_duration=_duration(4.0, family="gamma", cv=0.5),
+            infectious_duration=_duration(4.0, family="gamma", cv=0.5),
+        ),
+        parameters,
+    )
+    event = result.transmission_events[0]
+    infection = date.fromisoformat(event["infection_date"])
+    infectious_start = date.fromisoformat(event["infectious_start_date"])
+    recovery = date.fromisoformat(event["recovery_date"])
+    assert (infectious_start - infection).days == math.ceil(event["latent_duration_draw_days"])
+    assert (recovery - infectious_start).days == math.ceil(event["infectious_duration_draw_days"])
 
 
 def test_route_removal_does_not_create_staff_route(outbreak_network, parameters) -> None:
@@ -189,8 +292,8 @@ def test_starsim_single_route_attribution() -> None:
     disease = RespiratorySEIRS(
         route_betas={"single_route": 1.0},
         initial_seed_count=1,
-        latent_period_days=1.0,
-        infectious_period_days=5.0,
+        latent_duration=_duration(1.0),
+        infectious_duration=_duration(5.0),
         waning_enabled=False,
     )
     sim = ss.Sim(
@@ -204,12 +307,19 @@ def test_starsim_single_route_attribution() -> None:
         verbose=0,
         copy_inputs=False,
     )
+    sim.init()
+    sim.people.age[:] = 0
     sim.run(verbose=0)
     local = [event for event in disease._all_events if event["source_kind"] == "local"]
     assert len(local) == 1
     assert local[0]["route_id"] == "single_route"
     assert local[0]["infector_uid"] in {0, 1}
     assert local[0]["infected_uid"] in {0, 1}
+    infected_uid = int(local[0]["infected_uid"])
+    assert float(sim.people.age[infected_uid]) <= 0
+    assert not bool(disease.susceptible.raw[infected_uid])
+    assert local[0]["infection_date"] < local[0]["infectious_start_date"]
+    assert local[0]["recovery_date"] >= local[0]["infectious_start_date"]
 
 
 def test_outbreak_artifact_contains_tidy_outputs(

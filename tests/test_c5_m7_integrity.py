@@ -56,11 +56,7 @@ def _all_detected(base):
             update={
                 "value": 1.0
                 if key
-                in {
-                    "symptomatic_probability",
-                    "symptomatic_detection_probability",
-                    "asymptomatic_detection_probability",
-                }
+                in {"symptomatic_detection_probability", "asymptomatic_detection_probability"}
                 else parameter.value
             }
         )
@@ -71,7 +67,6 @@ def _all_detected(base):
         update={
             "observation_config_id": "c5-all-detected",
             "parameters": parameters,
-            "symptom_onset_delay": fixed,
             "detection_delay": fixed,
             "reporting_delay": fixed,
             "day_of_week_effect": (1.0,) * 7,

@@ -40,7 +40,7 @@ def _event_hash(result) -> str:
 
 def test_invalid_observation_probability_is_rejected(m6_observation_config) -> None:
     payload = m6_observation_config.model_dump(mode="json")
-    payload["parameters"]["symptomatic_probability"]["value"] = 1.2
+    payload["parameters"]["symptomatic_detection_probability"]["value"] = 1.2
     with pytest.raises(ValueError, match="outside valid_range"):
         ObservationConfig.model_validate(payload)
 
@@ -50,6 +50,14 @@ def test_invalid_reporting_delay_distribution_is_rejected() -> None:
         ReportingDelayDistribution(kind="fixed", days=(1, 2))
     with pytest.raises(ValueError, match="sum to one"):
         ReportingDelayDistribution(kind="discrete", days=(0, 2), probabilities=(0.2, 0.2))
+
+
+def test_explicit_horizon_tail_cannot_truncate_realized_natural_history(
+    m6_latent_run, m6_observation_config
+) -> None:
+    too_short = m6_observation_config.model_copy(update={"analysis_horizon_tail_days": 2})
+    with pytest.raises(ValueError, match="tail must cover realized natural-history"):
+        observe_latent_run(m6_latent_run, too_short)
 
 
 def test_same_latent_run_and_observation_config_reproduce(
@@ -93,9 +101,8 @@ def test_reporting_delay_shifts_reports_without_shifting_infections(
     fully_detected = _config_with(
         m6_observation_config,
         parameter_values={
-            "symptomatic_probability": 1.0,
             "symptomatic_detection_probability": 1.0,
-            "asymptomatic_detection_probability": 0.0,
+            "asymptomatic_detection_probability": 1.0,
         },
     )
     no_delay = observe_latent_run(

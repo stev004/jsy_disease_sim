@@ -59,14 +59,51 @@ class ParameterEntry(StrictModel):
         return self
 
 
+class DurationSpecification(StrictModel):
+    """One versioned natural-history stage duration and its provenance."""
+
+    schema_version: Literal["1.1"] = "1.1"
+    family: Literal["constant", "gamma"]
+    mean_days: StrictFloat = Field(gt=0)
+    cv: StrictFloat | None = Field(default=None, gt=0)
+    units: Literal["days"] = "days"
+    status: Literal[
+        "observed",
+        "derived",
+        "literature_prior",
+        "calibrated",
+        "scenario_assumption",
+    ]
+    source_ids: list[NonEmptyString] = Field(default_factory=list)
+    notes: NonEmptyString
+
+    @model_validator(mode="after")
+    def validate_family(self) -> DurationSpecification:
+        if self.family == "constant" and self.cv is not None:
+            raise ValueError("constant durations must not define cv")
+        if self.family == "gamma" and self.cv is None:
+            raise ValueError("gamma durations require a strictly positive cv")
+        return self
+
+
 class RespiratoryParameterSet(StrictModel):
     """Versioned, pathogen-neutral respiratory parameter metadata."""
 
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.1"] = "1.1"
     parameter_set_id: NonEmptyString
     module: Literal["generic_respiratory_seirs"] = "generic_respiratory_seirs"
     parameters: dict[NonEmptyString, ParameterEntry]
+    durations: dict[Literal["latent", "infectious", "immunity"], DurationSpecification]
     route_multipliers: dict[str, StrictFloat]
+
+    @field_validator("durations")
+    @classmethod
+    def validate_durations(
+        cls, value: dict[str, DurationSpecification]
+    ) -> dict[str, DurationSpecification]:
+        if set(value) != {"latent", "infectious", "immunity"}:
+            raise ValueError("durations must cover exactly latent, infectious and immunity")
+        return value
 
     @field_validator("route_multipliers")
     @classmethod
@@ -89,23 +126,45 @@ class RespiratoryParameterSet(StrictModel):
 class OutbreakRunConfig(StrictModel):
     """Strict controls for one latent generic respiratory run."""
 
-    schema_version: Literal["1.0"] = "1.0"
-    generator_version: NonEmptyString = "5.0.0"
+    schema_version: Literal["1.1"] = "1.1"
+    generator_version: NonEmptyString = "11.1.0"
     mode: PopulationMode
     seed: StrictInt
     start_date: date = date(2025, 1, 6)
     duration_days: StrictInt = Field(default=30, ge=1, le=366)
     dt_days: StrictFloat = Field(default=1.0, gt=0)
-    parameter_set_id: NonEmptyString = "respiratory-demo-v0.1"
+    parameter_set_id: NonEmptyString = "respiratory-demo-v1.1"
     initial_seed_count: StrictInt = Field(default=1, ge=0)
     initial_prevalence: StrictFloat | None = Field(default=None, ge=0, le=1)
     import_schedule: dict[str, StrictInt] = Field(default_factory=dict)
     import_rate_per_day: StrictFloat = Field(default=0.0, ge=0)
     beta: StrictFloat = Field(default=0.08, ge=0, le=1)
-    latent_period_days: StrictFloat = Field(default=2.0, gt=0)
-    infectious_period_days: StrictFloat = Field(default=5.0, gt=0)
-    immunity_duration_days: StrictFloat = Field(default=30.0, gt=0)
-    waning_enabled: StrictBool = True
+    latent_duration: DurationSpecification = Field(
+        default_factory=lambda: DurationSpecification(
+            family="constant",
+            mean_days=2.0,
+            status="scenario_assumption",
+            notes="Pathogen-neutral demonstration comparator.",
+        )
+    )
+    infectious_duration: DurationSpecification = Field(
+        default_factory=lambda: DurationSpecification(
+            family="constant",
+            mean_days=5.0,
+            status="scenario_assumption",
+            notes="Pathogen-neutral demonstration comparator.",
+        )
+    )
+    immunity_duration: DurationSpecification = Field(
+        default_factory=lambda: DurationSpecification(
+            family="constant",
+            mean_days=30.0,
+            status="scenario_assumption",
+            notes="Used only by the explicit V1 waning comparator.",
+        )
+    )
+    symptomatic_probability: StrictFloat = Field(default=0.6, ge=0, le=1)
+    waning_enabled: StrictBool = False
     route_multipliers: dict[str, StrictFloat] = Field(default_factory=_default_route_multipliers)
 
     @field_validator("seed")
@@ -141,7 +200,7 @@ class OutbreakRunConfig(StrictModel):
 class OutbreakArtifactManifest(StrictModel):
     """Versioned provenance manifest for one completed M5 run."""
 
-    manifest_schema_version: Literal["1.0"] = "1.0"
+    manifest_schema_version: Literal["1.1"] = "1.1"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString
     module: Literal["generic_respiratory_seirs"] = "generic_respiratory_seirs"

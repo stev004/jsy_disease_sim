@@ -206,9 +206,10 @@ def _reconstruct_m5_config(
         },
         import_rate_per_day=float(import_spec.get("rate_per_day", 0.0)),
         beta=parameters.numeric("transmission_beta"),
-        latent_period_days=parameters.numeric("latent_period_days"),
-        infectious_period_days=parameters.numeric("infectious_period_days"),
-        immunity_duration_days=parameters.numeric("immunity_duration_days"),
+        latent_duration=parameters.durations["latent"],
+        infectious_duration=parameters.durations["infectious"],
+        immunity_duration=parameters.durations["immunity"],
+        symptomatic_probability=parameters.numeric("symptom_probability"),
         waning_enabled=bool(round(parameters.numeric("immunity_waning_enabled"))),
         route_multipliers=dict(parameters.route_multipliers),
     )

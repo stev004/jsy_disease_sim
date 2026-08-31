@@ -1,6 +1,34 @@
-schema_version: "1.0"
-parameter_set_id: respiratory-demo-v0.1
+schema_version: "1.1"
+parameter_set_id: respiratory-demo-v1.1
 module: generic_respiratory_seirs
+durations:
+  latent:
+    schema_version: "1.1"
+    family: constant
+    mean_days: 2.0
+    cv: null
+    units: days
+    status: scenario_assumption
+    source_ids: []
+    notes: Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed.
+  infectious:
+    schema_version: "1.1"
+    family: constant
+    mean_days: 5.0
+    cv: null
+    units: days
+    status: scenario_assumption
+    source_ids: []
+    notes: Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed.
+  immunity:
+    schema_version: "1.1"
+    family: constant
+    mean_days: 30.0
+    cv: null
+    units: days
+    status: scenario_assumption
+    source_ids: []
+    notes: Inactive while generic complete waning is disabled; retained for the V1 comparator.
 parameters:
   transmission_beta:
     value: 0.08
@@ -41,30 +69,6 @@ parameters:
     status: scenario_assumption
     source_ids: []
     notes: Empty in the default run; this is not an arrivals or origin-prevalence model.
-  latent_period_days:
-    value: 2.0
-    distribution: fixed duration
-    units: days
-    status: scenario_assumption
-    source_ids: []
-    valid_range: [0.1, 30.0]
-    notes: Demonstration duration pending named-disease evidence.
-  infectious_period_days:
-    value: 5.0
-    distribution: fixed duration
-    units: days
-    status: scenario_assumption
-    source_ids: []
-    valid_range: [0.1, 60.0]
-    notes: Demonstration duration pending named-disease evidence.
-  recovery_timing:
-    value: 5.0
-    distribution: fixed duration inherited from infectious_period_days
-    units: days after becoming infectious
-    status: scenario_assumption
-    source_ids: []
-    valid_range: [0.1, 60.0]
-    notes: Recovery is scheduled after the active infectious period.
   infectiousness_profile:
     value: 1.0
     distribution: constant while infected
@@ -73,22 +77,14 @@ parameters:
     source_ids: []
     valid_range: [0.0, 1.0]
     notes: No presymptomatic, symptomatic or asymptomatic profile is enabled in M5.
-  immunity_duration_days:
-    value: 30.0
-    distribution: fixed duration
-    units: days
-    status: scenario_assumption
-    source_ids: []
-    valid_range: [0.1, 3650.0]
-    notes: Used only when immunity waning is enabled.
   immunity_waning_enabled:
-    value: 1.0
+    value: 0.0
     distribution: fixed switch
     units: boolean encoded as 0 or 1
     status: scenario_assumption
     source_ids: []
     valid_range: [0.0, 1.0]
-    notes: The default is a short illustrative immunity duration, not a measured control.
+    notes: Complete waning is disabled in the V1.1 pathogen-neutral demonstration.
   immunity_acquisition:
     value: 1.0
     distribution: fixed post-recovery protection
@@ -98,12 +94,13 @@ parameters:
     valid_range: [0.0, 1.0]
     notes: Recovery moves agents to the recovered state until configured waning.
   symptom_probability:
-    value: null
-    distribution: not implemented
-    units: probability
+    value: 0.6
+    distribution: fixed Bernoulli prognosis
+    units: probability per infection episode
     status: scenario_assumption
     source_ids: []
-    notes: Presymptomatic, symptomatic and asymptomatic substates are deferred from M5.
+    valid_range: [0.0, 1.0]
+    notes: Transferred unchanged from the V1 synthetic observation assumption; not pathogen evidence.
   asymptomatic_relative_infectiousness:
     value: null
     distribution: not implemented

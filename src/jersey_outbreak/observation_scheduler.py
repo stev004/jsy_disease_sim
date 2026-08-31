@@ -213,14 +213,38 @@ class ObservationScheduler:
             "infector_travel_party_id": event.get("infector_travel_party_id"),
             "infector_episode_identity_hash": event.get("infector_episode_identity_hash"),
         }
-        infection_date = date.fromisoformat(str(event["date"]))
+        required_natural_history = {
+            "symptomatic",
+            "infectious_start_date",
+            "symptom_onset_date",
+            "recovery_date",
+        }
+        missing_natural_history = required_natural_history - set(event)
+        if missing_natural_history:
+            raise ValueError(
+                "infection event is missing natural-history fields: "
+                f"{sorted(missing_natural_history)}"
+            )
+        infection_date = date.fromisoformat(str(event.get("infection_date", event["date"])))
+        infectious_start_date = date.fromisoformat(str(event["infectious_start_date"]))
+        recovery_date = date.fromisoformat(str(event["recovery_date"]))
+        symptomatic = bool(event["symptomatic"])
+        symptom_date = (
+            date.fromisoformat(str(event["symptom_onset_date"]))
+            if event["symptom_onset_date"] is not None
+            else None
+        )
+        if not infection_date < infectious_start_date <= recovery_date:
+            raise ValueError(
+                "natural-history chronology must satisfy infection < infectious <= recovery"
+            )
+        if symptomatic and symptom_date != infectious_start_date:
+            raise ValueError("generic symptomatic onset must equal infectious start")
+        if not symptomatic and symptom_date is not None:
+            raise ValueError("asymptomatic infection must not define symptom onset")
         seeded_event = {**dict(event), "infected_agent_id": agent_id}
         rng = np.random.default_rng(event_stream_seed(self.stream_seed, seeded_event))
-        symptomatic = bool(rng.random() < _probability(self.config, "symptomatic_probability"))
-        symptom_delay = _delay(rng, self.config.symptom_onset_delay) if symptomatic else None
-        symptom_date = (
-            infection_date + timedelta(days=symptom_delay) if symptom_delay is not None else None
-        )
+        symptom_delay = (symptom_date - infection_date).days if symptom_date is not None else None
         detection_anchor = symptom_date or infection_date
         detection_probability = (
             _probability(
@@ -255,7 +279,9 @@ class ObservationScheduler:
             **identity,
             "infected_uid": uid,
             "infection_date": infection_date.isoformat(),
+            "infectious_start_date": infectious_start_date.isoformat(),
             "symptom_onset_date": symptom_date.isoformat() if symptom_date else None,
+            "recovery_date": recovery_date.isoformat(),
             "detection_date": detection_date.isoformat() if detection_date else None,
             "report_date": report_date.isoformat() if report_date else None,
             "symptom_onset_delay_days": symptom_delay,

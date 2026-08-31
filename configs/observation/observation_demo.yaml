@@ -1,15 +1,6 @@
-schema_version: "1.1"
-observation_config_id: observation-demo-v0.1
+schema_version: "1.2"
+observation_config_id: observation-demo-v1.1
 parameters:
-  symptomatic_probability:
-    parameter_id: symptomatic_probability
-    value: 0.6
-    distribution: fixed Bernoulli classification for observation only
-    units: probability per latent infection
-    status: scenario_assumption
-    source_ids: []
-    valid_range: [0.0, 1.0]
-    notes: Synthetic observation classification; it does not add a disease symptom state to M5.
   symptomatic_detection_probability:
     parameter_id: symptomatic_detection_probability
     value: 0.75
@@ -34,12 +25,6 @@ reporting_delay:
   status: scenario_assumption
   source_ids: []
   notes: Synthetic non-negative delay from the infection/testing anchor to reporting.
-symptom_onset_delay:
-  kind: fixed
-  days: [0]
-  status: scenario_assumption
-  source_ids: []
-  notes: Generic same-day symptom-onset anchor; not a named-pathogen natural-history parameter.
 detection_delay:
   kind: fixed
   days: [0]

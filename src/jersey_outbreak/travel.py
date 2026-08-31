@@ -2395,9 +2395,10 @@ def run_travel_outbreak(
         initial_prevalence=config.initial_prevalence,
         import_schedule=config.import_schedule if generic_enabled else {},
         import_rate_per_day=config.import_rate_per_day if generic_enabled else 0.0,
-        latent_period_days=config.latent_period_days,
-        infectious_period_days=config.infectious_period_days,
-        immunity_duration_days=config.immunity_duration_days,
+        latent_duration=config.latent_duration,
+        infectious_duration=config.infectious_duration,
+        immunity_duration=config.immunity_duration,
+        symptomatic_probability=config.symptomatic_probability,
         waning_enabled=config.waning_enabled,
         observation_scheduler=None,
     )

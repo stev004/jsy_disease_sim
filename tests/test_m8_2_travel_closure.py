@@ -36,7 +36,6 @@ def _all_detected(base, *, delay_days: int = 0):
         update={
             "observation_config_id": "m8.2-episode-identity",
             "parameters": parameters,
-            "symptom_onset_delay": zero,
             "detection_delay": fixed,
             "reporting_delay": zero,
             "day_of_week_effect": (1.0,) * 7,
@@ -94,13 +93,18 @@ def test_observation_and_detection_keep_episode_identity_across_slot_reuse(
         "infected_travel_party_id": "party-A",
         "infected_episode_identity_hash": "hash-A",
         "date": "2025-01-06",
+        "infection_date": "2025-01-06",
+        "infectious_start_date": "2025-01-07",
+        "symptomatic": True,
+        "symptom_onset_date": "2025-01-07",
+        "recovery_date": "2025-01-12",
         "source_kind": "local",
         "route_id": "visitor_party",
     }
     observation = scheduler.schedule_infection(latent)
     scheduler.agent_id_by_uid[3000] = "visitor-B"
-    assert scheduler.deliver_due(1) == ()
-    detection = scheduler.deliver_due(2)[0]
+    assert scheduler.deliver_due(2) == ()
+    detection = scheduler.deliver_due(3)[0]
     expected = {
         "infected_agent_id": "visitor-A",
         "infected_trip_id": "trip-A",
@@ -117,6 +121,11 @@ def test_observation_and_detection_keep_episode_identity_across_slot_reuse(
             "infected_uid": 0,
             "infected_agent_id": "resident-0",
             "date": "2025-01-06",
+            "infection_date": "2025-01-06",
+            "infectious_start_date": "2025-01-07",
+            "symptomatic": False,
+            "symptom_onset_date": None,
+            "recovery_date": "2025-01-12",
             "source_kind": "seeded",
             "route_id": "seeded",
         }

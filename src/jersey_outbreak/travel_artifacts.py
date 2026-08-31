@@ -14,10 +14,11 @@ import pyarrow.parquet as pq
 
 from .contracts import ArtifactRecord, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
+from .scientific_hashes import V1_1_NATURAL_HISTORY_EVENT_FIELDS
 from .travel import TravelRunResult
 from .travel_schemas import TravelConfig
 
-M8_ARTIFACT_SCHEMA_VERSION = "2.0"
+M8_ARTIFACT_SCHEMA_VERSION = "2.1"
 
 
 class TravelArtifactManifest(StrictModel):
@@ -181,7 +182,9 @@ OBSERVATION_EVENT_SCHEMA = pa.schema(
         ("infector_travel_party_id", pa.string()),
         ("infector_episode_identity_hash", pa.string()),
         ("infection_date", pa.string()),
+        ("infectious_start_date", pa.string()),
         ("symptom_onset_date", pa.string()),
+        ("recovery_date", pa.string()),
         ("detection_date", pa.string()),
         ("report_date", pa.string()),
         ("symptom_onset_delay_days", pa.int64()),
@@ -319,6 +322,7 @@ def _canonical_c5_events(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "infected_agent_id",
         "infector_agent_id",
     }
+    base_fields.update(V1_1_NATURAL_HISTORY_EVENT_FIELDS)
     return [
         {key: value for key, value in row.items() if key in base_fields or value is not None}
         for row in rows
