@@ -90,7 +90,7 @@ class OutbreakRunConfig(StrictModel):
     """Strict controls for one latent generic respiratory run."""
 
     schema_version: Literal["1.0"] = "1.0"
-    generator_version: NonEmptyString = "5.0.0"
+    generator_version: NonEmptyString = "5.1.0"
     mode: PopulationMode
     seed: StrictInt
     start_date: date = date(2025, 1, 6)
@@ -141,7 +141,7 @@ class OutbreakRunConfig(StrictModel):
 class OutbreakArtifactManifest(StrictModel):
     """Versioned provenance manifest for one completed M5 run."""
 
-    manifest_schema_version: Literal["1.0"] = "1.0"
+    manifest_schema_version: Literal["1.0", "1.1"] = "1.1"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString
     module: Literal["generic_respiratory_seirs"] = "generic_respiratory_seirs"

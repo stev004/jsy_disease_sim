@@ -102,7 +102,12 @@ def m6_ensemble_logical_hash(
             value = normalized.get("value")
             metric = normalized.get("metric")
             if value is not None:
-                if metric in {"latent_prevalence", "latent_attack_rate"}:
+                if metric in {
+                    "latent_prevalence",
+                    "latent_attack_rate",
+                    "latent_cumulative_incidence_per_capita",
+                    "latent_ever_infected_fraction",
+                }:
                     normalized["value"] = float(value)
                 elif metric == "intervention_route_active":
                     normalized["value"] = bool(value)
@@ -127,7 +132,12 @@ def m6_ensemble_logical_hash(
 
 
 def m6_comparison_logical_hash(
-    *, comparison_id: str, config_a_hash: str, config_b_hash: str, rows: list[dict[str, Any]]
+    *,
+    comparison_id: str,
+    config_a_hash: str,
+    config_b_hash: str,
+    rows: list[dict[str, Any]],
+    summary: list[dict[str, Any]] | None = None,
 ) -> str:
     canonical_rows: list[dict[str, Any]] = []
     for row in rows:
@@ -137,7 +147,12 @@ def m6_comparison_logical_hash(
             value = normalized.get(key)
             if value is None:
                 continue
-            if metric in {"latent_prevalence", "latent_attack_rate"}:
+            if metric in {
+                "latent_prevalence",
+                "latent_attack_rate",
+                "latent_cumulative_incidence_per_capita",
+                "latent_ever_infected_fraction",
+            }:
                 normalized[key] = float(value)
             elif metric == "intervention_route_active":
                 normalized[key] = bool(value)
@@ -147,17 +162,22 @@ def m6_comparison_logical_hash(
         if difference is not None:
             normalized["difference"] = (
                 float(difference)
-                if metric in {"latent_prevalence", "latent_attack_rate"}
+                if metric
+                in {
+                    "latent_prevalence",
+                    "latent_attack_rate",
+                    "latent_cumulative_incidence_per_capita",
+                    "latent_ever_infected_fraction",
+                }
                 else int(difference)
             )
         canonical_rows.append(normalized)
-    return sha256_bytes(
-        canonical_json_bytes(
-            {
-                "comparison_id": comparison_id,
-                "config_a_hash": config_a_hash,
-                "config_b_hash": config_b_hash,
-                "rows": canonical_rows,
-            }
-        )
-    )
+    payload = {
+        "comparison_id": comparison_id,
+        "config_a_hash": config_a_hash,
+        "config_b_hash": config_b_hash,
+        "rows": canonical_rows,
+    }
+    if summary is not None:
+        payload["summary"] = summary
+    return sha256_bytes(canonical_json_bytes(payload))

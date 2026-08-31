@@ -80,6 +80,18 @@ def test_ci_structure_is_deterministic_and_preserves_references(tmp_path: Path) 
     assert len(first.resident_structure) == 3_000
     assert first.diagnostics["employment"]["unique_workers"] == 1_666
     assert first.diagnostics["employment"]["additional_jobs"] == 117
+    realised_age_rates = first.diagnostics["employment"]["age_band_realised_rates"]
+    assert {row["age_band"] for row in realised_age_rates} == {
+        "18_to_24",
+        "25_to_34",
+        "35_to_54",
+        "55_to_64",
+        "65_to_74",
+    }
+    assert all(
+        row["realised_employment_rate"] == row["employed_residents"] / row["resident_denominator"]
+        for row in realised_age_rates
+    )
     assert all(
         row["secondary_workplace_id"] is None
         or row["secondary_workplace_id"] != row["primary_workplace_id"]

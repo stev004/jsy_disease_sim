@@ -50,7 +50,7 @@ export const MAP_METRICS: MapMetricSpec[] = [
   { id: 'cum', label: 'Cumulative infected', title: 'Cumulative infected by parish' },
   { id: 'active', label: 'Active infectious', title: 'Active infectious by parish' },
   { id: 'detected', label: 'Detected cases', title: 'Detected cases by parish' },
-  { id: 'attack', label: 'Attack rate', title: 'Attack rate by parish' },
+  { id: 'attack', label: 'Ever infected', title: 'Ever-infected fraction by parish' },
   { id: 'visitor', label: 'Visitor-linked', title: 'Visitor-linked infections by parish' },
 ];
 
@@ -365,7 +365,7 @@ function buildResultsFromSummary(job: JobStatusResponse, rows: DatasetRow[], dat
   let population: number | null = null;
   for (const date of dates) {
     const cumulative = summaryValue(lookup('epidemic', 'all', 'latent_cumulative_infections', date));
-    const attack = summaryValue(lookup('epidemic', 'all', 'latent_attack_rate', date));
+    const attack = summaryValue(lookup('epidemic', 'all', 'latent_cumulative_incidence_per_capita', date));
     if (cumulative != null && attack != null && attack > 0) {
       const candidate = cumulative / attack;
       if (Number.isFinite(candidate) && candidate > 0) population = candidate;
@@ -376,7 +376,7 @@ function buildResultsFromSummary(job: JobStatusResponse, rows: DatasetRow[], dat
     const prevalenceRow = lookup('epidemic', 'all', 'latent_prevalence', date);
     const cumulativeRow = lookup('epidemic', 'all', 'latent_cumulative_infections', date);
     const incidenceRow = lookup('epidemic', 'all', 'latent_new_infections', date);
-    const attackRow = lookup('epidemic', 'all', 'latent_attack_rate', date);
+    const attackRow = lookup('epidemic', 'all', 'latent_ever_infected_fraction', date);
     const prevalence = summaryValue(prevalenceRow);
     const active = prevalence != null && population != null ? prevalence * population : null;
     return {
@@ -389,11 +389,11 @@ function buildResultsFromSummary(job: JobStatusResponse, rows: DatasetRow[], dat
       attack: summaryValue(attackRow),
       newInfections: summaryValue(incidenceRow),
       bandLow: (() => {
-        const value = summaryValue(prevalenceRow, 'lower_value', 'lower_quantile');
+        const value = optionalNumber(prevalenceRow, 'lower_value');
         return value != null && population != null ? value * population : null;
       })(),
       bandHigh: (() => {
-        const value = summaryValue(prevalenceRow, 'upper_value', 'upper_quantile');
+        const value = optionalNumber(prevalenceRow, 'upper_value');
         return value != null && population != null ? value * population : null;
       })(),
     };
@@ -476,7 +476,7 @@ function buildResultsFromSummary(job: JobStatusResponse, rows: DatasetRow[], dat
   availability.activeState = epi.some((point) => point.active != null);
   availability.parish = parishRows.length > 0;
   availability.parishNote = availability.parish
-    ? 'This ensemble publishes parish incidence; parish active, attack rate and route tables are unavailable.'
+    ? 'This ensemble publishes parish incidence; parish active, ever-infected fraction and route tables are unavailable.'
     : 'Parish breakdown was not published by this ensemble.';
   availability.routes = routes.length > 0;
   availability.routeSource = availability.routes ? 'ensemble_summary.latent_local_infections' : null;
@@ -501,7 +501,7 @@ function buildResultsFromSummary(job: JobStatusResponse, rows: DatasetRow[], dat
     travel: null,
     availability,
     mapMetrics,
-    populationSource: population != null ? 'ensemble_summary latent_attack_rate + latent_cumulative_infections' : null,
+    populationSource: population != null ? 'ensemble_summary latent_cumulative_incidence_per_capita + latent_cumulative_infections' : null,
     cumulativeSource: 'ensemble_summary.latent_cumulative_infections',
     cumulativeLabel: 'Cumulative infected',
     datasetNames,
@@ -551,10 +551,14 @@ function populationFromEpi(rows: DatasetRow[]): { value: number | null; source: 
   }
   for (const row of rows) {
     const total = optionalNumber(row, 'cumulative_total_infections');
-    const attack = optionalNumber(row, 'attack_rate', 'resident_attack_rate');
+    const attack = optionalNumber(
+      row,
+      'cumulative_incidence_per_capita',
+      'resident_cumulative_incidence_per_capita',
+    );
     if (total != null && attack != null && attack > 0) {
       const value = total / attack;
-      if (Number.isFinite(value) && value > 0) return { value, source: 'daily_epidemic cumulative_total_infections ÷ attack_rate' };
+      if (Number.isFinite(value) && value > 0) return { value, source: 'daily_epidemic cumulative_total_infections ÷ cumulative_incidence_per_capita' };
     }
   }
   return { value: null, source: null };
@@ -565,7 +569,6 @@ function buildSingleEpi(
   dates: string[],
   detectionByDay: Array<number | null>,
   detectedColumn: string | null,
-  population: number | null,
 ): { epi: EpiPoint[]; cumulativeSource: string | null; cumulativeLabel: string } {
   const byDate = new Map(rows.map((row) => [optionalString(row, 'date'), row]));
   const hasTotal = hasAny(rows, 'cumulative_total_infections');
@@ -593,13 +596,17 @@ function buildSingleEpi(
       cum = running;
     } else if (hasExcluding) cum = optionalNumber(row, 'cumulative_infections');
     else cum = null;
-    const attackPublished = optionalNumber(row, 'attack_rate', 'resident_attack_rate');
-    const attack = attackPublished ?? (cum != null && population != null && cumulativeLabel === 'Cumulative infected' ? cum / population : null);
+    const attackPublished = optionalNumber(
+      row,
+      'ever_infected_fraction',
+      'resident_ever_infected_fraction',
+    );
+    const attack = attackPublished;
     return {
       day,
       date,
-      active: optionalNumber(row, 'infectious', 'active_infectious', 'n_infectious'),
-      exposed: optionalNumber(row, 'exposed', 'n_exposed'),
+      active: optionalNumber(row, 'present_infectious', 'infectious', 'active_infectious', 'n_infectious'),
+      exposed: optionalNumber(row, 'present_exposed', 'exposed', 'n_exposed'),
       cum,
       detected: detectedColumn ? optionalNumber(row, detectedColumn) : detectionByDay[day] ?? null,
       attack,
@@ -631,7 +638,7 @@ function buildParishes(rows: DatasetRow[], dates: string[]): { parishes: ParishS
     const pop = optionalNumber(row, 'population');
     if (pop != null) series.pop = pop;
     const active = optionalNumber(row, 'active_infectious', 'infectious');
-    const attack = optionalNumber(row, 'attack_rate') ?? (cum != null && pop != null ? cum / pop : null);
+    const attack = optionalNumber(row, 'ever_infected_fraction');
     hasActive ||= active != null;
     hasAttack ||= attack != null;
     if (newValue != null || cum != null) validRows += 1;
@@ -819,7 +826,7 @@ export async function loadResults(job: JobStatusResponse): Promise<ResultsData> 
     counts.forEach((value, day) => { running += value; detectionByDay[day] = running; });
   }
   const { value: population, source: populationSource } = populationFromEpi(epiRows);
-  const { epi, cumulativeSource, cumulativeLabel } = buildSingleEpi(epiRows, dates, detectionByDay, detectedColumn, population);
+  const { epi, cumulativeSource, cumulativeLabel } = buildSingleEpi(epiRows, dates, detectionByDay, detectedColumn);
   const parish = buildParishes(parishRows, dates);
   const route = buildRoutes(raw.daily_route ?? [], raw.transmission_events ?? [], dates);
   const age = buildAges(raw.daily_age ?? [], raw.observation_events ?? [], dates);
@@ -832,7 +839,7 @@ export async function loadResults(job: JobStatusResponse): Promise<ResultsData> 
   availability.exposedState = hasAny(epiRows, 'exposed', 'n_exposed');
   availability.parish = parish.available;
   availability.parishNote = parish.available
-    ? 'This run publishes parish incidence. Parish active, attack rate or route data are shown only when their own fields are present.'
+    ? 'This run publishes parish incidence. Parish active, ever-infected fraction or route data are shown only when their own fields are present.'
     : 'Parish breakdown was not published by this run.';
   availability.parishActive = parish.active;
   availability.parishAttack = parish.attack;

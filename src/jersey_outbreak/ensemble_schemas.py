@@ -18,7 +18,7 @@ class EnsembleConfig(StrictModel):
 
     schema_version: Literal["1.0"] = "1.0"
     ensemble_id: NonEmptyString
-    generator_version: NonEmptyString = "6.1.0"
+    generator_version: NonEmptyString = "6.2.0"
     base_run_config: OutbreakRunConfig
     observation_config: ObservationConfig
     scenario: ScenarioConfig | None = None
@@ -81,10 +81,10 @@ class EnsembleReplicateRecord(StrictModel):
 class EnsembleArtifactManifest(StrictModel):
     """Manifest for a complete or explicitly partial ensemble."""
 
-    manifest_schema_version: Literal["1.2"] = "1.2"
+    manifest_schema_version: Literal["1.2", "1.3"] = "1.3"
     artifact_id: NonEmptyString
     logical_content_hash: NonEmptyString
-    generator_version: NonEmptyString = "6.1.0"
+    generator_version: NonEmptyString = "6.2.0"
     ensemble_id: NonEmptyString
     status: Literal["passed", "partial", "failed"]
     diagnostics_status: Literal["passed", "failed"]
@@ -145,10 +145,10 @@ class EnsembleArtifactManifest(StrictModel):
 class ComparisonArtifactManifest(StrictModel):
     """Manifest for a matched-seed A/B comparison."""
 
-    manifest_schema_version: Literal["1.0"] = "1.0"
+    manifest_schema_version: Literal["1.0", "1.1"] = "1.1"
     artifact_id: NonEmptyString
     logical_content_hash: NonEmptyString
-    generator_version: NonEmptyString = "6.0.0"
+    generator_version: NonEmptyString = "6.1.0"
     comparison_id: NonEmptyString
     status: Literal["passed", "partial", "failed"]
     config_a_hash: NonEmptyString

@@ -50,7 +50,7 @@ from .travel_schemas import (
     TravellerType,
 )
 
-TRAVEL_GENERATOR_VERSION = "8.0.0"
+TRAVEL_GENERATOR_VERSION = "8.1.0"
 
 
 def load_travel_config(root: Path, path: Path | None = None) -> TravelConfig:
@@ -2187,8 +2187,10 @@ def _daily_metrics(
     for event in events:
         by_date[str(event["date"])].append(event)
     daily: list[dict[str, Any]] = []
-    cumulative_resident = 0
-    cumulative_visitor = 0
+    cumulative_resident_total = 0
+    cumulative_visitor_total = 0
+    ever_infected_residents: set[str] = set()
+    ever_infected_visitors: set[str] = set()
     acquisition_kinds = {"local", "imported", "travel_imported"}
     for index, when in enumerate(dates):
         stream = manager.plan.daily_stream[index]
@@ -2214,10 +2216,31 @@ def _daily_metrics(
             for event in day_events
         )
         seeded_infections = sum(event["source_kind"] == "seeded" for event in day_events)
+        seeded_resident_infections = sum(
+            event["source_kind"] == "seeded" and event["infected_population"] == "resident"
+            for event in day_events
+        )
+        seeded_visitor_infections = seeded_infections - seeded_resident_infections
         travel_acquisitions = sum(event["source_kind"] == "travel_imported" for event in day_events)
         visitor_linked = sum(event.get("travel_linked", False) for event in day_events)
-        cumulative_resident += resident_infections
-        cumulative_visitor += visitor_infections
+        cumulative_resident_total += resident_infections + seeded_resident_infections
+        cumulative_visitor_total += visitor_infections + seeded_visitor_infections
+        ever_infected_residents.update(
+            str(event["infected_agent_id"])
+            for event in day_events
+            if event["infected_population"] == "resident"
+            and event["source_kind"] in acquisition_kinds | {"seeded"}
+        )
+        ever_infected_visitors.update(
+            str(event["infected_agent_id"])
+            for event in day_events
+            if event["infected_population"] == "visitor"
+            and event["source_kind"] in acquisition_kinds | {"seeded"}
+        )
+        arrived_visitors = sum(
+            episode.visitor_uid is not None and episode.arrival_date <= when
+            for episode in manager.plan.episodes
+        )
         daily.append(
             {
                 "date": _iso(when),
@@ -2230,25 +2253,31 @@ def _daily_metrics(
                 "exposed": state["exposed"],
                 "infectious": state["infectious"],
                 "recovered": state["recovered"],
+                "present_susceptible": state["susceptible"],
+                "present_exposed": state["exposed"],
+                "present_infectious": state["infectious"],
+                "present_recovered": state["recovered"],
                 "new_infections": resident_infections + visitor_infections,
                 "resident_infections": resident_infections,
                 "visitor_infections": visitor_infections,
                 "seeded_infections": seeded_infections,
                 "returning_resident_travel_acquisitions": travel_acquisitions,
                 "visitor_linked_local_acquisitions": visitor_linked,
-                "resident_attack_rate": cumulative_resident
+                "resident_attack_rate": cumulative_resident_total
                 / max(1, len(manager.base_generated.agent_ids)),
-                "visitor_arrived_denominator": sum(
-                    episode.visitor_uid is not None and episode.arrival_date <= when
-                    for episode in manager.plan.episodes
+                "resident_cumulative_incidence_per_capita": cumulative_resident_total
+                / max(1, len(manager.base_generated.agent_ids)),
+                "resident_ever_infected_fraction": len(ever_infected_residents)
+                / max(1, len(manager.base_generated.agent_ids)),
+                "visitor_arrived_denominator": arrived_visitors,
+                "visitor_attack_rate": (
+                    cumulative_visitor_total / arrived_visitors if arrived_visitors else None
                 ),
-                "visitor_attack_rate": cumulative_visitor
-                / max(
-                    1,
-                    sum(
-                        episode.visitor_uid is not None and episode.arrival_date <= when
-                        for episode in manager.plan.episodes
-                    ),
+                "visitor_cumulative_incidence_per_arrived": (
+                    cumulative_visitor_total / arrived_visitors if arrived_visitors else None
+                ),
+                "visitor_ever_infected_fraction_of_arrived": (
+                    len(ever_infected_visitors) / arrived_visitors if arrived_visitors else None
                 ),
                 "present_prevalence": state["infectious"] / max(1, stream["present_population"]),
                 "resident_infectious": state["resident_infectious"],
@@ -2465,6 +2494,12 @@ def run_travel_outbreak(
             )
             route_events = event_by_route[(_iso(when), route_id)]
             direction_counts = Counter(event["transmission_direction"] for event in route_events)
+            resident_endpoints = sum(
+                bool(manager.person_metadata[endpoint].get("is_resident", False))
+                for edge in edges
+                for endpoint in (edge["p1"], edge["p2"])
+            )
+            visitor_endpoints = 2 * len(edges) - resident_endpoints
             daily_route.append(
                 {
                     "date": _iso(when),
@@ -2486,6 +2521,11 @@ def run_travel_outbreak(
                     "visitor_to_visitor": direction_counts["visitor_to_visitor"],
                     "resident_to_resident": direction_counts["resident_to_resident"],
                     "effective_multiplier": travel_config.visitor_route_multipliers[route_id],
+                    "resident_opportunity_endpoints": resident_endpoints,
+                    "visitor_opportunity_endpoints": visitor_endpoints,
+                    "visitor_to_resident_endpoint_ratio": (
+                        visitor_endpoints / resident_endpoints if resident_endpoints else None
+                    ),
                 }
             )
     travel_events = [
@@ -2669,8 +2709,32 @@ def run_travel_outbreak(
         "denominators": {
             "resident_attack_rate_denominator": len(generated.agent_ids),
             "visitor_attack_rate_denominator": len(plan.visitor_records),
+            "resident_cumulative_incidence_denominator": len(generated.agent_ids),
+            "resident_ever_infected_denominator": len(generated.agent_ids),
+            "visitor_cumulative_incidence_denominator": "arrived visitor identities by date",
+            "visitor_ever_infected_denominator": "arrived visitor identities by date",
             "present_population_is_date_specific": True,
             "inactive_slots_excluded": True,
+            "deprecated_fields": {
+                "resident_attack_rate": "resident_cumulative_incidence_per_capita",
+                "visitor_attack_rate": "visitor_cumulative_incidence_per_arrived",
+                "susceptible/exposed/infectious/recovered": (
+                    "present_susceptible/present_exposed/present_infectious/present_recovered"
+                ),
+            },
+        },
+        "travel_scaling_context": {
+            "resident_count": len(generated.agent_ids),
+            "horizon_days": config.duration_days,
+            "passenger_episode_movements": len(plan.episodes),
+            "movements_per_resident_year": len(plan.episodes)
+            / max(1, len(generated.agent_ids))
+            * 365.0
+            / config.duration_days,
+            "endpoint_ratio_definition": (
+                "visitor opportunity endpoints divided by resident opportunity endpoints "
+                "within each temporary route/day"
+            ),
         },
         "interventions": {
             "events": len(visitor_events) + len(m7_events),

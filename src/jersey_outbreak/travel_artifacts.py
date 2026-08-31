@@ -17,7 +17,7 @@ from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .travel import TravelRunResult
 from .travel_schemas import TravelConfig
 
-M8_ARTIFACT_SCHEMA_VERSION = "2.0"
+M8_ARTIFACT_SCHEMA_VERSION = "2.1"
 
 
 class TravelArtifactManifest(StrictModel):

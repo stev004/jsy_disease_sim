@@ -132,6 +132,9 @@ def write_ensemble_artifact(
                 ("upper_quantile", pa.float64()),
                 ("lower_value", pa.float64()),
                 ("upper_value", pa.float64()),
+                ("interval_class", pa.string()),
+                ("quantile_method", pa.string()),
+                ("tail_rank", pa.float64()),
                 ("replicate_count", pa.int64()),
                 ("requested_replicates", pa.int64()),
                 ("successful_replicates", pa.int64()),
@@ -291,6 +294,7 @@ def write_comparison_artifact(
         return ComparisonArtifact(artifact_directory, existing)
 
     paired_path = artifact_directory / "matched_seed_comparison.parquet"
+    paired_summary_path = artifact_directory / "paired_difference_summary.parquet"
     config_path = artifact_directory / "comparison_config.json"
     diagnostics_path = artifact_directory / "diagnostics.json"
     _write_table(
@@ -307,6 +311,34 @@ def write_comparison_artifact(
                 ("value_a", pa.float64()),
                 ("value_b", pa.float64()),
                 ("difference", pa.float64()),
+            ]
+        ),
+    )
+    _write_table(
+        paired_summary_path,
+        result.paired_summary,
+        pa.schema(
+            [
+                ("scope", pa.string()),
+                ("key", pa.string()),
+                ("metric", pa.string()),
+                ("date", pa.string()),
+                ("paired_count", pa.int64()),
+                ("requested_pair_count", pa.int64()),
+                ("missing_or_failed_pair_count", pa.int64()),
+                ("lower_quantile", pa.float64()),
+                ("lower_difference", pa.float64()),
+                ("median_difference", pa.float64()),
+                ("upper_quantile", pa.float64()),
+                ("upper_difference", pa.float64()),
+                ("interval_class", pa.string()),
+                ("quantile_method", pa.string()),
+                ("tail_rank", pa.float64()),
+                ("mean_difference", pa.float64()),
+                ("fraction_negative", pa.float64()),
+                ("fraction_zero", pa.float64()),
+                ("fraction_positive", pa.float64()),
+                ("coupling_caveat", pa.string()),
             ]
         ),
     )
@@ -332,7 +364,7 @@ def write_comparison_artifact(
     diagnostics_path.write_text(
         json.dumps(result.diagnostics, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    output_paths = (paired_path, config_path, diagnostics_path)
+    output_paths = (paired_path, paired_summary_path, config_path, diagnostics_path)
     git_commit, dirty_worktree = _git_metadata(root)
     manifest = ComparisonArtifactManifest(
         artifact_id=artifact_id,

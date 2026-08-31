@@ -286,6 +286,22 @@ def test_returning_resident_is_absent_from_routes_until_return(
     assert len(returned) == 1
     assert returned[0]["time_index"] == 2
     assert result.diagnostics["denominators"]["resident_attack_rate_denominator"] == 3000
+    assert result.diagnostics["travel_scaling_context"]["movements_per_resident_year"] > 0
+    assert all(
+        (
+            row["visitor_to_resident_endpoint_ratio"]
+            == row["visitor_opportunity_endpoints"] / row["resident_opportunity_endpoints"]
+            if row["resident_opportunity_endpoints"]
+            else row["visitor_to_resident_endpoint_ratio"] is None
+        )
+        for row in result.daily_travel_route
+    )
+    assert all(row["present_infectious"] == row["infectious"] for row in result.daily_epidemic)
+    assert all(
+        row["resident_attack_rate"] == row["resident_cumulative_incidence_per_capita"]
+        and row["visitor_attack_rate"] == row["visitor_cumulative_incidence_per_arrived"]
+        for row in result.daily_epidemic
+    )
 
     plan = generate_travel_episodes(
         config,

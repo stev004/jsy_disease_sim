@@ -100,7 +100,7 @@ describe('M10.2 comparison metric horizons', () => {
 
   it('keeps cumulative and attack values available at their own persisted horizons', () => {
     const cumulative = 'latent_cumulative_infections';
-    const attack = 'latent_attack_rate';
+    const attack = 'latent_ever_infected_fraction';
     const base = [
       row(cumulative, '2025-01-01', 10),
       row(cumulative, '2025-01-08', 85),
@@ -147,7 +147,7 @@ describe('M10.2 comparison metric horizons', () => {
   it('recomputes matched comparison deltas from same-date persisted values', () => {
     const rows = [
       matchedRow('latent_cumulative_infections', '2025-01-13', 85, 63),
-      matchedRow('latent_attack_rate', '2025-01-13', 0.028333333333333332, 0.021),
+      matchedRow('latent_ever_infected_fraction', '2025-01-13', 0.028333333333333332, 0.021),
       matchedRow('observed_reported_cases', '2025-01-14', 3, 2),
       matchedRow('observed_reported_cases', '2025-01-15', 4, 3),
     ];

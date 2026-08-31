@@ -116,6 +116,8 @@ def write_outbreak_artifact(
                 ("cumulative_infections", pa.int64()),
                 ("cumulative_total_infections", pa.int64()),
                 ("prevalence", pa.float64()),
+                ("cumulative_incidence_per_capita", pa.float64()),
+                ("ever_infected_fraction", pa.float64()),
                 ("attack_rate", pa.float64()),
             ]
         ),
