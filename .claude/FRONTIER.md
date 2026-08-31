@@ -2,7 +2,7 @@
 
 *Snapshot, not history. Rewritten each time the frontier moves. Lives on the `docs/frontier` branch because `main` is frozen at the V1 release commit until V1.1 ships (Sol handoff §2.1). If you are cold-starting: read this file, then `docs/handoff/2026-08-31-sol-handoff.md` for full depth.*
 
-**Updated:** 2026-08-31 · **Updated by:** Fable (frontier reconciliation session)
+**Updated:** 2026-08-31 (post-audit) · **Updated by:** Fable (foreman pilot run)
 
 ## Where the project is
 
@@ -14,7 +14,11 @@
 
 ## The one next action
 
-**P0: independent V1.1 audit of exact commit `461bf038...`** — fresh Sol@high thread, read-only, detached worktree, methodology per handoff §10, verdict exactly `JOS V1.1 RELEASE-CANDIDATE PASS` or `... BLOCKED`. Steven launches it. Nothing else is unblocked before this.
+**P0 audit RAN 2026-08-31 — verdict `JOS V1.1 RELEASE-CANDIDATE BLOCKED`.** Full report: `docs/audits/2026-08-31-v1.1-rc-audit-BLOCKED.md`. One blocking defect (all 20 other finding classifications independently confirmed; every automated gate green):
+
+- **O2 FAILED** (claimed CLOSED): `visitor_attack_rate_denominator` diagnostic reports the whole-horizon visitor total (`len(plan.visitor_records)`, `travel.py:2712` on the candidate) while the actual alias value divides by date-specific arrived visitors (`travel.py:2240`/`2272`). Value and published diagnostic disagree whenever arrivals are staggered; reproduced read-only; **no test references the denominator field**, so the green suite cannot catch a regression. Violates synthesis §M11-D PASS condition (explicit truthful denominator metadata).
+
+**Next: the smallest corrective branch** (handoff §8 P0 BLOCKED procedure): fix the denominator diagnostic (or its metadata) on a branch off `codex/v1.1-integration`, add the missing test that pins `visitor_attack_rate_denominator` to the by-date arrival semantics (failing-test-first), producing a NEW candidate SHA — then a bounded re-audit of the delta + O2 area only, not a full re-audit. `461bf038` is superseded as candidate once the corrective lands; audit verdicts pin to SHAs.
 
 Then in order (handoff §8): P1 full-population 180-day V1.1 baseline (Steven approves the ~3h run) → P2 Claude Science delta review → P3 release decision/merge/tag (likely `jos-v1.1.0`, not invented before approval) → P4 desktop transfer + N=30 ensemble → P5 V1.x calibration → P6 V2.
 
