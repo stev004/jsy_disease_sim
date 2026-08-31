@@ -2709,7 +2709,7 @@ def run_travel_outbreak(
         },
         "denominators": {
             "resident_attack_rate_denominator": len(generated.agent_ids),
-            "visitor_attack_rate_denominator": len(plan.visitor_records),
+            "visitor_attack_rate_denominator": "arrived visitor identities by date",
             "resident_cumulative_incidence_denominator": len(generated.agent_ids),
             "resident_ever_infected_denominator": len(generated.agent_ids),
             "visitor_cumulative_incidence_denominator": "arrived visitor identities by date",

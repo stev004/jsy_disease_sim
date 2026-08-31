@@ -336,6 +336,27 @@ def test_returning_resident_is_absent_from_routes_until_return(
     )
 
 
+def test_visitor_attack_rate_denominator_matches_arrived_alias_semantics(
+    m6_network, m6_base_config, m6_parameters
+) -> None:
+    config = _small_travel_config(daily_arrivals={"2025-01-06:AIRPORT": 1, "2025-01-08:AIRPORT": 1})
+    result = run_travel_outbreak(
+        m6_network,
+        m6_base_config.model_copy(update={"duration_days": 4}),
+        m6_parameters,
+        config,
+    )
+
+    jan6 = next(row for row in result.daily_epidemic if row["date"] == "2025-01-06")
+    assert len(result.travel_plan.visitor_records) == 2
+    assert jan6["visitor_arrived_denominator"] == 1
+    assert jan6["visitor_attack_rate"] == jan6["visitor_cumulative_incidence_per_arrived"]
+    assert (
+        result.diagnostics["denominators"]["visitor_attack_rate_denominator"]
+        == "arrived visitor identities by date"
+    )
+
+
 @pytest.mark.parametrize("testing_enabled", [False, True])
 def test_repeat_returning_resident_trips_reconcile_without_person_key_collision(
     monkeypatch, m6_network, m6_base_config, m6_parameters, testing_enabled
