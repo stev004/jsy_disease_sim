@@ -31,6 +31,7 @@ from .scientific_hashes import (
     m5_artifact_bundle_hash,
     m5_latent_outcome_hash,
     m5_logical_content_hash,
+    v1_m5_daily_epidemic_projection,
     v1_m5_event_projection,
 )
 from .starsim_adapter import build_starsim_disease_sim
@@ -654,7 +655,7 @@ def run_outbreak(
         transmission_events=events,
     )
     v1_projection_latent_outcome_hash = m5_latent_outcome_hash(
-        daily_epidemic=daily_epidemic,
+        daily_epidemic=v1_m5_daily_epidemic_projection(daily_epidemic),
         daily_parish=daily_parish,
         daily_route=daily_route,
         daily_age=daily_age,
@@ -663,6 +664,10 @@ def run_outbreak(
     diagnostics["compatibility"] = {
         "event_schema": "1.1",
         "full_v1_1_hash_expected_to_differ": True,
+        "v1_projection_scope": (
+            "frozen V1 daily/event columns under current candidate structure and network; "
+            "approved upstream scientific corrections may change the projected values"
+        ),
         "v1_projection_latent_outcome_hash": v1_projection_latent_outcome_hash,
     }
     run_config_hash = sha256_bytes(canonical_json_bytes(config.model_dump(mode="json")))

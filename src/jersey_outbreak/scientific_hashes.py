@@ -29,6 +29,25 @@ V1_1_NATURAL_HISTORY_EVENT_FIELDS = {
     "symptomatic",
 }
 
+V1_M5_DAILY_EPIDEMIC_FIELDS = {
+    "date",
+    "time_index",
+    "susceptible",
+    "exposed",
+    "infectious",
+    "recovered",
+    "severe",
+    "dead",
+    "new_infections",
+    "new_local_infections",
+    "new_imported_infections",
+    "new_seeded_infections",
+    "cumulative_infections",
+    "cumulative_total_infections",
+    "prevalence",
+    "attack_rate",
+}
+
 
 def canonical_m5_events(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Remove only schema-added null attribution columns absent in runtime events."""
@@ -48,6 +67,15 @@ def v1_m5_event_projection(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     return [
         {key: value for key, value in row.items() if key not in V1_1_NATURAL_HISTORY_EVENT_FIELDS}
+        for row in rows
+    ]
+
+
+def v1_m5_daily_epidemic_projection(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Project V1.1 daily epidemic rows onto the frozen V1 column schema."""
+
+    return [
+        {key: value for key, value in row.items() if key in V1_M5_DAILY_EPIDEMIC_FIELDS}
         for row in rows
     ]
 

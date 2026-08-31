@@ -865,3 +865,25 @@ M10.2 release-candidate commit.
 Post-release performance follow-up: deterministic M2/M3/M4 parent construction
 dominates full-island runtime. Verified parent-artifact caching remains a future
 optimization and is not a release blocker.
+
+## V1.1 scientific-hardening integration
+
+The V1.1 programme resumed from integration base
+`b844cd064b644376a3a6d1624daa02fb33e14885` and merged the independently
+passing M11-A, M11-B, M11-C, and M11-D commits with ordinary merge commits.
+The complete lane results, scientific differences from frozen V1.0, finding
+dispositions, and explicit deferrals are recorded in
+`docs/research/v1_1/V1_1_IMPLEMENTATION_STATUS.md`.
+
+R6 approved no performance implementation, so the performance branch remains
+documentation-only. No 180-day V1.1 run or 30-replicate ensemble was executed.
+`main` and `jos-v1.0.0` remain at
+`9e9ce3abc4201cd8303c723015462d21ca237800`.
+
+Final integrated verification and the release-candidate commit are recorded by
+the closeout commit containing this section. The final backend suite passed
+`214` tests with four known third-party/runtime warnings in `714.17s`.
+Frontend verification passed `15` tests with `6` live-only tests skipped;
+TypeScript and the production Vite build passed. Ruff lint, Ruff formatting,
+targeted mypy over all 23 changed source modules, `uv lock --check`, compileall,
+and `git diff --check` passed.
