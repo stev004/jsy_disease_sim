@@ -4,11 +4,6 @@
 
 ## Open
 
-### G1 — Launch the independent V1.1 audit (P0, blocks everything)
-- **Question:** start the fresh Sol@high read-only audit of `461bf038...`?
-- **Options:** launch now · launch after EMA (3 Sept) 
-- **Default:** launch after EMA. The candidate is immutable; nothing decays by waiting.
-
 ### G2 — Approve the V1.1 full-scale 180-day baseline run (P1, after audit PASS)
 - **Question:** run the ~3h full-population comparator, and on which machine?
 - **Options:** Mac (continuity with V1 pilot) · desktop (after transfer)
@@ -29,4 +24,6 @@
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
-*(none yet)*
+
+### G1 — Launch the independent V1.1 audit — RESOLVED 2026-08-31 (Steven, in chat): launch now
+Overrode the after-EMA default. Audit launched same day via foreman pilot run (Sol@high, read-only, detached worktree at the candidate).
