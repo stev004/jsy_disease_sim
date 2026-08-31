@@ -25,6 +25,8 @@ from jersey_outbreak.interventions import (
     NON_NURSING_CARE_SETTING_TYPES,
     NURSING_CARE_SETTING_TYPES,
     InterventionManager,
+    _npi_adherence_uniform,
+    _stable_uniform,
 )
 from jersey_outbreak.outbreak_runner import run_outbreak
 
@@ -48,6 +50,110 @@ def _assert_exact_latent(left, right) -> None:
     assert left.transmission_events == right.transmission_events
     assert left.latent_outcome_hash == right.latent_outcome_hash
     assert left.logical_content_hash == right.logical_content_hash
+
+
+def test_npi_adherence_is_one_stable_versioned_person_trait(m6_network) -> None:
+    config = InterventionConfig(
+        intervention_id="stable-adherence",
+        version="7.1.0",
+        type="case_isolation",
+        duration_days=3,
+        adherence=0.60,
+    )
+    draws = [_npi_adherence_uniform(123, config, f"agent-{index}") for index in range(100_000)]
+    non_adherent = sum(draw >= config.adherence for draw in draws)
+    assert 39_490 <= non_adherent <= 40_510
+    assert draws == [
+        _npi_adherence_uniform(123, config, f"agent-{index}") for index in range(100_000)
+    ]
+    changed_version = config.model_copy(update={"version": "7.1.1"})
+    assert _npi_adherence_uniform(123, config, "agent-1") != _npi_adherence_uniform(
+        123, changed_version, "agent-1"
+    )
+
+    manager = InterventionManager(
+        m6_network,
+        (config,),
+        run_seed=123,
+        start_date=date(2025, 1, 6),
+        duration_days=4,
+    )
+    agent_id = m6_network.agent_ids[0]
+    uid = manager._uid_by_agent_id[agent_id]
+    accepted = manager._intervention_adheres(config, agent_id)
+    for detection_date, time_index in (("2025-01-06", 0), ("2025-01-07", 1)):
+        manager.consume_detection(
+            SimpleNamespace(
+                agent_id=agent_id,
+                agent_uid=uid,
+                detection_date=detection_date,
+                detection_reason="repeat-contract",
+                detection_time_index=time_index,
+            )
+        )
+    if accepted:
+        assert len(manager._pending_detection_actions) == 2
+        assert not manager.event_log
+    else:
+        assert not manager._pending_detection_actions
+        assert [row["action"] for row in manager.event_log] == [
+            "intervention_declined",
+            "intervention_declined",
+        ]
+
+    route_config = InterventionConfig(
+        intervention_id="stable-routes",
+        version="7.1.0",
+        type="masking",
+        start_date=date(2025, 1, 6),
+        adherence=0.60,
+        route_effects={"community_indoor": 0.5, "community_outdoor": 0.5},
+    )
+    route_agent = next(
+        candidate
+        for candidate in m6_network.agent_ids
+        if (
+            _stable_uniform(
+                123,
+                "route-adherence",
+                route_config.intervention_id,
+                "community_indoor",
+                candidate,
+            )
+            < route_config.adherence
+        )
+        != (
+            _stable_uniform(
+                123,
+                "route-adherence",
+                route_config.intervention_id,
+                "community_outdoor",
+                candidate,
+            )
+            < route_config.adherence
+        )
+    )
+    route_manager = InterventionManager(
+        m6_network,
+        (route_config,),
+        run_seed=123,
+        start_date=date(2025, 1, 6),
+        duration_days=1,
+    )
+    forward = {
+        route_id: route_manager._edge_multiplier(
+            route_config, route_id, route_agent, route_agent, date(2025, 1, 6), 0
+        )
+        for route_id in ("community_indoor", "community_outdoor")
+    }
+    reverse = {
+        route_id: route_manager._edge_multiplier(
+            route_config, route_id, route_agent, route_agent, date(2025, 1, 6), 0
+        )
+        for route_id in ("community_outdoor", "community_indoor")
+    }
+    assert forward == reverse
+    assert len(set(forward.values())) == 1
 
 
 def _all_detected(base):

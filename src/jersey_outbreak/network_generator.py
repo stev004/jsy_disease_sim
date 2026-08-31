@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import random
 import resource
 import time
 from collections import Counter, defaultdict
@@ -65,6 +66,12 @@ ROUTE_OVERLAP_POLICIES = {
     frozenset(("school_class", "school_cross_class")): "FORBIDDEN",
     frozenset(("workplace_team", "workplace_transient")): "FORBIDDEN",
 }
+CONTACT_ACTIVITY_ROUTES = (
+    "community_indoor",
+    "community_outdoor",
+    "workplace_transient",
+    "school_cross_class",
+)
 
 
 @dataclass(frozen=True)
@@ -135,6 +142,93 @@ def _stable_int(seed: int, *parts: object) -> int:
 
 def _ordered_ids(ids: Iterable[str], seed: int, *parts: object) -> list[str]:
     return sorted(ids, key=lambda agent_id: (_stable_int(seed, *parts, agent_id), agent_id))
+
+
+def _persistent_contact_activity(
+    seed: int,
+    agent_id: str,
+    activity_cv: float,
+    distribution_version: str,
+) -> float:
+    """Return one persistent, mean-one activity trait owned by M4."""
+
+    if activity_cv == 0:
+        return 1.0
+    variance = activity_cv * activity_cv
+    generator = random.Random(
+        _stable_int(
+            seed,
+            "persistent-contact-activity",
+            agent_id,
+            distribution_version,
+        )
+    )
+    return max(generator.gammavariate(1.0 / variance, variance), float.fromhex("0x1p-1022"))
+
+
+def _activity_participation_probabilities(
+    eligible_ids: Iterable[str],
+    expected_participant_count: float,
+    *,
+    config: NetworkGenerationConfig,
+) -> dict[str, float]:
+    """Return activity-weighted probabilities with the exact V1 expectation."""
+
+    ordered = sorted(set(eligible_ids))
+    if not ordered or expected_participant_count <= 0:
+        return {agent_id: 0.0 for agent_id in ordered}
+    if expected_participant_count >= len(ordered):
+        return {agent_id: 1.0 for agent_id in ordered}
+    activities = {
+        agent_id: _persistent_contact_activity(
+            config.seed,
+            agent_id,
+            float(config.activity_cv),
+            config.contact_activity_distribution_version,
+        )
+        for agent_id in ordered
+    }
+    low = 0.0
+    high = 1.0
+    while sum(min(1.0, high * value) for value in activities.values()) < (
+        expected_participant_count
+    ):
+        high *= 2.0
+    for _ in range(80):
+        midpoint = (low + high) / 2.0
+        expected = sum(min(1.0, midpoint * value) for value in activities.values())
+        if expected < expected_participant_count:
+            low = midpoint
+        else:
+            high = midpoint
+    scale = (low + high) / 2.0
+    return {agent_id: min(1.0, scale * activities[agent_id]) for agent_id in ordered}
+
+
+def _activity_weighted_participants(
+    eligible_ids: Iterable[str],
+    expected_participant_count: float,
+    *,
+    config: NetworkGenerationConfig,
+    route_id: str,
+    token: object,
+) -> set[str]:
+    """Select participants once, before the route assigns ring degree."""
+
+    probabilities = _activity_participation_probabilities(
+        eligible_ids,
+        expected_participant_count,
+        config=config,
+    )
+    return {
+        agent_id
+        for agent_id, probability in probabilities.items()
+        if (
+            _stable_int(config.seed, "contact-activity-participation", route_id, token, agent_id)
+            / 2**64
+        )
+        < probability
+    }
 
 
 def _canonical_edge(
@@ -326,19 +420,6 @@ def _job_is_physical_on_date(
         )[:remote_days]
     )
     return snapshot_date.weekday() in set(selected) - remote
-
-
-def _participation(
-    agent_id: str,
-    age: int,
-    snapshot_date: date,
-    seed: int,
-    route_id: str,
-    weekend_probability: int,
-    weekday_probability: int,
-) -> bool:
-    probability = weekend_probability if snapshot_date.weekday() >= 5 else weekday_probability
-    return _stable_int(seed, route_id, snapshot_date.isoformat(), agent_id) % 100 < probability
 
 
 def _route_spec(
@@ -1004,8 +1085,18 @@ def generate_networks(
         ]
 
         def build_school_cross(snapshot_date: date) -> list[dict[str, Any]]:
+            active_pupils = _activity_weighted_participants(
+                (agent_id for group in school_year_groups.values() for agent_id in group),
+                sum(len(group) for group in school_year_groups.values()),
+                config=config,
+                route_id="school_cross_class",
+                token=snapshot_date.isoformat(),
+            )
             pupil_edges = _grouped_ring_edges(
-                school_year_groups.values(),
+                (
+                    [agent_id for agent_id in group if agent_id in active_pupils]
+                    for group in school_year_groups.values()
+                ),
                 config.seed,
                 "school_cross_class",
                 snapshot_date,
@@ -1101,8 +1192,18 @@ def generate_networks(
                         snapshot_date.isocalendar().week,
                     )
                 )
+            active_workers = _activity_weighted_participants(
+                (agent_id for group in groups for agent_id in group),
+                len({agent_id for group in groups for agent_id in group}),
+                config=config,
+                route_id="workplace_transient",
+                token=snapshot_date.isoformat(),
+            )
             return _grouped_ring_edges(
-                groups,
+                (
+                    [agent_id for agent_id in group if agent_id in active_workers]
+                    for group in groups
+                ),
                 config.seed,
                 "workplace_transient",
                 snapshot_date,
@@ -1364,6 +1465,16 @@ def generate_networks(
 
         dynamic_builders["bus"] = build_bus
 
+    care_or_medical_resident_ids = {
+        row["agent_id"]
+        for row in m2_input.residents
+        if isinstance(row.get("care_setting_id"), str)
+        and row["care_setting_id"] in care_setting_ids
+    }
+    general_community_agent_ids = [
+        agent_id for agent_id in agent_ids if agent_id not in care_or_medical_resident_ids
+    ]
+
     def community_builder(
         route_id: str, contacts: int, weight: float
     ) -> Callable[[date], list[dict[str, Any]]]:
@@ -1440,11 +1551,25 @@ def generate_networks(
 
         regular_groups: dict[str, list[str]] = defaultdict(list)
         regular_probability = 65 if route_id == "community_indoor" else 45
-        for agent_id in agent_ids:
-            if (
-                _stable_int(config.seed, "community-regular", route_id, agent_id) % 100
-                < regular_probability
-            ):
+        if config.activity_cv == 0:
+            regular_participants = {
+                agent_id
+                for agent_id in general_community_agent_ids
+                if (
+                    _stable_int(config.seed, "community-regular", route_id, agent_id) % 100
+                    < regular_probability
+                )
+            }
+        else:
+            regular_participants = _activity_weighted_participants(
+                general_community_agent_ids,
+                len(general_community_agent_ids) * regular_probability / 100.0,
+                config=config,
+                route_id=route_id,
+                token="regular",
+            )
+        for agent_id in general_community_agent_ids:
+            if agent_id in regular_participants:
                 regular_groups[m3_by_agent[agent_id]["home_parish"]].append(agent_id)
         regular_edges = mixed_edges(
             regular_groups,
@@ -1455,7 +1580,8 @@ def generate_networks(
 
         def build(snapshot_date: date) -> list[dict[str, Any]]:
             groups: dict[str, list[str]] = defaultdict(list)
-            for agent_id in agent_ids:
+            probability_by_agent: dict[str, int] = {}
+            for agent_id in general_community_agent_ids:
                 info = m3_by_agent[agent_id]
                 if route_id == "community_indoor":
                     weekday_probability = 58 if info["age"] >= 18 else 35
@@ -1463,15 +1589,35 @@ def generate_networks(
                 else:
                     weekday_probability = 28 if info["age"] >= 18 else 20
                     weekend_probability = 55 if info["age"] >= 18 else 45
-                if _participation(
-                    agent_id,
-                    info["age"],
-                    snapshot_date,
-                    config.seed,
-                    route_id,
-                    weekend_probability,
-                    weekday_probability,
-                ):
+                probability_by_agent[agent_id] = (
+                    weekend_probability if snapshot_date.weekday() >= 5 else weekday_probability
+                )
+            if config.activity_cv == 0:
+                participants = {
+                    agent_id
+                    for agent_id, probability in probability_by_agent.items()
+                    if (
+                        _stable_int(
+                            config.seed,
+                            route_id,
+                            snapshot_date.isoformat(),
+                            agent_id,
+                        )
+                        % 100
+                    )
+                    < probability
+                }
+            else:
+                participants = _activity_weighted_participants(
+                    general_community_agent_ids,
+                    sum(probability_by_agent.values()) / 100.0,
+                    config=config,
+                    route_id=route_id,
+                    token=snapshot_date.isoformat(),
+                )
+            for agent_id in general_community_agent_ids:
+                if agent_id in participants:
+                    info = m3_by_agent[agent_id]
                     groups[info["home_parish"]].append(agent_id)
             daily_edges = mixed_edges(groups, snapshot_date.isoformat(), daily_contacts, 1)
             return _deduplicate_edges(
@@ -1486,7 +1632,7 @@ def generate_networks(
     if "community_indoor" in route_specs:
         route_memberships["community_indoor"] = [
             {"membership": "community_participant_pool", "group_id": "all", "agent_id": agent_id}
-            for agent_id in agent_ids
+            for agent_id in general_community_agent_ids
         ]
         dynamic_builders["community_indoor"] = community_builder(
             "community_indoor", config.community_indoor_contacts, config.indoor_weight
@@ -1494,7 +1640,7 @@ def generate_networks(
     if "community_outdoor" in route_specs:
         route_memberships["community_outdoor"] = [
             {"membership": "community_participant_pool", "group_id": "all", "agent_id": agent_id}
-            for agent_id in agent_ids
+            for agent_id in general_community_agent_ids
         ]
         dynamic_builders["community_outdoor"] = community_builder(
             "community_outdoor", config.community_outdoor_contacts, config.outdoor_weight
@@ -1571,6 +1717,54 @@ def generate_networks(
         for membership in route_memberships.get(route_id, [])
         for agent_id in (membership["agent_id"],)
     }
+    setting_type_by_id = {
+        row["setting_id"]: row["setting_type"] for row in m2_input.communal_settings
+    }
+    residence_type_by_agent = {
+        row["agent_id"]: (
+            "private_household"
+            if row.get("household_id") is not None
+            else setting_type_by_id.get(row.get("care_setting_id"), "unresolved_communal")
+        )
+        for row in m2_input.residents
+    }
+    community_participation_by_residence_type = {
+        residence_type: {
+            "resident_count": sum(
+                kind == residence_type for kind in residence_type_by_agent.values()
+            ),
+            "eligible_pool_count": sum(
+                kind == residence_type and agent_id in community_members
+                for agent_id, kind in residence_type_by_agent.items()
+            ),
+            "baseline_endpoint_count_by_route": {
+                route_id: sum(
+                    kind == residence_type and agent_id in route_participation.get(route_id, set())
+                    for agent_id, kind in residence_type_by_agent.items()
+                )
+                for route_id in ("community_indoor", "community_outdoor")
+                if route_id in route_specs
+            },
+        }
+        for residence_type in sorted(set(residence_type_by_agent.values()))
+    }
+    activity_values = [
+        _persistent_contact_activity(
+            config.seed,
+            agent_id,
+            float(config.activity_cv),
+            config.contact_activity_distribution_version,
+        )
+        for agent_id in agent_ids
+    ]
+    realised_activity_mean = sum(activity_values) / len(activity_values)
+    realised_activity_cv = (
+        math.sqrt(
+            sum((value - realised_activity_mean) ** 2 for value in activity_values)
+            / len(activity_values)
+        )
+        / realised_activity_mean
+    )
     worker_agents = set(worker_jobs)
     household_school_connectivity = sum(
         bool(set(group) & school_agents) for group in households.values()
@@ -1646,8 +1840,53 @@ def generate_networks(
             "households_with_school_connectivity": household_school_connectivity,
             "households_with_work_connectivity": household_work_connectivity,
             "care_staff_community_bridges": len(care_staff_ids & community_members),
+            "community_participation_by_residence_type": (
+                community_participation_by_residence_type
+            ),
             "route_overlap_matrix": route_overlap_matrix,
             "shared_vehicle": shared_vehicle_diagnostics,
+        },
+        "contact_activity": {
+            "authority": "M4",
+            "distribution": "constant" if config.activity_cv == 0 else "gamma",
+            "distribution_version": config.contact_activity_distribution_version,
+            "activity_cv": float(config.activity_cv),
+            "configured_mean": 1.0,
+            "realised_mean": realised_activity_mean,
+            "realised_cv": realised_activity_cv,
+            "identity_key": (
+                '(network_seed, "persistent-contact-activity", agent_id, distribution_version)'
+            ),
+            "approved_routes": list(CONTACT_ACTIVITY_ROUTES),
+            "application": "participation_once",
+            "participation_probability": "p_i=min(1, lambda*A_i)",
+            "zero_cv_exact_bypass": config.activity_cv == 0,
+            "shipped_nonzero_default": False,
+            "provenance": {
+                "activity_cv": {
+                    "value": float(config.activity_cv),
+                    "meaning": "dispersion of persistent participation propensity",
+                    "units": "coefficient of variation",
+                    "status": "scenario_assumption",
+                    "role": "structural_assumption",
+                    "source_ids": [],
+                    "derivation": "caller configuration; no non-zero V1.1 default",
+                    "sensitivity_required": config.activity_cv != 0,
+                },
+                "contact_activity_distribution_version": {
+                    "value": config.contact_activity_distribution_version,
+                    "meaning": "deterministic identity version for the mean-one gamma trait",
+                    "units": "version identifier",
+                    "status": "scenario_assumption",
+                    "role": "structural_assumption",
+                    "source_ids": [],
+                    "derivation": (
+                        "Gamma(shape=1/activity_cv^2, scale=activity_cv^2); constant one "
+                        "when activity_cv=0"
+                    ),
+                    "sensitivity_required": False,
+                },
+            },
         },
         "calendars": {
             "school_calendar_year": config.school_calendar_year,

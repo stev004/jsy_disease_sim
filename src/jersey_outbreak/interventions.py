@@ -27,7 +27,7 @@ from .intervention_schemas import (
 )
 from .starsim_adapter import _edge_arrays, _load_starsim
 
-INTERVENTION_FRAMEWORK_VERSION = "7.0.0"
+INTERVENTION_FRAMEWORK_VERSION = "7.1.0"
 WORKPLACE_ROUTES = {"workplace_team", "workplace_transient"}
 TRANSPORT_ROUTES = {"shared_vehicle", "bus"}
 SCHOOL_ROUTES = {"school_class", "school_cross_class"}
@@ -53,6 +53,18 @@ def _stable_int(seed: int, *parts: object) -> int:
 
 def _stable_uniform(seed: int, *parts: object) -> float:
     return _stable_int(seed, *parts) / 2**64
+
+
+def _npi_adherence_uniform(run_seed: int, config: InterventionConfig, agent_id: str) -> float:
+    """Return the stable trait for one intervention version and person."""
+
+    return _stable_uniform(
+        run_seed,
+        "intervention-adherence",
+        config.intervention_id,
+        config.version,
+        agent_id,
+    )
 
 
 def _age_band(age: int) -> str:
@@ -290,22 +302,19 @@ class InterventionManager(ss.Intervention):
             return False
         return True
 
-    def _target_adheres(self, config: InterventionConfig, agent_id: str, route_id: str) -> bool:
-        """Return the stable per-agent adherence draw for route effects."""
+    def _intervention_adheres(self, config: InterventionConfig, agent_id: str) -> bool:
+        """Return adherence keyed only by intervention version and person."""
 
-        return (
-            self._target_matches(config, agent_id)
-            and _stable_uniform(
-                self.run_seed, "route-adherence", config.intervention_id, route_id, agent_id
-            )
-            < config.adherence
+        return _npi_adherence_uniform(self.run_seed, config, agent_id) < config.adherence
+
+    def _target_adheres(self, config: InterventionConfig, agent_id: str) -> bool:
+        return self._target_matches(config, agent_id) and self._intervention_adheres(
+            config, agent_id
         )
 
-    def _community_endpoint_adheres(
-        self, config: InterventionConfig, agent_id: str, route_id: str
-    ) -> bool:
+    def _community_endpoint_adheres(self, config: InterventionConfig, agent_id: str) -> bool:
         if agent_id in self._m2_by_agent:
-            return self._target_adheres(config, agent_id, route_id)
+            return self._target_adheres(config, agent_id)
         if config.community_scope != "everyone_present":
             return False
         target = config.target
@@ -330,16 +339,7 @@ class InterventionManager(ss.Intervention):
             )
         ):
             return False
-        return (
-            _stable_uniform(
-                self.run_seed,
-                "route-adherence",
-                config.intervention_id,
-                route_id,
-                agent_id,
-            )
-            < config.adherence
-        )
+        return self._intervention_adheres(config, agent_id)
 
     def _targeted_jobs(
         self, config: InterventionConfig, agent_id: str
@@ -447,16 +447,7 @@ class InterventionManager(ss.Intervention):
                 continue
             if not self._target_matches(config, event.agent_id):
                 continue
-            accepted = (
-                _stable_uniform(
-                    self.run_seed,
-                    "adherence",
-                    config.intervention_id,
-                    event.agent_id,
-                    event.detection_date,
-                )
-                < config.adherence
-            )
+            accepted = self._intervention_adheres(config, event.agent_id)
             if not accepted:
                 self._append_event(
                     config,
@@ -610,12 +601,7 @@ class InterventionManager(ss.Intervention):
                     targeted_jobs = self._targeted_jobs(config, agent_id)
                     if not targeted_jobs:
                         continue
-                    if (
-                        _stable_uniform(
-                            self.run_seed, "wfh-adherence", config.intervention_id, agent_id
-                        )
-                        >= config.adherence
-                    ):
+                    if not self._intervention_adheres(config, agent_id):
                         continue
                     if config.wfh_days_per_week is not None:
                         weekdays = sorted(
@@ -845,16 +831,14 @@ class InterventionManager(ss.Intervention):
             return factor
         explicit = config.route_effects.get(route_id)
         if config.type in {"masking", "gathering_reduction"}:
-            if not any(self._target_adheres(config, agent_id, route_id) for agent_id in endpoints):
+            if not any(self._target_adheres(config, agent_id) for agent_id in endpoints):
                 return 1.0
             return 1.0 if explicit is None else explicit
         if config.type == "school_closure":
             if (
                 route_id not in SCHOOL_ROUTES
                 or not self._school_edge_matches(config, p1, p2)
-                or not any(
-                    self._target_adheres(config, agent_id, route_id) for agent_id in endpoints
-                )
+                or not any(self._target_adheres(config, agent_id) for agent_id in endpoints)
             ):
                 return 1.0
             if explicit is not None:
@@ -870,7 +854,7 @@ class InterventionManager(ss.Intervention):
                     agent_id
                     for agent_id in endpoints
                     if self._workplace_edge_targeted(config, p1, p2, agent_id)
-                    and self._target_adheres(config, agent_id, route_id)
+                    and self._target_adheres(config, agent_id)
                 ]
                 wfh = any(
                     (agent_id, workplace_id) in self._wfh_jobs_current[config.intervention_id]
@@ -885,7 +869,7 @@ class InterventionManager(ss.Intervention):
                     agent_id
                     for agent_id in endpoints
                     if self._commute_agent_targeted(config, agent_id)
-                    and self._target_adheres(config, agent_id, route_id)
+                    and self._target_adheres(config, agent_id)
                 ]
                 wfh = any(
                     agent_id in self._wfh_current[config.intervention_id]
@@ -907,8 +891,7 @@ class InterventionManager(ss.Intervention):
             if route_id not in COMMUNITY_ROUTES:
                 return 1.0
             if not any(
-                self._community_endpoint_adheres(config, agent_id, route_id)
-                for agent_id in endpoints
+                self._community_endpoint_adheres(config, agent_id) for agent_id in endpoints
             ):
                 return 1.0
             if explicit is not None:
@@ -920,7 +903,7 @@ class InterventionManager(ss.Intervention):
             )
         if config.type == "care_home_protection":
             care_target = self._care_edge_matches(config, p1, p2) and any(
-                self._target_adheres(config, agent_id, route_id)
+                self._target_adheres(config, agent_id)
                 for agent_id in endpoints
                 if agent_id in self._care_setting_by_agent
             )
@@ -932,7 +915,7 @@ class InterventionManager(ss.Intervention):
                     and self._care_target_matches_setting(
                         config, self._care_setting_by_agent[agent_id]
                     )
-                    and self._target_adheres(config, agent_id, route_id)
+                    and self._target_adheres(config, agent_id)
                     for agent_id in endpoints
                 )
                 staff_target = any(
@@ -940,7 +923,7 @@ class InterventionManager(ss.Intervention):
                     and self._care_target_matches_setting(
                         config, self._care_setting_by_agent[agent_id]
                     )
-                    and self._target_adheres(config, agent_id, route_id)
+                    and self._target_adheres(config, agent_id)
                     for agent_id in endpoints
                 )
                 if resident_target:
@@ -1355,6 +1338,10 @@ class InterventionManager(ss.Intervention):
             },
             "vaccination_acceptance_contract": (
                 "one stable seed/campaign/agent acceptance draw; rollout controls timing"
+            ),
+            "npi_adherence_contract": (
+                "one stable Bernoulli trait keyed by run seed, intervention ID, "
+                "intervention version and agent ID; route, date and episode are excluded"
             ),
             "wfh_commute_contract": (
                 "workplace edges are job/workplace aware; commute suppression uses only the "
