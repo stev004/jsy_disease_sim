@@ -36,3 +36,7 @@ Immutable commit, never branch tip · verify ancestry · detached worktree · re
 ## Escalation
 
 Reaches Steven, batched in the run digest: irreversible actions, product/taste calls, a standing order contradicting observed reality, a dead end that survived a replan. Everything else: act and log. Every ask parks in `GATES.md` with a default.
+
+## Lessons (symptom -> root cause -> RULE)
+
+- 2026-08-31 (pilot, via terra trail-audit): trail rows cited doc names as evidence -> conclusions are not primary evidence -> RULE: the decisions.tsv evidence column carries resolvable artifacts (full SHA, commit hash of the write-back, log-file path), never just a document title; abbreviate nothing.
