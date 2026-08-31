@@ -153,7 +153,9 @@ def load_structure_controls(root: Path) -> StructureControls:
         "Worker, school and workplace counts are scaled from the 2024 full-population "
         "target for reduced modes.",
         "School IDs, workplace IDs, classes and teams are synthetic because no frozen "
-        "institution-level rolls or employer identities are available.",
+        "institution-level rolls or employer identities are available. School geography is "
+        "explicitly non_geographic_synthetic because no frozen school-site/parish inventory "
+        "is registered; it is never inferred from assigned pupils.",
         "Primary school ages are structurally assigned to ages 4-11; secondary ages "
         "11-17; special-school placement permits ages 4-18 without diagnoses.",
         "Total workplace size-band counts are scaled separately from resident-worker "

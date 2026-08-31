@@ -34,6 +34,7 @@ SEMI_URBAN_PARISHES = {"St Saviour", "St Clement"}
 DESTINATION_CATEGORIES = ("St Helier", "Semi-urban parishes", "Rural parishes")
 SCHOOL_NOMINAL_CAPACITY = {"primary": 240, "secondary": 500, "special": 90}
 SCHOOL_CLASS_SIZE = {"primary": 25, "secondary": 25, "special": 10}
+NON_GEOGRAPHIC_SCHOOL_PARISH = "non_geographic_synthetic"
 BAND_LIMITS = {
     "1": (1, 1),
     "2-5": (2, 5),
@@ -166,14 +167,12 @@ def _build_schools(
                 "nominal_capacity": SCHOOL_NOMINAL_CAPACITY[kind],
                 "pupil_count": pupil_count,
             }
-            pupil_parish_counts: dict[str, int] = {}
-            for agent_id in school_agents:
-                parish = residents_by_id[agent_id]["home_parish"]
-                pupil_parish_counts[parish] = pupil_parish_counts.get(parish, 0) + 1
-            school["school_parish"] = min(
-                pupil_parish_counts,
-                key=lambda parish: (-pupil_parish_counts[parish], parish),
-            )
+            # No frozen school-site/parish inventory is registered. Preserve the
+            # synthetic school identities without manufacturing a location from
+            # the pupils assigned to them. The school-qualified marker prevents
+            # downstream transport grouping from treating every unknown site as
+            # one shared destination.
+            school["school_parish"] = f"{NON_GEOGRAPHIC_SCHOOL_PARISH}:{school_id}"
             schools.append(school)
             by_year: dict[str, list[str]] = {}
             for agent_id in school_agents:
@@ -497,10 +496,38 @@ def _build_diagnostics(
     check("private_workplace_count", len(private_workplaces), sum(target_workplaces.values()))
 
     school_type_rows = []
+    school_age_rows = []
     for school_type, target in target_school_types.items():
         actual = sum(row["school_type"] == school_type for row in school_assignments)
         check(f"school_type_{school_type}", actual, target)
         school_type_rows.append({"school_type": school_type, "target": target, "generated": actual})
+        ages = {
+            age: sum(
+                row["school_type"] == school_type and row["age"] == age
+                for row in school_assignments
+            )
+            for age in range(4, 19)
+        }
+        eligible_ages = [
+            age for age in range(4, 19) if _school_age_allowed(age, _school_kind(school_type))
+        ]
+        realized_ages = [age for age, count in ages.items() if count]
+        school_age_rows.append(
+            {
+                "school_type": school_type,
+                "age_counts": {str(age): count for age, count in ages.items() if count},
+                "minimum_age": min(realized_ages, default=None),
+                "maximum_age": max(realized_ages, default=None),
+                "eligible_ages": eligible_ages,
+                "realized_ages": realized_ages,
+                "missing_eligible_ages": sorted(set(eligible_ages) - set(realized_ages)),
+                "coverage_status": (
+                    "complete"
+                    if set(realized_ages) == set(eligible_ages)
+                    else "age_collapse_detected"
+                ),
+            }
+        )
     invalid_school_ages = sum(
         not _school_age_allowed(row["age"], _school_kind(row["school_type"]))
         for row in school_assignments
@@ -662,6 +689,10 @@ def _build_diagnostics(
         for row in school_assignments
     )
     check("school_class_membership", invalid_class_membership, 0)
+    ordinary_school_parishes = sum(
+        not row["school_parish"].startswith(f"{NON_GEOGRAPHIC_SCHOOL_PARISH}:") for row in schools
+    )
+    check("school_geography_is_explicitly_non_geographic", ordinary_school_parishes, 0)
 
     status = "passed" if all(check["status"] == "passed" for check in checks) else "failed"
     return {
@@ -675,6 +706,26 @@ def _build_diagnostics(
             "school_count": len(schools),
             "class_count": len(classes),
             "type_rows": school_type_rows,
+            "age_distribution_by_type": school_age_rows,
+            "types_with_age_collapse": [
+                row["school_type"]
+                for row in school_age_rows
+                if row["coverage_status"] == "age_collapse_detected"
+            ],
+            "age_structure_status": "blocked_pending_frozen_cypes_year_group_margin",
+            "age_structure_note": (
+                "No frozen, hashed CYPES year-group margin covering the protected pupil "
+                "universe is registered; the V1 allocation is retained rather than replaced "
+                "with invented values."
+            ),
+            "geography": {
+                "status": "non_geographic_synthetic",
+                "school_parish_value_pattern": (
+                    f"{NON_GEOGRAPHIC_SCHOOL_PARISH}:<synthetic_school_id>"
+                ),
+                "source_status": "blocked_pending_frozen_school_site_parish_inventory",
+                "household_school_parish_association_status": "not_applicable",
+            },
             "invalid_age_placements": invalid_school_ages,
             "eligible_pupils_unassigned": unassigned_eligible,
             "unassigned_explanation": (
@@ -781,6 +832,7 @@ def _build_diagnostics(
             "transformations": [
                 "school_type_counts_scaled_v1",
                 "synthetic_school_and_class_allocation_v1",
+                "explicit_non_geographic_school_location_v1",
                 "resident_worker_selection_scaled_v1",
                 "resident_worker_selection_age_propensity_v2",
                 "resident_worker_sector_sex_allocation_v2",
