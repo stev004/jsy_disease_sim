@@ -1,9 +1,9 @@
 # JOS V1.1 scientific hardening — implementation status
 
-**Candidate branch:** `codex/v1.1-integration`  
+**Candidate branch:** `codex/v1.1-integration`
 **Frozen V1 base:** `9e9ce3abc4201cd8303c723015462d21ca237800`
-(`jos-v1.0.0`)  
-**Scientific authority:** `V1_1_SCIENTIFIC_DESIGN_SYNTHESIS.md`  
+(`jos-v1.0.0`)
+**Scientific authority:** `V1_1_SCIENTIFIC_DESIGN_SYNTHESIS.md`
 **Status date:** 31 August 2026
 
 ## Boundary
