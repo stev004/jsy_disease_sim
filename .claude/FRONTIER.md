@@ -2,25 +2,18 @@
 
 *Snapshot, not history. Rewritten each time the frontier moves. Lives on the `docs/frontier` branch because `main` is frozen at the V1 release commit until V1.1 ships (Sol handoff §2.1). If you are cold-starting: read this file, then `docs/handoff/2026-08-31-sol-handoff.md` for full depth.*
 
-**Updated:** 2026-08-31 (post-audit) · **Updated by:** Fable (foreman pilot run)
+**Updated:** 2026-08-31 (post-corrective) · **Updated by:** Fable (foreman corrective run)
 
 ## Where the project is
 
 **Tier: V1.1 scientific hardening — final independent audit pending.**
 
 - **V1.0 released and frozen:** `main` = tag `jos-v1.0.0` = `9e9ce3abc4201cd8303c723015462d21ca237800` (verified 2026-08-31). Immutable until the V1.1 release gate completes.
-- **V1.1 release candidate:** `461bf0387f4bb91db216b783c19f947f8583b4b8`, tip of `codex/v1.1-integration`. All lanes (correctness foundation, R1–R6 research, synthesis, M11-A/B/C/D) merged and implementation-verified (214 backend tests, frontend/tsc/build, full-mode regression — implementation-thread claims, not audit evidence).
-- **The audit worktree already exists:** `/private/tmp/jsy-v11-final-audit`, detached at the candidate (verified 2026-08-31). Note all `/private/tmp` worktrees vanish on reboot — recreate with `git worktree add --detach /private/tmp/jsy-v11-final-audit 461bf038...` if gone.
+- **V1.1 release candidate: `e3609ff288b33444456de960db9e7c6560d0b898`** — tip of `codex/v1.1-o2-denominator` (pushed to origin), parent = the originally audited `461bf038`. **P0 independent audit: COMPLETE and PASSED** — full audit 2026-08-31 returned BLOCKED on one defect (O2 false denominator metadata); minimal corrective (1-line fix + staggered-arrival regression test) implemented, reviewed, and passed a bounded delta re-audit the same day. Reports: `docs/audits/2026-08-31-v1.1-rc-audit-BLOCKED.md` + `docs/audits/2026-08-31-o2-delta-reaudit-PASS.md`. Backend suite is now 215 tests. `codex/v1.1-integration` (`461bf03`) is superseded as candidate; do not merge the fix into it — the corrective branch IS the candidate line.
 
 ## The one next action
 
-**P0 audit RAN 2026-08-31 — verdict `JOS V1.1 RELEASE-CANDIDATE BLOCKED`.** Full report: `docs/audits/2026-08-31-v1.1-rc-audit-BLOCKED.md`. One blocking defect (all 20 other finding classifications independently confirmed; every automated gate green):
-
-- **O2 FAILED** (claimed CLOSED): `visitor_attack_rate_denominator` diagnostic reports the whole-horizon visitor total (`len(plan.visitor_records)`, `travel.py:2712` on the candidate) while the actual alias value divides by date-specific arrived visitors (`travel.py:2240`/`2272`). Value and published diagnostic disagree whenever arrivals are staggered; reproduced read-only; **no test references the denominator field**, so the green suite cannot catch a regression. Violates synthesis §M11-D PASS condition (explicit truthful denominator metadata).
-
-**Next: the smallest corrective branch** (handoff §8 P0 BLOCKED procedure): fix the denominator diagnostic (or its metadata) on a branch off `codex/v1.1-integration`, add the missing test that pins `visitor_attack_rate_denominator` to the by-date arrival semantics (failing-test-first), producing a NEW candidate SHA — then a bounded re-audit of the delta + O2 area only, not a full re-audit. `461bf038` is superseded as candidate once the corrective lands; audit verdicts pin to SHAs.
-
-Then in order (handoff §8): P1 full-population 180-day V1.1 baseline (Steven approves the ~3h run) → P2 Claude Science delta review → P3 release decision/merge/tag (likely `jos-v1.1.0`, not invented before approval) → P4 desktop transfer + N=30 ensemble → P5 V1.x calibration → P6 V2.
+**P1: the full-population 180-day V1.1 baseline** on candidate `e3609ff2` — **gated on Steven (G2)**: approve the ~3h run and pick the machine (default: Mac, overnight). Then in order (handoff §8): P1 full-population 180-day V1.1 baseline (Steven approves the ~3h run) → P2 Claude Science delta review → P3 release decision/merge/tag (likely `jos-v1.1.0`, not invented before approval) → P4 desktop transfer + N=30 ensemble → P5 V1.x calibration → P6 V2.
 
 ## Branch index (verified against git 2026-08-31)
 
