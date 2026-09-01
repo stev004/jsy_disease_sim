@@ -150,24 +150,6 @@ class ObservationConfig(StrictModel):
                 raise ValueError("observation parameter_id must match its mapping key")
         return self
 
-    @model_validator(mode="after")
-    def validate_horizon_tail(self) -> ObservationConfig:
-        if self.analysis_horizon_tail_days is not None:
-            if self.analysis_horizon_tail_days < 0:
-                raise ValueError("analysis_horizon_tail_days must be non-negative")
-            maximum_delay = sum(
-                max(distribution.days)
-                for distribution in (
-                    self.detection_delay,
-                    self.reporting_delay,
-                )
-            )
-            if self.analysis_horizon_tail_days < maximum_delay:
-                raise ValueError(
-                    "analysis_horizon_tail_days must cover the maximum configured delay tail"
-                )
-        return self
-
     def numeric(self, name: str) -> float:
         """Return a required numeric observation parameter."""
 
@@ -180,7 +162,7 @@ class ObservationConfig(StrictModel):
 class ObservationArtifactManifest(StrictModel):
     """Manifest for a standalone latent-to-observed transformation."""
 
-    manifest_schema_version: Literal["1.2", "1.3"] = "1.3"
+    manifest_schema_version: Literal["1.2", "1.3", "1.4"] = "1.4"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString = "6.2.0"
     latent_run_logical_content_hash: NonEmptyString

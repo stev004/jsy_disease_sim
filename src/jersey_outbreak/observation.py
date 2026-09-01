@@ -135,29 +135,29 @@ def observe_latent_run(
             config.reporting_delay,
         )
     )
-    if (
-        config.analysis_horizon_tail_days is not None
-        and config.analysis_horizon_tail_days < derived_tail
-    ):
-        raise ValueError(
-            "analysis horizon tail must cover realized natural-history and observation delays"
-        )
     horizon_tail = (
         config.analysis_horizon_tail_days
         if config.analysis_horizon_tail_days is not None
         else derived_tail
     )
     dates = _date_range(latent_start, latent_end + timedelta(days=horizon_tail))
+    observation_end = dates[-1]
+
+    def in_horizon(value: str | None) -> bool:
+        return value is not None and date.fromisoformat(value) <= observation_end
+
     latent_by_date = Counter(event["infection_date"] for event in observation_events)
     detected_by_date = Counter(
-        event["detection_date"] for event in observation_events if event["detection_date"]
+        event["detection_date"]
+        for event in observation_events
+        if in_horizon(event["detection_date"])
     )
     reported_by_date = Counter(
-        event["report_date"] for event in observation_events if event["report_date"] is not None
+        event["report_date"] for event in observation_events if in_horizon(event["report_date"])
     )
     delays_by_report_date: dict[str, list[int]] = defaultdict(list)
     for event in observation_events:
-        if event["report_date"] is not None:
+        if in_horizon(event["report_date"]):
             delays_by_report_date[event["report_date"]].append(event["reporting_delay_days"])
     parish_by_date: dict[tuple[str, str], Counter[str]] = defaultdict(Counter)
     age_by_date: dict[tuple[str, str], Counter[str]] = defaultdict(Counter)
@@ -167,23 +167,51 @@ def observe_latent_run(
         parish_by_date[(event["infection_date"], parish)]["latent"] += 1
         age_by_date[(event["infection_date"], age_band)]["latent"] += 1
         if event["detection_date"] is not None:
-            parish_by_date[(event["detection_date"], parish)]["detected"] += 1
-            age_by_date[(event["detection_date"], age_band)]["detected"] += 1
-        if event["report_date"] is not None:
+            if in_horizon(event["detection_date"]):
+                parish_by_date[(event["detection_date"], parish)]["detected"] += 1
+                age_by_date[(event["detection_date"], age_band)]["detected"] += 1
+        if in_horizon(event["report_date"]):
             parish_by_date[(event["report_date"], parish)]["reported"] += 1
             age_by_date[(event["report_date"], age_band)]["reported"] += 1
+
+    maximum_detection_delay = _maximum_delay(config.detection_delay)
+    cohort_counts: dict[str, Counter[str]] = defaultdict(Counter)
+    cohort_detection_window_end: dict[str, date] = {}
+    for event in observation_events:
+        infection_date = event["infection_date"]
+        cohort_counts[infection_date]["infections"] += 1
+        if in_horizon(event["detection_date"]):
+            cohort_counts[infection_date]["detected"] += 1
+        detection_anchor = date.fromisoformat(
+            str(event["symptom_onset_date"] or event["infection_date"])
+        )
+        detection_window_end = detection_anchor + timedelta(days=maximum_detection_delay)
+        cohort_detection_window_end[infection_date] = max(
+            cohort_detection_window_end.get(infection_date, detection_window_end),
+            detection_window_end,
+        )
     daily_observed_cases: list[dict[str, Any]] = []
     for when in dates:
         date_key = when.isoformat()
         latent = latent_by_date[date_key]
         delays = delays_by_report_date[date_key]
+        cohort_window_end = cohort_detection_window_end.get(date_key)
+        cohort_censored = bool(cohort_window_end and cohort_window_end > observation_end)
+        cohort_detected = cohort_counts[date_key]["detected"]
         daily_observed_cases.append(
             {
                 "date": date_key,
                 "latent_infections": latent,
                 "detected_infections": detected_by_date[date_key],
                 "reported_cases": reported_by_date[date_key],
-                "ascertainment_fraction": detected_by_date[date_key] / latent if latent else None,
+                "cohort_detected_infections": cohort_detected,
+                "cohort_ascertainment_fraction": (
+                    cohort_detected / latent if latent and not cohort_censored else None
+                ),
+                "cohort_ascertainment_censored": cohort_censored,
+                "cohort_detection_window_end_date": (
+                    cohort_window_end.isoformat() if cohort_window_end else None
+                ),
                 "mean_reporting_delay_days": sum(delays) / len(delays) if delays else None,
             }
         )
@@ -219,7 +247,7 @@ def observe_latent_run(
                 }
             )
 
-    detected_count = sum(event["detected"] for event in observation_events)
+    detected_count = sum(detected_by_date.values())
     delays = [
         int(event["reporting_delay_days"])
         for event in observation_events
@@ -261,7 +289,7 @@ def observe_latent_run(
         "latent_event_count": len(observation_events),
         "detected_event_count": detected_count,
         "reported_case_count": sum(
-            event["report_date"] is not None for event in observation_events
+            in_horizon(event["report_date"]) for event in observation_events
         ),
         "ascertainment_fraction": detected_count / len(observation_events)
         if observation_events
@@ -291,7 +319,7 @@ def observe_latent_run(
         "analysis_horizon": {
             "latent_start": latent_start.isoformat(),
             "latent_end": latent_end.isoformat(),
-            "observation_end": dates[-1].isoformat(),
+            "observation_end": observation_end.isoformat(),
             "tail_days": horizon_tail,
             "realised_natural_history_tail_days": natural_history_tail,
             "tail_source": (
@@ -300,6 +328,17 @@ def observe_latent_run(
                 else "maximum_configured_delay_sum"
             ),
         },
+        "cohort_ascertainment_semantics": (
+            "For each infection date, cohort_detected_infections counts infections from "
+            "that infection-date cohort detected on or before observation_end, divided by "
+            "latent_infections. The fraction is null and cohort_ascertainment_censored is "
+            "true when the cohort's configured detection window ends after observation_end."
+        ),
+        "right_censored_cohort_dates": [
+            infection_date
+            for infection_date, window_end in sorted(cohort_detection_window_end.items())
+            if window_end > observation_end
+        ],
         "detection_event_interface": {
             "event_count": len(detection_events),
             "consumer": "runtime consumer hook; none attached for offline aggregation",

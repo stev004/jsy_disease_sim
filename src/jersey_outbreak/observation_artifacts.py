@@ -108,7 +108,10 @@ def write_observation_artifact(
                 ("latent_infections", pa.int64()),
                 ("detected_infections", pa.int64()),
                 ("reported_cases", pa.int64()),
-                ("ascertainment_fraction", pa.float64()),
+                ("cohort_detected_infections", pa.int64()),
+                ("cohort_ascertainment_fraction", pa.float64()),
+                ("cohort_ascertainment_censored", pa.bool_()),
+                ("cohort_detection_window_end_date", pa.string()),
                 ("mean_reporting_delay_days", pa.float64()),
             ]
         ),

@@ -77,7 +77,7 @@ def _delay(days: int) -> ReportingDelayDistribution:
     )
 
 
-def test_observation_horizon_conserves_latent_events_and_exposes_causal_timeline(
+def test_delayed_symptomatic_detection_uses_infection_cohort_for_ascertainment(
     m6_latent_run, m6_observation_config
 ) -> None:
     latent = _controlled_latent(m6_latent_run)
@@ -92,16 +92,67 @@ def test_observation_horizon_conserves_latent_events_and_exposes_causal_timeline
             "parameters": parameters,
             "detection_delay": _delay(1),
             "reporting_delay": _delay(2),
-            "day_of_week_effect": (1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0),
+            "day_of_week_effect": (1.0,) * 7,
         }
     )
     result = observe_latent_run(latent, config)
     assert result.diagnostics["latent_incidence_conservation"] is True
     assert result.diagnostics["chronology_violations"] == 0
-    assert len(result.detection_events) == 1
-    assert result.detection_events[0].detection_date == "2025-01-09"
+    assert len(result.detection_events) == 2
+    assert [event.detection_date for event in result.detection_events] == [
+        "2025-01-08",
+        "2025-01-09",
+    ]
+    rows = {row["date"]: row for row in result.daily_observed_cases}
+    assert rows["2025-01-06"]["latent_infections"] == 1
+    assert rows["2025-01-06"]["detected_infections"] == 0
+    assert rows["2025-01-06"]["reported_cases"] == 0
+    assert rows["2025-01-06"]["cohort_detected_infections"] == 1
+    assert rows["2025-01-06"]["cohort_ascertainment_fraction"] == 1.0
+    assert rows["2025-01-06"]["cohort_ascertainment_censored"] is False
+    assert rows["2025-01-08"]["detected_infections"] == 1
+    assert rows["2025-01-10"]["reported_cases"] == 1
+    assert all(
+        row["cohort_ascertainment_fraction"] is None
+        or 0.0 <= row["cohort_ascertainment_fraction"] <= 1.0
+        for row in result.daily_observed_cases
+    )
+    assert result.diagnostics["ascertainment_fraction"] == 1.0
+    assert result.diagnostics["ascertainment_fraction"] == pytest.approx(
+        result.diagnostics["detected_event_count"] / result.diagnostics["latent_event_count"]
+    )
     assert result.daily_observed_cases[-1]["date"] == "2025-01-11"
     assert result.diagnostics["detection_event_interface"]["mutates_latent_or_routes"] is False
+
+
+def test_short_observation_horizon_marks_tail_cohort_as_right_censored(
+    m6_latent_run, m6_observation_config
+) -> None:
+    latent = _controlled_latent(m6_latent_run, event_count=1)
+    parameters = {
+        key: parameter.model_copy(
+            update={"value": (1.0 if key == "symptomatic_detection_probability" else 0.0)}
+        )
+        for key, parameter in m6_observation_config.parameters.items()
+    }
+    config = m6_observation_config.model_copy(
+        update={
+            "parameters": parameters,
+            "detection_delay": _delay(1),
+            "reporting_delay": _delay(0),
+            "day_of_week_effect": (1.0,) * 7,
+            "analysis_horizon_tail_days": 0,
+        }
+    )
+    result = observe_latent_run(latent, config)
+    row = next(row for row in result.daily_observed_cases if row["date"] == "2025-01-06")
+    assert row["cohort_detection_window_end_date"] == "2025-01-08"
+    assert row["cohort_ascertainment_censored"] is True
+    assert row["cohort_ascertainment_fraction"] is None
+    assert row["cohort_detected_infections"] == 0
+    assert result.diagnostics["right_censored_cohort_dates"] == ["2025-01-06"]
+    assert sum(row["detected_infections"] for row in result.daily_observed_cases) == 0
+    assert result.diagnostics["detected_event_count"] == 0
 
 
 def test_observation_stream_is_replicate_specific(m6_latent_run, m6_observation_config) -> None:
