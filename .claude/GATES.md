@@ -4,28 +4,17 @@
 
 ## Open
 
-### G7 — Merge the V1.2 carry-ins branch into `main`
-- **Question:** merge `codex/v1.2-carry-ins` at exact SHA **`9711b8e3937b3ff18aec86523ed4769ff78cfd4c`** into `main`? (CI run 33556105665 green on both jobs; suite 235; terra trail audit flags all closed; no science defaults, schema or version constants changed — diff is diagnostics-derivation, CI, a verify subcommand, a CI script, tests.)
-- **Rule:** SHA-first; `main` has moved since the branch point (state-layer commits only), so this is a `--no-ff` merge, not a fast-forward.
-- **ACTIONABLE — Steven's hands:**
-  ```
-  cd ~/Documents/jsy_disease_sim
-  git fetch origin
-  git merge --no-ff 9711b8e3937b3ff18aec86523ed4769ff78cfd4c -m "Merge V1.2 carry-ins (codex/v1.2-carry-ins @ 9711b8e)"
-  uv run --locked pytest -q tests/test_v12_carry_ins.py tests/test_v12_bundle_selftest.py   # smoke
-  git push origin main
-  ```
-- **Default:** waits for Steven. No tag (not a release).
-
 ### G8 — M04: replicate count and machine for the P4 full-scale ensemble
 - **Question:** run ≥40 successful replicates (2.5/97.5 stochastic-replicate quantiles allowed by the project's n·min(q,1−q)≥1 rule) or N=30 (median/IQR + labelled extrema only)? And on the desktop (5800X/32 GB, ~12 parallel, est. 15–20 h wall for 40) or the Mac (~6 parallel, 25–35 h, laptop unusable)?
-- **Default:** ≥40 on the desktop, launched only after G7 merges and the desktop smoke passes. Bands labelled "stochastic replicate quantile", never confidence intervals.
+- **Default:** ≥40 on the desktop, launched only after the desktop smoke passes. Bands labelled "stochastic replicate quantile", never confidence intervals.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G7 — Merge V1.2 carry-ins into `main` — RESOLVED 2026-09-01 (Steven, in chat: "merge all"): executed by agent, `--no-ff` merge of exact SHA `9711b8e3937b3ff18aec86523ed4769ff78cfd4c` → merge commit `9a2d984f265aca2e8edfcc10de6bb45b2519f140`; smoke (6 v12 tests + demo) green; pushed. Second one-time agent-executed merge on explicit instruction (after G3); still not a standing authorization.
 
 ### G4 — Doc commits on frozen `main` — RESOLVED 2026-09-01 (Steven: "fold it into main"): `docs/frontier` merged into `main` (`--no-ff`) after the V1.1 release; state layer now lives on `main`, sessions open in the repo.
 

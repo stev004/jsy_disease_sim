@@ -3,7 +3,7 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
-## 2026-09-01 (evening) — V1.2 carry-ins run closed; DIRECTOR refreshed; branch awaiting G7 merge
+## 2026-09-01 (evening) — V1.2 carry-ins run closed and merged to main; DIRECTOR refreshed
 
 **Summary.** Foreman run `v12-carry-ins` (director Fable 5.1, executor Codex luna, auditor Codex terra). Predicate: DIRECTOR.md free of pre-release rules + the three release-cycle carry-ins landed with suite and GitHub CI green at one SHA. Met in 4 iterations / 5 of 6 Codex runs; every unit accepted first iteration. Steven's opening ask was an audit of "where we're at"; findings were that the release claims all verified but DIRECTOR.md still carried frozen-main/candidate rules and a wrong "no AGENTS.md" note.
 
@@ -11,9 +11,9 @@ Newest first. History only — current truth lives in the docs named by
 
 **Verified.** Director re-ran every unit's tests + ruff/mypy/compileall; bundle self-test run against the immutable V1.1 release artifact with the transcript to scratch (PASS, hashes agree with the R4 note); CI green at U1, U2b and final tips with job conclusions read. Terra trail audit: 6 flags (1 blocking = the CI failure at `28067d8`, fixed by U2b; 5 should-fix all closed). Director error self-caught and superseded in the trail: a PASS row logged before reading a CI conclusion that was actually failure.
 
-**Open threads / resume points.** (1) **G7** — Steven merges `9711b8e` into `main` (procedure in GATES). (2) **G8** then **P4** desktop transfer + full-scale ensemble; machine analysis in FRONTIER (desktop ~12 parallel replicates, GPU irrelevant, Mac showed memory pressure). (3) V1.2 evidence foundation per Sol Pro §9. (4) Performance: R6 prototypes deferred to V1.2.1. Worktree `/private/tmp/jsy_v12_carryins` left in place on the branch.
+**Open threads / resume points.** (1) ~~G7~~ — DONE same session on Steven's "merge all": `--no-ff` merge of `9711b8e` → `main` `9a2d984f265aca2e8edfcc10de6bb45b2519f140`, smoke green, pushed. (2) **G8** then **P4** desktop transfer + full-scale ensemble; machine analysis in FRONTIER (desktop ~12 parallel replicates, GPU irrelevant, Mac showed memory pressure). (3) V1.2 evidence foundation per Sol Pro §9. (4) Performance: R6 prototypes deferred to V1.2.1. Worktree `/private/tmp/jsy_v12_carryins` left in place on the branch.
 
-**User needs to run.** The G7 merge block in `.claude/GATES.md` (SHA-first, `--no-ff`, smoke, push).
+**User needs to run.** Nothing. Decide G8 (default ≥40 replicates on the desktop) when ready to start P4.
 
 ## 2026-09-01 — V1.1 RELEASED (`jos-v1.1.0`); foreman autonomous loop built and piloted here
 
