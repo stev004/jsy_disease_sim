@@ -11,6 +11,8 @@ from jersey_outbreak.scientific_verification import verify_scientific_artifact
 
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
+    expected_parent = (root / "outputs" / "interventions").resolve()
+    existing_artifacts = set(expected_parent.iterdir()) if expected_parent.exists() else set()
     cli_result = subprocess.run(
         ["uv", "run", "jos", "intervention", "run", "--mode", "ci", "--seed", "123"],
         cwd=root,
@@ -21,9 +23,11 @@ def main() -> None:
     print(cli_result.stdout.strip())
     summary = json.loads(cli_result.stdout)
     artifact_directory = Path(summary["artifact_directory"]).resolve()
-    expected_parent = (root / "outputs" / "interventions").resolve()
     if artifact_directory.parent != expected_parent:
         raise ValueError(f"CLI did not use its default output location: {artifact_directory}")
+    if artifact_directory in existing_artifacts:
+        print(f"refusing to delete pre-existing artifact: {artifact_directory}")
+        raise SystemExit(3)
 
     with tempfile.TemporaryDirectory(prefix="jos-ci-relocation-") as temporary_directory:
         copied_directory = Path(temporary_directory) / artifact_directory.name
