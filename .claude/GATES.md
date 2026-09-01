@@ -4,15 +4,15 @@
 
 ## Open
 
-### G2 — Approve the V1.1 full-scale 180-day baseline run (P1, after audit PASS)
-- **Question:** run the ~3h full-population comparator, and on which machine?
-- **Options:** Mac (continuity with V1 pilot) · desktop (after transfer)
-- **Default:** Mac, overnight, after audit PASS. Ensemble stays desktop-only regardless.
+### G3 — V1.1 merge + tag (P3) — **SHA-first, rewritten 2026-09-01 per Sol Pro B04**
+- **Question:** merge the final audited release candidate into `main` and tag `jos-v1.1.0`?
+- **Rule:** the merge target is an **exact SHA, never a branch name**. Immediately before merging, `git rev-parse HEAD` must equal the SHA named in FRONTIER.md as "audited release candidate". As of 2026-09-01 there is **no releasable SHA**: `e3609ff2` is BLOCKED by the Sol Pro deep audit (4 blockers, `docs/audits/2026-09-01-solpro-deep-audit-BLOCKED.md`); `461bf038` was superseded earlier. A new SHA emerges from the R0–R5 recovery sequence and must pass its bounded re-audit first.
+- **Default:** blocked until R0–R5 complete. Never merged by an agent — Steven's hands only.
 
-### G3 — V1.1 merge + tag (P3)
-- **Question:** merge `codex/v1.1-integration` → `main` and tag `jos-v1.1.0`?
-- **Options:** only after P0–P2 all pass (Sol's release procedure §17)
-- **Default:** blocked until P0–P2 complete. Never merged by an agent — Steven's hands only.
+### G6 — Launch the V1.1 release-repair run (R0–R3)
+- **Question:** start the foreman run implementing Sol Pro's four blockers (B01 portable artifact paths, B02 daily ascertainment cohort semantics, B03 API schema versions, B04 already fixed in state) + majors M01/M02 on a new `codex/v1.1-release-corrections` branch off `e3609ff2`?
+- **Options:** launch now · hold (EMA due 3 Sept noon)
+- **Default:** hold until Steven says go. Bounded correction cycle, no model changes; then R4 (regenerate P1 evidence at the new SHA) + R5 (bounded re-audit).
 
 ### G4 — Doc commits on frozen `main`
 - **Question:** Sol's freeze rule keeps even doc fixes off `main`, so the frontier lives on `docs/frontier`. Accept that until V1.1 ships, then fold frontier/handoff/stale-doc fixes into the release integration?
@@ -24,6 +24,9 @@
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G2 — V1.1 full-scale baseline — RESOLVED 2026-08-31 (Steven, in chat: "keep it going"): approved, Mac
+Run completed 2026-08-31 (run-20260831T145052Z, verification PASS, comparison filed 2026-09-01). *Bookkeeping note: this gate was left open in this file until 2026-09-01 despite the chat ruling — flagged by Sol Pro B04; lesson encoded in DIRECTOR.md.*
 
 ### G1 — Launch the independent V1.1 audit — RESOLVED 2026-08-31 (Steven, in chat): launch now
 Overrode the after-EMA default. Audit launched same day via foreman pilot run (Sol@high, read-only, detached worktree at the candidate).
