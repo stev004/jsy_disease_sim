@@ -6,8 +6,18 @@
 
 ### G3 — V1.1 merge + tag (P3) — **SHA-first, rewritten 2026-09-01 per Sol Pro B04**
 - **Question:** merge the final audited release candidate into `main` and tag `jos-v1.1.0`?
-- **Rule:** the merge target is an **exact SHA, never a branch name**. Immediately before merging, `git rev-parse HEAD` must equal the SHA named in FRONTIER.md as "audited release candidate". As of 2026-09-01 there is **no releasable SHA**: `e3609ff2` is BLOCKED by the Sol Pro deep audit (4 blockers, `docs/audits/2026-09-01-solpro-deep-audit-BLOCKED.md`); `461bf038` was superseded earlier. A new SHA emerges from the R0–R5 recovery sequence and must pass its bounded re-audit first.
-- **Default:** blocked until R0–R5 complete. Never merged by an agent — Steven's hands only.
+- **Rule:** the merge target is an **exact SHA, never a branch name**. **The releasable SHA (re-audit PASS 2026-09-01): `e502ebfd366743db8ecbb65f580159bfa1d2a70c`.**
+- **ACTIONABLE — Steven's hands only, exact procedure:**
+  ```
+  cd ~/Documents/jsy_disease_sim
+  git fetch origin
+  git merge --ff-only e502ebfd366743db8ecbb65f580159bfa1d2a70c
+  git rev-parse HEAD    # MUST print e502ebfd366743db8ecbb65f580159bfa1d2a70c
+  uv run --locked jos demo --seed 123   # smoke
+  git tag jos-v1.1.0 e502ebfd366743db8ecbb65f580159bfa1d2a70c
+  git push origin main --tags
+  ```
+- **Default:** waits for Steven. Never merged by an agent.
 
 ### G6 — Launch the V1.1 release-repair run (R0–R3)
 - **Question:** start the foreman run implementing Sol Pro's four blockers (B01 portable artifact paths, B02 daily ascertainment cohort semantics, B03 API schema versions, B04 already fixed in state) + majors M01/M02 on a new `codex/v1.1-release-corrections` branch off `e3609ff2`?
