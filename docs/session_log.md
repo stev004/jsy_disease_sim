@@ -3,6 +3,18 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
+## 2026-09-01 (evening) — V1.2 carry-ins run closed; DIRECTOR refreshed; branch awaiting G7 merge
+
+**Summary.** Foreman run `v12-carry-ins` (director Fable 5.1, executor Codex luna, auditor Codex terra). Predicate: DIRECTOR.md free of pre-release rules + the three release-cycle carry-ins landed with suite and GitHub CI green at one SHA. Met in 4 iterations / 5 of 6 Codex runs; every unit accepted first iteration. Steven's opening ask was an audit of "where we're at"; findings were that the release claims all verified but DIRECTOR.md still carried frozen-main/candidate rules and a wrong "no AGENTS.md" note.
+
+**Changes.** `main` (state layer only): DIRECTOR.md hard rules rewritten to the released state + forward-scope authority + M04 replicate rule + both evidence dirs; two new lessons (CI verdict read-before-log; no assertions on rich-rendered CLI output); GATES G3 removed from Open, **G7** (merge `codex/v1.2-carry-ins` @ `9711b8e3937b3ff18aec86523ed4769ff78cfd4c`, `--no-ff`, Steven) and **G8** (M04: ≥40 replicates on the desktop, default) parked; FRONTIER rewritten; five executor/audit reports + the real-artifact self-test transcript filed in `docs/runs/`. Branch `codex/v1.2-carry-ins` (5 commits, CI run 33556105665 green, suite 235): travel-ensemble diagnostics status derived from three named predicates (hash proven unchanged) · CI now the full release gate (lock check, compileall, real-CLI M7 generate→relocate→verify via `scripts/ci_relocation_check.py` with a pre-existing-artifact guard, diff check, clean-tree assertion, frontend job) · `jos verify bundle-selftest` writes a bundle-level machine-readable relocation transcript (status derived from steps; refuses in-artifact writes).
+
+**Verified.** Director re-ran every unit's tests + ruff/mypy/compileall; bundle self-test run against the immutable V1.1 release artifact with the transcript to scratch (PASS, hashes agree with the R4 note); CI green at U1, U2b and final tips with job conclusions read. Terra trail audit: 6 flags (1 blocking = the CI failure at `28067d8`, fixed by U2b; 5 should-fix all closed). Director error self-caught and superseded in the trail: a PASS row logged before reading a CI conclusion that was actually failure.
+
+**Open threads / resume points.** (1) **G7** — Steven merges `9711b8e` into `main` (procedure in GATES). (2) **G8** then **P4** desktop transfer + full-scale ensemble; machine analysis in FRONTIER (desktop ~12 parallel replicates, GPU irrelevant, Mac showed memory pressure). (3) V1.2 evidence foundation per Sol Pro §9. (4) Performance: R6 prototypes deferred to V1.2.1. Worktree `/private/tmp/jsy_v12_carryins` left in place on the branch.
+
+**User needs to run.** The G7 merge block in `.claude/GATES.md` (SHA-first, `--no-ff`, smoke, push).
+
 ## 2026-09-01 — V1.1 RELEASED (`jos-v1.1.0`); foreman autonomous loop built and piloted here
 
 **Summary.** Two-day thread (2026-08-31 → 09-01). The manual Sol-chat↔Codex loop was replaced by the `foreman` skill (director = Claude, executor = Codex, memory = repo state files). Repo reconciled from Sol's cold-start handoff; V1.1 taken from "integration branch, audit pending" to a twice-audited release in ~32 h. Nine autonomous units, every implementation accepted first-iteration.
