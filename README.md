@@ -12,8 +12,7 @@ frontend.
 
 V1.1 is a scientific-hardening release candidate under final release
 corrections on branch `codex/v1.1-release-corrections`. The current-state
-authority is [`.claude/FRONTIER.md`](.claude/FRONTIER.md) on the `docs/frontier`
-branch.
+authority is [`.claude/FRONTIER.md`](.claude/FRONTIER.md); agents start at `CLAUDE.md`.
 
 ## Quick start
 

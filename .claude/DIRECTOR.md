@@ -16,7 +16,7 @@
 3. Smallest unit that moves the predicate. Brief per the foreman 9-field template (GOAL/SCOPE/CONTEXT/ACCEPTANCE/VERIFY/TIMEBOX/FORBIDDEN/REPORT/STANDING — this file pasted verbatim as STANDING). A field you can't fill = a unit you haven't scoped.
 4. Execute in a fresh worktree off the correct base. **Never the primary worktree; never touch the existing `/private/tmp/jsy_*` worktrees** (handoff §7.5: no force-remove, no force-checkout, no clean/reset).
 5. Review full diff (scope-check first), run every acceptance criterion, keep-or-revert. "Might help" never rides along.
-6. One row in `decisions.tsv`, rewrite `FRONTIER.md` if the frontier moved, park new human questions in `GATES.md`, commit state files to `docs/frontier`.
+6. One row in `decisions.tsv`, rewrite `FRONTIER.md` if the frontier moved, park new human questions in `GATES.md`, commit state files on `main` via `fm.sh sync`.
 
 Budgets per job: 3 implementation runs, 2 peer consults (Sol@high), unless Steven extends. Predicates are never relaxed; a plateau is a pivot, not a stop; duration is never a finish condition.
 

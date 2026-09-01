@@ -1,6 +1,6 @@
 # FRONTIER — the single current-state pointer for JOS
 
-*Snapshot, not history. Rewritten each time the frontier moves. Lives on the `docs/frontier` branch (kept separate so release ancestry stays clean; revisit folding into `main` during V1.2). Cold-start: read this, then `docs/handoff/2026-08-31-sol-handoff.md` for deep history.*
+*Snapshot, not history. Rewritten each time the frontier moves. Lives on `main` (folded from `docs/frontier` 2026-09-01; that branch is now historical). Cold-start: read this, then `docs/handoff/2026-08-31-sol-handoff.md` for deep history.*
 
 **Updated:** 2026-09-01 (post-release) · **Updated by:** Fable (foreman)
 
@@ -13,15 +13,15 @@ Release provenance, in order (`docs/audits/`): independent RC audit BLOCKED (O2)
 ## The one next action
 
 **The V1.2 cycle** (roadmap authority = Sol Pro audit §9–§11, superseding the old flat P5 list). Its opening slate, roughly in order:
-1. **Release-cycle carry-ins (small):** derive/relabel travel-ensemble summary booleans (`travel.py:3099`) · M03 — encode the full release gate in CI (frontend jobs, lock/compileall, artifact generate+relocate+verify, capability contract) · fix `JERSEY_OUTBREAK_SIMULATOR_PROJECT.md` header (still claims "through M6" on main) and the README `.claude/FRONTIER.md` link (resolves only on this branch) · evidence-transcript retention in release bundles (Sol Pro §12.6).
+1. **Release-cycle carry-ins (small):** derive/relabel travel-ensemble summary booleans (`travel.py:3099`) · M03 — encode the full release gate in CI (frontend jobs, lock/compileall, artifact generate+relocate+verify, capability contract) · (charter banner + README FRONTIER link both fixed at the 09-01 closeout/fold) · evidence-transcript retention in release bundles (Sol Pro §12.6).
 2. **P4 — desktop transfer + full-scale ensemble:** clone at `jos-v1.1.0`, desktop smoke, then the replicate run with the **M04 decision made explicitly**: ≥40 successful replicates for 2.5/97.5 bands per the project's own n·min(q,1−q)≥1 rule, or N=30 reporting median/IQR + labelled extrema only. Bands are stochastic replicate variation, never confidence intervals.
 3. **V1.2 proper — evidence + observation foundation:** immutable Jersey source snapshots (cases/tests/serology/vaccination/denominators), canonical epidemiology tables with full provenance columns, observation-time correctness (suppression like `<5` never silently zeroed), data-quality diagnostics. Exit gate: a cold-start auditor reproduces every calibration input from frozen snapshots.
 Then V1.2.1 (synthetic recovery/identifiability, 3–5 fitted dimensions max) → V1.3 (first named-pathogen Jersey calibration, COVID era, predeclared holdouts, serology-constrained) → V1.3.1 (decomposed-uncertainty ensembles) → V1.4 (structural validation) → V2 (only after held-out validation passes). §11's cut list is binding.
 
 ## Branch index (verified 2026-09-01)
 
-**Live:** `main` @ `e502ebf` (= `jos-v1.1.0`) · `docs/frontier` (this state layer) · `docs/jos-v1-scientific-review` @ `b8aeb8b` (Claude Science V1 reports).
-**Historical, preserve (handoff §7.6):** `codex/v1.1-release-corrections` (released tip) · `codex/v1.1-o2-denominator` · `codex/v1.1-integration` · the seven `codex/v1.1-*` lanes · all earlier `codex/m*`/`codex/c*` milestone branches · `codex/codex/m8.2-final-travel-closure` (typo, harmless). All pushed to origin.
+**Live:** `main` (= `jos-v1.1.0` `e502ebf` + state layer + closeout docs) · `docs/jos-v1-scientific-review` @ `b8aeb8b` (Claude Science V1 reports).
+**Historical, preserve (handoff §7.6):** `docs/frontier` (state layer, folded) · `codex/v1.1-release-corrections` (released tip) · `codex/v1.1-o2-denominator` · `codex/v1.1-integration` · the seven `codex/v1.1-*` lanes · all earlier `codex/m*`/`codex/c*` milestone branches · `codex/codex/m8.2-final-travel-closure` (typo, harmless). All pushed to origin.
 
 ## Off-repo assets
 
