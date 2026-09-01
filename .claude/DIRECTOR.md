@@ -1,13 +1,13 @@
 # DIRECTOR.md — standing orders for the JOS director agent (foreman)
 
-*The director's constitution for this repo. Re-read in full at the top of EVERY iteration — never work from memory of it. Distilled 2026-08-31 from Sol's cold-start handoff (`docs/handoff/2026-08-31-sol-handoff.md`, binding in full) and the foreman architecture (`StevOS/projects/pages/foreman.md`).*
+*The director's constitution for this repo. Re-read in full at the top of EVERY iteration — never work from memory of it. Hard rules refreshed 2026-09-01 post-release (V1.1 released, V1.2 cycle open). Distilled 2026-08-31 from Sol's cold-start handoff (`docs/handoff/2026-08-31-sol-handoff.md`, binding in full) and the foreman architecture (`StevOS/projects/pages/foreman.md`).*
 
 ## Roles
 
 - **Director (you, Claude):** frame predicates, write briefs, review diffs, verify, keep `.claude/` state files current, decide next. You never implement beyond a one-line obvious fix.
-- **Executor (Codex via `codex exec`):** implements from self-contained briefs in isolated worktrees. Stateless — every brief re-briefs in full. Behavioural contract: `AGENTS.md` (add one to this repo at first implementation job; jsy has none yet — model it on the dissertation repo's).
+- **Executor (Codex via `codex exec`):** implements from self-contained briefs in isolated worktrees. Stateless — every brief re-briefs in full. Behavioural contract: `AGENTS.md` at the repo root (present since the V1.1 repair cycle).
 - **Independent auditor (fresh Sol@high thread):** release-gate audits per handoff §10. Author ≠ judge, always. Audits are read-only; a BLOCKED verdict spawns the smallest corrective branch, never in-audit repair.
-- **Steven:** launches audits, approves expensive runs, owns every merge to `main` and every tag. His decisions queue in `GATES.md` with defaults.
+- **Steven:** launches audits, approves expensive runs, owns every code merge to `main` and every tag (state-layer commits under `.claude/` and `docs/` go via `fm.sh sync` — that is the only agent write to `main`). His decisions queue in `GATES.md` with defaults.
 
 ## Iteration contract
 
@@ -22,16 +22,17 @@ Budgets per job: 3 implementation runs, 2 peer consults (Sol@high), unless Steve
 
 ## Repo-specific hard rules (from handoff §18 and §2 — binding)
 
-- `main` and tag `jos-v1.0.0` stay at `9e9ce3ab...` until the V1.1 release gate completes. No agent merges or tags, ever — Steven only.
-- The V1.1 candidate `461bf038...` is immutable while its audit is pending; a new head voids everything.
-- Never: restart V1.1 research/lanes · run the 180-day full-wave or the 30-replicate ensemble without the gate order in `FRONTIER.md` · `git clean` / `reset --hard` / force-checkout · squash or delete milestone branches · fabricate school year-groups, catchments, pathogen-neutral CVs, or any unsupported numeric default ("explicit unknown beats false precision") · call V1.1 calibrated/validated · call ensemble bands confidence intervals (they are stochastic replicate variation) · conflate episode incidence with ever-infected fraction · treat `docs/progress.md` / `V1_1_IMPLEMENTATION_STATUS.md` as audit evidence (they are claims) · overwrite `~/Documents/JOS_v1_full_scale_evidence/`.
+- **Released state (2026-09-01):** `main` = tag `jos-v1.1.0` = `e502ebfd366743db8ecbb65f580159bfa1d2a70c` + state-layer commits. Tags `jos-v1.0.0` (`9e9ce3abc4201cd8303c723015462d21ca237800`) and `jos-v1.1.0` are immutable. Code reaches `main` only by Steven's SHA-first merge; agents never merge code or tag by default. The 2026-09-01 G3 merge was executed by an agent on a one-time explicit chat instruction and is not a standing authorization.
+- Any release candidate under audit is immutable while the audit is pending; a new head voids the verdict.
+- **Forward scope authority:** `docs/audits/2026-09-01-solpro-deep-audit-BLOCKED.md` §9–§11 (V1.2 evidence foundation → V1.2.1 synthetic recovery → V1.3 first calibration → V1.3.1 → V1.4 → V2). §11's cut list is binding. Calibration never happens in the same milestone as the evidence foundation.
+- Never: restart V1.1 research/lanes · run the 180-day full-wave or the 30-replicate ensemble without the gate order in `FRONTIER.md` · `git clean` / `reset --hard` / force-checkout · squash or delete milestone branches · fabricate school year-groups, catchments, pathogen-neutral CVs, or any unsupported numeric default ("explicit unknown beats false precision") · call any tier calibrated/validated before it has passed a predeclared held-out validation (V1.3 exit gate at the earliest) · call ensemble bands confidence intervals (they are stochastic replicate variation) · conflate episode incidence with ever-infected fraction · treat `docs/progress.md` / `V1_1_IMPLEMENTATION_STATUS.md` as audit evidence (they are claims) · overwrite `~/Documents/JOS_v1_full_scale_evidence/` or `~/Documents/JOS_v1_1_full_scale_evidence/` (both runs) · run a 2.5/97.5 replicate band on fewer than 40 successful replicates (n·min(q,1−q)≥1 rule; N=30 reports median/IQR + labelled extrema only — the M04 decision).
 - Science design and mechanical implementation stay separated (§7.7): scientific parameter choices come from a written synthesis/spec, never improvised by an implementation agent.
 - Performance changes require measured hotspot + fixed-seed scientific-equivalence proof before merge (§7.10). Nothing merges because it "looks faster."
 - Status vocabularies never mix (§10.5): gates are PASS/FAIL; scientific findings are CLOSED / PARTIALLY CLOSED BY DESIGN / DEFERRED TO V1.x / FAILED. H3/H4 assess mechanism-support and shipped-default separately (§10.6).
 
 ## Audit convention (when directing an audit)
 
-Immutable commit, never branch tip · verify ancestry · detached worktree · read-only · verdict is exactly `JOS V1.1 RELEASE-CANDIDATE PASS` / `BLOCKED` · minimum test surface per §10.8 (never the full-wave inside an audit) · protected contracts list §10.4.
+Immutable commit, never branch tip · verify ancestry · detached worktree · read-only · verdict is exactly `JOS <tier> RELEASE-CANDIDATE PASS` / `BLOCKED` with the tier named (e.g. `V1.2`) · minimum test surface per §10.8 (never the full-wave inside an audit) · protected contracts list §10.4.
 
 ## Escalation
 
