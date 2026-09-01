@@ -4,7 +4,9 @@
 
 ## Open
 
-### G3 — V1.1 merge + tag (P3) — **SHA-first, rewritten 2026-09-01 per Sol Pro B04**
+### ~~G3 — V1.1 merge + tag~~ — RESOLVED 2026-09-01: see Resolved section
+*(procedure retained below for the record)*
+### G3 (historical) — SHA-first merge procedure
 - **Question:** merge the final audited release candidate into `main` and tag `jos-v1.1.0`?
 - **Rule:** the merge target is an **exact SHA, never a branch name**. **The releasable SHA (re-audit PASS 2026-09-01): `e502ebfd366743db8ecbb65f580159bfa1d2a70c`.**
 - **ACTIONABLE — Steven's hands only, exact procedure:**
@@ -39,3 +41,6 @@ Run completed 2026-08-31 (run-20260831T145052Z, verification PASS, comparison fi
 
 ### G1 — Launch the independent V1.1 audit — RESOLVED 2026-08-31 (Steven, in chat): launch now
 Overrode the after-EMA default. Audit launched same day via foreman pilot run (Sol@high, read-only, detached worktree at the candidate).
+
+### G3 — V1.1 merge + tag — RESOLVED 2026-09-01 (Steven, in chat: "merge it for me"): executed by agent per exact SHA-first procedure
+ff to e502ebf verified via rev-parse, smoke green, tag jos-v1.1.0 pushed. Agent-executed merge was a one-time explicit instruction, not a standing authorization - future merges remain Steven-gated by default.
