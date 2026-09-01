@@ -1,0 +1,96 @@
+{
+  "copied_to": "/var/folders/9m/jy2pqmz52y1760jssxqt1_lh0000gn/T/jos-bundle-selftest-mam4v496/jos-intervention-m7-full-seed-123-f0b18d64a083",
+  "created_at": "2026-09-01T20:11:39.767093+00:00",
+  "dirty_worktree_flag": false,
+  "git_commit": "28067d88a4c21e73cf5ce27e48a859dee9ce274a",
+  "identities": {
+    "agreement": {
+      "artifact_bundle_hash": true,
+      "artifact_id": true
+    },
+    "artifact_id": "jos-intervention-m7-full-seed-123-f0b18d64a083",
+    "artifact_type": "m7_intervention",
+    "copy": {
+      "artifact_id": "jos-intervention-m7-full-seed-123-f0b18d64a083",
+      "artifact_type": "m7_intervention",
+      "hashes": {
+        "artifact_bundle_hash": "f0b18d64a083c8dbb08b41ec28ca6989c82d89e12224d39b75888be1ec0e8e72",
+        "c4_observation_config_hash": "a4ace7aebf1faa19903e89201601734837d90921f72dee039719d9b83cfb1d87",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.config_hash": "a613ad5f5aee6d9ba17c6d450a6cc0b6b07a383220d4bc144f4177adb2b5735e",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.logical_content_hash": "ca4570849d0f6a4caa0617cd467d9a77b8d82364b3b9dd785692926c1faf1565",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.m2_logical_content_hash": "e9df9f0b320d6efff4028dc05f22b6b46f5d1d65e5ce9f915ebe13d03d131854",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.m3_logical_content_hash": "17898f310990a18e516a3684629705886fbd9d7afda4123870c4bf1340346fff",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.m4_logical_content_hash": "425924a480b2f9035ac059128e87509c26d489a80b64740a5dc284b05b64079c",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.parameter_set_hash": "a049826fa23d5d2d27fe57926c48b109ac6840e400cde2ffb910733709cbc92d",
+        "latent_logical_content_hash": "ca4570849d0f6a4caa0617cd467d9a77b8d82364b3b9dd785692926c1faf1565",
+        "latent_outcome_hash": "da5ede8c1ae22320f14d772e4db0da13696bf0a405e674fd4a5cc7e8430c3fdf",
+        "logical_content_hash": "f0b18d64a083c8dbb08b41ec28ca6989c82d89e12224d39b75888be1ec0e8e72",
+        "m2_logical_content_hash": "e9df9f0b320d6efff4028dc05f22b6b46f5d1d65e5ce9f915ebe13d03d131854",
+        "m3_logical_content_hash": "17898f310990a18e516a3684629705886fbd9d7afda4123870c4bf1340346fff",
+        "m4_logical_content_hash": "425924a480b2f9035ac059128e87509c26d489a80b64740a5dc284b05b64079c",
+        "m5_disease_config_hash": "a049826fa23d5d2d27fe57926c48b109ac6840e400cde2ffb910733709cbc92d",
+        "run_config_hash": "a613ad5f5aee6d9ba17c6d450a6cc0b6b07a383220d4bc144f4177adb2b5735e",
+        "scenario_config_hash": "3d8e85964e316dbb0ef795a7279645705d109825de348c51c40237aefd17b0fc",
+        "scenario_hash": "ce54065b85c193bf2217f9cb483ce06e48af0794d053fae7fd420ca202da24b9"
+      },
+      "wall_time_seconds": 2.4515176250133663
+    },
+    "source": {
+      "artifact_id": "jos-intervention-m7-full-seed-123-f0b18d64a083",
+      "artifact_type": "m7_intervention",
+      "hashes": {
+        "artifact_bundle_hash": "f0b18d64a083c8dbb08b41ec28ca6989c82d89e12224d39b75888be1ec0e8e72",
+        "c4_observation_config_hash": "a4ace7aebf1faa19903e89201601734837d90921f72dee039719d9b83cfb1d87",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.config_hash": "a613ad5f5aee6d9ba17c6d450a6cc0b6b07a383220d4bc144f4177adb2b5735e",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.logical_content_hash": "ca4570849d0f6a4caa0617cd467d9a77b8d82364b3b9dd785692926c1faf1565",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.m2_logical_content_hash": "e9df9f0b320d6efff4028dc05f22b6b46f5d1d65e5ce9f915ebe13d03d131854",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.m3_logical_content_hash": "17898f310990a18e516a3684629705886fbd9d7afda4123870c4bf1340346fff",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.m4_logical_content_hash": "425924a480b2f9035ac059128e87509c26d489a80b64740a5dc284b05b64079c",
+        "embedded.latent_outputs.jos-outbreak-m5-full-seed-123-ca4570849d0f.parameter_set_hash": "a049826fa23d5d2d27fe57926c48b109ac6840e400cde2ffb910733709cbc92d",
+        "latent_logical_content_hash": "ca4570849d0f6a4caa0617cd467d9a77b8d82364b3b9dd785692926c1faf1565",
+        "latent_outcome_hash": "da5ede8c1ae22320f14d772e4db0da13696bf0a405e674fd4a5cc7e8430c3fdf",
+        "logical_content_hash": "f0b18d64a083c8dbb08b41ec28ca6989c82d89e12224d39b75888be1ec0e8e72",
+        "m2_logical_content_hash": "e9df9f0b320d6efff4028dc05f22b6b46f5d1d65e5ce9f915ebe13d03d131854",
+        "m3_logical_content_hash": "17898f310990a18e516a3684629705886fbd9d7afda4123870c4bf1340346fff",
+        "m4_logical_content_hash": "425924a480b2f9035ac059128e87509c26d489a80b64740a5dc284b05b64079c",
+        "m5_disease_config_hash": "a049826fa23d5d2d27fe57926c48b109ac6840e400cde2ffb910733709cbc92d",
+        "run_config_hash": "a613ad5f5aee6d9ba17c6d450a6cc0b6b07a383220d4bc144f4177adb2b5735e",
+        "scenario_config_hash": "3d8e85964e316dbb0ef795a7279645705d109825de348c51c40237aefd17b0fc",
+        "scenario_hash": "ce54065b85c193bf2217f9cb483ce06e48af0794d053fae7fd420ca202da24b9"
+      },
+      "wall_time_seconds": 2.2805241248570383
+    }
+  },
+  "jos_version": "1.1.0",
+  "logical_content_hash": "eccd7cb6caf79a438cc5f787b7f8c910b4a3033804dac61da6cb33e84d0ac0f7",
+  "schema_version": "1.0",
+  "source_artifact": "/Users/stevenmatson/Documents/JOS_v1_1_full_scale_evidence/run-20260901T131226Z/artifacts/jos-intervention-m7-full-seed-123-f0b18d64a083",
+  "status": "passed",
+  "steps": [
+    {
+      "detail": "Copied artifact to /var/folders/9m/jy2pqmz52y1760jssxqt1_lh0000gn/T/jos-bundle-selftest-mam4v496/jos-intervention-m7-full-seed-123-f0b18d64a083",
+      "status": "passed",
+      "step": "copy_artifact"
+    },
+    {
+      "detail": "m7_intervention jos-intervention-m7-full-seed-123-f0b18d64a083 verified in 2.451518s at /var/folders/9m/jy2pqmz52y1760jssxqt1_lh0000gn/T/jos-bundle-selftest-mam4v496/jos-intervention-m7-full-seed-123-f0b18d64a083",
+      "status": "passed",
+      "step": "verify_copy"
+    },
+    {
+      "detail": "m7_intervention jos-intervention-m7-full-seed-123-f0b18d64a083 verified in 2.280524s at /Users/stevenmatson/Documents/JOS_v1_1_full_scale_evidence/run-20260901T131226Z/artifacts/jos-intervention-m7-full-seed-123-f0b18d64a083",
+      "status": "passed",
+      "step": "verify_original"
+    },
+    {
+      "detail": "artifact_id_agrees=True; artifact_bundle_hash_agrees=True",
+      "status": "passed",
+      "step": "compare_identities"
+    },
+    {
+      "detail": "Temporary copy removed",
+      "status": "passed",
+      "step": "cleanup_copy"
+    }
+  ]
+}
