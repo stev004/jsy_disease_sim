@@ -2,25 +2,17 @@
 
 **Audience: the Claude Code agent running on the desktop.** Steven does the three items in §0 and nothing else; every other step here is yours to execute, verify, and write back. Do not ask Steven to run shell commands you can run yourself; ask him only for logins, reboots, and the G8 decision.
 
-## §0 — What Steven does (three things)
-1. Open **PowerShell** (Start → type PowerShell) and paste this whole block (the repo is private, so it logs into GitHub first; click through the browser prompts for GitHub, then later Codex and Claude):
-   ```powershell
-   winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements --silent
-   winget install --id GitHub.cli -e --accept-source-agreements --accept-package-agreements --silent
-   $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")
-   gh auth login --web --git-protocol https
-   gh repo clone stev004/jsy_disease_sim "$env:USERPROFILE\jsy_disease_sim"
-   Set-ExecutionPolicy -Scope Process Bypass -Force; & "$env:USERPROFILE\jsy_disease_sim\scripts\bootstrap-windows.ps1"
-   ```
-   The bootstrap installs node/uv/codex/claude and the skills, then prints the next command.
-2. `cd ~\jsy_disease_sim` then `claude` (log in when the browser opens).
-3. Say: **"set up this machine per docs/desktop-setup.md, then report."** Later, decide G8 when asked.
+## §0 — What Steven does (two things)
+1. Clone `stev004/jsy_disease_sim` in the Claude Code app and open it. (Codex CLI and GitHub CLI are already installed on this desktop; the app brings git.)
+2. Say: **"set up this machine per docs/desktop-setup.md, then report."** Later, decide G8 when asked.
+
+Everything else below is the agent's job, including installing whatever tools are missing. `scripts/bootstrap-windows.ps1` remains as an optional all-in-one for a bare machine; on this desktop the agent should just install the gaps.
 
 ## §1 — Agent procedure (native first, WSL only on proven need)
 Native Windows = Git Bash under Claude Code. It is the easiest path *if* Codex's sandbox and the background launcher work here; that is a fact to probe, not assume.
 
 1. **Orient.** Read `CLAUDE.md` → `.claude/FRONTIER.md`, `GATES.md`, `DIRECTOR.md`. Confirm `git rev-parse HEAD` is on `main` and `git status` is clean.
-2. **Skills.** `scripts/install_skills.sh` (copy mode on Git Bash). Must end `install complete`, exit 0. Fix anything it reports (missing tool → install it with `winget install --id <id> -e`; login → ask Steven once, in one message, for all logins at once).
+2. **Tools + skills.** Run `scripts/install_skills.sh` (copy mode on Git Bash). Must end `install complete`, exit 0. Install what it reports missing yourself: `winget install --id astral-sh.uv -e --silent`, `winget install --id OpenJS.NodeJS.LTS -e --silent` (then open a fresh shell or re-read PATH), `npm i -g @openai/codex` only if codex is absent. Logins (`gh auth login`, `codex login`) are Steven's: ask once, in one message, for all of them together, then re-run the installer.
 3. **Probe.** `scripts/probe-native.sh`. It checks tools/logins, runs a real sandboxed `codex exec`, launches one unit through `fm.sh exec` and waits for its report, and smokes `uv`/`jos demo`/frontend.
    - `NATIVE_PROBE PASS` → **this box runs the loop natively.** Go to §2.
    - `NATIVE_PROBE FAIL` on the codex-sandbox or fm.sh lines → go to §3 (WSL2). Any other FAIL line → fix that item and re-probe; do not jump to WSL for a missing login.
