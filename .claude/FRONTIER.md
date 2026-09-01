@@ -13,7 +13,9 @@
 
 ## The one next action
 
-**P1: the full-population 180-day V1.1 baseline** on candidate `e3609ff2` — **gated on Steven (G2)**: approve the ~3h run and pick the machine (default: Mac, overnight). Then in order (handoff §8): P1 full-population 180-day V1.1 baseline (Steven approves the ~3h run) → P2 Claude Science delta review → P3 release decision/merge/tag (likely `jos-v1.1.0`, not invented before approval) → P4 desktop transfer + N=30 ensemble → P5 V1.x calibration → P6 V2.
+**P1 COMPLETE (2026-08-31/09-01): full-scale baseline run + verification + comparison all done.** Run: 180d, 104,540 agents, seed 123, scientific verification PASS, artifact `jos-intervention-m7-full-seed-123-f0b18d64a083` in `~/Documents/JOS_v1_1_full_scale_evidence/run-20260831T145052Z/` (immutable comparator pair with the V1 evidence dir). Comparison verdict: **`P1 OBSERVATION: NO RELEASE CONCERN`** (`docs/runs/2026-09-01-p1-v1-v11-comparison.md`). Headline: waning removal collapses reinfection (2.97 → exactly 1.00 episodes/infected), single wave, extinction 2025-03-27, 77.85% ever infected, conservation exact, generation interval unchanged. Runtime +27% (operational note, partially thermal/contention), peak RSS lower.
+
+**Next: P2 — Claude Science delta review** of the V1→V1.1 change (bounded: candidate diff + finding closures + the comparison report; not a from-scratch 1,600-line audit). A GPT-5.6 Sol Pro deep audit + refined forward scope is also queued by Steven (bundle prepared 2026-09-01) — treat its output as input to P2/P5 planning. Then: P3 release decision/merge/tag (Steven; likely `jos-v1.1.0`) → P4 desktop + N=30 ensemble → P5 V1.x calibration → P6 V2.
 
 ## Branch index (verified against git 2026-08-31)
 
