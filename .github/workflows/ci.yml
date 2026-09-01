@@ -16,6 +16,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --locked
+      - run: uv lock --check
+      - run: uv run python -m compileall -q src
       - run: uv run pytest
       - run: uv run ruff check .
       - run: uv run ruff format --check .
@@ -40,3 +42,23 @@ jobs:
       - run: uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci
       - run: uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci
       - run: uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci
+      - run: uv run python scripts/ci_relocation_check.py
+      - run: git diff --check
+      - run: test -z "$(git status --porcelain)"
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run test
+      - run: npm run typecheck
+      - run: npm run build

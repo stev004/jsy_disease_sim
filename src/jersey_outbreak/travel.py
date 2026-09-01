@@ -2964,6 +2964,43 @@ def compare_travel_runs(
     return payload | {"logical_content_hash": sha256_bytes(canonical_json_bytes(payload))}
 
 
+def _travel_ensemble_diagnostics(
+    runs: list[TravelRunResult],
+    failures: list[dict[str, Any]],
+    seeds: tuple[int, ...],
+    summary: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Derive M8 ensemble diagnostics from the retained run and summary data."""
+
+    successful_seeds = [run.config.seed for run in runs]
+    failed_seeds = {failure.get("seed") for failure in failures}
+    invariant_predicates = {
+        "matched_seed_pairing": (
+            all(seed in seeds for seed in successful_seeds)
+            and len(successful_seeds) == len(set(successful_seeds))
+            and not set(successful_seeds).intersection(failed_seeds)
+        ),
+        "failed_replicates_excluded": all(
+            row.get("replicate_count") == len(runs) for row in summary
+        ),
+        "metric_semantics_preserved": all(
+            row.get("semantic") in {"state", "population_denominator", "incidence_event"}
+            and row.get("missing_behavior") in {"carry_forward", "structural_zero"}
+            and row.get("outside_horizon_behavior") in {"excluded"}
+            for row in summary
+        ),
+    }
+    return {
+        "status": "passed" if all(invariant_predicates.values()) else "failed",
+        "invariant_predicates": invariant_predicates,
+        "metric_semantics_preserved": invariant_predicates["metric_semantics_preserved"],
+        "matched_seed_pairing": invariant_predicates["matched_seed_pairing"],
+        "failed_replicates_excluded": invariant_predicates["failed_replicates_excluded"],
+        "failure_count": len(failures),
+        "synthetic_claim_boundary": ("Bounded uncertainty demonstration; not a Jersey prediction."),
+    }
+
+
 def run_travel_ensemble(
     generated: GeneratedNetworks,
     parameters: RespiratoryParameterSet,
@@ -3095,16 +3132,7 @@ def run_travel_ensemble(
         ]
         + failures,
         "logical_content_hash": sha256_bytes(canonical_json_bytes(payload)),
-        "diagnostics": {
-            "status": "passed",
-            "metric_semantics_preserved": True,
-            "matched_seed_pairing": True,
-            "failed_replicates_excluded": True,
-            "failure_count": len(failures),
-            "synthetic_claim_boundary": (
-                "Bounded uncertainty demonstration; not a Jersey prediction."
-            ),
-        },
+        "diagnostics": _travel_ensemble_diagnostics(runs, failures, seeds, summary),
     }
 
 
