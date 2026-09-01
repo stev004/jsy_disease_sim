@@ -13,9 +13,9 @@ Newest first. History only — current truth lives in the docs named by
 
 **Verified.** Independent RC audit (BLOCKED→fixed→PASS) · P1 baseline + comparison (no release concern) · Sol Pro deep audit (BLOCKED→repair) · R5 re-audit (**PASS**) · relocation verification of copied evidence (PASS) · trajectory hash identity across the repair · CI green at the release SHA. Full gate table in `docs/progress.md`.
 
-**Open threads / resume points.** (1) **Fold `docs/frontier` into `main`** — Steven's call, additive docs only: `git -C ~/Documents/jsy_disease_sim merge --no-ff docs/frontier` — until then cold starts read `git show docs/frontier:.claude/FRONTIER.md` (or `fm.sh state ~/Documents/jsy_disease_sim`). (2) **V1.2 cycle** — opening slate in FRONTIER.md: carry-ins (travel.py:3099 relabel, M03 CI breadth, charter/README pointers, evidence-transcript retention) → P4 desktop transfer + ensemble with the ≥40-replicate decision → V1.2 evidence foundation. Next run predicate suggestion: "carry-ins closed, CI encodes the full release gate, all green at one SHA". Owner: agent via `/foreman`, when Steven says go. (3) Desktop transfer not started (origin holds everything).
+**Open threads / resume points.** (1) ~~Fold `docs/frontier` into `main`~~ — DONE same evening on Steven's instruction (merge `ef84701`'s parent, router `CLAUDE.md` added, `fm.sh` in-place mode, G4 resolved); **sessions now open in this repo, `CLAUDE.md` is the router**. (2) **V1.2 cycle** — opening slate in FRONTIER.md: carry-ins (travel.py:3099 relabel, M03 CI breadth, charter/README pointers, evidence-transcript retention) → P4 desktop transfer + ensemble with the ≥40-replicate decision → V1.2 evidence foundation. Next run predicate suggestion: "carry-ins closed, CI encodes the full release gate, all green at one SHA". Owner: agent via `/foreman`, when Steven says go. (3) Desktop transfer not started (origin holds everything).
 
-**User needs to run.** Nothing mandatory. Optional: the `docs/frontier` fold above.
+**User needs to run.** Nothing. Next: open Claude Code in this repo → "run foreman, done means the V1.2 carry-ins are closed and CI encodes the full release gate".
 
 ## 2026-08-30 — M10.2 comparison horizon and synchronization closure
 
