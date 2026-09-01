@@ -5,9 +5,9 @@
 **Budget:** 5 iterations · 6 codex runs. Spent: 3 runs (U1, U2 accepted iter-1; U2b fix launched). Remaining: CI green at final tip + run-stop digest + terra trail audit (in flight).
 
 ## In flight
-- **U1** ACCEPTED, committed `b0ff28702bd62581fff9bc758dd38b83075eb420` on `codex/v1.2-carry-ins`, pushed; GitHub CI at that SHA being watched.
+- **U1** ACCEPTED, committed `b0ff28702bd62581fff9bc758dd38b83075eb420` on `codex/v1.2-carry-ins`, pushed; GitHub CI run 33549721657 green (both jobs).
 - **U2** committed `28067d88a4c21e73cf5ce27e48a859dee9ce274a`, but GitHub CI run 33553860048 FAILED on `test_bundle_selftest_requires_safe_transcript_location` (rich-rendered typer error panel on 80-col runner). **U2b** fix in flight: luna@high in `/private/tmp/jsy_v12_carryins`, brief/log stem `/private/tmp/claude-501/-Users-stevenmatson-Documents-jsy-disease-sim/85fe2e4d-79fe-4026-92d6-aade288b6882/scratchpad/briefs/jos-u2b-fix`, timebox 25 min. Scope: cli.py error path -> plain echo + Exit(2); test file order-independent.
-- **Trail audit** (terra@high) in flight in `/private/tmp/jsy_v12_trailaudit`, stem `.../briefs/jos-v12-trailaudit`; it will see the false-PASS row and its correction row.
+- **Trail audit** DONE (terra): FLAGS (6) — filed `docs/runs/2026-09-01-v12-carry-ins-trail-audit-terra.md`. Actioned: G3 removed from Open, RUN stale line, session IDs logged. Pending: U2b (CI + test order), then **U3** = relocation script must refuse to run if the default artifact dir pre-exists (brief drafted at `.../briefs/jos-u3-relocation-guard-brief.md`).
 
 ## If cold-starting
 1. Read `/private/tmp/claude-501/-Users-stevenmatson-Documents-jsy-disease-sim/85fe2e4d-79fe-4026-92d6-aade288b6882/scratchpad/briefs/jos-u2b-fix.last.md`; if absent, `tail -20` the `.log` and check `ps aux | grep codex`.
