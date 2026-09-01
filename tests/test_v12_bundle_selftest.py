@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(scope="module")
-def m7_bundle(
+def m7_bundle_template(
     tmp_path_factory: pytest.TempPathFactory, m6_network, m6_parameters, m6_base_config
 ) -> tuple[Path, Path]:
     bundle = tmp_path_factory.mktemp("bundle-selftest") / "bundle"
@@ -31,6 +31,17 @@ def m7_bundle(
     result = run_outbreak(m6_network, config, m6_parameters, scenario=scenario)
     artifact = write_intervention_artifact(result, ROOT, artifact_root)
     return bundle, artifact.artifact_directory
+
+
+@pytest.fixture
+def m7_bundle(m7_bundle_template: tuple[Path, Path], tmp_path: Path) -> tuple[Path, Path]:
+    _, template_artifact = m7_bundle_template
+    bundle = tmp_path / "bundle"
+    artifact_root = bundle / "artifacts"
+    artifact_root.mkdir(parents=True)
+    artifact = artifact_root / template_artifact.name
+    shutil.copytree(template_artifact, artifact)
+    return bundle, artifact
 
 
 def _transcript(bundle: Path) -> tuple[Path, dict[str, object]]:
@@ -113,8 +124,9 @@ def test_bundle_selftest_requires_safe_transcript_location(
     shutil.copytree(artifact, standalone)
 
     missing_option = CliRunner().invoke(app, ["verify", "bundle-selftest", str(standalone)])
-    assert missing_option.exit_code != 0
-    assert "--transcript-dir" in missing_option.output
+    assert missing_option.exit_code == 2
+    missing_error = missing_option.output + missing_option.stderr
+    assert "--transcript-dir" in missing_error
 
     inside = CliRunner().invoke(
         app,
@@ -126,7 +138,6 @@ def test_bundle_selftest_requires_safe_transcript_location(
             str(artifact / "verification"),
         ],
     )
-    assert inside.exit_code != 0
+    assert inside.exit_code == 2
     location_error = inside.output + inside.stderr
-    assert "inside the" in location_error
-    assert "artifact directory" in location_error
+    assert "inside the artifact directory" in location_error

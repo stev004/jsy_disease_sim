@@ -1233,7 +1233,8 @@ def verification_bundle_selftest(
             keep_copy=keep_copy,
         )
     except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
-        raise typer.BadParameter(str(exc), param_hint="artifact_dir") from exc
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
     typer.echo(f"BUNDLE_SELFTEST {result.status} {result.transcript_path}")
     if result.status != "passed":
         raise typer.Exit(code=1)
