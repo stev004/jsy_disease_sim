@@ -24,6 +24,8 @@ alone. Facts live where this map says; the session log carries history.
 | Independent audit reports (immutable) | `docs/audits/` |
 | Executor reports, gate transcripts, comparison/delta notes | `docs/runs/` |
 | Cold-start handoff from the original Sol chat (deep history, conventions) | `docs/handoff/2026-08-31-sol-handoff.md` |
+| Second-machine setup (toolchains, skill install, smoke) | `docs/desktop-setup.md` |
+| Vendored orchestration skills (foreman/closeout/dev-delegate; source of truth for this repo, installed by `scripts/install_skills.sh`) | `.claude/skills/` |
 
 ## Rules
 

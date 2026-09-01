@@ -9,7 +9,7 @@ Synthetic-population, multi-route contact-network, agent-based epidemic simulato
 4. `.claude/DIRECTOR.md` — standing orders + hard rules + encoded lessons (binding for any agent driving work here).
 
 ## How work happens here
-- Multi-iteration work runs through the **`/foreman`** skill (global, `~/.claude/skills/foreman/`): Claude directs, Codex executes, memory = the `.claude/` state files above. Trail = `.claude/decisions.tsv` (append-only). State ops via `fm.sh log|sync|exec` — state lives on `main`, so it operates in place.
+- Multi-iteration work runs through the **`/foreman`** skill (vendored in `.claude/skills/`, installed to `~/.claude/skills/` by `scripts/install_skills.sh` — new machine: `docs/desktop-setup.md`): Claude directs, Codex executes, memory = the `.claude/` state files above. Trail = `.claude/decisions.tsv` (append-only). State ops via `fm.sh log|sync|exec` — state lives on `main`, so it operates in place.
 - Single ad-hoc changes: `/dev-delegate`. Session end: `/closeout` (doc map in `.claude/CLOSEOUT.md`).
 - **Codex's constitution is `AGENTS.md`.** Implementation briefs must be self-contained (Codex sees nothing but the brief + worktree).
 
