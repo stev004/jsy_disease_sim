@@ -302,6 +302,7 @@ class CapabilitiesResponse(StrictModel):
     api_version: Literal["v1"]
     api_schema_version: Literal["m9-1.0"]
     package_version: NonEmptyString
+    artifact_schema_version_semantics: NonEmptyString
     engine: dict[str, Any]
     artifact_schema_versions: dict[str, str]
     population_presets: dict[str, int]

@@ -12,6 +12,8 @@ from .contracts import ArtifactRecord, NonEmptyString, StrictModel
 from .network_schemas import RouteKind
 from .population_schemas import PopulationMode
 
+M5_ARTIFACT_SCHEMA_VERSION = "1.2"
+
 ROUTE_IDS: tuple[RouteKind, ...] = (
     "household",
     "school_class",
@@ -200,7 +202,7 @@ class OutbreakRunConfig(StrictModel):
 class OutbreakArtifactManifest(StrictModel):
     """Versioned provenance manifest for one completed M5 run."""
 
-    manifest_schema_version: Literal["1.0", "1.1", "1.2"] = "1.2"
+    manifest_schema_version: Literal["1.0", "1.1", "1.2"] = M5_ARTIFACT_SCHEMA_VERSION
     artifact_id: NonEmptyString
     generator_version: NonEmptyString
     module: Literal["generic_respiratory_seirs"] = "generic_respiratory_seirs"

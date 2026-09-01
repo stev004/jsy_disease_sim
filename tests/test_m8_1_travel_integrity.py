@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 from calendar import monthrange
 from collections import defaultdict
@@ -9,6 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+import jersey_outbreak.travel as travel_module
 from jersey_outbreak.hashing import sha256_file
 from jersey_outbreak.travel import (
     TravelManager,
@@ -81,6 +83,60 @@ def test_source_scale_reconciliation_and_day_weighted_seasonality() -> None:
         for day in range(1, monthrange(2025, month)[1] + 1)
     )
     assert weighted == pytest.approx(365.0)
+
+
+def test_travel_diagnostics_detect_resident_id_mutation(
+    monkeypatch, m6_network, m6_base_config, m6_parameters
+) -> None:
+    generated = copy.copy(m6_network)
+    generated.agent_ids = list(m6_network.agent_ids)
+    original_high_risk_rows = travel_module._high_risk_epidemic_rows
+
+    def mutate_resident_ids(*args, **kwargs):
+        rows = original_high_risk_rows(*args, **kwargs)
+        last = len(generated.agent_ids) - 1
+        generated.agent_ids[last] = generated.agent_ids[last - 1]
+        return rows
+
+    monkeypatch.setattr(travel_module, "_high_risk_epidemic_rows", mutate_resident_ids)
+    result = run_travel_outbreak(
+        generated,
+        m6_base_config.model_copy(update={"duration_days": 1}),
+        m6_parameters,
+        _travel(daily_arrivals={"2025-01-06:AIRPORT": 1}),
+    )
+
+    identity = result.diagnostics["identity"]
+    assert identity["resident_ids_unchanged"] is False
+    assert identity["resident_ids_sequence_unchanged"] is False
+    assert identity["resident_ids_set_unchanged"] is False
+    assert result.diagnostics["invariant_predicates"]["resident_ids_set_unchanged"] is False
+    assert result.diagnostics["status"] == "failed"
+
+
+def test_travel_diagnostics_status_fails_for_inactive_slot_violation(
+    monkeypatch, m6_network, m6_base_config, m6_parameters
+) -> None:
+    original_capture = travel_module.TravelManager.capture
+
+    def corrupt_inactive_slot(self, sim):
+        original_capture(self, sim)
+        if self.current_ti == self.duration_days - 1:
+            uid = self.uid_by_id[self.visitor_slot_ids[0]]
+            sim.people.alive[uid] = True
+
+    monkeypatch.setattr(travel_module.TravelManager, "capture", corrupt_inactive_slot)
+    result = run_travel_outbreak(
+        m6_network,
+        m6_base_config.model_copy(update={"duration_days": 2}),
+        m6_parameters,
+        _travel(daily_arrivals={"2025-01-06:AIRPORT": 1}),
+    )
+
+    audit = result.diagnostics["identity"]["inactive_slot_audit"]
+    assert audit["alive_false"] is False
+    assert result.diagnostics["status"] == "failed"
+    assert result.diagnostics["invariant_predicates"]["inactive_slot_alive_false"] is False
 
 
 def test_person_level_split_is_not_changed_by_party_grouping(m6_network) -> None:

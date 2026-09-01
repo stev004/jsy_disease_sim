@@ -19,11 +19,13 @@ from .outbreak_artifacts import write_outbreak_artifact
 from .outbreak_runner import OutbreakRunResult, network_artifact_id
 from .population_artifacts import portable_artifact_path, resolve_portable_artifact_path
 
+M7_ARTIFACT_SCHEMA_VERSION = "2.1"
+
 
 class InterventionArtifactManifest(StrictModel):
     """Parent-linked manifest for one M7 scenario run."""
 
-    manifest_schema_version: str = "2.1"
+    manifest_schema_version: str = M7_ARTIFACT_SCHEMA_VERSION
     artifact_id: str
     framework_version: str
     scenario_id: str

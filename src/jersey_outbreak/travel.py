@@ -2375,6 +2375,7 @@ def run_travel_outbreak(
             raise ValueError("detection-triggered interventions require an observation_config")
     started = time.perf_counter()
     before_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    resident_ids_before = tuple(generated.agent_ids)
     plan = generate_travel_episodes(
         travel_config,
         seed=config.seed,
@@ -2659,8 +2660,22 @@ def run_travel_outbreak(
             uid not in {int(item) for item in sim.people.auids} for uid in inactive_slot_uids
         ),
     }
+    resident_ids_after = tuple(generated.agent_ids)
+    resident_ids_sequence_unchanged = resident_ids_after == resident_ids_before
+    resident_ids_set_unchanged = set(resident_ids_after) == set(resident_ids_before)
+    resident_ids_unchanged = resident_ids_sequence_unchanged and resident_ids_set_unchanged
+    invariant_predicates = {
+        "resident_ids_sequence_unchanged": resident_ids_sequence_unchanged,
+        "resident_ids_set_unchanged": resident_ids_set_unchanged,
+        **{
+            f"inactive_slot_{key}": value
+            for key, value in inactive_slot_audit.items()
+            if key != "count"
+        },
+    }
     diagnostics = {
-        "status": "passed",
+        "status": "passed" if all(invariant_predicates.values()) else "failed",
+        "invariant_predicates": invariant_predicates,
         "framework_version": TRAVEL_GENERATOR_VERSION,
         "temporary_agent_strategy": (
             "preallocated Starsim visitor slots; active UID and alive-state lifecycle"
@@ -2689,7 +2704,9 @@ def run_travel_outbreak(
             "visitor_count": len(plan.visitor_records),
             "visitor_capacity": plan.visitor_capacity,
             "temporary_slot_ids": manager.visitor_slot_ids,
-            "resident_ids_unchanged": generated.agent_ids == sorted(generated.agent_ids),
+            "resident_ids_unchanged": resident_ids_unchanged,
+            "resident_ids_sequence_unchanged": resident_ids_sequence_unchanged,
+            "resident_ids_set_unchanged": resident_ids_set_unchanged,
             "visitor_namespace": "visitor-<seed>-<counter>",
             "slot_reuse_count": len(plan.visitor_records)
             - len({slot for _visitor, slot in plan.visitor_slot_indices}),

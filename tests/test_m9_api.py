@@ -12,13 +12,28 @@ import pyarrow.parquet as pq
 import pytest
 from fastapi.testclient import TestClient
 
+from jersey_outbreak import __version__
 from jersey_outbreak.api import create_app
 from jersey_outbreak.api_schemas import ScenarioRunRequest
+from jersey_outbreak.ensemble_schemas import (
+    M6_ENSEMBLE_ARTIFACT_SCHEMA_VERSION,
+    EnsembleArtifactManifest,
+)
+from jersey_outbreak.intervention_artifacts import (
+    M7_ARTIFACT_SCHEMA_VERSION,
+    InterventionArtifactManifest,
+)
 from jersey_outbreak.job_manager import JobManager
 from jersey_outbreak.job_registry import InvalidJobTransitionError, JobRegistry
 from jersey_outbreak.job_worker import run_worker
+from jersey_outbreak.observation_schemas import (
+    M6_OBSERVATION_ARTIFACT_SCHEMA_VERSION,
+    ObservationArtifactManifest,
+)
 from jersey_outbreak.outbreak_runner import run_outbreak
+from jersey_outbreak.outbreak_schemas import M5_ARTIFACT_SCHEMA_VERSION, OutbreakArtifactManifest
 from jersey_outbreak.scientific_hashes import canonical_m5_events
+from jersey_outbreak.travel_artifacts import M8_ARTIFACT_SCHEMA_VERSION, TravelArtifactManifest
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_ENGINE_COMMIT = "a" * 40
@@ -113,6 +128,27 @@ def test_api_contract_validation_errors_idempotency_and_cors(tmp_path: Path) -> 
         assert capabilities["scheduler"]["effective_max_concurrent_jobs"] == 1
         assert "school_class" in capabilities["resident_route_ids"]
         assert "disabled" in capabilities["travel_modes"]
+        expected_artifact_versions = {
+            "m5": M5_ARTIFACT_SCHEMA_VERSION,
+            "m6_observation": M6_OBSERVATION_ARTIFACT_SCHEMA_VERSION,
+            "m6_ensemble": M6_ENSEMBLE_ARTIFACT_SCHEMA_VERSION,
+            "m7": M7_ARTIFACT_SCHEMA_VERSION,
+            "m8": M8_ARTIFACT_SCHEMA_VERSION,
+        }
+        assert capabilities["artifact_schema_versions"] == expected_artifact_versions
+        assert capabilities["artifact_schema_versions"] == {
+            "m5": OutbreakArtifactManifest.model_fields["manifest_schema_version"].default,
+            "m6_observation": ObservationArtifactManifest.model_fields[
+                "manifest_schema_version"
+            ].default,
+            "m6_ensemble": EnsembleArtifactManifest.model_fields["manifest_schema_version"].default,
+            "m7": InterventionArtifactManifest.model_fields["manifest_schema_version"].default,
+            "m8": TravelArtifactManifest.model_fields["manifest_schema_version"].default,
+        }
+        assert capabilities["package_version"] == __version__
+        assert capabilities["artifact_schema_version_semantics"].startswith(
+            "current write versions"
+        )
         schema = client.get("/openapi.json").json()
         assert "/api/v1/jobs" in schema["paths"]
         assert "/api/v1/jobs/{job_id}/datasets/{dataset_name}" in schema["paths"]

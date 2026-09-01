@@ -47,7 +47,9 @@ from .api_schemas import (
     _normalize_json_dates,
 )
 from .artifact_catalog import ALL_SCIENTIFIC_DATASETS
+from .ensemble_schemas import M6_ENSEMBLE_ARTIFACT_SCHEMA_VERSION
 from .execution_adapter import _path_inside
+from .intervention_artifacts import M7_ARTIFACT_SCHEMA_VERSION
 from .intervention_schemas import InterventionType
 from .job_manager import JobManager, JobSubmissionError
 from .job_registry import (
@@ -57,8 +59,11 @@ from .job_registry import (
     RegistryError,
 )
 from .network_schemas import ROUTE_FAMILIES
-from .outbreak_schemas import ROUTE_IDS
+from .observation_schemas import M6_OBSERVATION_ARTIFACT_SCHEMA_VERSION
+from .outbreak_schemas import M5_ARTIFACT_SCHEMA_VERSION, ROUTE_IDS
 from .population_schemas import DEFAULT_MODE_TARGETS
+from .starsim_adapter import SUPPORTED_STARSIM_VERSION
+from .travel_artifacts import M8_ARTIFACT_SCHEMA_VERSION
 from .travel_schemas import TRAVEL_ROUTE_IDS, TravelMode
 
 
@@ -410,18 +415,21 @@ def create_app(
                 "api_version": API_VERSION,
                 "api_schema_version": API_SCHEMA_VERSION,
                 "package_version": __version__,
+                "artifact_schema_version_semantics": (
+                    "current write versions; read-accepted versions are not represented"
+                ),
                 "engine": {
                     "name": "Starsim",
-                    "version": "3.5.2",
+                    "version": SUPPORTED_STARSIM_VERSION,
                     "git_commit": commit,
                     "dirty_worktree_flag": dirty,
                 },
                 "artifact_schema_versions": {
-                    "m5": "1.0",
-                    "m6_observation": "1.1",
-                    "m6_ensemble": "1.2",
-                    "m7": "2.0",
-                    "m8": "2.0",
+                    "m5": M5_ARTIFACT_SCHEMA_VERSION,
+                    "m6_observation": M6_OBSERVATION_ARTIFACT_SCHEMA_VERSION,
+                    "m6_ensemble": M6_ENSEMBLE_ARTIFACT_SCHEMA_VERSION,
+                    "m7": M7_ARTIFACT_SCHEMA_VERSION,
+                    "m8": M8_ARTIFACT_SCHEMA_VERSION,
                 },
                 "population_presets": DEFAULT_MODE_TARGETS,
                 "job_kinds": ["scenario_run", "scenario_compare", "ensemble"],

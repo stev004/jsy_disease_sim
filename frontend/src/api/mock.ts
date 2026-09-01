@@ -43,6 +43,15 @@ export const MOCK_DAYS = 60;
 export const MOCK_POP = ISLAND_POP;
 export const MOCK_START_DATE = '2025-01-06';
 
+// Authority: manifest_schema_version defaults in the backend schema/artifact modules.
+const ARTIFACT_SCHEMA_VERSIONS = {
+  m5: '1.2',
+  m6_observation: '1.4',
+  m6_ensemble: '1.4',
+  m7: '2.1',
+  m8: '2.2',
+} as const;
+
 const gauss = (d: number, peak: number, sigma: number, amp: number): number =>
   amp * Math.exp(-((d - peak) ** 2) / (2 * sigma * sigma));
 
@@ -545,8 +554,10 @@ export class MockJosClient implements JosClient {
       api_version: 'v1',
       api_schema_version: 'm9-1.0',
       package_version: '0.9.2+mock',
+      artifact_schema_version_semantics:
+        'current write versions; read-accepted versions are not represented',
       engine: { name: 'Demo engine', version: 'demo', git_commit: null, dirty_worktree_flag: null },
-      artifact_schema_versions: { outbreak: '1.0', ensemble: '1.0', travel: '1.0' },
+      artifact_schema_versions: ARTIFACT_SCHEMA_VERSIONS,
       population_presets: { ci: 3_000, scaled: 15_000, full: MOCK_POP },
       job_kinds: ['scenario_run', 'scenario_compare', 'ensemble'],
       resident_route_ids: RES_ROUTES.map(([key]) => key),

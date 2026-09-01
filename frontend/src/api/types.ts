@@ -182,6 +182,7 @@ export interface CapabilitiesResponse {
   api_version: 'v1';
   api_schema_version: 'm9-1.0';
   package_version: string;
+  artifact_schema_version_semantics: string;
   engine: JsonObject;
   artifact_schema_versions: Record<string, string>;
   population_presets: Record<string, number>;

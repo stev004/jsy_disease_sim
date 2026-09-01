@@ -9,6 +9,8 @@ from pydantic.types import StrictFloat, StrictInt
 
 from .contracts import ArtifactRecord, NonEmptyString, StrictModel
 
+M6_OBSERVATION_ARTIFACT_SCHEMA_VERSION = "1.4"
+
 ObservationStatus = Literal[
     "observed",
     "derived",
@@ -162,7 +164,7 @@ class ObservationConfig(StrictModel):
 class ObservationArtifactManifest(StrictModel):
     """Manifest for a standalone latent-to-observed transformation."""
 
-    manifest_schema_version: Literal["1.2", "1.3", "1.4"] = "1.4"
+    manifest_schema_version: Literal["1.2", "1.3", "1.4"] = M6_OBSERVATION_ARTIFACT_SCHEMA_VERSION
     artifact_id: NonEmptyString
     generator_version: NonEmptyString = "6.2.0"
     latent_run_logical_content_hash: NonEmptyString
