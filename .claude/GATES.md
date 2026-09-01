@@ -19,10 +19,6 @@
   ```
 - **Default:** waits for Steven. Never merged by an agent.
 
-### G6 — Launch the V1.1 release-repair run (R0–R3)
-- **Question:** start the foreman run implementing Sol Pro's four blockers (B01 portable artifact paths, B02 daily ascertainment cohort semantics, B03 API schema versions, B04 already fixed in state) + majors M01/M02 on a new `codex/v1.1-release-corrections` branch off `e3609ff2`?
-- **Options:** launch now · hold (EMA due 3 Sept noon)
-- **Default:** hold until Steven says go. Bounded correction cycle, no model changes; then R4 (regenerate P1 evidence at the new SHA) + R5 (bounded re-audit).
 
 ### G4 — Doc commits on frozen `main`
 - **Question:** Sol's freeze rule keeps even doc fixes off `main`, so the frontier lives on `docs/frontier`. Accept that until V1.1 ships, then fold frontier/handoff/stale-doc fixes into the release integration?
@@ -34,6 +30,9 @@
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G6 — V1.1 release-repair run — RESOLVED 2026-09-01 (Steven, in chat: "run the repair and keep going"): launched same day
+Run completed 2026-09-01: re-audit PASS at `e502ebf...`. *(Closed late — caught by the terra trail audit, same failure class as G2/B04.)*
 
 ### G2 — V1.1 full-scale baseline — RESOLVED 2026-08-31 (Steven, in chat: "keep it going"): approved, Mac
 Run completed 2026-08-31 (run-20260831T145052Z, verification PASS, comparison filed 2026-09-01). *Bookkeeping note: this gate was left open in this file until 2026-09-01 despite the chat ruling — flagged by Sol Pro B04; lesson encoded in DIRECTOR.md.*

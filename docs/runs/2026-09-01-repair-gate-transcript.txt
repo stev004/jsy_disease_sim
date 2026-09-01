@@ -1,0 +1,41 @@
++(eval):1> git rev-parse HEAD
+e502ebfd366743db8ecbb65f580159bfa1d2a70c
++(eval):1> git status --porcelain
++(eval):1> export UV_CACHE_DIR=/tmp/jsy-v11-uv-cache
++(eval):1> uv sync --locked
++(eval):1> tail -1
+Checked 74 packages in 45ms
++(eval):1> uv lock --check
++(eval):1> tail -1
+Resolved 77 packages in 9ms
++(eval):1> uv run python -m compileall -q src
++(eval):1> uv run ruff check .
+All checks passed!
++(eval):1> uv run ruff format --check .
++(eval):1> tail -1
+106 files already formatted
++(eval):1> uv run pytest -q
++(eval):1> tail -1
+229 passed, 5 warnings in 627.93s (0:10:27)
++(eval):1> cd frontend
++(eval):1> npm ci --silent
++(eval):1> tail -1
++(eval):1> npm run test --silent
++(eval):1> tail -2
+   Duration  977ms (transform 448ms, setup 0ms, collect 919ms, tests 31ms, environment 1ms, prepare 393ms)
+
++(eval):1> npm run typecheck
+
+> jos-frontend@1.1.0 typecheck
+> tsc --noEmit
+
++(eval):1> npm run build
++(eval):1> tail -1
+✓ built in 720ms
++(eval):1> git diff --check
++(eval):1> git status --porcelain
++(eval):1> echo GATE_A_COMPLETE_ALL_GREEN
+GATE_A_COMPLETE_ALL_GREEN
++zsh:1> pwd -P
+
+[exited with code 0]

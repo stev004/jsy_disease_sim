@@ -11,7 +11,7 @@
 Historical context of the repair (superseded): The core V1.1 science is NOT in question — the audit explicitly endorses the mechanisms, defaults, and the P1 trajectory ("no numerical release concern"). The blockers are contract-truth defects: **B01** artifact manifest paths break portable/recursive verification (writer records repo-root/absolute paths; verifier resolves artifact-relative) · **B02** daily `ascertainment_fraction` divides detection-date events by infection-date cohorts · **B03** `/capabilities` advertises 4 of 5 stale schema versions · **B04** release-control docs pointed at the superseded branch (fixed in this state layer 2026-09-01). Majors to close same cycle: M01 version identity (0.1.0 everywhere + stale README) · M02 travel diagnostic overclaims · M03 CI doesn't encode the full release gate · M04 the 30-replicate plan can't emit 95% bands under the project's own n·min(q,1−q)≥1 rule (need ≥40 or report median/IQR). Full report: `docs/audits/2026-09-01-solpro-deep-audit-BLOCKED.md`.
 
 - **V1.0 released and frozen:** `main` = tag `jos-v1.0.0` = `9e9ce3abc4201cd8303c723015462d21ca237800` (verified 2026-08-31). Immutable until the V1.1 release gate completes.
-- **Candidate lineage — there is currently NO releasable SHA:** `461bf038` (integration tip) superseded 2026-08-31 (O2 defect) → `e3609ff2` (`codex/v1.1-o2-denominator`) passed the bounded delta re-audit 2026-08-31 but is now **BLOCKED by the Sol Pro deep audit** (contract defects B01–B03, not science). The next candidate = final SHA of `codex/v1.1-release-corrections` (branch off `e3609ff2`, to be created at R0) after its bounded re-audit passes. Audit trail in order: `2026-08-31-v1.1-rc-audit-BLOCKED.md` → `2026-08-31-o2-delta-reaudit-PASS.md` → `2026-09-01-solpro-deep-audit-BLOCKED.md` (all in `docs/audits/`). Merge rule is SHA-first — see GATES G3.
+- **Candidate lineage — the releasable SHA is `e502ebfd366743db8ecbb65f580159bfa1d2a70c`** (tip of `codex/v1.1-release-corrections`): `461bf038` superseded 2026-08-31 (O2) → `e3609ff2` delta-re-audit PASS then BLOCKED by the Sol Pro deep audit (contract defects, not science) → 5 correction commits → `e502ebf`, bounded re-audit **PASS** 2026-09-01. Audit trail in `docs/audits/`, in order: `2026-08-31-v1.1-rc-audit-BLOCKED` → `2026-08-31-o2-delta-reaudit-PASS` → `2026-09-01-solpro-deep-audit-BLOCKED` → `2026-09-01-release-corrections-reaudit-PASS`. Merge rule SHA-first — GATES G3 has the exact procedure.
 
 ## The one next action
 
@@ -27,8 +27,8 @@ Historical context of the repair (superseded): The core V1.1 science is NOT in q
 | Branch | Tip | Role |
 |---|---|---|
 | `main` | `9e9ce3a` | frozen V1 release — do not move |
-| `codex/v1.1-o2-denominator` | `e3609ff` | latest candidate line — BLOCKED by Sol Pro audit; base for the release-corrections branch |
-| `codex/v1.1-release-corrections` | (to create at R0) | will carry the next candidate SHA |
+| `codex/v1.1-release-corrections` | `e502ebf` | **the releasable candidate** (re-audit PASS 2026-09-01) — merge target per G3 |
+| `codex/v1.1-o2-denominator` | `e3609ff` | historical: base of the corrections branch (superseded) |
 | `docs/jos-v1-scientific-review` | `b8aeb8b` | Claude Science V1 reports (audit/tech report/roadmap) |
 | `docs/frontier` | this branch | frontier pointer + handoff + foreman state |
 
