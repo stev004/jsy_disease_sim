@@ -24,7 +24,7 @@ alone. Facts live where this map says; the session log carries history.
 | Independent audit reports (immutable) | `docs/audits/` |
 | Executor reports, gate transcripts, comparison/delta notes | `docs/runs/` |
 | Cold-start handoff from the original Sol chat (deep history, conventions) | `docs/handoff/2026-08-31-sol-handoff.md` |
-| Windows desktop setup (WSL2, `.wslconfig`, toolchains, skill install, smoke, P4 sizing) | `docs/desktop-setup.md` + `scripts/setup-windows.ps1` + `scripts/install_skills.sh` |
+| Windows desktop handoff (agent runbook: native-first probe, WSL2 fallback, P4 sizing) | `docs/desktop-setup.md` + `scripts/{bootstrap-windows.ps1,probe-native.sh,install_skills.sh,setup-windows.ps1}` |
 | Vendored orchestration skills (foreman/closeout/dev-delegate; source of truth for this repo, installed by `scripts/install_skills.sh`) | `.claude/skills/` |
 
 ## Rules

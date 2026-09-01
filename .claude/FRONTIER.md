@@ -28,7 +28,7 @@ Then V1.2.1 → V1.3 (first named-pathogen Jersey calibration, COVID era, predec
 ## Off-repo assets
 
 - `~/Documents/JOS_v1_full_scale_evidence/` (V1 pilot) and `~/Documents/JOS_v1_1_full_scale_evidence/run-20260831T145052Z` (pre-repair, retained as the B01 exhibit) and `run-20260901T131226Z` (release evidence) — all immutable.
-- Desktop transfer: **not done** — first step of P4; origin holds everything needed.
+- Desktop transfer: **not done** — first step of P4. Windows desktop; Steven pastes the one-liner in `docs/desktop-setup.md` §0, the desktop agent runs §1 (native probe → WSL2 only on proven need) and writes the `desktop-transfer` trail row + flips this line.
 
 ## Doc authority map
 

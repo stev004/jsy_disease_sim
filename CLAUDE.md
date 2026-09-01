@@ -8,6 +8,9 @@ Synthetic-population, multi-route contact-network, agent-based epidemic simulato
 3. `.claude/GATES.md` — decisions waiting on Steven, each with a default.
 4. `.claude/DIRECTOR.md` — standing orders + hard rules + encoded lessons (binding for any agent driving work here).
 
+## New machine?
+If this checkout has never run the loop here (no `desktop-transfer` row in `.claude/decisions.tsv` for this hostname), execute `docs/desktop-setup.md` §1 yourself before anything else — it is an agent runbook, not user instructions.
+
 ## How work happens here
 - Multi-iteration work runs through the **`/foreman`** skill (vendored in `.claude/skills/`, installed to `~/.claude/skills/` by `scripts/install_skills.sh` — new machine: `docs/desktop-setup.md`): Claude directs, Codex executes, memory = the `.claude/` state files above. Trail = `.claude/decisions.tsv` (append-only). State ops via `fm.sh log|sync|exec` — state lives on `main`, so it operates in place.
 - Single ad-hoc changes: `/dev-delegate`. Session end: `/closeout` (doc map in `.claude/CLOSEOUT.md`).
