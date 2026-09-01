@@ -10,6 +10,7 @@ from typing import Annotated
 
 import typer
 
+from .bundle_selftest import run_bundle_selftest
 from .calibration import run_synthetic_recovery
 from .calibration_artifacts import write_calibration_artifact
 from .calibration_schemas import CalibrationConfig
@@ -1211,3 +1212,28 @@ def verification_archive_check(
 
     result = verify_verification_archive(manifest)
     typer.echo(json.dumps(result, ensure_ascii=False, sort_keys=True))
+
+
+@verification_app.command("bundle-selftest")
+def verification_bundle_selftest(
+    artifact_dir: Annotated[Path, typer.Argument(help="Scientific artifact directory.")],
+    transcript_dir: Annotated[
+        Path | None, typer.Option(help="Directory for the bundle-level transcript.")
+    ] = None,
+    keep_copy: Annotated[
+        bool, typer.Option(help="Retain the temporary relocated copy for inspection.")
+    ] = False,
+) -> None:
+    """Verify a copied scientific artifact and write its relocation transcript."""
+
+    try:
+        result = run_bundle_selftest(
+            artifact_dir,
+            transcript_dir=transcript_dir,
+            keep_copy=keep_copy,
+        )
+    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        raise typer.BadParameter(str(exc), param_hint="artifact_dir") from exc
+    typer.echo(f"BUNDLE_SELFTEST {result.status} {result.transcript_path}")
+    if result.status != "passed":
+        raise typer.Exit(code=1)
