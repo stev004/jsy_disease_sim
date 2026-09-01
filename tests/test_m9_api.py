@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import threading
 import time
+import tomllib
 from pathlib import Path
 
 import pyarrow as pa
@@ -145,7 +146,9 @@ def test_api_contract_validation_errors_idempotency_and_cors(tmp_path: Path) -> 
             "m7": InterventionArtifactManifest.model_fields["manifest_schema_version"].default,
             "m8": TravelArtifactManifest.model_fields["manifest_schema_version"].default,
         }
-        assert capabilities["package_version"] == __version__
+        with (ROOT / "pyproject.toml").open("rb") as pyproject_file:
+            project_version = tomllib.load(pyproject_file)["project"]["version"]
+        assert capabilities["package_version"] == project_version == __version__
         assert capabilities["artifact_schema_version_semantics"].startswith(
             "current write versions"
         )

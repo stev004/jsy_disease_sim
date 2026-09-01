@@ -7,123 +7,13 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-This repository contains **Milestones 0–9 plus corrective closures C1–C5**:
-repository contracts, a verified
-Starsim compatibility/reproducibility spike, a source-registered aggregate
-evidence layer, a disease-agnostic synthetic Jersey population generator, and
-synthetic daytime structure for schools, employment, workplaces and commuting,
-plus a disease-agnostic Jersey route layer adapted to Starsim 3.5.2. M4.1
-closes the school-staff and supported care-home staffing overlays using frozen
-official evidence and explicit synthetic allocation assumptions; it does not
-claim to reconstruct real staff rosters.
-Milestone 5 adds a generic, pathogen-neutral daily respiratory SEIRS
-demonstration. Its active states are susceptible, exposed, infectious and
-recovered, with configurable immunity waning; severity, disease deaths,
-symptom substates and named-pathogen parameters are explicitly deferred.
-Milestone 6 adds a standalone observation layer, deterministic ensembles,
-matched-seed A/B comparisons and a synthetic-only Optuna recovery harness.
-Starsim owns network transmission, while JOS records
-route-attributed latent infections and writes tidy daily epidemic, parish, age
-and route tables. Demonstration values are scenario assumptions, not Jersey
-surveillance controls.
-The C4 correction samples observation schedules when infections occur, delivers
-detections at their simulation timestep through a read-only consumer hook, and
-uses metric-aware ensemble grids. Observation randomness remains isolated by
-replicate/configuration, process execution records requested/planned/actual
-workers, and synthetic held-out beta recovery remains available. Milestone 7,
-as corrected by C5, adds the typed composable intervention runtime,
-detection-triggered isolation and quarantine, calendar/contact families,
-vaccination, matched-seed comparisons, intervention ensembles and
-visualization-ready artifacts. M8 adds the separate travel/visitor layer.
-Milestone 9 adds a loopback-only FastAPI interface, persistent SQLite job
-execution, isolated workers, cancellation, restart reconciliation, verified
-application result manifests and bounded dataset retrieval. No frontend or UI
-is included. Corrective M9.1 makes one content-aware, request/provenance-bound,
-transactional finalizer the only path to successful job publication. The
-independent M9.1 audit still found one restart provenance substitution, so
-corrective M9.2 binds submission identity into the request hash, persists
-submitted and worker-observed commit/dirty identities as separate immutable
-SQLite anchors, and requires every candidate, scientific artifact, and result
-manifest to match them. M10 (interactive application) is in progress on
-branch `codex/m10-interactive-app`: a designed and implemented React/Vite
-frontend under `frontend/` that drives the M9 API (see
-[`docs/m10_ui_design.md`](docs/m10_ui_design.md) and
-[`frontend/README.md`](frontend/README.md)); its milestone gate has not
-been run and no M10 PASS is claimed. The
-quantitative gate record is in
-[`docs/progress.md`](docs/progress.md), and the API contract is in
-[`docs/api.md`](docs/api.md).
-The Starsim demo is an official SIR example using Starsim's built-in
-`RandomNet`; it is not a Jersey outbreak reconstruction or a validated
-forecast. The Milestone 2 population is synthetic and control-driven; it is
-not a sample of named people or real addresses.
+V1.0 is released and frozen at tag `jos-v1.0.0`, including the M10 interactive
+frontend.
 
-C5 defines `duration_days` as the number of dated output points, including the
-start and final dates. A manager-attached neutral scenario reuses canonical M4
-route arrays without copying or float recasting, so its nonzero-beta latent
-events, hazard evidence, daily trajectories and latent-outcome hash are exact
-baseline equivalents. Scenario identity hashes the complete run config and all
-M2/M3/M4, disease, observation, intervention, sensitivity and model-version
-parents. M7 artifacts directly contain the five M5 latent tables alongside
-intervention state/events and verify every persisted file hash.
-
-Milestone 1 includes immutable official source snapshots, explicitly labelled
-manual PDF transcriptions, canonical aggregate CSVs and deterministic data
-quality reports. It does not include synthetic residents, household synthesis,
-individual schools/workplaces/commutes, custom routes, a respiratory disease
-module, observation, calibration, API or UI.
-
-Milestone 2 adds CI (3,000), scaled (15,000) and full (104,540) population
-generation modes. It produces versioned Parquet residents, private households
-and communal-setting artifacts, plus JSON/Markdown diagnostics and a
-reproducibility manifest. It does not create contacts, schools, workplaces,
-commutes, mobility, disease transmission, visitors, API or UI functionality.
-
-Milestone 3 consumes one validated Milestone 2 artifact and produces only
-synthetic school/class assignments, employment sectors, bounded primary and
-secondary jobs, synthetic workplaces/teams, work parishes and commute metadata.
-It records the canonical control hashes, M2 input hashes, assumptions and
-diagnostics in an immutable Parquet artifact. It does not create Starsim
-networks or contact edges, disease states, interventions, visitors, an API or a
-UI; it is not a Jersey outbreak model.
-
-The verified full M3 artifact contains 104,540 residents, 48 synthetic schools,
-703 classes, 13,991 school assignments, 8,500 private undertakings plus 270
-synthetic non-private workplaces (8,770 operational workplaces), 4,387 teams
-and 62,108 job assignments. All 50 M3 diagnostics checks pass. These are
-synthetic structures and aggregate-control reconciliations, not observations
-about named people, real schools, employer identities or workplace ownership.
-
-Milestone 4 converts the validated M2/M3 artifacts into reproducible household,
-school, workplace, care, transport and community route tables. It keeps fixed,
-periodically refreshed and daily sampled contacts separate, applies weekday,
-weekend, school-term and WFH schedule rules, and adapts the plain route tables
-to Starsim `ss.Network`/`ss.DynamicNetwork` objects. M4.1 layers synthetic
-teacher/TA/leadership and supported care-home staff memberships onto existing
-M4 routes, preserving M3 worker/job accounting. School FTE controls remain
-observed CYPES controls with a documented FTE-to-endpoint conversion; Care
-Commission ratios are regulatory minima, not observed rosters. Institutional
-staff primary jobs are reinterpreted for ordinary workplace routes, while
-explicit secondary jobs remain; household, community and transport contacts are
-preserved. It does not contain a custom disease, transmission calibration or
-intervention model.
-
-Milestone 5 consumes an immutable M4.1 route object and runs a generic
-respiratory SEIRS module through Starsim 3.5.2. Seeded infections and optional
-generic exogenous imports are distinct from locally acquired infections. Local
-events retain the Starsim infector UID and route ID; no visitors, arrivals,
-airport/ferry process, observation model, calibration, interventions or API are
-implemented in M5.
-
-Milestone 6 keeps M5 latent outputs immutable and applies observation
-assumptions in a separate layer. `jos observe run` writes detected/reported
-case tables and event metadata without changing the latent hash. `jos ensemble
-run --seeds 101,102,103` retains explicit replicate seeds and writes tidy
-replicate trajectories with linear lower/median/upper quantiles. Matched-seed
-comparisons pair A/B outputs by seed. `jos calibrate synthetic` and
-`jos calibrate beta` use Optuna to recover a hidden observation or generic beta
-parameter from synthetic truth only, retaining all trials and a held-out
-synthetic check; neither is Jersey calibration.
+V1.1 is a scientific-hardening release candidate under final release
+corrections on branch `codex/v1.1-release-corrections`. The current-state
+authority is [`.claude/FRONTIER.md`](.claude/FRONTIER.md) on the `docs/frontier`
+branch.
 
 ## Quick start
 
