@@ -148,7 +148,7 @@ class PopulationArtifactManifest(StrictModel):
 
     model_config = ConfigDict(extra="forbid", strict=True, validate_assignment=True)
 
-    manifest_schema_version: Literal["1.0"] = "1.0"
+    manifest_schema_version: Literal["1.0", "1.1"] = "1.1"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString
     mode: PopulationMode

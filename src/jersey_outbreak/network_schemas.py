@@ -191,7 +191,7 @@ class NetworkManifestConfig(StrictModel):
 class NetworkArtifactManifest(StrictModel):
     """Provenance manifest for a persisted Milestone 4 route artifact."""
 
-    manifest_schema_version: Literal["1.0"] = "1.0"
+    manifest_schema_version: Literal["1.0", "1.1"] = "1.1"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString
     mode: PopulationMode

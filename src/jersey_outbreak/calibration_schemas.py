@@ -74,7 +74,7 @@ class CalibrationConfig(StrictModel):
 class CalibrationArtifactManifest(StrictModel):
     """Manifest for a synthetic calibration experiment, including all trials."""
 
-    manifest_schema_version: Literal["1.1"] = "1.1"
+    manifest_schema_version: Literal["1.1", "1.2"] = "1.2"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString = "6.1.0"
     study_id: NonEmptyString

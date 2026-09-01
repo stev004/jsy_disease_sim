@@ -16,6 +16,7 @@ from .contracts import ArtifactRecord
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .outbreak_runner import OutbreakRunResult, network_artifact_id
 from .outbreak_schemas import OutbreakArtifactManifest
+from .population_artifacts import portable_artifact_path
 
 
 @dataclass(frozen=True)
@@ -45,13 +46,6 @@ def _git_metadata(root: Path) -> tuple[str | None, bool]:
         return commit.stdout.strip() or None, bool(status.stdout.strip())
     except OSError:
         return None, True
-
-
-def _relative_path(path: Path, root: Path) -> str:
-    try:
-        return str(path.relative_to(root))
-    except ValueError:
-        return str(path)
 
 
 def _write_table(path: Path, rows: list[dict[str, Any]], schema: pa.Schema) -> None:
@@ -238,7 +232,7 @@ def write_outbreak_artifact(
     git_commit, dirty_worktree = _git_metadata(root)
     output_artifacts = [
         ArtifactRecord(
-            path=_relative_path(path, root),
+            path=portable_artifact_path(path, artifact_directory),
             sha256=sha256_file(path),
             size_bytes=path.stat().st_size,
         )

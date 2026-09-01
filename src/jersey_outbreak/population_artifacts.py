@@ -70,11 +70,29 @@ def _git_metadata(root: Path) -> tuple[str | None, bool]:
         return None, True
 
 
-def _relative_path(path: Path, root: Path) -> str:
+def portable_artifact_path(path: Path, artifact_directory: Path) -> str:
+    """Return a portable path relative to the artifact that contains it."""
+
     try:
-        return str(path.relative_to(root))
-    except ValueError:
-        return str(path)
+        return path.resolve().relative_to(artifact_directory.resolve()).as_posix()
+    except ValueError as exc:
+        raise ValueError("portable artifact output must be inside its artifact directory") from exc
+
+
+def resolve_portable_artifact_path(path_value: str, artifact_directory: Path) -> Path:
+    """Resolve one manifest path while enforcing the portable path contract."""
+
+    path = Path(path_value)
+    if path.is_absolute():
+        raise ValueError("portable artifact paths must be relative to the artifact directory")
+    if ".." in path.parts:
+        raise ValueError("portable artifact paths must not contain parent traversal")
+    resolved = (artifact_directory / path).resolve()
+    try:
+        resolved.relative_to(artifact_directory.resolve())
+    except ValueError as exc:
+        raise ValueError("portable artifact path escaped its artifact directory") from exc
+    return resolved
 
 
 def _markdown_report(diagnostics: dict[str, Any], benchmark: dict[str, Any]) -> str:
@@ -218,7 +236,7 @@ def write_population_artifact(
     )
     output_artifacts = [
         ArtifactRecord(
-            path=_relative_path(path, root),
+            path=portable_artifact_path(path, artifact_directory),
             sha256=sha256_file(path),
             size_bytes=path.stat().st_size,
         )

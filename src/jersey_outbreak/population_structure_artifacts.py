@@ -17,6 +17,7 @@ from .contracts import ArtifactRecord
 from .data_pipeline import DataBuildError
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .population_artifacts import logical_content_hash as m2_logical_content_hash
+from .population_artifacts import portable_artifact_path, resolve_portable_artifact_path
 from .population_schemas import (
     CommunalSettingRecord,
     HouseholdRecord,
@@ -70,16 +71,16 @@ class M3StructureInput:
     job_assignments: list[dict[str, Any]]
 
 
-def _manifest_file(path_value: str, root: Path) -> Path:
-    path = Path(path_value)
-    return path if path.is_absolute() else root / path
-
-
 def _read_parquet(path: Path) -> list[dict[str, Any]]:
     try:
         return pq.read_table(path).to_pylist()
     except (OSError, pa.ArrowException, ValueError) as exc:
         raise DataBuildError(f"cannot read Parquet artifact {path}: {exc}") from exc
+
+
+def _legacy_manifest_file(path_value: str, root: Path) -> Path:
+    path = Path(path_value)
+    return path if path.is_absolute() else root / path
 
 
 def load_m2_population_artifact(root: Path, artifact_directory: Path) -> M2PopulationInput:
@@ -98,7 +99,14 @@ def load_m2_population_artifact(root: Path, artifact_directory: Path) -> M2Popul
 
     by_name: dict[str, Path] = {}
     for record in manifest.output_artifacts:
-        path = _manifest_file(record.path, root)
+        try:
+            path = (
+                _legacy_manifest_file(record.path, root)
+                if manifest.manifest_schema_version == "1.0"
+                else resolve_portable_artifact_path(record.path, artifact_directory)
+            )
+        except ValueError as exc:
+            raise DataBuildError(f"invalid Milestone 2 output path: {record.path}: {exc}") from exc
         if not path.is_file():
             raise DataBuildError(f"Milestone 2 output artifact is missing: {path}")
         if sha256_file(path) != record.sha256:
@@ -174,7 +182,14 @@ def load_m3_structure_artifact(root: Path, artifact_directory: Path) -> M3Struct
     }
     by_name: dict[str, Path] = {}
     for record in manifest.output_artifacts:
-        path = _manifest_file(record.path, root)
+        try:
+            path = (
+                _legacy_manifest_file(record.path, root)
+                if manifest.manifest_schema_version == "1.0"
+                else resolve_portable_artifact_path(record.path, artifact_directory)
+            )
+        except ValueError as exc:
+            raise DataBuildError(f"invalid Milestone 3 output path: {record.path}: {exc}") from exc
         if path.is_file() and path.name in required:
             if sha256_file(path) != record.sha256:
                 raise DataBuildError(f"Milestone 3 output artifact hash mismatch: {path}")
@@ -346,7 +361,7 @@ def write_structure_artifact(
     output_paths = (*table_paths, diagnostics_json_path, diagnostics_md_path, benchmark_path)
     output_artifacts = [
         ArtifactRecord(
-            path=str(path.relative_to(root)) if path.is_relative_to(root) else str(path),
+            path=portable_artifact_path(path, artifact_directory),
             sha256=sha256_file(path),
             size_bytes=path.stat().st_size,
         )

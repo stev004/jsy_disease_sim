@@ -15,6 +15,7 @@ from .calibration import CalibrationResult
 from .calibration_schemas import CalibrationArtifactManifest
 from .contracts import ArtifactRecord
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
+from .population_artifacts import portable_artifact_path, resolve_portable_artifact_path
 
 
 @dataclass(frozen=True)
@@ -44,13 +45,6 @@ def _git_metadata(root: Path) -> tuple[str | None, bool]:
         return commit.stdout.strip() or None, bool(status.stdout.strip())
     except OSError:
         return None, True
-
-
-def _relative_path(path: Path, root: Path) -> str:
-    try:
-        return str(path.relative_to(root))
-    except ValueError:
-        return str(path)
 
 
 def write_calibration_artifact(
@@ -156,7 +150,7 @@ def write_calibration_artifact(
     git_commit, dirty_worktree = _git_metadata(root)
     output_artifacts = [
         ArtifactRecord(
-            path=_relative_path(path, root),
+            path=portable_artifact_path(path, artifact_directory),
             sha256=sha256_file(path),
             size_bytes=path.stat().st_size,
         )
@@ -221,3 +215,40 @@ def write_calibration_artifact(
         encoding="utf-8",
     )
     return CalibrationArtifact(artifact_directory, manifest)
+
+
+def verify_calibration_artifact(artifact_directory: Path) -> CalibrationArtifactManifest:
+    """Verify the portable output records of one M6 calibration artifact."""
+
+    artifact_directory = artifact_directory.resolve()
+    manifest_path = artifact_directory / "manifest.json"
+    if not manifest_path.is_file():
+        raise ValueError("M6 calibration artifact is missing manifest.json")
+    manifest = CalibrationArtifactManifest.model_validate_json(manifest_path.read_bytes())
+    required = {
+        "calibration_trials.parquet",
+        "calibration_results.json",
+        "diagnostics.json",
+        "calibration_config.json",
+    }
+    seen: set[Path] = set()
+    files: set[str] = set()
+    for record in manifest.output_artifacts:
+        try:
+            path = resolve_portable_artifact_path(record.path, artifact_directory)
+        except ValueError as exc:
+            raise ValueError(f"invalid M6 calibration output path {record.path}: {exc}") from exc
+        if path in seen:
+            raise ValueError(f"M6 calibration manifest contains duplicate output: {record.path}")
+        seen.add(path)
+        if not path.is_file():
+            raise ValueError(f"M6 calibration output is missing: {record.path}")
+        if path.stat().st_size != record.size_bytes:
+            raise ValueError(f"M6 calibration output size mismatch: {record.path}")
+        if sha256_file(path) != record.sha256:
+            raise ValueError(f"M6 calibration output hash mismatch: {record.path}")
+        files.add(path.name)
+    missing = sorted(required - files)
+    if missing:
+        raise ValueError(f"M6 calibration artifact is incomplete: {missing}")
+    return manifest

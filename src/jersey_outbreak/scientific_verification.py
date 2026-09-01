@@ -21,6 +21,7 @@ from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .intervention_artifacts import InterventionArtifactManifest, verify_intervention_artifact
 from .intervention_schemas import ScenarioConfig
 from .outbreak_schemas import OutbreakArtifactManifest, OutbreakRunConfig, RespiratoryParameterSet
+from .population_artifacts import resolve_portable_artifact_path
 from .respiratory import RespiratorySEIRS
 from .scientific_hashes import (
     m5_artifact_bundle_hash,
@@ -49,22 +50,48 @@ class VerifiedScientificArtifact:
     extra: dict[str, Any] = field(default_factory=dict)
 
 
-def _inside(path: Path, root: Path) -> Path:
-    resolved = path.resolve()
+def _legacy_artifact_path(path_value: str, artifact_directory: Path) -> Path:
+    candidate = Path(path_value)
+    if not candidate.is_absolute():
+        candidate = artifact_directory / candidate
+    resolved = candidate.resolve()
     try:
-        resolved.relative_to(root.resolve())
+        resolved.relative_to(artifact_directory.resolve())
     except ValueError as exc:
         raise ValueError("scientific artifact output escaped its artifact directory") from exc
     return resolved
 
 
+def _uses_legacy_paths(payload: dict[str, Any]) -> bool:
+    version = payload.get("manifest_schema_version")
+    if payload.get("module") == "generic_respiratory_seirs":
+        return version in {"1.0", "1.1"}
+    if "ensemble_id" in payload:
+        return version in {"1.2", "1.3"}
+    if "comparison_id" in payload:
+        return version in {"1.0", "1.1"}
+    return False
+
+
 def _record_files(artifact_directory: Path, payload: dict[str, Any]) -> list[Path]:
     files: list[Path] = []
+    seen: set[Path] = set()
     for record in payload.get("output_artifacts", []):
-        candidate = Path(str(record["path"]))
-        if not candidate.is_absolute():
-            candidate = artifact_directory / candidate
-        candidate = _inside(candidate, artifact_directory)
+        try:
+            candidate = (
+                _legacy_artifact_path(str(record["path"]), artifact_directory)
+                if _uses_legacy_paths(payload)
+                else resolve_portable_artifact_path(str(record["path"]), artifact_directory)
+            )
+        except ValueError as exc:
+            raise ValueError(
+                f"invalid scientific artifact output path: {record['path']}: {exc}"
+            ) from exc
+        if candidate in seen:
+            raise ValueError(
+                f"scientific artifact manifest contains duplicate output: {record['path']}"
+            )
+        seen.add(candidate)
         if not candidate.is_file():
             raise ValueError(f"scientific artifact file is missing: {candidate.name}")
         if candidate.stat().st_size != int(record["size_bytes"]):
@@ -475,7 +502,7 @@ def verify_m6_comparison_artifact(artifact_directory: Path) -> VerifiedScientifi
         "comparison_config.json",
         "diagnostics.json",
     }
-    if manifest.manifest_schema_version == "1.1":
+    if manifest.manifest_schema_version in {"1.1", "1.2"}:
         required_files.add("paired_difference_summary.parquet")
     _required_files(files, required_files)
     if manifest.status != "passed":
@@ -484,7 +511,7 @@ def verify_m6_comparison_artifact(artifact_directory: Path) -> VerifiedScientifi
     rows = _rows(artifact_directory, "matched_seed_comparison.parquet")
     summary = (
         _rows(artifact_directory, "paired_difference_summary.parquet")
-        if manifest.manifest_schema_version == "1.1"
+        if manifest.manifest_schema_version in {"1.1", "1.2"}
         else None
     )
     for key in ("comparison_id", "config_a_hash", "config_b_hash"):

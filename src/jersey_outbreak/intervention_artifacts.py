@@ -17,12 +17,13 @@ from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .intervention_analysis import InterventionComparison
 from .outbreak_artifacts import write_outbreak_artifact
 from .outbreak_runner import OutbreakRunResult, network_artifact_id
+from .population_artifacts import portable_artifact_path, resolve_portable_artifact_path
 
 
 class InterventionArtifactManifest(StrictModel):
     """Parent-linked manifest for one M7 scenario run."""
 
-    manifest_schema_version: str = "2.0"
+    manifest_schema_version: str = "2.1"
     artifact_id: str
     framework_version: str
     scenario_id: str
@@ -82,13 +83,6 @@ def _git_metadata(root: Path) -> tuple[str | None, bool]:
         return commit.stdout.strip() or None, bool(status.stdout.strip())
     except OSError:
         return None, True
-
-
-def _relative(path: Path, root: Path) -> str:
-    try:
-        return str(path.relative_to(root))
-    except ValueError:
-        return str(path)
 
 
 def _write_table(path: Path, rows: list[dict[str, Any]], schema: pa.Schema) -> None:
@@ -290,7 +284,7 @@ def write_intervention_artifact(
         peak_memory_bytes=result.peak_memory_bytes,
         output_artifacts=[
             ArtifactRecord(
-                path=str(path.relative_to(artifact_directory)),
+                path=portable_artifact_path(path, artifact_directory),
                 sha256=sha256_file(path),
                 size_bytes=path.stat().st_size,
             )
@@ -330,9 +324,18 @@ def verify_intervention_artifact(artifact_directory: Path) -> InterventionArtifa
     latent_manifest = latent_directory / "manifest.json"
     if sha256_file(latent_manifest) != manifest.latent_bundle_manifest_sha256:
         raise ValueError("M7 latent bundle manifest hash mismatch")
+    seen: set[Path] = set()
     for record in manifest.output_artifacts:
-        path = artifact_directory / record.path
-        if not path.is_file() or sha256_file(path) != record.sha256:
+        try:
+            path = resolve_portable_artifact_path(record.path, artifact_directory)
+        except ValueError as exc:
+            raise ValueError(f"invalid M7 output path {record.path}: {exc}") from exc
+        if path in seen:
+            raise ValueError(f"M7 manifest contains duplicate output: {record.path}")
+        seen.add(path)
+        if not path.is_file():
+            raise ValueError(f"M7 output is missing: {record.path}")
+        if path.stat().st_size != record.size_bytes or sha256_file(path) != record.sha256:
             raise ValueError(f"M7 output hash mismatch or missing file: {record.path}")
     return manifest
 

@@ -16,6 +16,7 @@ from .contracts import ArtifactRecord
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .observation import ObservationRunResult
 from .observation_schemas import ObservationArtifactManifest
+from .population_artifacts import portable_artifact_path, resolve_portable_artifact_path
 
 
 @dataclass(frozen=True)
@@ -45,13 +46,6 @@ def _git_metadata(root: Path) -> tuple[str | None, bool]:
         return commit.stdout.strip() or None, bool(status.stdout.strip())
     except OSError:
         return None, True
-
-
-def _relative_path(path: Path, root: Path) -> str:
-    try:
-        return str(path.relative_to(root))
-    except ValueError:
-        return str(path)
 
 
 def _write_table(path: Path, rows: list[dict[str, Any]], schema: pa.Schema) -> None:
@@ -241,7 +235,7 @@ def write_observation_artifact(
     git_commit, dirty_worktree = _git_metadata(root)
     output_artifacts = [
         ArtifactRecord(
-            path=_relative_path(path, root),
+            path=portable_artifact_path(path, artifact_directory),
             sha256=sha256_file(path),
             size_bytes=path.stat().st_size,
         )
@@ -268,3 +262,43 @@ def write_observation_artifact(
         encoding="utf-8",
     )
     return ObservationArtifact(artifact_directory, manifest)
+
+
+def verify_observation_artifact(artifact_directory: Path) -> ObservationArtifactManifest:
+    """Verify the portable output records of one standalone M6 observation artifact."""
+
+    artifact_directory = artifact_directory.resolve()
+    manifest_path = artifact_directory / "manifest.json"
+    if not manifest_path.is_file():
+        raise ValueError("M6 observation artifact is missing manifest.json")
+    manifest = ObservationArtifactManifest.model_validate_json(manifest_path.read_bytes())
+    required = {
+        "daily_observed_cases.parquet",
+        "daily_observed_parish.parquet",
+        "daily_observed_age.parquet",
+        "observation_events.parquet",
+        "detection_events.parquet",
+        "observation_config.json",
+        "diagnostics.json",
+    }
+    seen: set[Path] = set()
+    files: set[str] = set()
+    for record in manifest.output_artifacts:
+        try:
+            path = resolve_portable_artifact_path(record.path, artifact_directory)
+        except ValueError as exc:
+            raise ValueError(f"invalid M6 observation output path {record.path}: {exc}") from exc
+        if path in seen:
+            raise ValueError(f"M6 observation manifest contains duplicate output: {record.path}")
+        seen.add(path)
+        if not path.is_file():
+            raise ValueError(f"M6 observation output is missing: {record.path}")
+        if path.stat().st_size != record.size_bytes:
+            raise ValueError(f"M6 observation output size mismatch: {record.path}")
+        if sha256_file(path) != record.sha256:
+            raise ValueError(f"M6 observation output hash mismatch: {record.path}")
+        files.add(path.name)
+    missing = sorted(required - files)
+    if missing:
+        raise ValueError(f"M6 observation artifact is incomplete: {missing}")
+    return manifest

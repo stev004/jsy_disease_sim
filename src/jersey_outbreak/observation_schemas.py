@@ -180,7 +180,7 @@ class ObservationConfig(StrictModel):
 class ObservationArtifactManifest(StrictModel):
     """Manifest for a standalone latent-to-observed transformation."""
 
-    manifest_schema_version: Literal["1.2"] = "1.2"
+    manifest_schema_version: Literal["1.2", "1.3"] = "1.3"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString = "6.2.0"
     latent_run_logical_content_hash: NonEmptyString

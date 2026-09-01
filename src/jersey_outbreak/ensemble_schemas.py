@@ -81,7 +81,7 @@ class EnsembleReplicateRecord(StrictModel):
 class EnsembleArtifactManifest(StrictModel):
     """Manifest for a complete or explicitly partial ensemble."""
 
-    manifest_schema_version: Literal["1.2", "1.3"] = "1.3"
+    manifest_schema_version: Literal["1.2", "1.3", "1.4"] = "1.4"
     artifact_id: NonEmptyString
     logical_content_hash: NonEmptyString
     generator_version: NonEmptyString = "6.2.0"
@@ -145,7 +145,7 @@ class EnsembleArtifactManifest(StrictModel):
 class ComparisonArtifactManifest(StrictModel):
     """Manifest for a matched-seed A/B comparison."""
 
-    manifest_schema_version: Literal["1.0", "1.1"] = "1.1"
+    manifest_schema_version: Literal["1.0", "1.1", "1.2"] = "1.2"
     artifact_id: NonEmptyString
     logical_content_hash: NonEmptyString
     generator_version: NonEmptyString = "6.1.0"

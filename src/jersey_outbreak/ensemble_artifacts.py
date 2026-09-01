@@ -16,6 +16,7 @@ from .contracts import ArtifactRecord
 from .ensemble import ComparisonResult, EnsembleResult
 from .ensemble_schemas import ComparisonArtifactManifest, EnsembleArtifactManifest
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
+from .population_artifacts import portable_artifact_path
 
 
 @dataclass(frozen=True)
@@ -55,13 +56,6 @@ def _git_metadata(root: Path) -> tuple[str | None, bool]:
         return None, True
 
 
-def _relative_path(path: Path, root: Path) -> str:
-    try:
-        return str(path.relative_to(root))
-    except ValueError:
-        return str(path)
-
-
 def _write_table(
     path: Path, rows: list[dict[str, Any]] | tuple[dict[str, Any], ...], schema: pa.Schema
 ) -> None:
@@ -74,10 +68,10 @@ def _write_table(
     pq.write_table(table, path, compression="zstd", use_dictionary=True, write_statistics=True)
 
 
-def _records(root: Path, paths: tuple[Path, ...]) -> list[ArtifactRecord]:
+def _records(artifact_directory: Path, paths: tuple[Path, ...]) -> list[ArtifactRecord]:
     return [
         ArtifactRecord(
-            path=_relative_path(path, root),
+            path=portable_artifact_path(path, artifact_directory),
             sha256=sha256_file(path),
             size_bytes=path.stat().st_size,
         )
@@ -263,7 +257,7 @@ def write_ensemble_artifact(
         dirty_worktree_flag=dirty_worktree,
         runtime_seconds=result.runtime_seconds,
         peak_memory_bytes=result.peak_memory_bytes,
-        output_artifacts=_records(root, output_paths),
+        output_artifacts=_records(artifact_directory, output_paths),
     )
     manifest_path.write_text(
         json.dumps(manifest.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
@@ -385,7 +379,7 @@ def write_comparison_artifact(
         git_commit=git_commit,
         dirty_worktree_flag=dirty_worktree,
         runtime_seconds=result.runtime_seconds,
-        output_artifacts=_records(root, output_paths),
+        output_artifacts=_records(artifact_directory, output_paths),
     )
     manifest_path.write_text(
         json.dumps(manifest.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",

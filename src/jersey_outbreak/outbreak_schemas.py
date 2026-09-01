@@ -200,7 +200,7 @@ class OutbreakRunConfig(StrictModel):
 class OutbreakArtifactManifest(StrictModel):
     """Versioned provenance manifest for one completed M5 run."""
 
-    manifest_schema_version: Literal["1.0", "1.1"] = "1.1"
+    manifest_schema_version: Literal["1.0", "1.1", "1.2"] = "1.2"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString
     module: Literal["generic_respiratory_seirs"] = "generic_respiratory_seirs"

@@ -14,11 +14,12 @@ import pyarrow.parquet as pq
 
 from .contracts import ArtifactRecord, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
+from .population_artifacts import portable_artifact_path, resolve_portable_artifact_path
 from .scientific_hashes import V1_1_NATURAL_HISTORY_EVENT_FIELDS
 from .travel import TravelRunResult
 from .travel_schemas import TravelConfig
 
-M8_ARTIFACT_SCHEMA_VERSION = "2.1"
+M8_ARTIFACT_SCHEMA_VERSION = "2.2"
 
 
 class TravelArtifactManifest(StrictModel):
@@ -291,13 +292,6 @@ def _write_json(path: Path, payload: Any) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _relative(path: Path, root: Path) -> str:
-    try:
-        return str(path.relative_to(root))
-    except ValueError:
-        return str(path)
-
-
 def _without_null_fields(value: Any) -> Any:
     if isinstance(value, dict):
         return {key: _without_null_fields(item) for key, item in value.items() if item is not None}
@@ -427,7 +421,7 @@ def write_travel_artifact(
     )
     output_artifacts = [
         ArtifactRecord(
-            path=path.name,
+            path=portable_artifact_path(path, artifact_directory),
             sha256=sha256_file(path),
             size_bytes=path.stat().st_size,
         )
@@ -498,16 +492,24 @@ def verify_travel_artifact(artifact_directory: Path) -> TravelArtifactManifest:
         "observation_events.parquet",
         "detection_events.parquet",
     }
-    recorded = {record.path for record in manifest.output_artifacts}
-    missing = sorted(required - recorded)
-    if missing:
-        raise ValueError(f"M8 artifact manifest is missing required outputs: {missing}")
+    recorded: set[str] = set()
+    seen: set[Path] = set()
     for record in manifest.output_artifacts:
-        path = artifact_directory / record.path
+        try:
+            path = resolve_portable_artifact_path(record.path, artifact_directory)
+        except ValueError as exc:
+            raise ValueError(f"invalid M8 output path {record.path}: {exc}") from exc
+        if path in seen:
+            raise ValueError(f"M8 manifest contains duplicate output: {record.path}")
+        seen.add(path)
         if not path.exists():
             raise ValueError(f"M8 artifact output is missing: {record.path}")
         if path.stat().st_size != record.size_bytes or sha256_file(path) != record.sha256:
             raise ValueError(f"M8 artifact output hash mismatch: {record.path}")
+        recorded.add(record.path)
+    missing = sorted(required - recorded)
+    if missing:
+        raise ValueError(f"M8 artifact manifest is missing required outputs: {missing}")
 
     for filename in (
         "travel_config.json",
