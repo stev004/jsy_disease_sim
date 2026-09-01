@@ -22,16 +22,13 @@
 - **Default:** waits for Steven. Never merged by an agent.
 
 
-### G4 — Doc commits on frozen `main`
-- **Question:** Sol's freeze rule keeps even doc fixes off `main`, so the frontier lives on `docs/frontier`. Accept that until V1.1 ships, then fold frontier/handoff/stale-doc fixes into the release integration?
-- **Options:** accept (preserves fast-forward release) · relax (allow doc-only commits on main, release becomes a merge)
-- **Default:** accept.
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G4 — Doc commits on frozen `main` — RESOLVED 2026-09-01 (Steven: "fold it into main"): `docs/frontier` merged into `main` (`--no-ff`) after the V1.1 release; state layer now lives on `main`, sessions open in the repo.
 
 ### G6 — V1.1 release-repair run — RESOLVED 2026-09-01 (Steven, in chat: "run the repair and keep going"): launched same day
 Run completed 2026-09-01: re-audit PASS at `e502ebf...`. *(Closed late — caught by the terra trail audit, same failure class as G2/B04.)*
