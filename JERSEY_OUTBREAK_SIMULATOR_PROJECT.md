@@ -3,7 +3,8 @@
 ## Codex-ready project charter, architecture and implementation plan
 
 **Working title:** Jersey Outbreak Simulator (JOS)  
-**Status:** Implementation through M6 complete; C1, C2, C3 and C4 corrective
+**Status (2026-09-01):** this charter is the ORIGINAL 25 Aug plan, kept for history — **superseded**. V1.0 released (`jos-v1.0.0`), **V1.1 released (`jos-v1.1.0`)**; current state, next actions and the V1.2→V2 roadmap authority live in `.claude/FRONTIER.md` on branch `docs/frontier`.  
+**Original status text:** Implementation through M6 complete; C1, C2, C3 and C4 corrective
 closures PASS; M7 CLOSED
 **Prepared:** 25 August 2026  
 **Primary engine:** Starsim 3.5.2 or the latest verified compatible 3.5.x release  

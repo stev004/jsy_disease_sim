@@ -1,17 +1,35 @@
 # Jersey Outbreak Simulator progress ledger
 
-**Last verified:** 30 August 2026
-**Current verified milestone:** M10.2 implementation closure
+**Last verified:** 1 September 2026
+**Current verified milestone:** V1.1 RELEASED — tag `jos-v1.1.0` = `e502ebfd366743db8ecbb65f580159bfa1d2a70c`
 **M9.2 implementation commit:** `5be3bbf494f5ae85d7f9c3181fc9bcc73212294a`
 **M9.4 implementation commit:** `37af56ea9a368b599f3c89bbbb399b13b465f8f2`
 **M10.1 scientific-truth checkpoint:** `4ae6008871922bf7f1d820bf04294d477c55c14c`
 **C3 verification commit:** `658364c7f02cf44f9392116e7db44c94bdb3175a`
 **M9 status:** PASS through the M9.4 calendar-finalization correction
-**M10 status:** M10.2 implementation PASS; independent final audit pending
+**M10 status:** M10.2 PASS; independent final audit PASS (26/26 gates) → released as `jos-v1.0.0` = `9e9ce3ab...`
+**V1.1 status:** RELEASED 2026-09-01 (see the V1.1 release gate record below)
 
 This ledger records the current implementation and verification state. The
 project charter remains the authoritative specification; this file records
 which gates have actually passed and the evidence supporting them.
+
+## V1.1 release gate record (2026-08-31 → 2026-09-01)
+
+Every row below is backed by a filed report on branch `docs/frontier` (`docs/audits/`, `docs/runs/`) and by the append-only trail `.claude/decisions.tsv`.
+
+| Gate | Commit | Result | Evidence |
+|---|---|---|---|
+| Independent RC audit (Sol@high, read-only, detached worktree) | `461bf038` | **BLOCKED** — 1 defect (O2 false visitor-denominator metadata, untested field); 20/21 finding classifications confirmed | `docs/audits/2026-08-31-v1.1-rc-audit-BLOCKED.md` |
+| O2 corrective + bounded delta re-audit | `e3609ff2` | **PASS** (1-line fix + staggered-arrival regression test; both-direction test evidence) | `docs/audits/2026-08-31-o2-delta-reaudit-PASS.md` |
+| P1 full-population 180-day baseline + scientific verification | `e3609ff2` | **PASS**; V1.0↔V1.1 comparison: `NO RELEASE CONCERN` (waning removal → 1.00 episodes/infected, single wave, extinction 2025-03-27, 77.85% ever infected) | `docs/runs/2026-09-01-p1-v1-v11-comparison.md`; evidence `~/Documents/JOS_v1_1_full_scale_evidence/run-20260831T145052Z` |
+| GPT-5.6 Sol Pro deep audit + refined V1.x/V2 scope | `e3609ff2` | **BLOCKED** — B01 non-portable artifact paths · B02 daily ascertainment cohort mix · B03 stale API schema versions · B04 stale release-control state; majors M01–M04; science explicitly cleared | `docs/audits/2026-09-01-solpro-deep-audit-BLOCKED.md` |
+| Release repair R0–R3 (B01, B02, B03+M02, M01 + lockfile fixup) | `e502ebf` | **PASS** — 229 backend tests, frontend test/typecheck/build, ruff, lock, compileall; GitHub CI green (run 33510847483) | `docs/runs/2026-09-01-repair-*` |
+| R4 evidence regeneration at the corrected SHA | `e502ebf` | **PASS** — in-place AND relocated-copy recursive verification; trajectory hash-identical to the pre-repair run (artifact `…f0b18d64a083`, latent `ca4570849d0f…`) | `docs/runs/2026-09-01-r4-evidence-regeneration.md`; evidence `run-20260901T131226Z` |
+| R5 bounded independent re-audit | `e502ebf` | **`JOS V1.1 RELEASE-CANDIDATE PASS`** — all blockers closed, 33-file diff fully traced, travel.py:3099 ruled non-blocking follow-up | `docs/audits/2026-09-01-release-corrections-reaudit-PASS.md` |
+| Release | `e502ebf` | `main` fast-forwarded, smoke green, tag `jos-v1.1.0` pushed 2026-09-01 | `git tag --points-at jos-v1.1.0` |
+
+Carried into the V1.2 cycle (not gates): travel-ensemble summary booleans relabel (`travel.py:3099`) · M03 full release gate in CI · M04 ≥40-replicate decision for the ensemble · charter/README pointer hygiene · evidence-transcript retention in release bundles.
 
 ## Gate status
 

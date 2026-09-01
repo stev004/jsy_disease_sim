@@ -3,6 +3,20 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
+## 2026-09-01 — V1.1 RELEASED (`jos-v1.1.0`); foreman autonomous loop built and piloted here
+
+**Summary.** Two-day thread (2026-08-31 → 09-01). The manual Sol-chat↔Codex loop was replaced by the `foreman` skill (director = Claude, executor = Codex, memory = repo state files). Repo reconciled from Sol's cold-start handoff; V1.1 taken from "integration branch, audit pending" to a twice-audited release in ~32 h. Nine autonomous units, every implementation accepted first-iteration.
+
+**Decisions (Steven, in chat).** Launch the independent audit before the EMA (G1) · run the full-scale baseline on the Mac (G2) · run the Sol Pro release-repair immediately (G6) · **"merge it for me"** — the `jos-v1.1.0` merge/tag was executed by the agent as a one-time explicit instruction; future merges stay Steven-gated (G3 record). Roadmap authority moved to the Sol Pro refined scope (audit §9–§11): V1.2 evidence foundation → V1.2.1 identifiability gate → V1.3 first Jersey calibration → V1.3.1 → V1.4 → V2.
+
+**Changes.** `main`: `9e9ce3a` → **`e502ebfd366743db8ecbb65f580159bfa1d2a70c`** (78 files, +5,224/−761: V1.1 hardening + B01 portable artifact paths + B02 cohort ascertainment + B03 truthful `/capabilities` + M01 version 1.1.0 + M02 travel diagnostics). Backend suite 214 → 229 tests. New branch `docs/frontier` (tip `67c6139`) carries the state layer (`.claude/FRONTIER|DIRECTOR|GATES|RUN.md`, `decisions.tsv`), `docs/handoff/`, four audits in `docs/audits/`, all run reports in `docs/runs/`. All 26+ branches and both tags pushed to origin (was: 2 branches). Two full-scale evidence dirs created (`run-20260831T145052Z` pre-repair exhibit, `run-20260901T131226Z` release evidence).
+
+**Verified.** Independent RC audit (BLOCKED→fixed→PASS) · P1 baseline + comparison (no release concern) · Sol Pro deep audit (BLOCKED→repair) · R5 re-audit (**PASS**) · relocation verification of copied evidence (PASS) · trajectory hash identity across the repair · CI green at the release SHA. Full gate table in `docs/progress.md`.
+
+**Open threads / resume points.** (1) **Fold `docs/frontier` into `main`** — Steven's call, additive docs only: `git -C ~/Documents/jsy_disease_sim merge --no-ff docs/frontier` — until then cold starts read `git show docs/frontier:.claude/FRONTIER.md` (or `fm.sh state ~/Documents/jsy_disease_sim`). (2) **V1.2 cycle** — opening slate in FRONTIER.md: carry-ins (travel.py:3099 relabel, M03 CI breadth, charter/README pointers, evidence-transcript retention) → P4 desktop transfer + ensemble with the ≥40-replicate decision → V1.2 evidence foundation. Next run predicate suggestion: "carry-ins closed, CI encodes the full release gate, all green at one SHA". Owner: agent via `/foreman`, when Steven says go. (3) Desktop transfer not started (origin holds everything).
+
+**User needs to run.** Nothing mandatory. Optional: the `docs/frontier` fold above.
+
 ## 2026-08-30 — M10.2 comparison horizon and synchronization closure
 
 **Scope.** Frontend-only corrective work on the required clean M10.1 base
