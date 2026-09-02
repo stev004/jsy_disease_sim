@@ -12,7 +12,7 @@ import math
 import random
 import resource
 import time
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import date
@@ -72,6 +72,8 @@ CONTACT_ACTIVITY_ROUTES = (
     "workplace_transient",
     "school_cross_class",
 )
+# 2026-09-02 memory measurement: 257 entries weighed 366.7 MB pickled after 30 days.
+SNAPSHOT_CACHE_PER_ROUTE = 3
 
 
 @dataclass(frozen=True)
@@ -105,7 +107,9 @@ class GeneratedNetworks:
     _dynamic_builders: dict[str, Callable[[date], list[dict[str, Any]]]] = field(
         repr=False, default_factory=dict
     )
-    _snapshot_cache: dict[tuple[str, date], RouteSnapshot] = field(repr=False, default_factory=dict)
+    _snapshot_cache: OrderedDict[tuple[str, date], RouteSnapshot] = field(
+        repr=False, default_factory=OrderedDict
+    )
 
     def snapshot(self, snapshot_date: date) -> dict[str, RouteSnapshot]:
         """Return every configured route's edges for one calendar date."""
@@ -120,9 +124,13 @@ class GeneratedNetworks:
 
         if route_id not in self.route_specs:
             raise KeyError(f"unknown route: {route_id}")
+        if not isinstance(self._snapshot_cache, OrderedDict):
+            self._snapshot_cache = OrderedDict(self._snapshot_cache)
         key = (route_id, snapshot_date)
         if key in self._snapshot_cache:
-            return self._snapshot_cache[key]
+            snapshot = self._snapshot_cache[key]
+            self._snapshot_cache.move_to_end(key)
+            return snapshot
         spec = self.route_specs[route_id]
         if not _route_active(spec["active_calendar"], snapshot_date, self.config):
             edges: list[dict[str, Any]] = []
@@ -132,6 +140,10 @@ class GeneratedNetworks:
             edges = list(self.structural_edges.get(route_id, []))
         snapshot = RouteSnapshot(route_id, snapshot_date, tuple(edges))
         self._snapshot_cache[key] = snapshot
+        self._snapshot_cache.move_to_end(key)
+        cache_limit = SNAPSHOT_CACHE_PER_ROUTE * max(1, len(self.route_specs))
+        while len(self._snapshot_cache) > cache_limit:
+            self._snapshot_cache.popitem(last=False)
         return snapshot
 
 
