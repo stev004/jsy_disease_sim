@@ -6,7 +6,14 @@
 
 ### G9 — Desktop C: drive is critically full (root cause of the 2026-09-02 WSL crash)
 - **Question:** C: is 466 GB with ~9 GB free. The Windows pagefile is 34 GB (system-managed). Approve shrinking it to a fixed 16 GB (elevated PowerShell + reboot, AFTER P4 completes)? And may the agent delete anything from Downloads (751 MB) or Docker data (3.7 GB, would lose local images/containers)?
-- **Default:** after P4 completes, Steven shrinks the pagefile to 16 GB and reboots; agent deletes nothing from Downloads/Docker without an explicit yes. Until then the WSL swap stays capped at 6 GB and the tripwire alerts below 3 GB host free.
+- **Ruling (Steven, 2026-09-02 in chat: "feel free to do 2"):** pagefile shrink approved. Execution stays Steven's — it is a system-settings change needing admin elevation + reboot (and a reboot mid-run would kill P4). After P4 completes, Steven runs, in an **elevated** PowerShell:
+  ```powershell
+  Get-CimInstance Win32_ComputerSystem | Set-CimInstance -Property @{AutomaticManagedPagefile=$false}
+  $pf = Get-CimInstance Win32_PageFileSetting
+  if ($pf) { $pf | Set-CimInstance -Property @{InitialSize=16384; MaximumSize=16384} } else { New-CimInstance -ClassName Win32_PageFileSetting -Property @{Name='C:\pagefile.sys'; InitialSize=16384; MaximumSize=16384} }
+  Restart-Computer
+  ```
+  Frees ~18 GB on C:. Downloads/Docker deletions remain NOT authorized. Gate closes when the reboot has happened and `df /mnt/c` shows the space.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
