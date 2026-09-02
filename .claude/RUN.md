@@ -9,7 +9,7 @@
 5 iterations. Per implementation unit: 3 codex runs, 2 consults.
 
 ## Iteration 1 — DONE (measurement). Evidence: `docs/runs/2026-09-02-r6-mem-profile-desktop.json`
-Findings: (a) memory grows ~50 MB/simulated-day inside `run_outbreak` (2.02 GB after 7d → 3.51 GB after 30d; ~10.7 GB extrapolated at 180 d — the day's OOM anatomy explained); (b) marginal wall ≈ 15.6 s/day → ~48 min per 180-day replicate when not memory-starved (the observed 2.2 h was thrash); (c) parent M2/M3/M4 build 896 s, worker M4 regen only 59 s. Payoff if growth is fixed: 10–12 workers ≈ 3–5 h for all 44 replicates.
+Findings: (a) memory grows ~66 MiB/simulated-day inside `run_outbreak` (terra-corrected from the first-pass "~50 MB") (2.02 GB after 7d → 3.51 GB after 30d; ~10.7 GB extrapolated at 180 d — the day's OOM anatomy explained); (b) marginal wall ≈ 15.6 s/day → ~48 min per 180-day replicate when not memory-starved (the observed 2.2 h was thrash); (c) parent M2/M3/M4 build 896 s, worker M4 regen only 59 s. Payoff if growth is fixed: 10–12 workers ≈ 3–5 h for all 44 replicates.
 
 ## Iteration 1b — DONE (attribution). `_snapshot_cache` = 366.7 MB pickled (~1.5 GB RSS) at 30 d, 257 entries; every other retained attribute ≤35 MB. The cache is the growth.
 
