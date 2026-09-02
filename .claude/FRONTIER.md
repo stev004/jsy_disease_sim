@@ -22,9 +22,10 @@ Context, compressed (full detail: trail rows `desktop-transfer` → `p4-bounded`
 3. **Performance (R6): the memory leg landed early** (2026-09-02, bounded snapshot cache — pulled forward on Steven's "optimise then run after" ruling because it blocked P4). Remaining R6 prototypes (dynamic-route edge materialisation, attribution lookup, Starsim init graph, network sharing across replicates, worker-bound tuning) stay in V1.2.1; `docs/research/v1_1/R6_PERFORMANCE_PROFILE.md` remains the brief and every change needs its exact-equivalence gates.
 Then V1.2.1 → V1.3 (first named-pathogen Jersey calibration, COVID era, predeclared holdouts, serology-constrained) → V1.3.1 → V1.4 → V2. §11's cut list is binding.
 
-## Branch index (verified 2026-09-01)
+## Branch index (verified 2026-09-02)
 
-**Live:** `main` @ `9a2d984` (= `jos-v1.1.0` + state layer + V1.2 carry-ins) · `docs/jos-v1-scientific-review` @ `b8aeb8b` (Claude Science V1 reports).
+**Live:** `main` @ `a6fdc19` (= `jos-v1.1.0` + state layer + V1.2 carry-ins + G10 merges) · `docs/jos-v1-scientific-review` @ `b8aeb8b` (Claude Science V1 reports).
+**Merged 2026-09-02, preserve:** `codex/r6-snapshot-cache-bound` (tip `79ef7b2`) · `fix/ensemble-pool-loudness` (tip `3617a91`).
 **Historical, preserve (handoff §7.6):** `codex/v1.2-carry-ins` (merged, tip `9711b8e`) · `docs/frontier` (state layer, folded) · `codex/v1.1-release-corrections` (released tip) · `codex/v1.1-o2-denominator` · `codex/v1.1-integration` · the seven `codex/v1.1-*` lanes · all earlier `codex/m*`/`codex/c*` milestone branches · `codex/codex/m8.2-final-travel-closure` (typo, harmless). All pushed to origin.
 
 ## Off-repo assets
