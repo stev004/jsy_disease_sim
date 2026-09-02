@@ -4,6 +4,10 @@
 
 ## Open
 
+### G10 — Merge the two R6-cycle branches, then launch P4 at 7 workers
+- **Question:** merge (SHA-first, `--no-ff`) ① `codex/r6-snapshot-cache-bound` @ `79ef7b2aa07d435ffbfc2d04435b9a291fe24f95` (bounded snapshot cache: −87.8% memory growth, hashes byte-identical, 238 tests, evidence `docs/runs/2026-09-02-r6-bench-{before,after}.json`) and ② `fix/ensemble-pool-loudness` @ `3617a91529606295a5386437078b30560eb0e081` (loud pool degradation + abort on broken pool, CI run 33630012570 green)? Then the agent launches P4: 44 seeds, `--mode full`, 180 days, `--workers 7`, projected ~6 h wall at ~3.3 GB/worker.
+- **Default:** merge both once their CI is green, then launch. Bands labelled stochastic replicate quantiles, never confidence intervals; ≥40 successes required (G8 substance unchanged).
+
 ### G9 — Desktop C: drive is critically full (root cause of the 2026-09-02 WSL crash)
 - **Question:** C: is 466 GB with ~9 GB free. The Windows pagefile is 34 GB (system-managed). Approve shrinking it to a fixed 16 GB (elevated PowerShell + reboot, AFTER P4 completes)? And may the agent delete anything from Downloads (751 MB) or Docker data (3.7 GB, would lose local images/containers)?
 - **Default:** after P4 completes, Steven shrinks the pagefile to 16 GB and reboots; agent deletes nothing from Downloads/Docker without an explicit yes. Until then the WSL swap stays capped at 6 GB and the tripwire alerts below 3 GB host free.

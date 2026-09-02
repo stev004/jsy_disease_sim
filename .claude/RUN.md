@@ -13,8 +13,11 @@ Findings: (a) memory grows ~50 MB/simulated-day inside `run_outbreak` (2.02 GB a
 
 ## Iteration 1b — DONE (attribution). `_snapshot_cache` = 366.7 MB pickled (~1.5 GB RSS) at 30 d, 257 entries; every other retained attribute ≤35 MB. The cache is the growth.
 
-## In flight (iteration 2 — implementation, Codex)
-Branch `codex/r6-snapshot-cache-bound` off origin/main @ 61ed6a6, worktree `~/jos-r6-cache-wt` (WSL), codex pid 684 (luna@high, setsid), brief `~/jos-brief-r6-cache.md` (LRU bound 3 entries/route via OrderedDict; soundness-test-first: recompute-after-eviction must be content-equal or codex stops), report → `~/jos-r6-cache.last.md`, log `~/jos-r6-cache.log`. Director verification after: full-mode 30 d before/after RSS (≥80% growth reduction, wall within 10%) + fixed-seed 7 d logical-hash identity.
+## Iteration 2 — DONE, ADOPTED. Branch `codex/r6-snapshot-cache-bound` @ `79ef7b2aa07d435ffbfc2d04435b9a291fe24f95`, pushed, CI pending.
+Bounded LRU snapshot cache (3 entries/route). Verification (all director-run, evidence `docs/runs/2026-09-02-r6-bench-{before,after}.json` + codex report `2026-09-02-r6-cache-codex-report.md`): fail-at-HEAD proven (2 new tests fail on main, soundness test passes both sides) · full suite 238 passed · ruff/format green · all four fixed-seed 7 d logical hashes AND the 30 d latent hash byte-identical (eviction active: cache 257→33 entries) · 30 d RSS growth 1,770,928→216,192 KB (−87.8%) · 30 d wall +4.2%. Retro-diagnosis: the day's "9 GB worker peaks" were cache fill, not regen.
+
+## Predicate status: MET on projection, blocked only on G10 (Steven's merge)
+Per-replicate ≈ 50 min, worker ≈ 3.3 GB at 180 d → 7 workers → 44 replicates ≈ 6 h ≪ 20 h. Remaining unit (launch P4) requires the G10 merges; run stops here with digest. On G10 approval: pull main in WSL clone, launch 44 seeds / full / 180 d / `--workers 7` via `~/launch_p4.sh` (edit workers), tripwire `~/p4_tripwire.sh` pattern.
 
 ## Cold-start resume recipe
 1. Read this file, FRONTIER.md ("P4 — DEFERRED" block has the memory model), decisions.tsv tail (rows p4-launch … p4-defer, r6-*), GATES.md (G9 open).

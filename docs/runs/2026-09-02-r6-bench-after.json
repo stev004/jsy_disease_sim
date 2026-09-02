@@ -1,0 +1,18 @@
+{
+ "label": "after",
+ "utc": "2026-09-02T17:44:07.430490+00:00",
+ "build_s": 907.7,
+ "wall7_s": 142.8,
+ "wall30_s": 462.9,
+ "rss_before_30d_kb": 1922780,
+ "rss_after_30d_kb": 2138972,
+ "rss_growth_30d_kb": 216192,
+ "snapshot_cache_entries": 33,
+ "latent30_logical": "fe12a2afc8ca5fa90f8c0914e96cca9a692a455e95ed65e259317cbd21dd6a24",
+ "hashes_7d": {
+  "m4_logical": "585e13cf70c44a3d9db26e5c3581099d043813bff9fe5905ef87f476fea579d0",
+  "latent7_logical": "eb0d2f3709cfe8708d4e473c5033db2e222d4345e761c5d0c77d880bf2c91dc2",
+  "latent7_outcome": "559001bb29f743865445d51718032815698985d1ec0e7cc42e0d01658d6a0789",
+  "observed7_logical": "f0d9de55521ef4a115af8e21f5e7b1ef554ce76e630a3ca2ef1c907afd844c2f"
+ }
+}
