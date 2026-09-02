@@ -14,7 +14,9 @@
 
 ## Resolved
 
-### G8 — M04: replicate count and machine for the P4 full-scale ensemble — RESOLVED 2026-09-02 (Steven, in chat: "go with the default")
+### G8 — M04: replicate count and machine for the P4 full-scale ensemble — RESOLVED 2026-09-02, then AMENDED same day (Steven, in chat: "option 2. lets optimse then run after")
+**Amendment:** P4 execution is DEFERRED until after the R6 performance/memory optimization cycle. Measured reality on the desktop (26 GB WSL): per-worker regen peak ~9 GB caps the box at 2 workers ≈ 44–48 h wall — too long. Optimize first (R6 brief + the 2026-09-02 memory findings), then run the ensemble at the reduced cost. The ≥40-replicate substance of the ruling stands for that future run.
+*(original resolution below)*
 Ruling = the default: ≥40 successful replicates on the desktop (DESKTOP-KQTC6VL, WSL2 mode per the 2026-09-02 transfer), `--workers 12`, launched after the desktop smoke/gate passed (it did — see `docs/runs/2026-09-02-desktop-transfer-wsl.md`). Bands labelled "stochastic replicate quantile", never confidence intervals. Launched as 44 seeds (101–144) so ≥40 successes survive replicate failures. Operational deviation 2026-09-02: `--workers 12` OOM-killed a worker in WSL (26 GB cap; dmesg 06:27) and the code silently fell back to sequential (~4–5 day ETA), so the run was killed and relaunched at `--workers 8` (~15–18 h). Replicate count and machine — the substance of the ruling — unchanged.
 
 ### G7 — Merge V1.2 carry-ins into `main` — RESOLVED 2026-09-01 (Steven, in chat: "merge all"): executed by agent, `--no-ff` merge of exact SHA `9711b8e3937b3ff18aec86523ed4769ff78cfd4c` → merge commit `9a2d984f265aca2e8edfcc10de6bb45b2519f140`; smoke (6 v12 tests + demo) green; pushed. Second one-time agent-executed merge on explicit instruction (after G3); still not a standing authorization.
