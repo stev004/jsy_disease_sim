@@ -552,16 +552,22 @@ def ensemble_run(
         mode, replicate_seeds[0], parameters, duration_days=duration_days
     )
     generated = _build_m4_for_m6(root, mode, replicate_seeds[0], destination)
-    result = run_ensemble(
-        root,
-        generated,
-        parameters,
-        base_config,
-        load_observation_config(root, observation_path),
-        replicate_seeds,
-        ensemble_id=ensemble_id,
-        workers=workers,
-    )
+    try:
+        result = run_ensemble(
+            root,
+            generated,
+            parameters,
+            base_config,
+            load_observation_config(root, observation_path),
+            replicate_seeds,
+            ensemble_id=ensemble_id,
+            workers=workers,
+        )
+    except RuntimeError as exc:
+        if not str(exc).startswith("ensemble worker pool broke:"):
+            raise
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(2) from exc
     artifact = write_ensemble_artifact(result, root, destination)
     typer.echo(
         json.dumps(

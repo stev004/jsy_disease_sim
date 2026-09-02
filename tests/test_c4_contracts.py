@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
+import inspect
 import json
+from concurrent.futures.process import BrokenProcessPool
 from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
+from jersey_outbreak import cli as cli_module
 from jersey_outbreak import ensemble as ensemble_module
 from jersey_outbreak.ensemble import (
     ReplicateOutput,
     _completed_grid_rows,
     _summary_rows,
     run_ensemble,
+    safe_worker_bound,
 )
 from jersey_outbreak.ensemble_artifacts import write_ensemble_artifact
+from jersey_outbreak.ensemble_schemas import EnsembleConfig
 from jersey_outbreak.network_generator import generate_networks
 from jersey_outbreak.network_schemas import NetworkGenerationConfig
 from jersey_outbreak.observation import observe_latent_run
@@ -361,13 +367,14 @@ def test_failed_replicates_are_visible_noncontributors_and_quantiles_exclude_the
     assert summary[0]["contributing_replicates"] == 1
 
 
-def test_controlled_process_fallback_reports_actual_single_worker(
+def test_controlled_process_fallback_warning_reports_actual_single_worker(
     monkeypatch,
     m6_network,
     m6_parameters,
     m6_base_config,
     m6_observation_config,
     tmp_path,
+    capsys,
 ) -> None:
     def fake_job(job):
         seed = int(job["seed"])
@@ -413,12 +420,126 @@ def test_controlled_process_fallback_reports_actual_single_worker(
     assert result.diagnostics["actual_workers"] == 1
     assert result.diagnostics["execution_mode"] == "sequential_fallback"
     assert "controlled semaphore denial" in result.diagnostics["fallback_reason"]
+    stderr = capsys.readouterr().err
+    assert stderr.startswith("ENSEMBLE WARNING: process pool unavailable")
+    assert "controlled semaphore denial" in stderr
+    assert "running 2 replicates sequentially" in stderr
     artifact = write_ensemble_artifact(result, ROOT, tmp_path)
     manifest = json.loads((artifact.artifact_directory / "manifest.json").read_text())
     assert manifest["requested_workers"] == 2
     assert manifest["planned_workers"] == 2
     assert manifest["actual_workers"] == 1
     assert manifest["execution_mode"] == "sequential_fallback"
+
+
+def test_broken_pool_aborts_without_sequential_fallback(
+    monkeypatch,
+    m6_network,
+    m6_parameters,
+    m6_base_config,
+    m6_observation_config,
+    tmp_path,
+    capsys,
+) -> None:
+    class BrokenPool:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def submit(self, *args, **kwargs):
+            raise BrokenProcessPool("worker died")
+
+    monkeypatch.setattr(ensemble_module, "ProcessPoolExecutor", BrokenPool)
+    with pytest.raises(RuntimeError, match="ensemble worker pool broke"):
+        run_ensemble(
+            tmp_path,
+            m6_network,
+            m6_parameters,
+            m6_base_config,
+            m6_observation_config,
+            (123, 124),
+            ensemble_id="c4-broken-pool",
+            workers=2,
+            allow_unsafe_workers=True,
+        )
+    stderr = capsys.readouterr().err
+    assert "ENSEMBLE ERROR: ensemble worker pool broke" in stderr
+    assert "worker died" in stderr
+    assert "relaunch with fewer workers" in stderr
+
+
+def test_bounded_warning_is_emitted_for_memory_bound_workers(
+    monkeypatch,
+    m6_network,
+    m6_parameters,
+    m6_base_config,
+    m6_observation_config,
+    tmp_path,
+    capsys,
+) -> None:
+    def fake_job(job):
+        return ReplicateOutput(
+            seed=int(job["seed"]),
+            status="failed",
+            latent_logical_content_hash=None,
+            observation_logical_content_hash=None,
+            m4_logical_content_hash=None,
+            runtime_seconds=0.0,
+            trajectories=(),
+            error="controlled bounded-worker test",
+        )
+
+    monkeypatch.setattr(ensemble_module, "_run_replicate_job", fake_job)
+    monkeypatch.setattr(ensemble_module, "available_physical_memory_bytes", lambda: 2_000_000_000)
+    result = run_ensemble(
+        tmp_path,
+        m6_network,
+        m6_parameters,
+        m6_base_config,
+        m6_observation_config,
+        (123,),
+        ensemble_id="c4-bounded-warning",
+        workers=4,
+        estimated_worker_memory_bytes=1_000_000_000,
+    )
+    assert result.diagnostics["planned_workers"] == 1
+    stderr = capsys.readouterr().err
+    assert "ENSEMBLE WARNING: workers bounded" in stderr
+    assert "requested=4 planned=1" in stderr
+
+
+def test_memory_default_uses_measured_worker_estimate() -> None:
+    assert EnsembleConfig.model_fields["estimated_worker_memory_bytes"].default == 3_500_000_000
+    assert (
+        inspect.signature(safe_worker_bound).parameters["estimated_worker_memory_bytes"].default
+        == 3_500_000_000
+    )
+    assert (
+        inspect.signature(run_ensemble).parameters["estimated_worker_memory_bytes"].default
+        == 3_500_000_000
+    )
+
+
+def test_ensemble_cli_broken_pool_exits_two_with_plain_message(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(cli_module, "_repo_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_module, "load_parameter_set", lambda *args: object())
+    monkeypatch.setattr(cli_module, "load_observation_config", lambda *args: object())
+    monkeypatch.setattr(cli_module, "default_run_config", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli_module, "_build_m4_for_m6", lambda *args, **kwargs: object())
+
+    def broken_ensemble(*args, **kwargs):
+        raise RuntimeError("ensemble worker pool broke: worker died; relaunch with fewer workers")
+
+    monkeypatch.setattr(cli_module, "run_ensemble", broken_ensemble)
+    result = CliRunner().invoke(cli_module.app, ["ensemble", "run"])
+    assert result.exit_code == 2
+    assert "ensemble worker pool broke: worker died; relaunch with fewer workers" in result.output
+    assert "\x1b" not in result.output
 
 
 def test_zero_community_contact_configuration_produces_zero_edges(m6_network) -> None:
