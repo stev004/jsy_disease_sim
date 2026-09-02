@@ -2,7 +2,7 @@
 
 *Snapshot, not history. Rewritten each time the frontier moves. Lives on `main` (folded from `docs/frontier` 2026-09-01; that branch is now historical). Cold-start: read this, then `docs/handoff/2026-08-31-sol-handoff.md` for deep history.*
 
-**Updated:** 2026-09-01 (V1.2 carry-ins merged to main) · **Updated by:** Fable (foreman)
+**Updated:** 2026-09-02 (desktop transfer done, mode=wsl) · **Updated by:** Fable (desktop-setup runbook)
 
 ## Where the project is
 
@@ -28,7 +28,7 @@ Then V1.2.1 → V1.3 (first named-pathogen Jersey calibration, COVID era, predec
 ## Off-repo assets
 
 - `~/Documents/JOS_v1_full_scale_evidence/` (V1 pilot) and `~/Documents/JOS_v1_1_full_scale_evidence/run-20260831T145052Z` (pre-repair, retained as the B01 exhibit) and `run-20260901T131226Z` (release evidence) — all immutable.
-- Desktop transfer: **not done** — first step of P4. Windows desktop; Steven pastes the one-liner in `docs/desktop-setup.md` §0, the desktop agent runs §1 (native probe → WSL2 only on proven need) and writes the `desktop-transfer` trail row + flips this line.
+- Desktop transfer: **done 2026-09-02, mode=wsl** (DESKTOP-KQTC6VL). Native probe FAIL (codex sandbox + fm.sh launcher) → WSL2 per `docs/desktop-setup.md` §3; Ubuntu 26.04, 27 GB/16-core `.wslconfig`, full gate green in WSL (235 pytest, ruff clean, frontend test+build), codex sandbox smoke PASS. Loop home: WSL `~/jsy_disease_sim`. Evidence: `docs/runs/2026-09-02-desktop-transfer-wsl.md`. P4 run still gated on G8.
 
 ## Doc authority map
 
