@@ -26,7 +26,9 @@ class EnsembleConfig(StrictModel):
     scenario: ScenarioConfig | None = None
     replicate_seeds: tuple[StrictInt, ...] = Field(min_length=1)
     workers: StrictInt = Field(default=1, ge=1, le=32)
-    estimated_worker_memory_bytes: StrictInt = Field(default=1_100_000_000, gt=0)
+    # Measured full-mode worker exceeded 2.3 GB anon-rss at the 2026-09-02
+    # OOM kill; it was still ramping.
+    estimated_worker_memory_bytes: StrictInt = Field(default=2_600_000_000, gt=0)
     memory_safety_fraction: StrictFloat = Field(default=0.6, gt=0, le=1)
     allow_unsafe_workers: StrictBool = False
     lower_quantile: StrictFloat = Field(default=0.025, ge=0, le=1)

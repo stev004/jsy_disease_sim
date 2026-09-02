@@ -6,8 +6,11 @@ import multiprocessing as mp
 import os
 import platform
 import resource
+import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
+from contextlib import ExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -547,7 +550,9 @@ def available_physical_memory_bytes() -> int | None:
 def safe_worker_bound(
     requested_workers: int,
     *,
-    estimated_worker_memory_bytes: int = 1_100_000_000,
+    # Measured full-mode worker exceeded 2.3 GB anon-rss at the 2026-09-02
+    # OOM kill; it was still ramping.
+    estimated_worker_memory_bytes: int = 2_600_000_000,
     memory_safety_fraction: float = 0.6,
     available_memory_bytes: int | None = None,
     cpu_count: int | None = None,
@@ -586,7 +591,9 @@ def run_ensemble(
     workers: int = 1,
     lower_quantile: float = 0.025,
     upper_quantile: float = 0.975,
-    estimated_worker_memory_bytes: int = 1_100_000_000,
+    # Measured full-mode worker exceeded 2.3 GB anon-rss at the 2026-09-02
+    # OOM kill; it was still ramping.
+    estimated_worker_memory_bytes: int = 2_600_000_000,
     memory_safety_fraction: float = 0.6,
     allow_unsafe_workers: bool = False,
     scenario: ScenarioConfig | None = None,
@@ -643,6 +650,12 @@ def run_ensemble(
         )
     )
     planned_workers = min(requested_workers, safe_bound)
+    if planned_workers < requested_workers:
+        print(
+            "ENSEMBLE WARNING: workers bounded "
+            f"requested={requested_workers} planned={planned_workers}",
+            file=sys.stderr,
+        )
     actual_workers = planned_workers
     execution_mode = "sequential"
     fallback_reason: str | None = None
@@ -651,21 +664,41 @@ def run_ensemble(
         if requested_workers > 1:
             execution_mode = "sequential_memory_bound"
     else:
+        pool_stack = ExitStack()
         try:
             context = mp.get_context("spawn")
-            with ProcessPoolExecutor(max_workers=planned_workers, mp_context=context) as pool:
-                futures = [pool.submit(_run_replicate_job, job) for job in jobs]
-                outputs = [future.result() for future in futures]
-            execution_mode = "process_pool_spawn"
+            pool = pool_stack.enter_context(
+                ProcessPoolExecutor(max_workers=planned_workers, mp_context=context)
+            )
         except (NotImplementedError, OSError, PermissionError, RuntimeError) as exc:
+            pool_stack.close()
             # Some constrained macOS runners deny the semaphore limit probe
             # used by ProcessPoolExecutor.  This is an execution-environment
             # limitation, not a replicate result; preserve deterministic
             # semantics with an explicit, diagnostic sequential fallback.
+            print(
+                "ENSEMBLE WARNING: process pool unavailable "
+                f"({type(exc).__name__}: {exc}); running {len(jobs)} replicates sequentially",
+                file=sys.stderr,
+            )
             outputs = [_run_replicate_job(job) for job in jobs]
             actual_workers = 1
             execution_mode = "sequential_fallback"
             fallback_reason = f"{type(exc).__name__}: {exc}"
+        else:
+            try:
+                futures = [pool.submit(_run_replicate_job, job) for job in jobs]
+                outputs = [future.result() for future in futures]
+            except BrokenProcessPool as exc:
+                message = f"ensemble worker pool broke: {exc}; relaunch with fewer workers"
+                print(f"ENSEMBLE ERROR: {message}", file=sys.stderr)
+                # A broken pool means results are already lost; silent
+                # serialization multiplies wall time ~planned_workers-fold,
+                # so aborting fast is safer than committing days of compute.
+                raise RuntimeError(message) from exc
+            finally:
+                pool_stack.close()
+            execution_mode = "process_pool_spawn"
 
     records = tuple(
         EnsembleReplicateRecord(
