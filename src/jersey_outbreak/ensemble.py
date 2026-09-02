@@ -550,9 +550,9 @@ def available_physical_memory_bytes() -> int | None:
 def safe_worker_bound(
     requested_workers: int,
     *,
-    # Measured full-mode worker exceeded 2.3 GB anon-rss at the 2026-09-02
-    # OOM kill; it was still ramping.
-    estimated_worker_memory_bytes: int = 2_600_000_000,
+    # Measured full-mode worker reached 3.36 GB anon-rss at the second 2026-09-02
+    # OOM kill (13:02Z); estimate rounded up.
+    estimated_worker_memory_bytes: int = 3_500_000_000,
     memory_safety_fraction: float = 0.6,
     available_memory_bytes: int | None = None,
     cpu_count: int | None = None,
@@ -591,9 +591,9 @@ def run_ensemble(
     workers: int = 1,
     lower_quantile: float = 0.025,
     upper_quantile: float = 0.975,
-    # Measured full-mode worker exceeded 2.3 GB anon-rss at the 2026-09-02
-    # OOM kill; it was still ramping.
-    estimated_worker_memory_bytes: int = 2_600_000_000,
+    # Measured full-mode worker reached 3.36 GB anon-rss at the second 2026-09-02
+    # OOM kill (13:02Z); estimate rounded up.
+    estimated_worker_memory_bytes: int = 3_500_000_000,
     memory_safety_fraction: float = 0.6,
     allow_unsafe_workers: bool = False,
     scenario: ScenarioConfig | None = None,

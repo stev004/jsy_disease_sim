@@ -514,14 +514,14 @@ def test_bounded_warning_is_emitted_for_memory_bound_workers(
 
 
 def test_memory_default_uses_measured_worker_estimate() -> None:
-    assert EnsembleConfig.model_fields["estimated_worker_memory_bytes"].default == 2_600_000_000
+    assert EnsembleConfig.model_fields["estimated_worker_memory_bytes"].default == 3_500_000_000
     assert (
         inspect.signature(safe_worker_bound).parameters["estimated_worker_memory_bytes"].default
-        == 2_600_000_000
+        == 3_500_000_000
     )
     assert (
         inspect.signature(run_ensemble).parameters["estimated_worker_memory_bytes"].default
-        == 2_600_000_000
+        == 3_500_000_000
     )
 
 
