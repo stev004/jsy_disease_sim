@@ -4,6 +4,10 @@
 
 ## Open
 
+### G9 — Desktop C: drive is critically full (root cause of the 2026-09-02 WSL crash)
+- **Question:** C: is 466 GB with ~9 GB free. The Windows pagefile is 34 GB (system-managed). Approve shrinking it to a fixed 16 GB (elevated PowerShell + reboot, AFTER P4 completes)? And may the agent delete anything from Downloads (751 MB) or Docker data (3.7 GB, would lose local images/containers)?
+- **Default:** after P4 completes, Steven shrinks the pagefile to 16 GB and reboots; agent deletes nothing from Downloads/Docker without an explicit yes. Until then the WSL swap stays capped at 6 GB and the tripwire alerts below 3 GB host free.
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
