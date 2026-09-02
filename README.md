@@ -7,12 +7,12 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-V1.0 is released and frozen at tag `jos-v1.0.0`, including the M10 interactive
-frontend.
-
-V1.1 is a scientific-hardening release candidate under final release
-corrections on branch `codex/v1.1-release-corrections`. The current-state
-authority is [`.claude/FRONTIER.md`](.claude/FRONTIER.md); agents start at `CLAUDE.md`.
+V1.0 (tag `jos-v1.0.0`) and V1.1 (tag `jos-v1.1.0`, scientific-hardening
+release, 2026-09-01) are released and frozen. The V1.2 cycle is open; `main`
+additionally carries the V1.2 carry-ins and the 2026-09-02 R6 performance
+merges (bounded route-snapshot cache; loud ensemble worker-pool degradation).
+The current-state authority is [`.claude/FRONTIER.md`](.claude/FRONTIER.md);
+agents start at `CLAUDE.md`.
 
 ## Quick start
 

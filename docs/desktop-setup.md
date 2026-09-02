@@ -18,10 +18,10 @@ Native Windows = Git Bash under Claude Code. It is the easiest path *if* Codex's
    - `NATIVE_PROBE FAIL` on the codex-sandbox or fm.sh lines → go to §3 (WSL2). Any other FAIL line → fix that item and re-probe; do not jump to WSL for a missing login.
 4. **Full gate once, locally:** `uv run --locked pytest -q` (≈10 min), `uv run ruff check .`, `(cd frontend && npm run test && npm run build)`. Paste the last lines in your report.
 5. **Write back** (`fm.sh log` + `fm.sh sync`): one trail row `desktop-transfer` with the probe verdict, tool versions (`uv --version`, `node -v`, `codex --version`, `claude --version`), and free memory (`wmic OS get FreePhysicalMemory` or `systeminfo | findstr Memory`). Update FRONTIER "Off-repo assets → Desktop transfer" from **not done** to done with the date and mode (native|wsl).
-6. **Report to Steven** in ≤8 lines: mode, gate results, and the G8 question with its default (≥40 replicates, `--workers 12`).
+6. **Report to Steven** in ≤8 lines: mode, gate results, and any open gate questions with their defaults. *(Historical: the original G8 default said `--workers 12`; superseded by the 2026-09-02 memory measurements — see §2.)*
 
 ## §2 — Running P4 here (native)
-- Memory check before launch: ≥ 24 GB free. Each replicate ≈ 1.8 GB peak, single process; `--workers 12` on the 5800X/32 GB.
+- Memory check before launch: ≥ 24 GB free. Measured 2026-09-02 on this box (post-R6 bounded snapshot cache, merged `a6fdc19`): a 180-day full-mode replicate ≈ 3.3 GB steady per worker (pre-R6 it grew ~66 MiB/simulated-day to ~10 GB — the old "1.8 GB" figure was wrong); `--workers 7` fits the 26 GB WSL cap with margin. Kill hygiene: `pkill -f 'jos ensemble run'` AND `pkill -f 'multiprocessing.spawn'`.
 - `uv run --locked jos ensemble run --help`; the run itself is gated on G8 in `GATES.md` — do not launch it without the ruling recorded there.
 - Background long runs the same way `fm.sh exec` does (`nohup … &`, then prove the pid is alive); never fire-and-forget (DIRECTOR lesson 2026-09-01).
 - Evidence dirs go under `~/Documents/JOS_v1_2_*` (new; never the Mac's immutable `JOS_v1*` dirs, which are not on this machine anyway).

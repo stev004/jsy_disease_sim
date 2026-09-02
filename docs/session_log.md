@@ -3,7 +3,19 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
-## 2026-09-01 (evening) — V1.2 carry-ins run closed and merged to main; DIRECTOR refreshed
+## 2026-09-02 (full day, DESKTOP-KQTC6VL) — desktop transfer · five failed P4 launches · R6 memory root-cause fixed + merged · P4 attempt 6 in flight
+
+**Summary.** First session on the Windows desktop. Native probe FAILed (codex sandbox + fm.sh) → WSL2 mode per `docs/desktop-setup.md` §3 (Ubuntu 26.04, 27 GB/16-core `.wslconfig`, logins carried from the Windows profile), full gate green, trail row `desktop-transfer`. G8 resolved (Steven: default) and P4 launched — then failed five times (workers 12→8→5→3→2): kernel OOM kills silently downgraded the worker pool to sequential (`BrokenProcessPool` ⊂ `RuntimeError`), a live 16 GB swapfile exhausted the host C: drive and crashed the WSL VM (G9 filed), 3 workers thrashed at PSI 53%. Steven deferred P4 ("optimise then run after", G8 amendment). The R6 foreman run then found the root cause in 2 iterations: the unbounded `(route_id,date)` route-snapshot cache grew ~66 MiB/simulated-day (~10 GB per 180-day replicate). Codex implemented a bounded LRU (3 entries/route): −87.8 % memory growth, all fixed-seed logical hashes byte-identical at 7 d + 30 d, 238 tests, CI green. Terra trail-audited the run (8 flags; 5 fixed, protocol reservation parked into G10 and accepted). Steven ordered the G10 merges; both branches merged SHA-first to `main` @ `a6fdc192e50633570d3edc5db5f7dbf241027548` after a green pre-push smoke, and **P4 attempt 6 launched 20:54Z at `--workers 7`** (~6 h projected).
+
+**Decisions.** G8 resolved then amended (defer→optimize→run) · G9 filed (C: critically full; default: Steven shrinks the 34 GB pagefile to 16 GB + reboot, agent touches no user files) · G10 resolved and executed on explicit instruction (merges `9f51c8b`, `a6fdc19`) · dev-delegate DEVTEAM.md bootstrapped · lessons encoded in DIRECTOR.md (host-disk check before WSL-growing allocations) and dev-delegate LESSONS.md (`setsid` for WSL launches).
+
+**Open threads / resume points.**
+- **P4 attempt 6 in flight** (pid 8595, log `p4-ensemble-launch-20260902T205417Z.log` in WSL `~/Documents/JOS_v1_2_full_scale_evidence/`): on completion verify ≥40 successes + `execution_mode=process_pool_spawn`, file the run report, flip FRONTIER to V1.2 evidence foundation. Recipe in `.claude/RUN.md`. Owner: next agent session (or Steven runs `bash ~/p4_tripwire.sh` in Ubuntu to check).
+- **Main CI on `a6fdc19`** was pending at closeout — next session reads `gh run view --json jobs` before logging it.
+- **G9** waits on Steven (pagefile shrink + reboot, after P4 completes).
+- Evidence: `docs/runs/2026-09-02-*` (desktop transfer, R6 profile/attr/bench JSONs, verify transcript, codex report).
+
+
 
 **Summary.** Foreman run `v12-carry-ins` (director Fable 5.1, executor Codex luna, auditor Codex terra). Predicate: DIRECTOR.md free of pre-release rules + the three release-cycle carry-ins landed with suite and GitHub CI green at one SHA. Met in 4 iterations / 5 of 6 Codex runs; every unit accepted first iteration. Steven's opening ask was an audit of "where we're at"; findings were that the release claims all verified but DIRECTOR.md still carried frozen-main/candidate rules and a wrong "no AGENTS.md" note.
 
