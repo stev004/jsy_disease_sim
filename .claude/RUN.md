@@ -8,8 +8,11 @@
 ## Budget
 5 iterations. Per implementation unit: 3 codex runs, 2 consults.
 
-## In flight (iteration 1 — measurement unit, director-run)
-Phase-timed + RSS-sampled single full-mode replicate on this box via the exact ensemble code path (M2/M3 build → M4 generate seed 101 → run_outbreak 7d, then 30d), script `~/r6_mem_profile.py` in WSL (copied from session scratchpad), results JSON → `~/Documents/JOS_v1_2_full_scale_evidence/r6/` then filed to `docs/runs/`. Purpose: attribute the 5.5–9 GB worker footprint (Mac pilot peaked 2.16 GiB) to phases before any optimization is briefed.
+## Iteration 1 — DONE (measurement). Evidence: `docs/runs/2026-09-02-r6-mem-profile-desktop.json`
+Findings: (a) memory grows ~50 MB/simulated-day inside `run_outbreak` (2.02 GB after 7d → 3.51 GB after 30d; ~10.7 GB extrapolated at 180 d — the day's OOM anatomy explained); (b) marginal wall ≈ 15.6 s/day → ~48 min per 180-day replicate when not memory-starved (the observed 2.2 h was thrash); (c) parent M2/M3/M4 build 896 s, worker M4 regen only 59 s. Payoff if growth is fixed: 10–12 workers ≈ 3–5 h for all 44 replicates.
+
+## In flight (iteration 1b — growth attribution, director-run)
+`~/r6_attr_sizes.py` in WSL (detached, ~25 min): after a fresh 30-day run, pickle-weighs `generated._snapshot_cache` (entries + MB) and every retained attribute of GeneratedNetworks / latent / observed, to name the growing object before briefing a fix. Caution noted: V1.0 also had the unbounded `(route_id,date)` snapshot cache yet held 2.16 GiB over 180 d, so the suspect is unproven until this run reports. Log `~/r6_attr_sizes.log`, JSON → evidence r6/ dir.
 
 ## Cold-start resume recipe
 1. Read this file, FRONTIER.md ("P4 — DEFERRED" block has the memory model), decisions.tsv tail (rows p4-launch … p4-defer, r6-*), GATES.md (G9 open).
