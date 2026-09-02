@@ -1,7 +1,7 @@
 import json
 import statistics
 from dataclasses import replace
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -71,6 +71,58 @@ def test_network_is_deterministic_and_seed_sensitive(network_inputs) -> None:
     assert changed.route_snapshot("community_indoor", config.snapshot_dates[0]).edges != (
         first.route_snapshot("community_indoor", config.snapshot_dates[0]).edges
     )
+
+
+def test_route_snapshot_cache_is_bounded(generated) -> None:
+    route_id = sorted(generated.route_specs)[0]
+    dates = [date(2025, 1, 1) + timedelta(days=index) for index in range(40)]
+
+    generated._snapshot_cache.clear()
+    for when in dates:
+        generated.route_snapshot(route_id, when)
+
+    assert len(generated._snapshot_cache) <= 3 * len(generated.route_specs)
+
+
+def test_route_snapshot_recomputation_preserves_complete_ordered_edges(generated) -> None:
+    dates = [date(2025, 1, 5) + timedelta(days=index) for index in range(5)]
+    expected = {
+        (route_id, when): generated.route_snapshot(route_id, when).edges
+        for route_id in generated.route_specs
+        for when in dates
+    }
+
+    generated._snapshot_cache.clear()
+    for (route_id, when), edges in expected.items():
+        assert generated.route_snapshot(route_id, when).edges == edges
+
+
+def test_route_snapshot_lru_hits_and_recomputes_content_identically(generated) -> None:
+    route_id = sorted(generated.route_specs)[0]
+    capacity = 3 * max(1, len(generated.route_specs))
+    dates = [date(2025, 1, 1) + timedelta(days=index) for index in range(capacity + 5)]
+
+    generated._snapshot_cache.clear()
+    expected = {when: generated.route_snapshot(route_id, when).edges for when in dates}
+
+    generated._snapshot_cache.clear()
+    initial = {}
+    for when in dates[:capacity]:
+        initial[when] = generated.route_snapshot(route_id, when)
+        assert initial[when].edges == expected[when]
+        assert len(generated._snapshot_cache) <= capacity
+
+    assert generated.route_snapshot(route_id, dates[0]) is initial[dates[0]]
+    generated.route_snapshot(route_id, dates[capacity])
+    assert (route_id, dates[0]) in generated._snapshot_cache
+    assert (route_id, dates[1]) not in generated._snapshot_cache
+
+    recomputed = generated.route_snapshot(route_id, dates[1])
+    assert recomputed is not initial[dates[1]]
+    assert recomputed.edges == expected[dates[1]]
+    for when in dates[::-1] * 2:
+        assert generated.route_snapshot(route_id, when).edges == expected[when]
+        assert len(generated._snapshot_cache) <= capacity
 
 
 def test_zero_activity_cv_is_exact_m11b_projection(network_inputs) -> None:
