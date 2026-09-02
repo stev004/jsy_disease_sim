@@ -4,15 +4,14 @@
 
 ## Open
 
-### G8 — M04: replicate count and machine for the P4 full-scale ensemble
-- **Question:** run ≥40 successful replicates (2.5/97.5 stochastic-replicate quantiles allowed by the project's n·min(q,1−q)≥1 rule) or N=30 (median/IQR + labelled extrema only)? And on the desktop (5800X/32 GB, ~12 parallel, est. 15–20 h wall for 40) or the Mac (~6 parallel, 25–35 h, laptop unusable)?
-- **Default:** ≥40 on the desktop, launched only after the desktop smoke passes. Bands labelled "stochastic replicate quantile", never confidence intervals.
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G8 — M04: replicate count and machine for the P4 full-scale ensemble — RESOLVED 2026-09-02 (Steven, in chat: "go with the default")
+Ruling = the default: ≥40 successful replicates on the desktop (DESKTOP-KQTC6VL, WSL2 mode per the 2026-09-02 transfer), `--workers 12`, launched after the desktop smoke/gate passed (it did — see `docs/runs/2026-09-02-desktop-transfer-wsl.md`). Bands labelled "stochastic replicate quantile", never confidence intervals. Launched as 44 seeds (101–144) so ≥40 successes survive replicate failures; 44 costs the same wall time as 40 at 12 workers (4 waves).
 
 ### G7 — Merge V1.2 carry-ins into `main` — RESOLVED 2026-09-01 (Steven, in chat: "merge all"): executed by agent, `--no-ff` merge of exact SHA `9711b8e3937b3ff18aec86523ed4769ff78cfd4c` → merge commit `9a2d984f265aca2e8edfcc10de6bb45b2519f140`; smoke (6 v12 tests + demo) green; pushed. Second one-time agent-executed merge on explicit instruction (after G3); still not a standing authorization.
 
