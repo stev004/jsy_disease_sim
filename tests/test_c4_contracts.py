@@ -495,9 +495,7 @@ def test_bounded_warning_is_emitted_for_memory_bound_workers(
         )
 
     monkeypatch.setattr(ensemble_module, "_run_replicate_job", fake_job)
-    monkeypatch.setattr(
-        ensemble_module, "available_physical_memory_bytes", lambda: 2_000_000_000
-    )
+    monkeypatch.setattr(ensemble_module, "available_physical_memory_bytes", lambda: 2_000_000_000)
     result = run_ensemble(
         tmp_path,
         m6_network,
@@ -516,20 +514,13 @@ def test_bounded_warning_is_emitted_for_memory_bound_workers(
 
 
 def test_memory_default_uses_measured_worker_estimate() -> None:
+    assert EnsembleConfig.model_fields["estimated_worker_memory_bytes"].default == 2_600_000_000
     assert (
-        EnsembleConfig.model_fields["estimated_worker_memory_bytes"].default
+        inspect.signature(safe_worker_bound).parameters["estimated_worker_memory_bytes"].default
         == 2_600_000_000
     )
     assert (
-        inspect.signature(safe_worker_bound)
-        .parameters["estimated_worker_memory_bytes"]
-        .default
-        == 2_600_000_000
-    )
-    assert (
-        inspect.signature(run_ensemble)
-        .parameters["estimated_worker_memory_bytes"]
-        .default
+        inspect.signature(run_ensemble).parameters["estimated_worker_memory_bytes"].default
         == 2_600_000_000
     )
 
@@ -547,10 +538,7 @@ def test_ensemble_cli_broken_pool_exits_two_with_plain_message(monkeypatch, tmp_
     monkeypatch.setattr(cli_module, "run_ensemble", broken_ensemble)
     result = CliRunner().invoke(cli_module.app, ["ensemble", "run"])
     assert result.exit_code == 2
-    assert (
-        "ensemble worker pool broke: worker died; relaunch with fewer workers"
-        in result.output
-    )
+    assert "ensemble worker pool broke: worker died; relaunch with fewer workers" in result.output
     assert "\x1b" not in result.output
 
 
