@@ -4,11 +4,6 @@
 
 ## Open
 
-### G10 — Merge the two R6-cycle branches, then launch P4 at 7 workers
-- **Question:** merge (SHA-first, `--no-ff`) ① `codex/r6-snapshot-cache-bound` @ `79ef7b2aa07d435ffbfc2d04435b9a291fe24f95` (bounded snapshot cache: −87.8% memory growth, hashes byte-identical, 238 tests, evidence `docs/runs/2026-09-02-r6-bench-{before,after}.json`) and ② `fix/ensemble-pool-loudness` @ `3617a91529606295a5386437078b30560eb0e081` (loud pool degradation + abort on broken pool, CI run 33630012570 green)? Then the agent launches P4: 44 seeds, `--mode full`, 180 days, `--workers 7`, projected ~6 h wall at ~3.3 GB/worker.
-- **Default:** merge both once their CI is green, then launch. Bands labelled stochastic replicate quantiles, never confidence intervals; ≥40 successes required (G8 substance unchanged).
-- **Auditor reservation (terra, 2026-09-02):** the R6 benchmark protocol's full letter (14-day leg, interleaved repeated trials, broader exact comparisons) was not run — adoption rests on hash identity at 7 d + 30 d, the recompute-soundness test, the full suite, and the unambiguous memory result (cache 257→33 entries). The before/after benches ran concurrently on the same host, so the +4.2% wall figure carries contention noise (memory and hashes are per-process and unaffected). If you want the full protocol before merging, say so and it runs (~2 h); the default accepts the evidence as-is.
-
 ### G9 — Desktop C: drive is critically full (root cause of the 2026-09-02 WSL crash)
 - **Question:** C: is 466 GB with ~9 GB free. The Windows pagefile is 34 GB (system-managed). Approve shrinking it to a fixed 16 GB (elevated PowerShell + reboot, AFTER P4 completes)? And may the agent delete anything from Downloads (751 MB) or Docker data (3.7 GB, would lose local images/containers)?
 - **Default:** after P4 completes, Steven shrinks the pagefile to 16 GB and reboots; agent deletes nothing from Downloads/Docker without an explicit yes. Until then the WSL swap stays capped at 6 GB and the tripwire alerts below 3 GB host free.
@@ -18,6 +13,9 @@
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G10 — Merge the two R6-cycle branches, then launch P4 — RESOLVED 2026-09-02 (Steven, in chat: "merge them then /closeout")
+Executed by agent on the explicit one-time instruction (not a standing authorization): SHA-first `--no-ff` merges of `codex/r6-snapshot-cache-bound` @ `79ef7b2aa07d435ffbfc2d04435b9a291fe24f95` (merge `9f51c8b`) and `fix/ensemble-pool-loudness` @ `3617a91529606295a5386437078b30560eb0e081` (merge `a6fdc192e50633570d3edc5db5f7dbf241027548`), both branch CIs green beforehand (33663392224, 33630012570). Pre-push smoke on the merged tree in WSL: 35 targeted tests + ruff + format + `jos demo` all green. Pushed; main CI pending at resolution time (logged when read). P4 launched same evening at `--workers 7` (20:54Z, pid 8595). The terra auditor reservation (partial benchmark protocol; concurrent benches → wall figure noisy) was presented in the gate and accepted by the default.
 
 ### G8 — M04: replicate count and machine for the P4 full-scale ensemble — RESOLVED 2026-09-02, then AMENDED same day (Steven, in chat: "option 2. lets optimse then run after")
 **Amendment:** P4 execution is DEFERRED until after the R6 performance/memory optimization cycle. Measured reality on the desktop (26 GB WSL): per-worker regen peak ~9 GB caps the box at 2 workers ≈ 44–48 h wall — too long. Optimize first (R6 brief + the 2026-09-02 memory findings), then run the ensemble at the reduced cost. The ≥40-replicate substance of the ruling stands for that future run.
