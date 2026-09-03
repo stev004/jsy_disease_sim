@@ -232,6 +232,8 @@ def _activity_weighted_participants(
         expected_participant_count,
         config=config,
     )
+    if probabilities and all(probability == 1.0 for probability in probabilities.values()):
+        return set(probabilities)
     return {
         agent_id
         for agent_id, probability in probabilities.items()
@@ -413,15 +415,11 @@ def _route_active(calendar: str, snapshot_date: date, config: NetworkGenerationC
     raise ValueError(f"unknown route calendar: {calendar}")
 
 
-def _job_is_physical_on_date(
-    job: dict[str, Any], agent_id: str, snapshot_date: date, seed: int
-) -> bool:
-    if snapshot_date.weekday() >= 5:
-        return False
+def _job_physical_weekdays(job: dict[str, Any], agent_id: str, seed: int) -> frozenset[int]:
     days_per_week = int(job["days_per_week"])
     remote_days = int(job["remote_days_per_week"])
     if days_per_week <= 0:
-        return False
+        return frozenset()
     selected = sorted(
         range(5), key=lambda day: _stable_int(seed, "workday", job["job_id"], agent_id, day)
     )[:days_per_week]
@@ -431,7 +429,43 @@ def _job_is_physical_on_date(
             key=lambda day: _stable_int(seed, "remote", job["job_id"], agent_id, day),
         )[:remote_days]
     )
-    return snapshot_date.weekday() in set(selected) - remote
+    return frozenset(selected) - remote
+
+
+def _job_is_physical_on_date(
+    job: dict[str, Any],
+    agent_id: str,
+    snapshot_date: date,
+    seed: int,
+    *,
+    physical_weekdays_cache: dict[tuple[object, ...], frozenset[int]] | None = None,
+) -> bool:
+    if snapshot_date.weekday() >= 5:
+        return False
+    key = (
+        seed,
+        job["job_id"],
+        agent_id,
+        int(job["days_per_week"]),
+        int(job["remote_days_per_week"]),
+    )
+    if physical_weekdays_cache is None:
+        physical_weekdays = _job_physical_weekdays(job, agent_id, seed)
+    else:
+        physical_weekdays = physical_weekdays_cache.get(key)
+        if physical_weekdays is None:
+            physical_weekdays = _job_physical_weekdays(job, agent_id, seed)
+            physical_weekdays_cache[key] = physical_weekdays
+    return snapshot_date.weekday() in physical_weekdays
+
+
+def _primary_jobs_by_agent(
+    worker_jobs: dict[str, list[dict[str, Any]]],
+) -> dict[str, dict[str, Any] | None]:
+    return {
+        agent_id: next((job for job in jobs if job["job_role"] == "primary"), None)
+        for agent_id, jobs in worker_jobs.items()
+    }
 
 
 def _route_spec(
@@ -1157,6 +1191,7 @@ def generate_networks(
             work_route_jobs_by_workplace[job["workplace_id"]].append(job)
             if job.get("team_id") is not None:
                 work_route_jobs_by_team[job["team_id"]].append(job)
+    physical_weekdays_cache: dict[tuple[object, ...], frozenset[int]] = {}
     workplace_team_pairs = {
         (edge["p1"], edge["p2"])
         for team_jobs in work_route_jobs_by_team.values()
@@ -1193,7 +1228,13 @@ def generate_networks(
                 active = [
                     job["agent_id"]
                     for job in jobs
-                    if _job_is_physical_on_date(job, job["agent_id"], snapshot_date, config.seed)
+                    if _job_is_physical_on_date(
+                        job,
+                        job["agent_id"],
+                        snapshot_date,
+                        config.seed,
+                        physical_weekdays_cache=physical_weekdays_cache,
+                    )
                 ]
                 groups.append(
                     _ordered_ids(
@@ -1236,7 +1277,13 @@ def generate_networks(
                 team_id: [
                     job["agent_id"]
                     for job in jobs
-                    if _job_is_physical_on_date(job, job["agent_id"], snapshot_date, config.seed)
+                    if _job_is_physical_on_date(
+                        job,
+                        job["agent_id"],
+                        snapshot_date,
+                        config.seed,
+                        physical_weekdays_cache=physical_weekdays_cache,
+                    )
                 ]
                 for team_id, jobs in work_route_jobs_by_team.items()
             }
@@ -1320,11 +1367,12 @@ def generate_networks(
         for agent_id, jobs in jobs_by_agent.items()
         if agent_id in m3_by_agent and m3_by_agent[agent_id]["economic_status"] == "employed"
     }
+    primary_job_by_agent = _primary_jobs_by_agent(worker_jobs)
     car_commuters_by_household_destination: dict[tuple[str, str], list[str]] = defaultdict(list)
     bus_groups: dict[tuple[str, str, int], list[str]] = defaultdict(list)
     car_commuter_ids: set[str] = set()
-    for agent_id, jobs in worker_jobs.items():
-        primary = next((job for job in jobs if job["job_role"] == "primary"), None)
+    for agent_id in worker_jobs:
+        primary = primary_job_by_agent[agent_id]
         if primary is None:
             continue
         resident = m3_by_agent[agent_id]
@@ -1408,10 +1456,11 @@ def generate_networks(
                     agent_id
                     for agent_id in group
                     if _job_is_physical_on_date(
-                        next(job for job in worker_jobs[agent_id] if job["job_role"] == "primary"),
+                        primary_job_by_agent[agent_id],
                         agent_id,
                         snapshot_date,
                         config.seed,
+                        physical_weekdays_cache=physical_weekdays_cache,
                     )
                 ]
                 ordered = _ordered_ids(
@@ -1452,10 +1501,11 @@ def generate_networks(
                     agent_id
                     for agent_id in group
                     if _job_is_physical_on_date(
-                        next(job for job in worker_jobs[agent_id] if job["job_role"] == "primary"),
+                        primary_job_by_agent[agent_id],
                         agent_id,
                         snapshot_date,
                         config.seed,
+                        physical_weekdays_cache=physical_weekdays_cache,
                     )
                 ]
                 ordered = _ordered_ids(
