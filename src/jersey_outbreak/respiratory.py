@@ -358,13 +358,15 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
                     )
                     hit_indices = np.flatnonzero(np.isin(edge_keys, success_keys))
                     indices_by_pair: dict[tuple[int, int], deque[int]] = defaultdict(deque)
-                    for i in hit_indices:
-                        indices_by_pair[(int(src[i]), int(trg[i]))].append(int(i))
+                    for hit_index in hit_indices:
+                        indices_by_pair[(int(src[hit_index]), int(trg[hit_index]))].append(
+                            int(hit_index)
+                        )
                     for target, source in zip(target_uids, source_uids, strict=True):
                         pair = (int(source), int(target))
-                        i = indices_by_pair[pair].popleft()
+                        edge_index = indices_by_pair[pair].popleft()
                         probability = float(
-                            rel_trans.raw[pair[0]] * rel_sus.raw[pair[1]] * beta_per_dt[i]
+                            rel_trans.raw[pair[0]] * rel_sus.raw[pair[1]] * beta_per_dt[edge_index]
                         )
                         candidates_by_target[pair[1]].append(
                             {
