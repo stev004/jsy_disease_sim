@@ -8,7 +8,6 @@ so a detection on timestep *t* can first change contacts on *t + 1*.
 
 from __future__ import annotations
 
-import hashlib
 import math
 import weakref
 from collections import Counter, defaultdict
@@ -16,9 +15,9 @@ from datetime import date, timedelta
 from typing import Any
 
 import numpy as np
-import starsim as ss
+import starsim as ss  # type: ignore[import-untyped]
 
-from .hashing import canonical_json_bytes, sha256_bytes
+from .hashing import canonical_json_bytes, sha256_bytes, stable_int
 from .intervention_schemas import (
     INTERVENTION_SENSITIVITY_AXES,
     InterventionConfig,
@@ -46,9 +45,7 @@ EXTERNAL_ROUTES = (
 )
 
 
-def _stable_int(seed: int, *parts: object) -> int:
-    payload = "|".join(str(part) for part in (seed, *parts)).encode("utf-8")
-    return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big", signed=False)
+_stable_int = stable_int
 
 
 def _stable_uniform(seed: int, *parts: object) -> float:
