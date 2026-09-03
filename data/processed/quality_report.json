@@ -223,6 +223,20 @@
       "status": "passed"
     },
     {
+      "acquisition_method": "manual",
+      "local_snapshot": "data/raw/school_term_dates_govje_2026/term_dates.csv",
+      "sha256": "307a9168a62cfef40e4912fe429b6d5aa2bbfad85636be3e44552e64bbd93c6e",
+      "source_id": "school_term_dates_govje_2026",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "manual",
+      "local_snapshot": "data/raw/states_assembly_r119_2024_school_terms/term_dates.csv",
+      "sha256": "7826d1877b40e10895cb784c3291546b5dd6133f3918f163df06f085c5219abd",
+      "source_id": "states_assembly_r119_2024_school_terms",
+      "status": "passed"
+    },
+    {
       "acquisition_method": "automated",
       "local_snapshot": "data/raw/care_commission_accommodation_standards_2026_pdf/official_standard.pdf",
       "sha256": "6965c37f45b1a90b92aa99e88bcd6e5bf2e07baa7abec35b00d3e0945ca40d0e",
@@ -255,6 +269,41 @@
       "local_snapshot": "data/raw/labour_market_june_2025_manual_fixture/labour_market_manual_controls.csv",
       "sha256": "f2254ce92420ec96c9cc27b2282c0528a0a551c8a8db390720870cec305dca27",
       "source_id": "labour_market_june_2025_manual_fixture",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/covid19_daily_surveillance_csv/covid19_daily.csv",
+      "sha256": "ea51daa689a851af6fedb45e1520abfc235bc350113cbde1cd49b880d7aa512b",
+      "source_id": "covid19_daily_surveillance_csv",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/covid19_current_summary_csv/covid19_current.csv",
+      "sha256": "4566333483a6ac4229e86d009fff97caf8f8c52ef1c4758ad07e9558da3630dd",
+      "source_id": "covid19_current_summary_csv",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/covid19_weekly_vaccination_csv/covid19_weekly_vaccination.csv",
+      "sha256": "f6708113693c77fefb0d43f8a2551d6f6fcb2fc1db69a5b128087c64280a382a",
+      "source_id": "covid19_weekly_vaccination_csv",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/sars_cov2_serosurvey_2020_pdf/prevalence_of_antibodies_2020.pdf",
+      "sha256": "a74e606e5ef16544a763146249b42fba8ae61fb00526982793c6f9fbc300dd0d",
+      "source_id": "sars_cov2_serosurvey_2020_pdf",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/covid19_vaccination_pcr_insights_pdf/vaccination_pcr_insights.pdf",
+      "sha256": "c8a04fbfa06d9ed23dc71c7a5f46e2914dafd7484b80f104cc6550847c7848f8",
+      "source_id": "covid19_vaccination_pcr_insights_pdf",
       "status": "passed"
     }
   ],

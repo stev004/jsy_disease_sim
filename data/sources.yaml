@@ -287,3 +287,68 @@ sources:
     sha256: f2254ce92420ec96c9cc27b2282c0528a0a551c8a8db390720870cec305dca27
     evidence_source_id: labour_market_june_2025_pdf
     notes: Narrow manual transcription of Table 6 page 11 and Table 9 page 13.
+
+  - source_id: covid19_daily_surveillance_csv
+    title: COVID-19 daily surveillance extract (legacy ListOpenData COVID19 list)
+    publisher: Government of Jersey
+    url: https://www.gov.je/Datasets/ListOpenData?ListName=COVID19
+    retrieved_at: 2026-09-03
+    reference_period: "2020-07-30/2023-02-01"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/covid19_daily_surveillance_csv/covid19_daily.csv
+    sha256: ea51daa689a851af6fedb45e1520abfc235bc350113cbde1cd49b880d7aa512b
+    notes: 917 daily rows x 112 columns; cases, tests by reason, deaths by age/sex/place, care-home split. Live SharePoint rendering with no upstream versioning; fetched with a browser User-Agent (gov.je WAF returns HTTP 500 to default curl). See docs/research/v1_2/2026-09-03-jersey-data-source-inventory.md.
+
+  - source_id: covid19_current_summary_csv
+    title: Coronavirus (COVID-19) data for Jersey (current summary list)
+    publisher: Government of Jersey
+    url: https://www.gov.je/Datasets/ListOpenData?ListName=Coronavirus(COVID-19)DataforJersey&clean=true
+    retrieved_at: 2026-09-03
+    reference_period: "2020-07-30/2026-07-29"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/covid19_current_summary_csv/covid19_current.csv
+    sha256: 4566333483a6ac4229e86d009fff97caf8f8c52ef1c4758ad07e9558da3630dd
+    notes: 1295 rows; cumulative tests/cases, 7-day rate, cumulative deaths; sparse after 2023-01. Final row is an undated cumulative-total row - loader must handle it explicitly. Browser User-Agent required (WAF).
+
+  - source_id: covid19_weekly_vaccination_csv
+    title: COVID-19 weekly vaccination statistics (ListOpenData COVID19Weekly)
+    publisher: Government of Jersey
+    url: https://www.gov.je/Datasets/ListOpenData?ListName=COVID19Weekly&clean=true
+    retrieved_at: 2026-09-03
+    reference_period: "2021-03-14/2023-01-29"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/covid19_weekly_vaccination_csv/covid19_weekly_vaccination.csv
+    sha256: f6708113693c77fefb0d43f8a2551d6f6fcb2fc1db69a5b128087c64280a382a
+    notes: 132 weekly rows x 155 columns; dose counts and percent coverage for doses 1-4 plus autumn-2022 booster across 14 age bands. Browser User-Agent required (WAF).
+
+  - source_id: sars_cov2_serosurvey_2020_pdf
+    title: "SARS-CoV-2: Prevalence of antibodies in Jersey (community serosurvey)"
+    publisher: Statistics Jersey
+    url: https://www.gov.je/SiteCollectionDocuments/Government%20and%20administration/R%20Prevalence%20of%20antibodies%202020508%20SJ.pdf
+    retrieved_at: 2026-09-03
+    reference_period: "2020-04-29/2020-05-05"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/sars_cov2_serosurvey_2020_pdf/prevalence_of_antibodies_2020.pdf
+    sha256: a74e606e5ef16544a763146249b42fba8ae61fb00526982793c6f9fbc300dd0d
+    notes: The Jersey community serosurvey; headline 3.1 percent +/- 1.3 (95 percent CI), JLPR cluster sample, 438 households / 855 individuals, Healgen LFT, adults 16+, care homes excluded. PDF is 8 pages (the 2026-09-03 inventory draft says 20pp - the inventory is wrong on that field).
+
+  - source_id: covid19_vaccination_pcr_insights_pdf
+    title: Insights from Jersey data on COVID-19 vaccinations and positive PCR tests
+    publisher: Statistics Jersey
+    url: https://www.gov.je/SiteCollectionDocuments/Government%20and%20administration/Insights%20from%20Jersey%20data%20on%20COVID19%20vaccinations%20and%20positive%20PCR%20tests.pdf
+    retrieved_at: 2026-09-03
+    reference_period: "2020-02-01/2022-12-31"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/covid19_vaccination_pcr_insights_pdf/vaccination_pcr_insights.pdf
+    sha256: c8a04fbfa06d9ed23dc71c7a5f46e2914dafd7484b80f104cc6550847c7848f8
+    notes: 28-page linked-administrative-data report; percent double-vaccinated and percent ever-PCR-positive by age, ethnicity, household type, occupation.
