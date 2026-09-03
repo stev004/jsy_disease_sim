@@ -21,11 +21,18 @@ Build status: **passed**
 | education_students_by_school_type_csv | passed | automated | 922812ce877bb573a6e5164c11d80d30a274ced1c6a571e2d3c0076497fea35e | data/raw/education_students_by_school_type_csv/total-students-by-school-type.csv |
 | education_staff_2024_foi_html | passed | automated | 59f3fa721f96400fc380125fe3adaf629228d73067e6ddbfdb5560328a8b1f1c | data/raw/education_staff_2024_foi_html/official_page.html |
 | education_staff_2025_foi_html | passed | automated | e789838a2a378b54e2bd171780d078f743e9a82b44b42f43dff42303e2b07a2f | data/raw/education_staff_2025_foi_html/official_page.html |
+| school_term_dates_govje_2026 | passed | manual | 307a9168a62cfef40e4912fe429b6d5aa2bbfad85636be3e44552e64bbd93c6e | data/raw/school_term_dates_govje_2026/term_dates.csv |
+| states_assembly_r119_2024_school_terms | passed | manual | 7826d1877b40e10895cb784c3291546b5dd6133f3918f163df06f085c5219abd | data/raw/states_assembly_r119_2024_school_terms/term_dates.csv |
 | care_commission_accommodation_standards_2026_pdf | passed | automated | 6965c37f45b1a90b92aa99e88bcd6e5bf2e07baa7abec35b00d3e0945ca40d0e | data/raw/care_commission_accommodation_standards_2026_pdf/official_standard.pdf |
 | passenger_arrivals_total_csv | passed | automated | da0fc97a508256ad44c88637573d5ff69de4b612f3a7702cde97a21602a8d194 | data/raw/passenger_arrivals_total_csv/total-arrivals.csv |
 | jersey_population_2024_manual_fixture | passed | manual | a9590787131d349f18392243f11c0082944289b0473782428b3714f2b966d3fa | data/raw/jersey_population_2024_manual_fixture/population_2024_summary.csv |
 | census_2021_report_manual_fixture | passed | manual | 7a1e567cccc81a3814ef1020ad954e6caf51fe980066937917bdfb8d6b16af05 | data/raw/census_2021_report_manual_fixture/census_2021_manual_controls.csv |
 | labour_market_june_2025_manual_fixture | passed | manual | f2254ce92420ec96c9cc27b2282c0528a0a551c8a8db390720870cec305dca27 | data/raw/labour_market_june_2025_manual_fixture/labour_market_manual_controls.csv |
+| covid19_daily_surveillance_csv | passed | automated | ea51daa689a851af6fedb45e1520abfc235bc350113cbde1cd49b880d7aa512b | data/raw/covid19_daily_surveillance_csv/covid19_daily.csv |
+| covid19_current_summary_csv | passed | automated | 4566333483a6ac4229e86d009fff97caf8f8c52ef1c4758ad07e9558da3630dd | data/raw/covid19_current_summary_csv/covid19_current.csv |
+| covid19_weekly_vaccination_csv | passed | automated | f6708113693c77fefb0d43f8a2551d6f6fcb2fc1db69a5b128087c64280a382a | data/raw/covid19_weekly_vaccination_csv/covid19_weekly_vaccination.csv |
+| sars_cov2_serosurvey_2020_pdf | passed | automated | a74e606e5ef16544a763146249b42fba8ae61fb00526982793c6f9fbc300dd0d | data/raw/sars_cov2_serosurvey_2020_pdf/prevalence_of_antibodies_2020.pdf |
+| covid19_vaccination_pcr_insights_pdf | passed | automated | c8a04fbfa06d9ed23dc71c7a5f46e2914dafd7484b80f104cc6550847c7848f8 | data/raw/covid19_vaccination_pcr_insights_pdf/vaccination_pcr_insights.pdf |
 
 ## Canonical tables
 
