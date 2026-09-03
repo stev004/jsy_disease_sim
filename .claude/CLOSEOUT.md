@@ -17,6 +17,7 @@ alone. Facts live where this map says; the session log carries history.
 | Intervention runtime contract | `docs/interventions.md` |
 | Session history (newest first) | `docs/session_log.md` |
 | **Consolidated roadmap / living to-do** (audits + long-term scope; tick items, move done→log; MUST be reconciled at every closeout) | `docs/roadmap.md` |
+| Performance history (one row per landed optimization, measured before→after + evidence; append when a perf change merges) | `docs/performance-history.md` |
 | **Current frontier / next action / branch index** (the cold-start pointer) | `.claude/FRONTIER.md` |
 | Director standing orders + encoded lessons (foreman) | `.claude/DIRECTOR.md` |
 | Decisions waiting on Steven (question · options · default) | `.claude/GATES.md` |
