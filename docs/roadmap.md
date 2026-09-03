@@ -9,14 +9,14 @@
 ## NOW — R8 cycle: Claude Science audit, Stages A→E (Steven, 2026-09-03: "foreman a to e")
 
 ### Stage A — restore the gates (nothing else merges first)
-- ◐ **PROV-1** Excise `workers`/memory fields from the M6 ensemble logical hash (schema 1.4→1.5); unit test: hash invariant under execution fields.
-- ◐ **DISEASE-2** Re-point the attribution oracle at the shipped lookup (extract to pure function); mutation-proof with the three named mutants; extend oracle past candidate construction.
-- ◐ **ROUTE-2** Harness fixes: all 11 routes, Starsim `p1/p2/beta/dur` fingerprints, declared route list in meta, uninstrumented timing, date-major cache mode, term-boundary window, committed ci fixture.
-- ◐ **ROUTE-10** One `_stable_int` in `hashing.py` (4 copies today), pinned-digest test, ≥10⁶-key cross-process equality proof before consolidation.
+- ☑ **PROV-1** (2026-09-03/04, codex/r8-stageA @ a9c76f0) Excise `workers`/memory fields from the M6 ensemble logical hash (schema 1.4→1.5); unit test: hash invariant under execution fields.
+- ☑ **DISEASE-2** (2026-09-03/04, codex/r8-stageA @ a9c76f0) Re-point the attribution oracle at the shipped lookup (extract to pure function); mutation-proof with the three named mutants; extend oracle past candidate construction.
+- ☑ **ROUTE-2** (2026-09-03/04, codex/r8-stageA @ a9c76f0) Harness fixes: all 11 routes, Starsim `p1/p2/beta/dur` fingerprints, declared route list in meta, uninstrumented timing, date-major cache mode, term-boundary window, committed ci fixture.
+- ☑ **ROUTE-10** (2026-09-03/04, codex/r8-stageA @ a9c76f0) One `_stable_int` in `hashing.py` (4 copies today), pinned-digest test, ≥10⁶-key cross-process equality proof before consolidation.
 
 ### Stage B — re-measure on the production configuration, then re-rank
-- ☐ **CROSS-1/CROSS-2 campaign:** 7/14/30/60-day + one real 180-day replicate with per-phase timers (M2/M3/M4 decomposed, Sim.init, routes, attribution, post-processing, hashing, Parquet, observation); 30-day runs under `m7_community_indoor` and `m7_combined` (the missing intervention measurement); DISEASE-11 memory campaign (shared-object sizer at 7 horizons). Deliverable: three-parameter cost model; confirm/refute the 7.5-min projection.
-- ☐ **DATA-6** Golden logical hashes for M2/M3/M4/M8 committed + asserted in CI, cross-process/cross-machine baseline (hard blocker on all generator changes).
+- ☑ **CROSS-1/CROSS-2 campaign** (2026-09-04, `docs/runs/2026-09-04-r8-stageB-campaign.json`: 180d = 433.7 s confirmed; M2 = 78% of parent build; intervention tax +1.4 to +4.7 s/day; memory flat ceiling, 6-7 workers fit): 7/14/30/60-day + one real 180-day replicate with per-phase timers (M2/M3/M4 decomposed, Sim.init, routes, attribution, post-processing, hashing, Parquet, observation); 30-day runs under `m7_community_indoor` and `m7_combined` (the missing intervention measurement); DISEASE-11 memory campaign (shared-object sizer at 7 horizons). Deliverable: three-parameter cost model; confirm/refute the 7.5-min projection.
+- ◐ **DATA-6** (codex in flight) Golden logical hashes for M2/M3/M4/M8 committed + asserted in CI, cross-process/cross-machine baseline (hard blocker on all generator changes).
 
 ### Stage C — the overhead block (~33% of ensemble wall)
 - ☐ **ROUTE-11** Diagnostics switch for run/ensemble paths (hash-neutral by construction) + incremental M4 hash.
