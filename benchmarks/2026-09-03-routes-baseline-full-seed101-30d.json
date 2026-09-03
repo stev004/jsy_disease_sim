@@ -1,0 +1,1529 @@
+{
+  "meta": {
+    "days": 30,
+    "git_commit": "aa006dc773e42352b0371bbe8ae8bd9702c1960d",
+    "mode": "full",
+    "python": "3.12.13",
+    "seed": 101,
+    "start": "2025-01-06",
+    "utc": "2026-09-03T09:45:05.721669Z"
+  },
+  "per_route": {
+    "bus": {
+      "per_day": [
+        {
+          "date": "2025-01-06",
+          "fingerprint": "6a2cc5aa53fc0dd58e99fcb5c5f7e1b183ebb07403713e8ff3b0412521073eb6",
+          "n_edges": 16263,
+          "stable_int_calls": 24744,
+          "wall_s": 0.04668379999998251
+        },
+        {
+          "date": "2025-01-07",
+          "fingerprint": "85944d959e5e18380c65f8f29cd5541620eaa57aeb1c4d2202dead6bdefc2609",
+          "n_edges": 16251,
+          "stable_int_calls": 24734,
+          "wall_s": 0.04935890000001564
+        },
+        {
+          "date": "2025-01-08",
+          "fingerprint": "0eb0eab2a2fab6a5ee80f5d9eb29c65dfa2c8a0018a584ce25a2a29302ba85a0",
+          "n_edges": 16285,
+          "stable_int_calls": 24743,
+          "wall_s": 0.04882240000006277
+        },
+        {
+          "date": "2025-01-09",
+          "fingerprint": "d808dc9588e1047c69584db9e39869da489d0a75c7d0f62cd398634fbe818a85",
+          "n_edges": 16252,
+          "stable_int_calls": 24741,
+          "wall_s": 0.04782860000000255
+        },
+        {
+          "date": "2025-01-10",
+          "fingerprint": "cd1bf3576d288ff5f0836e1fba815c6a74e1b51c609a60cc1e9d879bba1a29aa",
+          "n_edges": 16293,
+          "stable_int_calls": 24747,
+          "wall_s": 0.047030101000018476
+        },
+        {
+          "date": "2025-01-11",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.000651999999945474
+        },
+        {
+          "date": "2025-01-12",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 4.300000000512227e-06
+        },
+        {
+          "date": "2025-01-13",
+          "fingerprint": "4805579691bd984c4d5e3a0d56f93e17bff0a37fee3da6f17553178cd249ac0f",
+          "n_edges": 16263,
+          "stable_int_calls": 24744,
+          "wall_s": 0.04585029999998369
+        },
+        {
+          "date": "2025-01-14",
+          "fingerprint": "66289270a7f2a2ef5fd342c2f22742e5f15457c0bcfa68d896cd35c1afa9a4fb",
+          "n_edges": 16251,
+          "stable_int_calls": 24734,
+          "wall_s": 0.04694169999993392
+        },
+        {
+          "date": "2025-01-15",
+          "fingerprint": "ee4f156e939c1291a79fab644e6b57efa01568b88bc5415c88a27daf40d98f91",
+          "n_edges": 16285,
+          "stable_int_calls": 24743,
+          "wall_s": 0.046968399999968824
+        },
+        {
+          "date": "2025-01-16",
+          "fingerprint": "312e09421a5fa1d27596375aae7593f4ff29560a758d8f90b0cf2e72db636ce7",
+          "n_edges": 16252,
+          "stable_int_calls": 24741,
+          "wall_s": 0.04886669999996229
+        },
+        {
+          "date": "2025-01-17",
+          "fingerprint": "c79049889f2e6de07486bd493a1e514e867da30e381f833c5439b1d74aa503bf",
+          "n_edges": 16293,
+          "stable_int_calls": 24747,
+          "wall_s": 0.04874230000018542
+        },
+        {
+          "date": "2025-01-18",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.0006228999998256768
+        },
+        {
+          "date": "2025-01-19",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 4.199999921183917e-06
+        },
+        {
+          "date": "2025-01-20",
+          "fingerprint": "fe8bff57ad89723142cc27183f1829a59b5c24ef40fe93bbb1399b9a3a488470",
+          "n_edges": 16263,
+          "stable_int_calls": 24744,
+          "wall_s": 0.04672030100005031
+        },
+        {
+          "date": "2025-01-21",
+          "fingerprint": "5886d07bdf2916e44afe66c15e602dd378d7fba7e6207f009725aa096285f6c7",
+          "n_edges": 16251,
+          "stable_int_calls": 24734,
+          "wall_s": 0.04716409999991811
+        },
+        {
+          "date": "2025-01-22",
+          "fingerprint": "7fa507906d624108db816d9d65e913a8c0a3e63f95e4d046d95e2b98e3faebd0",
+          "n_edges": 16285,
+          "stable_int_calls": 24743,
+          "wall_s": 0.04735840000012104
+        },
+        {
+          "date": "2025-01-23",
+          "fingerprint": "fbab0be0d330d37338ac82d4ac694d634342a8c52bc7eae9a14690969b9fe20d",
+          "n_edges": 16252,
+          "stable_int_calls": 24741,
+          "wall_s": 0.04756650000012996
+        },
+        {
+          "date": "2025-01-24",
+          "fingerprint": "19e6a1d987adcf97b5dd8df05d635243228f92a9103d3eaaaf1578c465b5fbd3",
+          "n_edges": 16293,
+          "stable_int_calls": 24747,
+          "wall_s": 0.04792309999993449
+        },
+        {
+          "date": "2025-01-25",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.0006903000000875181
+        },
+        {
+          "date": "2025-01-26",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 3.89999991057266e-06
+        },
+        {
+          "date": "2025-01-27",
+          "fingerprint": "6d20619c93c6dc099e33ccd23b413c36d459840987ded415cc020c5903e5cda2",
+          "n_edges": 16263,
+          "stable_int_calls": 24744,
+          "wall_s": 0.04590589999997974
+        },
+        {
+          "date": "2025-01-28",
+          "fingerprint": "9e3222e08e444c6049aee3dc7d7c32e6128fbdaea861f7309af9061dff18a79d",
+          "n_edges": 16251,
+          "stable_int_calls": 24734,
+          "wall_s": 0.04753570100001525
+        },
+        {
+          "date": "2025-01-29",
+          "fingerprint": "242a3ffe4ecb218a2c3c7894f8e88b8e6aaf697c7d5d2c9bf6238230a450ec6e",
+          "n_edges": 16285,
+          "stable_int_calls": 24743,
+          "wall_s": 0.04777489999992213
+        },
+        {
+          "date": "2025-01-30",
+          "fingerprint": "0125195b95fe281132da35230a8c115d680df6e6eaa26e4179b3a167bc7f5f57",
+          "n_edges": 16252,
+          "stable_int_calls": 24741,
+          "wall_s": 0.047322699999995166
+        },
+        {
+          "date": "2025-01-31",
+          "fingerprint": "4eae3aa20725f57178a6024ef576790132fc42b364b3b42900c6a2fdf7c8ec16",
+          "n_edges": 16293,
+          "stable_int_calls": 24747,
+          "wall_s": 0.04702240000005986
+        },
+        {
+          "date": "2025-02-01",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.0007841999999982363
+        },
+        {
+          "date": "2025-02-02",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 4.700000090451795e-06
+        },
+        {
+          "date": "2025-02-03",
+          "fingerprint": "770c0a99cd1692a3cf0694464378bf9fcee7771327cad9eb6570e03f41925180",
+          "n_edges": 16263,
+          "stable_int_calls": 24744,
+          "wall_s": 0.05011910000007447
+        },
+        {
+          "date": "2025-02-04",
+          "fingerprint": "b4dcd88ab83d7e8abd2ce474c8f4d963e9f1c899f6393445148b7462eeae0622",
+          "n_edges": 16251,
+          "stable_int_calls": 24734,
+          "wall_s": 0.04675059999999576
+        }
+      ],
+      "total_stable_int_calls": 544314,
+      "total_wall_s": 1.049023403000092
+    },
+    "community_indoor": {
+      "per_day": [
+        {
+          "date": "2025-01-06",
+          "fingerprint": "5d1e810addadf77fee0431af73d62fcf5959dfdb30c43445ce17c4f97f1417c2",
+          "n_edges": 191770,
+          "stable_int_calls": 216327,
+          "wall_s": 4.109122869999965
+        },
+        {
+          "date": "2025-01-07",
+          "fingerprint": "8862eba3c5b7de4e849b39a78151c36100dd8193a5ac7ce3d6925bcecf1cbfd5",
+          "n_edges": 191321,
+          "stable_int_calls": 215459,
+          "wall_s": 4.1137195700000575
+        },
+        {
+          "date": "2025-01-08",
+          "fingerprint": "103ae0a83a46c714913275d184471666699c16e890faf8cbc57185173377c43b",
+          "n_edges": 191582,
+          "stable_int_calls": 215951,
+          "wall_s": 4.089110812999934
+        },
+        {
+          "date": "2025-01-09",
+          "fingerprint": "75320d18562b2e17eb45077ecddfedf31cd8e06cb8a917b20810e0f25586f99a",
+          "n_edges": 191249,
+          "stable_int_calls": 215285,
+          "wall_s": 4.088080407999996
+        },
+        {
+          "date": "2025-01-10",
+          "fingerprint": "26f4fad2293b55cee8b0ad744ea86add4c2db63af50f7d2e4ac300faeda6d6a9",
+          "n_edges": 191418,
+          "stable_int_calls": 215643,
+          "wall_s": 4.087864695999997
+        },
+        {
+          "date": "2025-01-11",
+          "fingerprint": "6ac342eaca2e534e01590265975e0f1b7a5947f1ce104b3c12a9768d7549b31a",
+          "n_edges": 205120,
+          "stable_int_calls": 243077,
+          "wall_s": 5.826630641000065
+        },
+        {
+          "date": "2025-01-12",
+          "fingerprint": "6f32e5eff2e652e98e34d18419f1960f5f63b336a607b1f4a3e4bf3c381a92b6",
+          "n_edges": 205325,
+          "stable_int_calls": 243455,
+          "wall_s": 5.928199029000098
+        },
+        {
+          "date": "2025-01-13",
+          "fingerprint": "dc206d2ed2ed0b6752c6a7709344823371f01f8454380acff66f7622a8993df3",
+          "n_edges": 191157,
+          "stable_int_calls": 215103,
+          "wall_s": 4.052771327000073
+        },
+        {
+          "date": "2025-01-14",
+          "fingerprint": "fb064774609b58f04bb44ab2e31472818fd561cf3c7cd2c88a7c0fd05086347f",
+          "n_edges": 191491,
+          "stable_int_calls": 215781,
+          "wall_s": 4.081841468999983
+        },
+        {
+          "date": "2025-01-15",
+          "fingerprint": "140f277e785e32b6cb19e2e4db00b6169f57d701b98c1d058b21ec2c4d26b5e4",
+          "n_edges": 191410,
+          "stable_int_calls": 215623,
+          "wall_s": 4.144474532000004
+        },
+        {
+          "date": "2025-01-16",
+          "fingerprint": "ff657713fa9fee133dd0fecf81e02840470e75260f6b63f505ef1a8b1012e140",
+          "n_edges": 191420,
+          "stable_int_calls": 215639,
+          "wall_s": 4.1070837560000655
+        },
+        {
+          "date": "2025-01-17",
+          "fingerprint": "560b377aba682e10deb0328f4fe269f17c60d46d9ae235b00970deedef72abba",
+          "n_edges": 191488,
+          "stable_int_calls": 215783,
+          "wall_s": 4.080890861999933
+        },
+        {
+          "date": "2025-01-18",
+          "fingerprint": "f21eb2ee75f7206947cf2f5724b2a13accc841b252cb0ffb345aa5d32166329e",
+          "n_edges": 205260,
+          "stable_int_calls": 243335,
+          "wall_s": 5.849717506999923
+        },
+        {
+          "date": "2025-01-19",
+          "fingerprint": "b95b972ee33605039b9e56bc4ad19f626ed69917659fd259609f306fc634af80",
+          "n_edges": 205074,
+          "stable_int_calls": 242943,
+          "wall_s": 5.8100326280000445
+        },
+        {
+          "date": "2025-01-20",
+          "fingerprint": "173a113881b6739101da5082190a7c9a54b2e7c1a98daf304a269d78f3cb0a29",
+          "n_edges": 191469,
+          "stable_int_calls": 215725,
+          "wall_s": 4.077029225999922
+        },
+        {
+          "date": "2025-01-21",
+          "fingerprint": "620390acee16f1cb4643f18cb67abb1f17ba4800a938960091b3e21aedc61621",
+          "n_edges": 191476,
+          "stable_int_calls": 215747,
+          "wall_s": 4.105066527999952
+        },
+        {
+          "date": "2025-01-22",
+          "fingerprint": "4a835620aef897a52857a24ad277f488903696608bec41f85a15faffdff0e730",
+          "n_edges": 191421,
+          "stable_int_calls": 215619,
+          "wall_s": 4.099021826999888
+        },
+        {
+          "date": "2025-01-23",
+          "fingerprint": "d3b90d53b2138db443ef142fef8fd6d8ec894da495b17bac10ce7caf9cf70107",
+          "n_edges": 190922,
+          "stable_int_calls": 214637,
+          "wall_s": 4.027550822999956
+        },
+        {
+          "date": "2025-01-24",
+          "fingerprint": "9736513d4fa80a9dc6b9292a105ed0c7ba4b7ece9547582b064ef3ec63b417cc",
+          "n_edges": 191267,
+          "stable_int_calls": 215339,
+          "wall_s": 4.082099122999807
+        },
+        {
+          "date": "2025-01-25",
+          "fingerprint": "c7b85011aea48e5dddcc989002bfa53ab294e31f7a7741dbc5ea3369b725c9c8",
+          "n_edges": 205218,
+          "stable_int_calls": 243227,
+          "wall_s": 5.829944932999979
+        },
+        {
+          "date": "2025-01-26",
+          "fingerprint": "d22cf616f6ec47da5650341d4cd808547312deb5c66ab3319488ebf35ae15a96",
+          "n_edges": 205192,
+          "stable_int_calls": 243175,
+          "wall_s": 5.8000032350000765
+        },
+        {
+          "date": "2025-01-27",
+          "fingerprint": "312fa738d75aeb1d1ed855d4b2637eb8138a6b22733a8f3e351631da74d2d6ba",
+          "n_edges": 191533,
+          "stable_int_calls": 215863,
+          "wall_s": 4.131870608999861
+        },
+        {
+          "date": "2025-01-28",
+          "fingerprint": "9d2bf0bf72c423a2f6e9a497bc2bf7e335c3e406a910644305310e848be813ae",
+          "n_edges": 191441,
+          "stable_int_calls": 215655,
+          "wall_s": 4.148498196999981
+        },
+        {
+          "date": "2025-01-29",
+          "fingerprint": "7cdeadfbfa1780a7acd82845f308d5485177ab8ce126f5ec266ce17b69363a7d",
+          "n_edges": 191537,
+          "stable_int_calls": 215881,
+          "wall_s": 4.115816798999958
+        },
+        {
+          "date": "2025-01-30",
+          "fingerprint": "7eaf6491d902573ffdb42efd656f7c1a5f903d0a83a9b2368dbb22e75c8c6e16",
+          "n_edges": 191336,
+          "stable_int_calls": 215463,
+          "wall_s": 4.129525199
+        },
+        {
+          "date": "2025-01-31",
+          "fingerprint": "6cfe27eefed7bad962acdb2f6e146301fa16735c71cdd1074203407bbd53b66c",
+          "n_edges": 191274,
+          "stable_int_calls": 215355,
+          "wall_s": 4.109115695000128
+        },
+        {
+          "date": "2025-02-01",
+          "fingerprint": "c4a200f1997237021cfe83c98d7f132dd5999b046b17acf65f06177b7445421f",
+          "n_edges": 205326,
+          "stable_int_calls": 243479,
+          "wall_s": 5.884504391000064
+        },
+        {
+          "date": "2025-02-02",
+          "fingerprint": "4b8653e52b61a9748350f292820881965da070a9cccbda9eca79c7327c984a27",
+          "n_edges": 205204,
+          "stable_int_calls": 243199,
+          "wall_s": 5.816030385999966
+        },
+        {
+          "date": "2025-02-03",
+          "fingerprint": "628abedb18f21d6f6d3ee8b5f5e44696fbf7dad8f4b14b3a93a6eeff87831f93",
+          "n_edges": 191560,
+          "stable_int_calls": 215895,
+          "wall_s": 4.079075998999997
+        },
+        {
+          "date": "2025-02-04",
+          "fingerprint": "0b48a58229cec5f65dbbc262d8059e1fb9ec08b2e9c774c2a2bc459b7816245b",
+          "n_edges": 191621,
+          "stable_int_calls": 216021,
+          "wall_s": 4.133477203999973
+        }
+      ],
+      "total_stable_int_calls": 6689684,
+      "total_wall_s": 136.93817028199965
+    },
+    "community_outdoor": {
+      "per_day": [
+        {
+          "date": "2025-01-06",
+          "fingerprint": "293bacaf5071fb3070f019dd0c567b79fc46764c5e8f6b6b583f57c619e1829e",
+          "n_edges": 74221,
+          "stable_int_calls": 158619,
+          "wall_s": 1.2599850050000896
+        },
+        {
+          "date": "2025-01-07",
+          "fingerprint": "cc74651beccea4af0a1b477adfcf96fce5190671a9047c460cb7b98f83e25dde",
+          "n_edges": 74412,
+          "stable_int_calls": 158987,
+          "wall_s": 1.2519827050000458
+        },
+        {
+          "date": "2025-01-08",
+          "fingerprint": "97fd75ca5e320545b38459cdf3c7b763a25512f58820cd0214d78df221554087",
+          "n_edges": 74365,
+          "stable_int_calls": 158905,
+          "wall_s": 1.2481702049999512
+        },
+        {
+          "date": "2025-01-09",
+          "fingerprint": "aadc423c621344b82849b19aa7172e74d168e79c88aae854399ca0a9b7738870",
+          "n_edges": 74220,
+          "stable_int_calls": 158613,
+          "wall_s": 1.2299498039999435
+        },
+        {
+          "date": "2025-01-10",
+          "fingerprint": "90c089dbf652b66e36b20da16a23deb94c4146dfeda4eb3d43db97e14dd4b317",
+          "n_edges": 74310,
+          "stable_int_calls": 158793,
+          "wall_s": 1.2525409039999431
+        },
+        {
+          "date": "2025-01-11",
+          "fingerprint": "a97b03aa4b50dfd0f1b070382a9144c50ab9cf2ba1cb46bf245d83fa69bfa404",
+          "n_edges": 102043,
+          "stable_int_calls": 214265,
+          "wall_s": 3.8188117610000063
+        },
+        {
+          "date": "2025-01-12",
+          "fingerprint": "11564fe1d4a9bd43974df7f48717eb8cfd3d28d416a8b70c3f95ef5cac050857",
+          "n_edges": 101997,
+          "stable_int_calls": 214185,
+          "wall_s": 3.8235451610000837
+        },
+        {
+          "date": "2025-01-13",
+          "fingerprint": "b0370455cfd2ff077d4259bd4a7b90a717834ba5035bc61ee7d116e93a605081",
+          "n_edges": 74262,
+          "stable_int_calls": 158691,
+          "wall_s": 1.2515046010000788
+        },
+        {
+          "date": "2025-01-14",
+          "fingerprint": "58823a4f84d56fd659c4cd332d128bc6cfacbf4e86ca8c99ae3841c539f31b63",
+          "n_edges": 74450,
+          "stable_int_calls": 159077,
+          "wall_s": 1.2372704010001598
+        },
+        {
+          "date": "2025-01-15",
+          "fingerprint": "96e958c25113bdcf463dc63817607f2ede2cd2353b2a32c1295c34091d3af5e1",
+          "n_edges": 74197,
+          "stable_int_calls": 158579,
+          "wall_s": 1.2267875009999898
+        },
+        {
+          "date": "2025-01-16",
+          "fingerprint": "cb3a46fa515b8679b1c58f9886e5f9d471458e21f5b1aafc202602fa5b6f2758",
+          "n_edges": 74465,
+          "stable_int_calls": 159101,
+          "wall_s": 1.2611342019999938
+        },
+        {
+          "date": "2025-01-17",
+          "fingerprint": "e78f1d710525a0fdc97b78e7a180cee3d1e53b9e9dc6907807c85001514a4c6a",
+          "n_edges": 74423,
+          "stable_int_calls": 159025,
+          "wall_s": 1.247256901000128
+        },
+        {
+          "date": "2025-01-18",
+          "fingerprint": "b6eeaf0e41c1201af141c63cb2e912daf685eb3e0fb2b3468db406e633b2166c",
+          "n_edges": 101944,
+          "stable_int_calls": 214065,
+          "wall_s": 3.7812500059999365
+        },
+        {
+          "date": "2025-01-19",
+          "fingerprint": "ebc3647d738087346de160359fb43bd439dbde4938e03c0b84c7206a04822d64",
+          "n_edges": 101724,
+          "stable_int_calls": 213621,
+          "wall_s": 3.8071502069999497
+        },
+        {
+          "date": "2025-01-20",
+          "fingerprint": "76145cc27bc51c0de0cb2506aaffcfb4c4a9a87d731a201955c237d8d7a0a458",
+          "n_edges": 74373,
+          "stable_int_calls": 158927,
+          "wall_s": 1.2502118029999565
+        },
+        {
+          "date": "2025-01-21",
+          "fingerprint": "ec59e63626d79f8cd76de8f32bf972370fb5ef97fa7ba1d63c90d0d1dd441e74",
+          "n_edges": 74325,
+          "stable_int_calls": 158817,
+          "wall_s": 1.2356111030001102
+        },
+        {
+          "date": "2025-01-22",
+          "fingerprint": "f6697f1d93d8cd8c0cef98f2eda53a40adc04cdac23660d7480e722e8c7970a6",
+          "n_edges": 74331,
+          "stable_int_calls": 158837,
+          "wall_s": 1.2450231039999835
+        },
+        {
+          "date": "2025-01-23",
+          "fingerprint": "2584f831f4634a81e2776e8f68d86a63b097c41fc66b2d79f91fb37e5994314d",
+          "n_edges": 74254,
+          "stable_int_calls": 158671,
+          "wall_s": 1.217866802999879
+        },
+        {
+          "date": "2025-01-24",
+          "fingerprint": "afcfc0e8b143bc7287c5f9584fb70db3820d03133da85f248202c1c947bb7b30",
+          "n_edges": 74092,
+          "stable_int_calls": 158363,
+          "wall_s": 1.2139422029999878
+        },
+        {
+          "date": "2025-01-25",
+          "fingerprint": "00a17f8ddf545bfff2e030058214072e9fe908f7c60a645cdaa9012154e556ba",
+          "n_edges": 101585,
+          "stable_int_calls": 213351,
+          "wall_s": 3.7622587939999903
+        },
+        {
+          "date": "2025-01-26",
+          "fingerprint": "cf667f1713fff883090f2560ec0cfa5c4b74146a73f60b243cc0f44a37c7c641",
+          "n_edges": 101995,
+          "stable_int_calls": 214165,
+          "wall_s": 3.8039622590001727
+        },
+        {
+          "date": "2025-01-27",
+          "fingerprint": "09b374acc824840c3f14196246353c73e7b6fdbbcd5144d67c58d6a1fb44ef0c",
+          "n_edges": 74395,
+          "stable_int_calls": 158959,
+          "wall_s": 1.2622905860000628
+        },
+        {
+          "date": "2025-01-28",
+          "fingerprint": "6ba17914e57af02fd2bdef7400df33dbe3c122a532f2afcd143f9b350eac7d06",
+          "n_edges": 74262,
+          "stable_int_calls": 158711,
+          "wall_s": 1.257360886000015
+        },
+        {
+          "date": "2025-01-29",
+          "fingerprint": "d199b2ef607519a112ca3751cf703f11ab0a5733eb3fe3516d9f483daa2cd717",
+          "n_edges": 74366,
+          "stable_int_calls": 158901,
+          "wall_s": 1.2531236019999596
+        },
+        {
+          "date": "2025-01-30",
+          "fingerprint": "c3f12f8c223694db66e597e6111ba390ffd31d0f6994b0343e8a71ef5ce8f4ec",
+          "n_edges": 74329,
+          "stable_int_calls": 158821,
+          "wall_s": 1.2320366030000969
+        },
+        {
+          "date": "2025-01-31",
+          "fingerprint": "1084a04bb97244e0ed3918ab0f78205e08bb39b522936a1fcb1f99d9a15c9dc9",
+          "n_edges": 74152,
+          "stable_int_calls": 158465,
+          "wall_s": 1.231599703000029
+        },
+        {
+          "date": "2025-02-01",
+          "fingerprint": "290c3eeddc8793f126470af7e7817828bd0323b341321929c467532f55d3a786",
+          "n_edges": 101611,
+          "stable_int_calls": 213399,
+          "wall_s": 3.7804046090000156
+        },
+        {
+          "date": "2025-02-02",
+          "fingerprint": "4749cd08e47c72114752999170b65faff17c58b78d7497676c45f30333c586fd",
+          "n_edges": 101966,
+          "stable_int_calls": 214101,
+          "wall_s": 3.8199990159998833
+        },
+        {
+          "date": "2025-02-03",
+          "fingerprint": "0d8b59d4a6cb4caab1cff6238d24c0c20fd462443f00498e81e8ce8bfd4d8945",
+          "n_edges": 74269,
+          "stable_int_calls": 158699,
+          "wall_s": 1.2317416050000247
+        },
+        {
+          "date": "2025-02-04",
+          "fingerprint": "34cd17faf819196a6a72f72d2703d325c52201a537abb9af3eb8870905dc3430",
+          "n_edges": 74476,
+          "stable_int_calls": 159133,
+          "wall_s": 1.2606831049999982
+        }
+      ],
+      "total_stable_int_calls": 5204846,
+      "total_wall_s": 57.755455148000465
+    },
+    "school_cross_class": {
+      "per_day": [
+        {
+          "date": "2025-01-06",
+          "fingerprint": "be912a091042cc47d4e375b3fc27320f4b41321ca64510134583285919096134",
+          "n_edges": 29184,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12583050000012008
+        },
+        {
+          "date": "2025-01-07",
+          "fingerprint": "6061551c1eb03dbe9622ffd69eb9aea331e0be3de731a40e8f4b3de8490253ef",
+          "n_edges": 29295,
+          "stable_int_calls": 43945,
+          "wall_s": 0.1246992000001228
+        },
+        {
+          "date": "2025-01-08",
+          "fingerprint": "3b4726b37900ee10d789cc24faa10aa1a8b065beba4fc4c8d918b58b40fcac2a",
+          "n_edges": 29240,
+          "stable_int_calls": 43945,
+          "wall_s": 0.125295400999903
+        },
+        {
+          "date": "2025-01-09",
+          "fingerprint": "4a698755e9df3a177b3cfb636ca36ddde7ffc7e6a8e64273b76ada18af89d6b0",
+          "n_edges": 29294,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12321070000007239
+        },
+        {
+          "date": "2025-01-10",
+          "fingerprint": "975be6bc787cd600c2146950eda1e1ac91d429b8efbf3d65d475acd88e6b6d5d",
+          "n_edges": 29300,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12247779999984232
+        },
+        {
+          "date": "2025-01-11",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.0027213999999275984
+        },
+        {
+          "date": "2025-01-12",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 4.999999873689376e-06
+        },
+        {
+          "date": "2025-01-13",
+          "fingerprint": "7f5b32e84409d212adbdd992605db6f9d26d125dab9e0c431484b1722c321b46",
+          "n_edges": 29245,
+          "stable_int_calls": 43945,
+          "wall_s": 0.1202953009999419
+        },
+        {
+          "date": "2025-01-14",
+          "fingerprint": "ca5459d58b3a1fd8a278ff195795c56590f7a95eed1d63f8d49a520124e9ee70",
+          "n_edges": 29309,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12110570100003315
+        },
+        {
+          "date": "2025-01-15",
+          "fingerprint": "7e2f8794c0aecbf3863a60666ec0339a9b28c20f976060b44cf9bb687fc5e3a9",
+          "n_edges": 29221,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12343699999996716
+        },
+        {
+          "date": "2025-01-16",
+          "fingerprint": "91f0cf083896fe76c6d1f867999fac6ac016abfdd8ab376572af09ea87f98611",
+          "n_edges": 29059,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12216440100019099
+        },
+        {
+          "date": "2025-01-17",
+          "fingerprint": "b7b271440996b71b06eaf4b112ce95ff144485467bbe303c41205efb7b622fc1",
+          "n_edges": 29134,
+          "stable_int_calls": 43945,
+          "wall_s": 0.1228649999998197
+        },
+        {
+          "date": "2025-01-18",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.00275099999998929
+        },
+        {
+          "date": "2025-01-19",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 5.399999963628943e-06
+        },
+        {
+          "date": "2025-01-20",
+          "fingerprint": "78a30530a008dab866ceef70657e99e1ad74792115113a3975f1c060ab244486",
+          "n_edges": 29378,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12333350099993368
+        },
+        {
+          "date": "2025-01-21",
+          "fingerprint": "471c4da54532c4820445a2c3a641efb3fe76dbba084c475be0803a74b738a69e",
+          "n_edges": 29273,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12204909999991287
+        },
+        {
+          "date": "2025-01-22",
+          "fingerprint": "315f3155bcd48357555ecc425497541482172f7e7d66b8a409755ab18c63c00c",
+          "n_edges": 29262,
+          "stable_int_calls": 43945,
+          "wall_s": 0.1220307999999477
+        },
+        {
+          "date": "2025-01-23",
+          "fingerprint": "1553496c5a516b12b46005f3311deacbd8c2cbdb5a641390bb61062c2154ada9",
+          "n_edges": 29202,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12531620000004295
+        },
+        {
+          "date": "2025-01-24",
+          "fingerprint": "634249635da5a4d13ba8e26b8b74def3bab059f31929ebedfb67fa8f7b2017b4",
+          "n_edges": 29267,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12316959999998289
+        },
+        {
+          "date": "2025-01-25",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.0028781000000890344
+        },
+        {
+          "date": "2025-01-26",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 5.399999963628943e-06
+        },
+        {
+          "date": "2025-01-27",
+          "fingerprint": "d6938c4b89d0c5ad486716d5c5933618c3dd2ad0f7c2a06ecc097caee0b4bfa4",
+          "n_edges": 29218,
+          "stable_int_calls": 43945,
+          "wall_s": 0.11754820100009056
+        },
+        {
+          "date": "2025-01-28",
+          "fingerprint": "184464c0e3e7eacf5bd158fd32b21dc3bef255c4dc69c73d63b1b5a88670134e",
+          "n_edges": 29265,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12262220000002344
+        },
+        {
+          "date": "2025-01-29",
+          "fingerprint": "06c4613ba4ed05bac09b05d4c2d7981c64a5c98e76fd3adb92c519c8cb08b7bf",
+          "n_edges": 29320,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12361330100020496
+        },
+        {
+          "date": "2025-01-30",
+          "fingerprint": "c29f3879431be94aa21c19a91f9a39084627723de3dcd16c514804656625dd6a",
+          "n_edges": 29313,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12266639999984363
+        },
+        {
+          "date": "2025-01-31",
+          "fingerprint": "78c019755b9db3858fa58c9af6705f375506c81a98dc561ce1d25f27456fc4c8",
+          "n_edges": 29265,
+          "stable_int_calls": 43945,
+          "wall_s": 0.1257500000001528
+        },
+        {
+          "date": "2025-02-01",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.0035937009999997827
+        },
+        {
+          "date": "2025-02-02",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 5.399999963628943e-06
+        },
+        {
+          "date": "2025-02-03",
+          "fingerprint": "79e5d06c78b63594f195629cc7013a4206fae5f3bad1c3e94a44f7dd485e8c52",
+          "n_edges": 29190,
+          "stable_int_calls": 43945,
+          "wall_s": 0.11726799999996729
+        },
+        {
+          "date": "2025-02-04",
+          "fingerprint": "2d7fc96353f16fbdec206996a53d21bc3da6112898ef22c18de564e4574fdebb",
+          "n_edges": 29249,
+          "stable_int_calls": 43945,
+          "wall_s": 0.12118039999995744
+        }
+      ],
+      "total_stable_int_calls": 966790,
+      "total_wall_s": 2.709894107999844
+    },
+    "shared_vehicle": {
+      "per_day": [
+        {
+          "date": "2025-01-06",
+          "fingerprint": "8e0d4829c7aaf06bae4e6f77040d4764e4e12f05a7c0a963f2d3aa8be35b0774",
+          "n_edges": 2859,
+          "stable_int_calls": 60473,
+          "wall_s": 0.09253830099987681
+        },
+        {
+          "date": "2025-01-07",
+          "fingerprint": "47d44a99fa7ba3a941719dd48f7e75f437237188ca1921bdd40a6d310c1e9e66",
+          "n_edges": 2868,
+          "stable_int_calls": 60483,
+          "wall_s": 0.0896563999999671
+        },
+        {
+          "date": "2025-01-08",
+          "fingerprint": "9f481c1a4e6bb421e77f27b4322743b67c483aa0da62d3e0097d7a1e660a072d",
+          "n_edges": 2874,
+          "stable_int_calls": 60492,
+          "wall_s": 0.08874969999988025
+        },
+        {
+          "date": "2025-01-09",
+          "fingerprint": "71b484b2ef4020f617e56abf6555053526f409c121ee2969b716ad1b8e520750",
+          "n_edges": 2881,
+          "stable_int_calls": 60496,
+          "wall_s": 0.08844239999984893
+        },
+        {
+          "date": "2025-01-10",
+          "fingerprint": "43c407faefc1f91128d021298867e5a8ed125902de8f130602ec5ba8559ec3c4",
+          "n_edges": 2867,
+          "stable_int_calls": 60477,
+          "wall_s": 0.08870980000006057
+        },
+        {
+          "date": "2025-01-11",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.0001268000000891334
+        },
+        {
+          "date": "2025-01-12",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 3.2000000373955118e-06
+        },
+        {
+          "date": "2025-01-13",
+          "fingerprint": "8e0d4829c7aaf06bae4e6f77040d4764e4e12f05a7c0a963f2d3aa8be35b0774",
+          "n_edges": 2859,
+          "stable_int_calls": 60473,
+          "wall_s": 0.08772230099998524
+        },
+        {
+          "date": "2025-01-14",
+          "fingerprint": "47d44a99fa7ba3a941719dd48f7e75f437237188ca1921bdd40a6d310c1e9e66",
+          "n_edges": 2868,
+          "stable_int_calls": 60483,
+          "wall_s": 0.08859889999985171
+        },
+        {
+          "date": "2025-01-15",
+          "fingerprint": "9f481c1a4e6bb421e77f27b4322743b67c483aa0da62d3e0097d7a1e660a072d",
+          "n_edges": 2874,
+          "stable_int_calls": 60492,
+          "wall_s": 0.08884880000005069
+        },
+        {
+          "date": "2025-01-16",
+          "fingerprint": "71b484b2ef4020f617e56abf6555053526f409c121ee2969b716ad1b8e520750",
+          "n_edges": 2881,
+          "stable_int_calls": 60496,
+          "wall_s": 0.08786030000010214
+        },
+        {
+          "date": "2025-01-17",
+          "fingerprint": "43c407faefc1f91128d021298867e5a8ed125902de8f130602ec5ba8559ec3c4",
+          "n_edges": 2867,
+          "stable_int_calls": 60477,
+          "wall_s": 0.08815570100000514
+        },
+        {
+          "date": "2025-01-18",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.00014620000001741573
+        },
+        {
+          "date": "2025-01-19",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 3.3999999686784577e-06
+        },
+        {
+          "date": "2025-01-20",
+          "fingerprint": "8e0d4829c7aaf06bae4e6f77040d4764e4e12f05a7c0a963f2d3aa8be35b0774",
+          "n_edges": 2859,
+          "stable_int_calls": 60473,
+          "wall_s": 0.08735669999987294
+        },
+        {
+          "date": "2025-01-21",
+          "fingerprint": "47d44a99fa7ba3a941719dd48f7e75f437237188ca1921bdd40a6d310c1e9e66",
+          "n_edges": 2868,
+          "stable_int_calls": 60483,
+          "wall_s": 0.08885129999998753
+        },
+        {
+          "date": "2025-01-22",
+          "fingerprint": "9f481c1a4e6bb421e77f27b4322743b67c483aa0da62d3e0097d7a1e660a072d",
+          "n_edges": 2874,
+          "stable_int_calls": 60492,
+          "wall_s": 0.0884880000000976
+        },
+        {
+          "date": "2025-01-23",
+          "fingerprint": "71b484b2ef4020f617e56abf6555053526f409c121ee2969b716ad1b8e520750",
+          "n_edges": 2881,
+          "stable_int_calls": 60496,
+          "wall_s": 0.08801220100008322
+        },
+        {
+          "date": "2025-01-24",
+          "fingerprint": "43c407faefc1f91128d021298867e5a8ed125902de8f130602ec5ba8559ec3c4",
+          "n_edges": 2867,
+          "stable_int_calls": 60477,
+          "wall_s": 0.08933449999994991
+        },
+        {
+          "date": "2025-01-25",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.00014949999990676588
+        },
+        {
+          "date": "2025-01-26",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 4.1000000692292815e-06
+        },
+        {
+          "date": "2025-01-27",
+          "fingerprint": "8e0d4829c7aaf06bae4e6f77040d4764e4e12f05a7c0a963f2d3aa8be35b0774",
+          "n_edges": 2859,
+          "stable_int_calls": 60473,
+          "wall_s": 0.0877623000001222
+        },
+        {
+          "date": "2025-01-28",
+          "fingerprint": "47d44a99fa7ba3a941719dd48f7e75f437237188ca1921bdd40a6d310c1e9e66",
+          "n_edges": 2868,
+          "stable_int_calls": 60483,
+          "wall_s": 0.0880229000001691
+        },
+        {
+          "date": "2025-01-29",
+          "fingerprint": "9f481c1a4e6bb421e77f27b4322743b67c483aa0da62d3e0097d7a1e660a072d",
+          "n_edges": 2874,
+          "stable_int_calls": 60492,
+          "wall_s": 0.08853230099998655
+        },
+        {
+          "date": "2025-01-30",
+          "fingerprint": "71b484b2ef4020f617e56abf6555053526f409c121ee2969b716ad1b8e520750",
+          "n_edges": 2881,
+          "stable_int_calls": 60496,
+          "wall_s": 0.08945549999998548
+        },
+        {
+          "date": "2025-01-31",
+          "fingerprint": "43c407faefc1f91128d021298867e5a8ed125902de8f130602ec5ba8559ec3c4",
+          "n_edges": 2867,
+          "stable_int_calls": 60477,
+          "wall_s": 0.09052750000000742
+        },
+        {
+          "date": "2025-02-01",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.00014259999989008065
+        },
+        {
+          "date": "2025-02-02",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 3.3000001167238224e-06
+        },
+        {
+          "date": "2025-02-03",
+          "fingerprint": "8e0d4829c7aaf06bae4e6f77040d4764e4e12f05a7c0a963f2d3aa8be35b0774",
+          "n_edges": 2859,
+          "stable_int_calls": 60473,
+          "wall_s": 0.08962330000008478
+        },
+        {
+          "date": "2025-02-04",
+          "fingerprint": "47d44a99fa7ba3a941719dd48f7e75f437237188ca1921bdd40a6d310c1e9e66",
+          "n_edges": 2868,
+          "stable_int_calls": 60483,
+          "wall_s": 0.08869509999999536
+        }
+      ],
+      "total_stable_int_calls": 1330640,
+      "total_wall_s": 1.954523305000066
+    },
+    "workplace_team": {
+      "per_day": [
+        {
+          "date": "2025-01-06",
+          "fingerprint": "e3f77b6af7dbe4911fb3221062f49eaade686577ed53199ac54b590fb5da331c",
+          "n_edges": 147109,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7310555019998901
+        },
+        {
+          "date": "2025-01-07",
+          "fingerprint": "55cf0f8dd2235dc2aaeb294ae5c3628638f5cd46b2a7212b094450123cadfe97",
+          "n_edges": 147753,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7448862020000888
+        },
+        {
+          "date": "2025-01-08",
+          "fingerprint": "9744b9cb3333ea6a820f86d677db48f293d411e72ee0451328b6d03be6c3f558",
+          "n_edges": 148007,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7502672020000318
+        },
+        {
+          "date": "2025-01-09",
+          "fingerprint": "9cd2cf5b622a3dc4fab8e8c74f5bb6dec544e24b7f4ceb504eb1ef16b8e9228d",
+          "n_edges": 147794,
+          "stable_int_calls": 460816,
+          "wall_s": 0.8739946019998115
+        },
+        {
+          "date": "2025-01-10",
+          "fingerprint": "afe764d3419b4b16429f164e40536df12de47d9ddc5d7abe904218e64ed6a4e0",
+          "n_edges": 147712,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7469976029999543
+        },
+        {
+          "date": "2025-01-11",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.01905140000008032
+        },
+        {
+          "date": "2025-01-12",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 1.3200000012147939e-05
+        },
+        {
+          "date": "2025-01-13",
+          "fingerprint": "e3f77b6af7dbe4911fb3221062f49eaade686577ed53199ac54b590fb5da331c",
+          "n_edges": 147109,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7164107029998377
+        },
+        {
+          "date": "2025-01-14",
+          "fingerprint": "55cf0f8dd2235dc2aaeb294ae5c3628638f5cd46b2a7212b094450123cadfe97",
+          "n_edges": 147753,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7412645019999218
+        },
+        {
+          "date": "2025-01-15",
+          "fingerprint": "9744b9cb3333ea6a820f86d677db48f293d411e72ee0451328b6d03be6c3f558",
+          "n_edges": 148007,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7429755030000251
+        },
+        {
+          "date": "2025-01-16",
+          "fingerprint": "9cd2cf5b622a3dc4fab8e8c74f5bb6dec544e24b7f4ceb504eb1ef16b8e9228d",
+          "n_edges": 147794,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7499016030001258
+        },
+        {
+          "date": "2025-01-17",
+          "fingerprint": "afe764d3419b4b16429f164e40536df12de47d9ddc5d7abe904218e64ed6a4e0",
+          "n_edges": 147712,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7493358030001218
+        },
+        {
+          "date": "2025-01-18",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.019009399999958987
+        },
+        {
+          "date": "2025-01-19",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 1.2499999911597115e-05
+        },
+        {
+          "date": "2025-01-20",
+          "fingerprint": "e3f77b6af7dbe4911fb3221062f49eaade686577ed53199ac54b590fb5da331c",
+          "n_edges": 147109,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7272126029999981
+        },
+        {
+          "date": "2025-01-21",
+          "fingerprint": "55cf0f8dd2235dc2aaeb294ae5c3628638f5cd46b2a7212b094450123cadfe97",
+          "n_edges": 147753,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7485003029999007
+        },
+        {
+          "date": "2025-01-22",
+          "fingerprint": "9744b9cb3333ea6a820f86d677db48f293d411e72ee0451328b6d03be6c3f558",
+          "n_edges": 148007,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7474817029999485
+        },
+        {
+          "date": "2025-01-23",
+          "fingerprint": "9cd2cf5b622a3dc4fab8e8c74f5bb6dec544e24b7f4ceb504eb1ef16b8e9228d",
+          "n_edges": 147794,
+          "stable_int_calls": 460816,
+          "wall_s": 0.749348302000044
+        },
+        {
+          "date": "2025-01-24",
+          "fingerprint": "afe764d3419b4b16429f164e40536df12de47d9ddc5d7abe904218e64ed6a4e0",
+          "n_edges": 147712,
+          "stable_int_calls": 460816,
+          "wall_s": 0.748534902000074
+        },
+        {
+          "date": "2025-01-25",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.01922370000011142
+        },
+        {
+          "date": "2025-01-26",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 1.240000005964248e-05
+        },
+        {
+          "date": "2025-01-27",
+          "fingerprint": "e3f77b6af7dbe4911fb3221062f49eaade686577ed53199ac54b590fb5da331c",
+          "n_edges": 147109,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7491786020000291
+        },
+        {
+          "date": "2025-01-28",
+          "fingerprint": "55cf0f8dd2235dc2aaeb294ae5c3628638f5cd46b2a7212b094450123cadfe97",
+          "n_edges": 147753,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7393539009999586
+        },
+        {
+          "date": "2025-01-29",
+          "fingerprint": "9744b9cb3333ea6a820f86d677db48f293d411e72ee0451328b6d03be6c3f558",
+          "n_edges": 148007,
+          "stable_int_calls": 460816,
+          "wall_s": 0.750983400999985
+        },
+        {
+          "date": "2025-01-30",
+          "fingerprint": "9cd2cf5b622a3dc4fab8e8c74f5bb6dec544e24b7f4ceb504eb1ef16b8e9228d",
+          "n_edges": 147794,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7475135009999576
+        },
+        {
+          "date": "2025-01-31",
+          "fingerprint": "afe764d3419b4b16429f164e40536df12de47d9ddc5d7abe904218e64ed6a4e0",
+          "n_edges": 147712,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7527522010000212
+        },
+        {
+          "date": "2025-02-01",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.018763300000046
+        },
+        {
+          "date": "2025-02-02",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 1.250000013897079e-05
+        },
+        {
+          "date": "2025-02-03",
+          "fingerprint": "e3f77b6af7dbe4911fb3221062f49eaade686577ed53199ac54b590fb5da331c",
+          "n_edges": 147109,
+          "stable_int_calls": 460816,
+          "wall_s": 0.7256180009999298
+        },
+        {
+          "date": "2025-02-04",
+          "fingerprint": "55cf0f8dd2235dc2aaeb294ae5c3628638f5cd46b2a7212b094450123cadfe97",
+          "n_edges": 147753,
+          "stable_int_calls": 460816,
+          "wall_s": 0.8663888030000635
+        }
+      ],
+      "total_stable_int_calls": 10137952,
+      "total_wall_s": 16.676053848000038
+    },
+    "workplace_transient": {
+      "per_day": [
+        {
+          "date": "2025-01-06",
+          "fingerprint": "e36b0c7a1ef237cda134951d6750a377970ff22cc921cd6177ed62ea42f5f667",
+          "n_edges": 97267,
+          "stable_int_calls": 720105,
+          "wall_s": 1.1251437040000383
+        },
+        {
+          "date": "2025-01-07",
+          "fingerprint": "fcc9d454b53727334850e71f5face435b5a287d5d0d0dc0572b8893a25035158",
+          "n_edges": 97233,
+          "stable_int_calls": 720264,
+          "wall_s": 1.1125404030001391
+        },
+        {
+          "date": "2025-01-08",
+          "fingerprint": "637cede1e92b8e33bc50407bcac3e8212a346e6fec3d042f716dfa13e4dee4b7",
+          "n_edges": 97220,
+          "stable_int_calls": 720322,
+          "wall_s": 1.113952903999916
+        },
+        {
+          "date": "2025-01-09",
+          "fingerprint": "24a415a7d2fa96afbbd7da0f4db2ad3e1bb1c2f51d29da1dd87b254252aec4e0",
+          "n_edges": 97370,
+          "stable_int_calls": 720348,
+          "wall_s": 1.1268927039998289
+        },
+        {
+          "date": "2025-01-10",
+          "fingerprint": "f2833a95af50f1939f803e08b98437c0ebc8d00baa5d404f42a5aeb811247013",
+          "n_edges": 97201,
+          "stable_int_calls": 720229,
+          "wall_s": 1.1131239040000764
+        },
+        {
+          "date": "2025-01-11",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.015217399999983172
+        },
+        {
+          "date": "2025-01-12",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 1.1699999959091656e-05
+        },
+        {
+          "date": "2025-01-13",
+          "fingerprint": "a1468509f14ecf5353343528a3452851a874033ca7ec48bb95918042dc89b93d",
+          "n_edges": 97275,
+          "stable_int_calls": 720105,
+          "wall_s": 1.216759902999911
+        },
+        {
+          "date": "2025-01-14",
+          "fingerprint": "d6f3501480be398cf33da2020c636804beb489ec3ccb312a8feaeba38ed83472",
+          "n_edges": 97336,
+          "stable_int_calls": 720264,
+          "wall_s": 1.1156482030000916
+        },
+        {
+          "date": "2025-01-15",
+          "fingerprint": "d5b206eb800e14144ab414839c7ad8cd76e73d7d8d3bf32431c17857d0c561f0",
+          "n_edges": 97346,
+          "stable_int_calls": 720322,
+          "wall_s": 1.1098929029999454
+        },
+        {
+          "date": "2025-01-16",
+          "fingerprint": "9f42b7628f287814982d42be28ce1390a459f3a47261c09aa25f0033a8b8c114",
+          "n_edges": 97396,
+          "stable_int_calls": 720348,
+          "wall_s": 1.1217607039998256
+        },
+        {
+          "date": "2025-01-17",
+          "fingerprint": "df685f5149f4a3f20587a7b106e5b73a42bddaed3404467645e84e98156113a5",
+          "n_edges": 97239,
+          "stable_int_calls": 720229,
+          "wall_s": 1.1214855029998034
+        },
+        {
+          "date": "2025-01-18",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.016900800000030358
+        },
+        {
+          "date": "2025-01-19",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 1.1999999969702912e-05
+        },
+        {
+          "date": "2025-01-20",
+          "fingerprint": "cd1cc5a29129e945a33bb66e2fb6b2b7fadd0c01f5143402b4dfe1f7526caede",
+          "n_edges": 97224,
+          "stable_int_calls": 720105,
+          "wall_s": 1.1078259030000481
+        },
+        {
+          "date": "2025-01-21",
+          "fingerprint": "233450d4b54f4d5a44e5efac30046e9363792a1d65eeb49f9e08ff25ca6e0238",
+          "n_edges": 97273,
+          "stable_int_calls": 720264,
+          "wall_s": 1.2329022030000942
+        },
+        {
+          "date": "2025-01-22",
+          "fingerprint": "44d1e7fe6b854ceae5e4fff7f028adbe60f00836178ce86c085f696ee089c643",
+          "n_edges": 97303,
+          "stable_int_calls": 720322,
+          "wall_s": 1.1261909029999515
+        },
+        {
+          "date": "2025-01-23",
+          "fingerprint": "e2717507786a497f7310b7c5225863aeeed6ed0144049bc5f7aec4ada0993229",
+          "n_edges": 97625,
+          "stable_int_calls": 720348,
+          "wall_s": 1.116551802999993
+        },
+        {
+          "date": "2025-01-24",
+          "fingerprint": "f059e38886433189068b69b3e4f779562fee5e79b3cf1530d955c6814f545721",
+          "n_edges": 97171,
+          "stable_int_calls": 720229,
+          "wall_s": 1.1148711030000413
+        },
+        {
+          "date": "2025-01-25",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.01602350000007391
+        },
+        {
+          "date": "2025-01-26",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 1.2399999832268804e-05
+        },
+        {
+          "date": "2025-01-27",
+          "fingerprint": "03da1aeaf3bd6301360dae80f07accc13c122cf71dfda7650349ad0d734f1539",
+          "n_edges": 97105,
+          "stable_int_calls": 720105,
+          "wall_s": 1.1081157030000668
+        },
+        {
+          "date": "2025-01-28",
+          "fingerprint": "281a986add175ad6b8a0ce0636fc0107fdcabad94c74c3c4baf45ad32a8cc447",
+          "n_edges": 97163,
+          "stable_int_calls": 720264,
+          "wall_s": 1.1100353029999042
+        },
+        {
+          "date": "2025-01-29",
+          "fingerprint": "8c91ed20d16a9fc2366d995e44f0966cfec8fda95ee37e91adbdf47089a70c4c",
+          "n_edges": 97275,
+          "stable_int_calls": 720322,
+          "wall_s": 1.2287841029999527
+        },
+        {
+          "date": "2025-01-30",
+          "fingerprint": "3754f4f325dfabbbab5ffc511fca5302b22190496e1fee02e0ce89b68d5734fb",
+          "n_edges": 97406,
+          "stable_int_calls": 720348,
+          "wall_s": 1.1318741029999728
+        },
+        {
+          "date": "2025-01-31",
+          "fingerprint": "682b7357dcafce613ae02e35d06e30601a2ec1b66df342c2466a7e0496e53da2",
+          "n_edges": 97267,
+          "stable_int_calls": 720229,
+          "wall_s": 1.1243519040001502
+        },
+        {
+          "date": "2025-02-01",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 0.01597130000004654
+        },
+        {
+          "date": "2025-02-02",
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "n_edges": 0,
+          "stable_int_calls": 0,
+          "wall_s": 1.4400000054592965e-05
+        },
+        {
+          "date": "2025-02-03",
+          "fingerprint": "872c229b613590979e5cb2a4f9c6e6844ff5a2c68ec98ad1b807f0acc6a86254",
+          "n_edges": 97295,
+          "stable_int_calls": 720105,
+          "wall_s": 1.1147712029999184
+        },
+        {
+          "date": "2025-02-04",
+          "fingerprint": "7de9cab7fb2637f0c611c2bce59515f77586044cad3f5aeaef062673cf77fdf4",
+          "n_edges": 97474,
+          "stable_int_calls": 720264,
+          "wall_s": 1.1190512040000158
+        }
+      ],
+      "total_stable_int_calls": 15845441,
+      "total_wall_s": 24.976689772999634
+    }
+  },
+  "totals": {
+    "stable_int_calls": 40719667,
+    "wall_s": 242.05980986699979
+  }
+}
