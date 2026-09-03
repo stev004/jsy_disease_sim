@@ -4,22 +4,14 @@
 
 ## Open
 
-### G9 — Desktop C: drive is critically full (root cause of the 2026-09-02 WSL crash)
-- **Question:** C: is 466 GB with ~9 GB free. The Windows pagefile is 34 GB (system-managed). Approve shrinking it to a fixed 16 GB (elevated PowerShell + reboot, AFTER P4 completes)? And may the agent delete anything from Downloads (751 MB) or Docker data (3.7 GB, would lose local images/containers)?
-- **Ruling (Steven, 2026-09-02 in chat: "feel free to do 2"):** pagefile shrink approved. Execution stays Steven's — it is a system-settings change needing admin elevation + reboot (and a reboot mid-run would kill P4). After P4 completes, Steven runs, in an **elevated** PowerShell:
-  ```powershell
-  Get-CimInstance Win32_ComputerSystem | Set-CimInstance -Property @{AutomaticManagedPagefile=$false}
-  $pf = Get-CimInstance Win32_PageFileSetting
-  if ($pf) { $pf | Set-CimInstance -Property @{InitialSize=16384; MaximumSize=16384} } else { New-CimInstance -ClassName Win32_PageFileSetting -Property @{Name='C:\pagefile.sys'; InitialSize=16384; MaximumSize=16384} }
-  Restart-Computer
-  ```
-  Frees ~18 GB on C:. Downloads/Docker deletions remain NOT authorized. Gate closes when the reboot has happened and `df /mnt/c` shows the space.
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G9 — Desktop C: drive critically full — RESOLVED/CLOSED 2026-09-03 (Steven executed)
+Pagefile shrunk 34 GB → fixed 16 GiB via the registry route (`PagingFiles` in Session Manager\Memory Management — the CIM and wmic routes both failed with "Value out of range") + reboot. Verified after reboot: C: free 9 GB → **31 GB**. Downloads/Docker were never touched (not authorized, not needed).
 
 ### G10 — Merge the two R6-cycle branches, then launch P4 — RESOLVED 2026-09-02 (Steven, in chat: "merge them then /closeout")
 Executed by agent on the explicit one-time instruction (not a standing authorization): SHA-first `--no-ff` merges of `codex/r6-snapshot-cache-bound` @ `79ef7b2aa07d435ffbfc2d04435b9a291fe24f95` (merge `9f51c8b`) and `fix/ensemble-pool-loudness` @ `3617a91529606295a5386437078b30560eb0e081` (merge `a6fdc192e50633570d3edc5db5f7dbf241027548`), both branch CIs green beforehand (33663392224, 33630012570). Pre-push smoke on the merged tree in WSL: 35 targeted tests + ruff + format + `jos demo` all green. Pushed; main CI pending at resolution time (logged when read). P4 launched same evening at `--workers 7` (20:54Z, pid 8595). The terra auditor reservation (partial benchmark protocol; concurrent benches → wall figure noisy) was presented in the gate and accepted by the default.
