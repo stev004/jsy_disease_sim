@@ -1,5 +1,7 @@
 # RUN — two parallel tracks (started 2026-09-03, Steven's ruling: "we'll do both")
 
+## CURRENT SEQUENCE (Steven, 2026-09-03 afternoon, supersedes anything below): G11+G12 MERGED (`main` @ `df41196`). Next: ① Steven uploads `~/Documents/jos-claude-science-audit-2026-09-03.zip` to Claude Science and brings back the findings report; ② triage + implement accepted findings (same gate regime: fingerprints/hashes byte-identical or it dies); ③ launch the new 44-seed ensemble on the final code (~1–1.5 h at 6–7 workers; replicate hashes must match the immutable P4 artifact). Meanwhile Track B iteration 3 (canonical epi tables) may proceed on the merged snapshots.
+
 ## Steven's rulings this morning (2026-09-03)
 - Roadmap reorder: performance work runs in parallel with (not after) V1.2 evidence foundation.
 - Speed target for the perf track: **180-day full-mode replicate < 20 min; 44-replicate ensemble < 2.5 h** on this desktop, always behind byte-identical equivalence gates.
