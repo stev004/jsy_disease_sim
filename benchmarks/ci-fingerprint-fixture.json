@@ -1,0 +1,280 @@
+{
+  "meta": {
+    "date_major": false,
+    "dates": [
+      "2025-01-06",
+      "2025-01-07"
+    ],
+    "days": 2,
+    "git_commit": "4569ea07aaf11e394301ee84e43fb7c7f44067a6",
+    "mode": "ci",
+    "python": "3.12.13",
+    "route_ids": [
+      "bus",
+      "care_resident",
+      "care_staff",
+      "community_indoor",
+      "community_outdoor",
+      "household",
+      "school_class",
+      "school_cross_class",
+      "shared_vehicle",
+      "workplace_team",
+      "workplace_transient"
+    ],
+    "seed": 101,
+    "start": "2025-01-06",
+    "utc": "2026-09-03T21:40:45.044910Z",
+    "window": "standard"
+  },
+  "per_route": {
+    "bus": {
+      "per_day": [
+        {
+          "array_fingerprint": "64866356bfa1e2a5533d7a81807f759fab0e727f50dbe0720a082fb82018243a",
+          "date": "2025-01-06",
+          "fingerprint": "bfeed6d09da989a63178a4babd3b622f425487be09d7ff84f0f808195d86766c",
+          "n_edges": 23,
+          "stable_int_calls": 59,
+          "wall_s": 0.0002496999999266336
+        },
+        {
+          "array_fingerprint": "64866356bfa1e2a5533d7a81807f759fab0e727f50dbe0720a082fb82018243a",
+          "date": "2025-01-07",
+          "fingerprint": "bfeed6d09da989a63178a4babd3b622f425487be09d7ff84f0f808195d86766c",
+          "n_edges": 23,
+          "stable_int_calls": 59,
+          "wall_s": 0.00021400000002813613
+        }
+      ],
+      "total_stable_int_calls": 118,
+      "total_wall_s": 0.00046369999995476974
+    },
+    "care_resident": {
+      "per_day": [
+        {
+          "array_fingerprint": "0a1259dc9c0e390812e0057aae7c43723e8ab0e09eef9a5a4070526e55f1f559",
+          "date": "2025-01-06",
+          "fingerprint": "878e6ac0c4246f242e5c209a89f41454a71ef132baf02a8425ce5dbd64f72d5f",
+          "n_edges": 58,
+          "stable_int_calls": 0,
+          "wall_s": 5.100000066704524e-06
+        },
+        {
+          "array_fingerprint": "0a1259dc9c0e390812e0057aae7c43723e8ab0e09eef9a5a4070526e55f1f559",
+          "date": "2025-01-07",
+          "fingerprint": "878e6ac0c4246f242e5c209a89f41454a71ef132baf02a8425ce5dbd64f72d5f",
+          "n_edges": 58,
+          "stable_int_calls": 0,
+          "wall_s": 2.999999992425728e-06
+        }
+      ],
+      "total_stable_int_calls": 0,
+      "total_wall_s": 8.100000059130252e-06
+    },
+    "care_staff": {
+      "per_day": [
+        {
+          "array_fingerprint": "281d8aa24a6f1e00d327f977093e841c04b857468955b972172a5fb9359ab420",
+          "date": "2025-01-06",
+          "fingerprint": "b39306a41f11866fa5857eebd7a8bd325902be325d3c7556a8c8d102c73633eb",
+          "n_edges": 25,
+          "stable_int_calls": 0,
+          "wall_s": 3.3000000030369847e-06
+        },
+        {
+          "array_fingerprint": "281d8aa24a6f1e00d327f977093e841c04b857468955b972172a5fb9359ab420",
+          "date": "2025-01-07",
+          "fingerprint": "b39306a41f11866fa5857eebd7a8bd325902be325d3c7556a8c8d102c73633eb",
+          "n_edges": 25,
+          "stable_int_calls": 0,
+          "wall_s": 2.300000005561742e-06
+        }
+      ],
+      "total_stable_int_calls": 0,
+      "total_wall_s": 5.600000008598727e-06
+    },
+    "community_indoor": {
+      "per_day": [
+        {
+          "array_fingerprint": "ed831d52335eeaf2f9c343f418413f8a3251dfb130efbaf87f92892714cfadd2",
+          "date": "2025-01-06",
+          "fingerprint": "7e0e3d2e716d9a4e47f844fa13fbd584fbbc3e1fbf3f9d57e7cebf272d4e80b2",
+          "n_edges": 5297,
+          "stable_int_calls": 6149,
+          "wall_s": 0.012703299999998308
+        },
+        {
+          "array_fingerprint": "6befefa9a0205f42d3e8a61b6e5abcf59c5090424a262e9d1de9af7281b9aae6",
+          "date": "2025-01-07",
+          "fingerprint": "1213ce50e8a0ec6e7677c15e02fdf5b6db597a49ec3fc8b08ef98e8237d8197b",
+          "n_edges": 5304,
+          "stable_int_calls": 6173,
+          "wall_s": 0.012193300000035379
+        }
+      ],
+      "total_stable_int_calls": 12322,
+      "total_wall_s": 0.024896600000033686
+    },
+    "community_outdoor": {
+      "per_day": [
+        {
+          "array_fingerprint": "bcc24e1cd4d98cc42ef06664ef5a6abde49c9c619a12348ff30b45bea54f2050",
+          "date": "2025-01-06",
+          "fingerprint": "9eb799a716fa075b03d292aac5861e99c9ea665116d3ea95fa0b7548dea6e6a1",
+          "n_edges": 2088,
+          "stable_int_calls": 4567,
+          "wall_s": 0.00807159999999385
+        },
+        {
+          "array_fingerprint": "5c950a3d8cc54a38fa61891e8331b038e4ebe7353876c4a02ade90948d8e3e7e",
+          "date": "2025-01-07",
+          "fingerprint": "f71c0d7c53a0d7ca98a5e6ba4327f917479bd54a77a0d8e139c3586b2914a0ca",
+          "n_edges": 2131,
+          "stable_int_calls": 4683,
+          "wall_s": 0.008096399999999448
+        }
+      ],
+      "total_stable_int_calls": 9250,
+      "total_wall_s": 0.0161679999999933
+    },
+    "household": {
+      "per_day": [
+        {
+          "array_fingerprint": "12982eff2ea828517f62830f4489b193f39ef7f467921090b8a205eb98cf25fa",
+          "date": "2025-01-06",
+          "fingerprint": "6b036f8ef1c443d6f6bf4e1b6a4e3be5e8bf116635d5f4c2c61b1e8e0951cdee",
+          "n_edges": 2864,
+          "stable_int_calls": 0,
+          "wall_s": 5.160000000614673e-05
+        },
+        {
+          "array_fingerprint": "12982eff2ea828517f62830f4489b193f39ef7f467921090b8a205eb98cf25fa",
+          "date": "2025-01-07",
+          "fingerprint": "6b036f8ef1c443d6f6bf4e1b6a4e3be5e8bf116635d5f4c2c61b1e8e0951cdee",
+          "n_edges": 2864,
+          "stable_int_calls": 0,
+          "wall_s": 1.9299999962640868e-05
+        }
+      ],
+      "total_stable_int_calls": 0,
+      "total_wall_s": 7.08999999687876e-05
+    },
+    "school_class": {
+      "per_day": [
+        {
+          "array_fingerprint": "63adc786cd8a673938a23cbacbcc21d896b40579b888a77b6736e462c1991f48",
+          "date": "2025-01-06",
+          "fingerprint": "39bf1b880344461fba8ccc23e7e37f8aea8bc3a9aa085e964884166e73f78c2a",
+          "n_edges": 4947,
+          "stable_int_calls": 0,
+          "wall_s": 4.73000000056345e-05
+        },
+        {
+          "array_fingerprint": "63adc786cd8a673938a23cbacbcc21d896b40579b888a77b6736e462c1991f48",
+          "date": "2025-01-07",
+          "fingerprint": "39bf1b880344461fba8ccc23e7e37f8aea8bc3a9aa085e964884166e73f78c2a",
+          "n_edges": 4947,
+          "stable_int_calls": 0,
+          "wall_s": 4.060000003391906e-05
+        }
+      ],
+      "total_stable_int_calls": 0,
+      "total_wall_s": 8.790000003955356e-05
+    },
+    "school_cross_class": {
+      "per_day": [
+        {
+          "array_fingerprint": "91403dc33a1088cce184b71a2fc122b8d4377cd7fe44d5448be5dec2fc2c703f",
+          "date": "2025-01-06",
+          "fingerprint": "6e79cd46d37f96bd6562bb2887c2342d769cf8b90321c68e70fc2c2c091e02be",
+          "n_edges": 246,
+          "stable_int_calls": 863,
+          "wall_s": 0.0020663000000240572
+        },
+        {
+          "array_fingerprint": "e60ef0df59b96c6e37c4c91463c3ef37dc670d76c15adb26d80360ecc2f894fc",
+          "date": "2025-01-07",
+          "fingerprint": "5b2fbdce1e915bf5f64b7cd4bc3f84c8a3c54cf7da8d497213551f2f4fd83abf",
+          "n_edges": 237,
+          "stable_int_calls": 863,
+          "wall_s": 0.001883900000052563
+        }
+      ],
+      "total_stable_int_calls": 1726,
+      "total_wall_s": 0.00395020000007662
+    },
+    "shared_vehicle": {
+      "per_day": [
+        {
+          "array_fingerprint": "cd1fd025a84e8213e0fc3b1f4f761d74da93c1b9eae2db4fe0d9de4b4009fc2e",
+          "date": "2025-01-06",
+          "fingerprint": "5e4a7d97b262580e753e6054e958a7720a9565a41c3e9bf18443000b611940fe",
+          "n_edges": 101,
+          "stable_int_calls": 169,
+          "wall_s": 0.0005739999999150314
+        },
+        {
+          "array_fingerprint": "3896367d6588dd37f9fafaad6dcd3cfb09a53ab982aa3dc755933dfef3823ca6",
+          "date": "2025-01-07",
+          "fingerprint": "631f61a7cb9d610c73bf2cbce20d9f09a263a81e2b6136a511d0d3146e83e769",
+          "n_edges": 103,
+          "stable_int_calls": 171,
+          "wall_s": 0.000423200000000179
+        }
+      ],
+      "total_stable_int_calls": 340,
+      "total_wall_s": 0.0009971999999152104
+    },
+    "workplace_team": {
+      "per_day": [
+        {
+          "array_fingerprint": "242c1c0aa228d4fc94124789270b470bc14001c349062d798255c5666b15b4af",
+          "date": "2025-01-06",
+          "fingerprint": "13165a3b77d9cfcb0351feeffbd5844e2d4bdeeea32c5c4d02c9fefaa78867cc",
+          "n_edges": 4343,
+          "stable_int_calls": 0,
+          "wall_s": 0.003580000000056316
+        },
+        {
+          "array_fingerprint": "b753640b1b8e0fd5a792c789be44ff12d4a45d71fc218e15483046233b47506b",
+          "date": "2025-01-07",
+          "fingerprint": "3f388955298a8e1ef41d4eb98edca8fa5ef83c9720092caf727c39f9cb1524fb",
+          "n_edges": 4238,
+          "stable_int_calls": 0,
+          "wall_s": 0.0034358000000338507
+        }
+      ],
+      "total_stable_int_calls": 0,
+      "total_wall_s": 0.007015800000090167
+    },
+    "workplace_transient": {
+      "per_day": [
+        {
+          "array_fingerprint": "4ea0af5cc1929747750fbb19de04a13dab6d17d4b068bb9c0edf8ca7a551a779",
+          "date": "2025-01-06",
+          "fingerprint": "3365797b03d5551e43685adfd62f34ac9cb005a1f484110f8841dfc6d2650649",
+          "n_edges": 2829,
+          "stable_int_calls": 2780,
+          "wall_s": 0.008370099999979175
+        },
+        {
+          "array_fingerprint": "f639bc14e5fd3e4520a6fec30d919338911f90ecdcc4a801d1e2762e9131dbf3",
+          "date": "2025-01-07",
+          "fingerprint": "89b9e1ef47b19b09815c3046e6a8c2b934c7299938cd1f6e19e0475b6e4eb27b",
+          "n_edges": 2794,
+          "stable_int_calls": 2766,
+          "wall_s": 0.0080408000000034
+        }
+      ],
+      "total_stable_int_calls": 5546,
+      "total_wall_s": 0.016410899999982576
+    }
+  },
+  "schema_version": 2,
+  "totals": {
+    "final_snapshot_cache_length": 1,
+    "stable_int_calls": 29302,
+    "wall_s": 0.0700749000001224
+  }
+}
