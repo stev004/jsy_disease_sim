@@ -5,8 +5,9 @@
 - Speed target for the perf track: **180-day full-mode replicate < 20 min; 44-replicate ensemble < 2.5 h** on this desktop, always behind byte-identical equivalence gates.
 - G9 closed (pagefile 34→16 GiB via registry route + reboot; C: now 31 GB free).
 
-## Track A — performance deep consult (R7), IN FLIGHT
-Codex Sol @ xhigh, read-only on WSL `~/jsy_disease_sim` (pid 56), brief `~/perf_consult_brief.md` (target, measured ground truth, files to read, 4 deliverables incl. judgement of the three R6 finalists + missed candidates), report → `~/jos-perf-consult.last.md`, log `~/jos-perf-consult.log`. On landing: triage findings → implementation units (each: microbenchmark first, then codex brief with R6 equivalence gates). Findings report gets filed to `docs/runs/` and, per Steven, may also go to Claude Science for a second opinion.
+## Track A — R7 consult LANDED (`docs/runs/2026-09-03-r7-perf-consult-sol.md`); Stage-1 harness unit IN FLIGHT
+Consult verdict: target reachable via Stage 1 (route builders 2.5–4×) → Stage 2 (attribution subsequence matcher 5–15×) → Stage 3 (4–7 worker throughput sweep + pool initializer + verified M2/M3 reuse); Starsim-init downgraded (~37 s fixed component); bonus finding — ensemble path runs observation scheduling twice (online + offline, `observation.py:90`). Its do-not list is binding for all perf briefs.
+**In flight:** codex (pid 57, luna@high) on branch `codex/r7-bench-harness`, worktree `~/jos-bench-wt`, brief `~/jos-brief-bench.md`: `scripts/bench_dynamic_routes.py` (per-route wall + `_stable_int` counts + canonical edge fingerprints, `--compare` gate mode) + full-mode 30-day baseline JSON committed to `benchmarks/`. Report → `~/jos-bench.last.md`. Every Stage-1 optimization is accepted/killed by `--compare` against that baseline (fingerprints identical AND ≥2× aggregate).
 
 ## Track B — foreman run: V1.2 evidence + observation foundation
 **Predicate** (exit gate from FRONTIER roadmap item 2): immutable Jersey source snapshots (cases/tests/serology/vaccination/denominators) + canonical epidemiology tables with full provenance columns + observation-time correctness (suppression like `<5` never silently zeroed) + data-quality diagnostics, such that a cold-start auditor reproduces every calibration input from frozen snapshots. Calibration itself is OUT of scope. **Budget:** 5 iterations.
