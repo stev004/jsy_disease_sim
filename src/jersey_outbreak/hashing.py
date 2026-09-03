@@ -18,6 +18,13 @@ def canonical_json_bytes(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
 
 
+def stable_int(seed: int, *parts: object) -> int:
+    """Return the frozen integer derived from a seed and stable key parts."""
+
+    payload = "|".join(str(part) for part in (seed, *parts)).encode("utf-8")
+    return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big", signed=False)
+
+
 def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 

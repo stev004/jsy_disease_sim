@@ -8,12 +8,11 @@ tables or the M4 resident route artifact.
 from __future__ import annotations
 
 import copy
-import hashlib
 import platform
 import resource
 import subprocess
 import time
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -23,7 +22,7 @@ from typing import Any
 import numpy as np
 import yaml  # type: ignore[import-untyped]
 
-from .hashing import canonical_json_bytes, sha256_bytes
+from .hashing import canonical_json_bytes, sha256_bytes, stable_int
 from .intervention_schemas import ScenarioConfig
 from .interventions import InterventionManager
 from .network_generator import (
@@ -66,11 +65,7 @@ def load_travel_config(root: Path, path: Path | None = None) -> TravelConfig:
         raise ValueError(f"invalid travel configuration {config_path}: {exc}") from exc
 
 
-def _stable_int(seed: int, *parts: object) -> int:
-    return int.from_bytes(
-        hashlib.sha256("|".join(str(item) for item in (seed, *parts)).encode()).digest()[:8],
-        "big",
-    )
+_stable_int = stable_int
 
 
 def _stable_uniform(seed: int, *parts: object) -> float:
@@ -1982,7 +1977,7 @@ class TravelManager:
             key: list(value) for key, value in self.base_generated.route_memberships.items()
         }
         view._dynamic_builders = dict(self.base_generated._dynamic_builders)
-        view._snapshot_cache = {}
+        view._snapshot_cache = OrderedDict()
         route_weights = _configured_route_weights(self.config)
         for route_id in TRAVEL_ROUTE_IDS:
             view.route_specs[route_id] = _travel_spec(
