@@ -48,6 +48,33 @@ V1_M5_DAILY_EPIDEMIC_FIELDS = {
     "attack_rate",
 }
 
+M6_EXECUTION_RESOURCE_FIELDS = frozenset(
+    {
+        "workers",
+        "estimated_worker_memory_bytes",
+        "memory_safety_fraction",
+        "allow_unsafe_workers",
+    }
+)
+
+
+def m6_ensemble_config_payload(
+    config: Mapping[str, Any], *, schema_version: str = "1.5"
+) -> dict[str, Any]:
+    """Return the versioned M6 configuration identity payload."""
+
+    payload = dict(config)
+    if schema_version == "1.5":
+        for field in M6_EXECUTION_RESOURCE_FIELDS:
+            payload.pop(field, None)
+    return payload
+
+
+def m6_ensemble_config_hash(config: Mapping[str, Any], *, schema_version: str = "1.5") -> str:
+    return sha256_bytes(
+        canonical_json_bytes(m6_ensemble_config_payload(config, schema_version=schema_version))
+    )
+
 
 def canonical_m5_events(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Remove only schema-added null attribution columns absent in runtime events."""
@@ -143,6 +170,7 @@ def m6_ensemble_logical_hash(
     summary: list[dict[str, Any]],
     trajectories: Mapping[int, Sequence[dict[str, Any]]],
     replicate_grid: list[dict[str, Any]],
+    schema_version: str = "1.5",
 ) -> str:
     canonical_trajectories: dict[int, list[dict[str, Any]]] = {}
     for seed, rows in trajectories.items():
@@ -168,7 +196,7 @@ def m6_ensemble_logical_hash(
     return sha256_bytes(
         canonical_json_bytes(
             {
-                "config": config,
+                "config": m6_ensemble_config_payload(config, schema_version=schema_version),
                 "replicates": [
                     {key: value for key, value in record.items() if key != "runtime_seconds"}
                     for record in replicate_records

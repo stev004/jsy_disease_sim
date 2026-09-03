@@ -17,6 +17,7 @@ from .ensemble import ComparisonResult, EnsembleResult
 from .ensemble_schemas import ComparisonArtifactManifest, EnsembleArtifactManifest
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .population_artifacts import portable_artifact_path
+from .scientific_hashes import m6_ensemble_config_hash
 
 
 @dataclass(frozen=True)
@@ -80,7 +81,7 @@ def _records(artifact_directory: Path, paths: tuple[Path, ...]) -> list[Artifact
 
 
 def _config_hash(result: EnsembleResult) -> str:
-    return sha256_bytes(canonical_json_bytes(result.config.model_dump(mode="json")))
+    return m6_ensemble_config_hash(result.config.model_dump(mode="json"))
 
 
 def write_ensemble_artifact(

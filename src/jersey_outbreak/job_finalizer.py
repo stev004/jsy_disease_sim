@@ -20,6 +20,7 @@ from .execution_adapter import (
 )
 from .hashing import canonical_json_bytes, sha256_bytes
 from .job_registry import JobRegistry
+from .scientific_hashes import m6_ensemble_config_hash, m6_ensemble_config_payload
 from .scientific_verification import VerifiedScientificArtifact, verify_scientific_artifact
 
 
@@ -330,15 +331,17 @@ class JobFinalizer:
                 parameters=parameters,
                 observation=observation,
             )
-            return EnsembleConfig(
-                ensemble_id=ensemble_id,
-                base_run_config=run_config,
-                observation_config=observation,
-                scenario=normalized,
-                replicate_seeds=request.replicate_seeds,
-                workers=request.workers,
-                allow_unsafe_workers=request.allow_unsafe_workers,
-            ).model_dump(mode="json")
+            return m6_ensemble_config_payload(
+                EnsembleConfig(
+                    ensemble_id=ensemble_id,
+                    base_run_config=run_config,
+                    observation_config=observation,
+                    scenario=normalized,
+                    replicate_seeds=request.replicate_seeds,
+                    workers=request.workers,
+                    allow_unsafe_workers=request.allow_unsafe_workers,
+                ).model_dump(mode="json")
+            )
 
         if request.kind == "ensemble":
             ensemble = verified["ensemble"]
@@ -346,9 +349,10 @@ class JobFinalizer:
                 raise FinalizationError(
                     "artifact_request_mismatch", "ensemble disease parameters do not match request"
                 )
-            if ensemble.extra.get("ensemble_config") != expected_ensemble(
-                request.ensemble_id, request.scenario
-            ):
+            actual_config = ensemble.extra.get("ensemble_config")
+            if not isinstance(actual_config, dict) or m6_ensemble_config_payload(
+                actual_config
+            ) != expected_ensemble(request.ensemble_id, request.scenario):
                 raise FinalizationError(
                     "artifact_request_mismatch", "ensemble configuration does not match request"
                 )
@@ -363,9 +367,17 @@ class JobFinalizer:
             raise FinalizationError(
                 "artifact_request_mismatch", "comparison disease parameters do not match request"
             )
-        if verified["baseline"].extra.get("ensemble_config") != baseline_config:
+        baseline_actual = verified["baseline"].extra.get("ensemble_config")
+        if (
+            not isinstance(baseline_actual, dict)
+            or m6_ensemble_config_payload(baseline_actual) != baseline_config
+        ):
             raise FinalizationError("artifact_request_mismatch", "baseline does not match request")
-        if verified["treated"].extra.get("ensemble_config") != treated_config:
+        treated_actual = verified["treated"].extra.get("ensemble_config")
+        if (
+            not isinstance(treated_actual, dict)
+            or m6_ensemble_config_payload(treated_actual) != treated_config
+        ):
             raise FinalizationError(
                 "artifact_request_mismatch", "treated result does not match request"
             )
@@ -374,9 +386,8 @@ class JobFinalizer:
             comparison.get("comparison_id") != request.comparison_id
             or comparison.get("ensemble_a_id") != baseline_config["ensemble_id"]
             or comparison.get("ensemble_b_id") != treated_config["ensemble_id"]
-            or comparison.get("config_a_hash")
-            != sha256_bytes(canonical_json_bytes(baseline_config))
-            or comparison.get("config_b_hash") != sha256_bytes(canonical_json_bytes(treated_config))
+            or comparison.get("config_a_hash") != m6_ensemble_config_hash(baseline_config)
+            or comparison.get("config_b_hash") != m6_ensemble_config_hash(treated_config)
             or comparison.get("matched_seed_list") != sorted(request.replicate_seeds)
         ):
             raise FinalizationError(

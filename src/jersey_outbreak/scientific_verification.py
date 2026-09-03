@@ -28,6 +28,7 @@ from .scientific_hashes import (
     m5_latent_outcome_hash,
     m5_logical_content_hash,
     m6_comparison_logical_hash,
+    m6_ensemble_config_hash,
     m6_ensemble_logical_hash,
 )
 from .travel_artifacts import TravelArtifactManifest, verify_travel_artifact
@@ -413,12 +414,16 @@ def verify_m6_ensemble_artifact(artifact_directory: Path) -> VerifiedScientificA
         summary=summary,
         trajectories=trajectories,
         replicate_grid=grid,
+        schema_version=manifest.manifest_schema_version,
     )
     if logical_hash != manifest.logical_content_hash:
         raise ValueError("M6 ensemble scientific logical content hash mismatch")
     if not manifest.artifact_id.endswith(logical_hash[:12]):
         raise ValueError("M6 ensemble artifact ID does not bind its logical content hash")
-    config_hash = sha256_bytes(canonical_json_bytes(config.model_dump(mode="json")))
+    config_hash = m6_ensemble_config_hash(
+        config.model_dump(mode="json"),
+        schema_version=manifest.manifest_schema_version,
+    )
     if config_hash != manifest.base_config_hash:
         raise ValueError("M6 ensemble configuration hash mismatch")
     observation_hash = sha256_bytes(

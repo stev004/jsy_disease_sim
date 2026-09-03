@@ -10,6 +10,11 @@ from jersey_outbreak.ensemble_artifacts import (
     write_ensemble_artifact,
 )
 from jersey_outbreak.ensemble_schemas import EnsembleConfig
+from jersey_outbreak.scientific_hashes import (
+    m6_ensemble_config_hash,
+    m6_ensemble_logical_hash,
+)
+from jersey_outbreak.scientific_verification import verify_m6_ensemble_artifact
 
 
 def test_ensemble_config_requires_explicit_unique_seeds(
@@ -22,6 +27,86 @@ def test_ensemble_config_requires_explicit_unique_seeds(
             observation_config=m6_observation_config,
             replicate_seeds=(123, 123),
         )
+
+
+def test_m6_identity_excludes_execution_resources_but_retains_science(
+    m6_base_config, m6_observation_config
+) -> None:
+    config = EnsembleConfig(
+        ensemble_id="m6-identity",
+        base_run_config=m6_base_config,
+        observation_config=m6_observation_config,
+        replicate_seeds=(123,),
+    )
+    execution_variant = config.model_copy(
+        update={
+            "workers": 2,
+            "estimated_worker_memory_bytes": 1_000_000_000,
+            "memory_safety_fraction": 0.8,
+            "allow_unsafe_workers": True,
+        }
+    )
+
+    def logical_hash(candidate: EnsembleConfig) -> str:
+        return m6_ensemble_logical_hash(
+            config=candidate.model_dump(mode="json"),
+            replicate_records=[],
+            summary=[],
+            trajectories={},
+            replicate_grid=[],
+        )
+
+    base_config_hash = m6_ensemble_config_hash(config.model_dump(mode="json"))
+    execution_base_config_hash = m6_ensemble_config_hash(execution_variant.model_dump(mode="json"))
+    logical = logical_hash(config)
+    execution_logical = logical_hash(execution_variant)
+    artifact_id = f"jos-ensemble-m6-{config.ensemble_id}-{logical[:12]}"
+    execution_artifact_id = (
+        f"jos-ensemble-m6-{execution_variant.ensemble_id}-{execution_logical[:12]}"
+    )
+
+    assert logical == execution_logical
+    assert base_config_hash == execution_base_config_hash
+    assert artifact_id.rsplit("-", 1)[-1] == execution_artifact_id.rsplit("-", 1)[-1]
+
+    scientific_variant = config.model_copy(update={"replicate_seeds": (124,)})
+    assert logical_hash(scientific_variant) != logical
+
+
+def test_m6_schema_1_4_verifies_with_legacy_config_payload(
+    m6_network, m6_parameters, m6_base_config, m6_observation_config, tmp_path
+) -> None:
+    result = run_ensemble(
+        tmp_path,
+        m6_network,
+        m6_parameters,
+        m6_base_config,
+        m6_observation_config,
+        (123,),
+        ensemble_id="m6-legacy-1-4",
+    )
+    artifact = write_ensemble_artifact(result, Path(__file__).resolve().parents[1], tmp_path)
+    manifest_path = artifact.artifact_directory / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    legacy_hash = m6_ensemble_logical_hash(
+        config=result.config.model_dump(mode="json"),
+        replicate_records=[record.model_dump(mode="json") for record in result.replicate_records],
+        summary=list(result.summary),
+        trajectories=result.replicate_trajectories,
+        replicate_grid=list(result.replicate_grid),
+        schema_version="1.4",
+    )
+    manifest["manifest_schema_version"] = "1.4"
+    manifest["logical_content_hash"] = legacy_hash
+    manifest["artifact_id"] = f"jos-ensemble-m6-{result.config.ensemble_id}-{legacy_hash[:12]}"
+    manifest["base_config_hash"] = m6_ensemble_config_hash(
+        result.config.model_dump(mode="json"), schema_version="1.4"
+    )
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+
+    assert verify_m6_ensemble_artifact(artifact.artifact_directory).logical_content_hash == (
+        legacy_hash
+    )
 
 
 def test_ensemble_summary_quantiles_use_declared_linear_definition() -> None:
@@ -123,8 +208,10 @@ def test_process_parallelism_preserves_declared_outputs(
         ensemble_id="m6-workers",
         workers=2,
     )
+    assert sequential.logical_content_hash == parallel.logical_content_hash
     assert sequential.summary == parallel.summary
     assert sequential.replicate_trajectories == parallel.replicate_trajectories
+    assert sequential.replicate_grid == parallel.replicate_grid
     assert [record.latent_run_logical_content_hash for record in sequential.replicate_records] == [
         record.latent_run_logical_content_hash for record in parallel.replicate_records
     ]

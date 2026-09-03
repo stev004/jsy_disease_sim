@@ -25,7 +25,11 @@ from .observation import ObservationRunResult, observe_latent_run
 from .observation_schemas import ObservationConfig
 from .outbreak_runner import OutbreakRunResult, run_outbreak
 from .outbreak_schemas import RespiratoryParameterSet
-from .scientific_hashes import m6_comparison_logical_hash, m6_ensemble_logical_hash
+from .scientific_hashes import (
+    m6_comparison_logical_hash,
+    m6_ensemble_config_hash,
+    m6_ensemble_logical_hash,
+)
 
 MetricSemantic = Literal["incidence", "cumulative", "state"]
 CellSemantic = Literal[
@@ -841,7 +845,7 @@ def run_ensemble(
 
 
 def _ensemble_config_hash(result: EnsembleResult) -> str:
-    return sha256_bytes(canonical_json_bytes(result.config.model_dump(mode="json")))
+    return m6_ensemble_config_hash(result.config.model_dump(mode="json"))
 
 
 def compare_ensembles(
