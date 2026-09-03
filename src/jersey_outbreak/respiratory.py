@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import math
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import date, timedelta
 from typing import Any
 
@@ -340,16 +340,32 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
                     target_uids, source_uids = self.compute_transmission(
                         src, trg, rel_trans, rel_sus, beta_per_dt, randvals
                     )
-                    probability_by_pair: dict[tuple[int, int], list[float]] = defaultdict(list)
-                    for source, target, probability in zip(src, trg, beta_per_dt, strict=True):
-                        pair = (int(source), int(target))
-                        probability_by_pair[pair].append(
-                            float(rel_trans.raw[pair[0]] * rel_sus.raw[pair[1]] * probability)
-                        )
+                    # Runtime UIDs are nonnegative and bounded below 2**32, so this
+                    # fixed-width packing is an exact pair encoding (including duplicate
+                    # occurrences); signed int64 preserves the unique 64-bit bit patterns.
+                    K = 2**32
+                    uid_arrays = (src, trg, source_uids, target_uids)
+                    max_uid = max(
+                        (int(np.max(values)) for values in uid_arrays if len(values)),
+                        default=-1,
+                    )
+                    assert max_uid < K
+                    edge_keys = np.asarray(src, dtype=np.int64) * K + np.asarray(
+                        trg, dtype=np.int64
+                    )
+                    success_keys = np.asarray(source_uids, dtype=np.int64) * K + np.asarray(
+                        target_uids, dtype=np.int64
+                    )
+                    hit_indices = np.flatnonzero(np.isin(edge_keys, success_keys))
+                    indices_by_pair: dict[tuple[int, int], deque[int]] = defaultdict(deque)
+                    for i in hit_indices:
+                        indices_by_pair[(int(src[i]), int(trg[i]))].append(int(i))
                     for target, source in zip(target_uids, source_uids, strict=True):
                         pair = (int(source), int(target))
-                        probabilities = probability_by_pair[pair]
-                        probability = probabilities.pop(0)
+                        i = indices_by_pair[pair].popleft()
+                        probability = float(
+                            rel_trans.raw[pair[0]] * rel_sus.raw[pair[1]] * beta_per_dt[i]
+                        )
                         candidates_by_target[pair[1]].append(
                             {
                                 "route_id": route_id,
