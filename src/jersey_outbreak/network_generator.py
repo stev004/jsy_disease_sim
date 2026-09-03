@@ -1492,6 +1492,10 @@ def generate_networks(
     ) -> Callable[[date], list[dict[str, Any]]]:
         regular_contacts = round(contacts * float(config.community_regular_edge_fraction))
         daily_contacts = max(0, contacts - regular_contacts)
+        age_band_by_agent = {
+            agent_id: _age_band(m3_by_agent[agent_id]["age"])
+            for agent_id in general_community_agent_ids
+        }
 
         def mixed_edges(
             participants: dict[str, list[str]],
@@ -1499,23 +1503,27 @@ def generate_networks(
             contact_count: int,
             persistence_days: int,
         ) -> list[dict[str, Any]]:
-            by_band = {
-                parish: {
-                    band: sorted(
-                        agent_id
-                        for agent_id in ids
-                        if _age_band(m3_by_agent[agent_id]["age"]) == band
+            by_band: dict[str, dict[str, list[str]]] = {}
+            positions: dict[str, dict[str, int]] = {}
+            for parish, ids in participants.items():
+                band_groups = {}
+                parish_positions = {}
+                for band in AGE_BANDS:
+                    full = sorted(
+                        agent_id for agent_id in ids if age_band_by_agent[agent_id] == band
                     )
-                    for band in AGE_BANDS
-                }
-                for parish, ids in participants.items()
-            }
+                    band_groups[band] = full
+                    parish_positions.update(
+                        {agent_id: index for index, agent_id in enumerate(full)}
+                    )
+                by_band[parish] = band_groups
+                positions[parish] = parish_positions
             edges: list[dict[str, Any]] = []
-            for _parish, band_groups in sorted(by_band.items()):
+            for parish, band_groups in sorted(by_band.items()):
                 for source_band_index, source_band in enumerate(AGE_BANDS):
                     sources = band_groups[source_band]
+                    probabilities = config.community_age_mixing[source_band_index]
                     for source in sources:
-                        probabilities = config.community_age_mixing[source_band_index]
                         for contact_index in range(contact_count):
                             draw = (
                                 _stable_int(
@@ -1538,14 +1546,19 @@ def generate_networks(
                                 if draw < cumulative:
                                     target_band = candidate_band
                                     break
-                            candidates = [
-                                agent_id
-                                for agent_id in band_groups[target_band]
-                                if agent_id != source
-                            ]
-                            if not candidates:
-                                continue
-                            target = candidates[
+                            full = band_groups[target_band]
+                            n = len(full)
+                            same_band = target_band == source_band
+                            if same_band:
+                                m = n - 1
+                                if m == 0:
+                                    continue
+                                source_index = positions[parish][source]
+                            else:
+                                m = n
+                                if m == 0:
+                                    continue
+                            index = (
                                 _stable_int(
                                     config.seed,
                                     "community-age-choice",
@@ -1554,8 +1567,12 @@ def generate_networks(
                                     source,
                                     contact_index,
                                 )
-                                % len(candidates)
-                            ]
+                                % m
+                            )
+                            if same_band:
+                                target = full[index] if index < source_index else full[index + 1]
+                            else:
+                                target = full[index]
                             edge = _canonical_edge(source, target, weight, persistence_days)
                             if edge is not None:
                                 edges.append(edge)

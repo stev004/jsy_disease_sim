@@ -33,6 +33,38 @@ from jersey_outbreak.starsim_adapter import (
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_community_target_index_arithmetic_matches_candidates() -> None:
+    cases = [
+        ([], "source", False),
+        (["target"], "source", False),
+        (["target-a", "target-b"], "source", False),
+        (["source"], "source", True),
+        (["source", "other"], "source", True),
+        (["other", "source"], "source", True),
+        (["left", "source", "right"], "source", True),
+    ]
+    draws = (0, 1, 2, 17)
+
+    for full, source, same_band in cases:
+        for draw in draws:
+            candidates = [agent_id for agent_id in full if agent_id != source]
+            expected = candidates[draw % len(candidates)] if candidates else None
+
+            n = len(full)
+            if same_band:
+                m = n - 1
+                actual = (
+                    None
+                    if m == 0
+                    else full[draw % m if draw % m < full.index(source) else draw % m + 1]
+                )
+            else:
+                m = n
+                actual = None if m == 0 else full[draw % m]
+
+            assert actual == expected
+
+
 @pytest.fixture(scope="module")
 def network_inputs(tmp_path_factory: pytest.TempPathFactory):
     output = tmp_path_factory.mktemp("m4-inputs")
