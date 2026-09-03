@@ -4,19 +4,14 @@
 
 ## Open
 
-### G11 — Merge `feat/v12-epi-snapshots` @ `f5fba15bb6ec82765ad1316b6a86578d15182bed`
-- **Question:** merge the five frozen Jersey COVID-era source snapshots (daily surveillance CSV, current summary CSV, weekly vaccination CSV, 2020 serosurvey PDF, vaccination/PCR insights PDF; registered in `data/sources.yaml` with sha256, registry pin 22→27)? `jos data build` passed; data-source tests 4/4.
-- **Default:** merge once CI is green (SHA-first, `--no-ff`). These snapshots become immutable on merge — refreshes land as NEW source_ids, never edits.
-
-### G12 — Merge the R7 performance chain (one merge, four stacked branches)
-- **Question:** merge `codex/r7-s2-attribution` @ `3213314` (tip moved from `c3758e3` by a mechanical mypy fix, fingerprint-proven identical) (its history contains the whole proven chain: bench harness @ `a2026fb` → Stage-1a community @ `92e634d` → Stage-1b workday @ `bd75671` → Stage-2 attribution @ `c3758e3` + typing fix `3213314`)? Combined result: route generation 5.11×, attribution 25.5×, real 30-day wall 444→114 s, marginal 15.6→2.26 s/simulated-day, ~7.5 min per 180-day replicate — with all five full-scale logical hashes byte-identical to the 2026-09-02 pre-optimization record (`docs/runs/2026-09-03-r7-chain-hash-gate.json`) and committed reference-oracle bit-identity tests.
-- **Default:** merge once CI is green (SHA-first `--no-ff` of the tip; one merge brings the chain). Then the agent reruns the 44-seed full ensemble at 6 workers as live validation — same seeds must reproduce the identical replicate hashes recorded in the immutable P4 artifact, in ~1.5 h.
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G11 + G12 — RESOLVED 2026-09-03 (Steven, in chat: "merge them")
+Both executed same hour by the agent on the explicit one-time instruction: G11 snapshots merge `5cdc780` (five frozen Jersey COVID sources now immutable on main), G12 R7-chain merge `10d448c` (route generation 5.11x, attribution 25.5x, 2.26 s/simulated-day, all full-scale hashes byte-identical), plus mechanical rename fix `df41196` (respiratory.py mypy nit outside CI's pinned list). Post-merge smoke green; main @ `df41196` pushed. Steven's follow-on sequence REPLACES the G12 default validation rerun: Claude Science audit (bundle `~/Documents/jos-claude-science-audit-2026-09-03.zip` delivered) -> implement findings -> then launch the new ensemble run.
 
 ### G9 — Desktop C: drive critically full — RESOLVED/CLOSED 2026-09-03 (Steven executed)
 Pagefile shrunk 34 GB → fixed 16 GiB via the registry route (`PagingFiles` in Session Manager\Memory Management — the CIM and wmic routes both failed with "Value out of range") + reboot. Verified after reboot: C: free 9 GB → **31 GB**. Downloads/Docker were never touched (not authorized, not needed).
