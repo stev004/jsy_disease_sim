@@ -2,7 +2,7 @@
 
 *Snapshot, not history. Rewritten each time the frontier moves. Lives on `main` (folded from `docs/frontier` 2026-09-01; that branch is now historical). Cold-start: read this, then `docs/handoff/2026-08-31-sol-handoff.md` for deep history.*
 
-**Updated:** 2026-09-02 late evening (G10 merged; P4 attempt 6 IN FLIGHT at 4 workers) · **Updated by:** Fable (foreman R6 run closeout)
+**Updated:** 2026-09-03 morning (P4 COMPLETE: 44/44, M04 closed) · **Updated by:** Fable
 
 ## Where the project is
 
@@ -12,7 +12,7 @@ Release provenance, in order (`docs/audits/`): independent RC audit BLOCKED (O2)
 
 ## The one next action
 
-**P4 — IN FLIGHT (attempt 6, launched 2026-09-02 20:54Z on `main` @ `a6fdc192e50633570d3edc5db5f7dbf241027548`).** 44 seeds (101–144), `--mode full`, 180 days, `--workers 7` requested → **bounded to 4** by the newly merged `safe_worker_bound` (loud `ENSEMBLE WARNING` in the launch log — the loudness fix working as designed; kept, not worth a restart). pid 8595, log `p4-ensemble-launch-20260902T205417Z.log` in `~/Documents/JOS_v1_2_full_scale_evidence/` (WSL). ETA ~9 h (11 waves) → done ~06:00Z 2026-09-03. **On completion:** verify ≥40 successes + `execution_mode=process_pool_spawn` / `actual_workers=4` in the artifact diagnostics, band summary (stochastic replicate quantiles, never CIs), run report to `docs/runs/`, then this section flips to V1.2 evidence foundation (roadmap item 2 below).
+**V1.2 evidence + observation foundation (roadmap item 2 below) — P4 is DONE.** The 44-replicate full-scale ensemble completed 2026-09-03 ~07:30Z: **44/44 successful**, `process_pool_spawn`/4 workers, wall 10.6 h, artifact `jos-ensemble-m6-p4-v11-full-scale-c0134368bed2` (immutable, WSL `~/Documents/JOS_v1_2_full_scale_evidence/`), report `docs/runs/2026-09-03-p4-full-scale-ensemble-report.md`. Finding: stochastic replicate variation is small (final ever-infected 77.8% ± ~0.3 pp; peaks ±~10%; bands labelled stochastic replicate quantiles, never CIs) — the single-seed V1.1 baseline is representative, and the ensemble is the noise floor for judging future changes. M04 closed. Open before next work cycle: G9 (Steven's pagefile shrink + reboot, command in GATES.md); V1.2.1 note — tune the conservative worker bound now that footprints are measured.
 
 Context, compressed (full detail: trail rows `desktop-transfer` → `p4-bounded` of 2026-09-02, `docs/session_log.md` same date, `docs/runs/2026-09-02-*`): the desktop was set up in WSL2 mode; five earlier P4 launches (12→8→5→3→2 workers) failed on memory; the root cause — the unbounded `(route_id,date)` snapshot cache growing ~66 MiB/simulated-day (~10 GB per 180-day replicate) — was found by the R6 foreman run and fixed (bounded LRU, −87.8% growth, fixed-seed hashes byte-identical), merged via G10 together with the ensemble pool-loudness fix. Measured memory model (post-fix): ~2 GB base + ~3.3 GB/worker at 180 d; full-mode route count is 11. Deferred R6 follow-ups for V1.2.1: share generated networks across replicates instead of per-worker regen; expose `--allow-unsafe-workers` / tune `memory_safety_fraction` now that real footprints are measured; attribution-lookup and Starsim-init candidates per the R6 report. Open gate: G9 (Steven runs the pagefile shrink + reboot after P4 completes; command in GATES.md).
 
