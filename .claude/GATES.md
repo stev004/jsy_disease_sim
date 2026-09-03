@@ -4,6 +4,10 @@
 
 ## Open
 
+### G11 — Merge `feat/v12-epi-snapshots` @ `f5fba15bb6ec82765ad1316b6a86578d15182bed`
+- **Question:** merge the five frozen Jersey COVID-era source snapshots (daily surveillance CSV, current summary CSV, weekly vaccination CSV, 2020 serosurvey PDF, vaccination/PCR insights PDF; registered in `data/sources.yaml` with sha256, registry pin 22→27)? `jos data build` passed; data-source tests 4/4.
+- **Default:** merge once CI is green (SHA-first, `--no-ff`). These snapshots become immutable on merge — refreshes land as NEW source_ids, never edits.
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
