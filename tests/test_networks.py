@@ -6,11 +6,16 @@ from pathlib import Path
 
 import pytest
 
+import jersey_outbreak.network_generator as network_generator
 from jersey_outbreak.network_artifacts import write_network_artifact
 from jersey_outbreak.network_generator import (
     CONTACT_ACTIVITY_ROUTES,
     _activity_participation_probabilities,
+    _activity_weighted_participants,
+    _job_is_physical_on_date,
     _persistent_contact_activity,
+    _primary_jobs_by_agent,
+    _stable_int,
     generate_networks,
 )
 from jersey_outbreak.network_schemas import ROUTE_FAMILIES, NetworkGenerationConfig
@@ -31,6 +36,164 @@ from jersey_outbreak.starsim_adapter import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _uncached_job_is_physical_on_date(
+    job: dict[str, object], agent_id: str, snapshot_date: date, seed: int
+) -> bool:
+    if snapshot_date.weekday() >= 5:
+        return False
+    days_per_week = int(job["days_per_week"])
+    remote_days = int(job["remote_days_per_week"])
+    if days_per_week <= 0:
+        return False
+    selected = sorted(
+        range(5), key=lambda day: _stable_int(seed, "workday", job["job_id"], agent_id, day)
+    )[:days_per_week]
+    remote = set(
+        sorted(
+            selected,
+            key=lambda day: _stable_int(seed, "remote", job["job_id"], agent_id, day),
+        )[:remote_days]
+    )
+    return snapshot_date.weekday() in set(selected) - remote
+
+
+def test_community_target_index_arithmetic_matches_candidates() -> None:
+    cases = [
+        ([], "source", False),
+        (["target"], "source", False),
+        (["target-a", "target-b"], "source", False),
+        (["source"], "source", True),
+        (["source", "other"], "source", True),
+        (["other", "source"], "source", True),
+        (["left", "source", "right"], "source", True),
+    ]
+    draws = (0, 1, 2, 17)
+
+    for full, source, same_band in cases:
+        for draw in draws:
+            candidates = [agent_id for agent_id in full if agent_id != source]
+            expected = candidates[draw % len(candidates)] if candidates else None
+
+            n = len(full)
+            if same_band:
+                m = n - 1
+                actual = (
+                    None
+                    if m == 0
+                    else full[draw % m if draw % m < full.index(source) else draw % m + 1]
+                )
+            else:
+                m = n
+                actual = None if m == 0 else full[draw % m]
+
+            assert actual == expected
+
+
+def test_job_weekday_cache_matches_uncached_selection_for_all_weekdays() -> None:
+    job = {
+        "job_id": "job-cache-test",
+        "days_per_week": 4,
+        "remote_days_per_week": 1,
+    }
+    agent_id = "agent-cache-test"
+    seed = 20260903
+    cache: dict[tuple[object, ...], frozenset[int]] = {}
+    dates = [date(2025, 1, 6) + timedelta(days=index) for index in range(7)]
+
+    cached = [
+        _job_is_physical_on_date(
+            job,
+            agent_id,
+            snapshot_date,
+            seed,
+            physical_weekdays_cache=cache,
+        )
+        for snapshot_date in dates
+    ]
+    uncached = [
+        _uncached_job_is_physical_on_date(job, agent_id, snapshot_date, seed)
+        for snapshot_date in dates
+    ]
+
+    assert cached == uncached
+    assert len(cache) == 1
+
+
+def test_activity_participant_bypass_matches_slow_path_only_for_all_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = NetworkGenerationConfig(mode="ci", seed=20260903, activity_cv=0.0)
+    agent_ids = ["agent-a", "agent-b", "agent-c", "agent-d"]
+    original_stable_int = network_generator._stable_int
+    calls = 0
+
+    def counting_stable_int(seed: int, *parts: object) -> int:
+        nonlocal calls
+        calls += 1
+        return original_stable_int(seed, *parts)
+
+    monkeypatch.setattr(network_generator, "_stable_int", counting_stable_int)
+    all_one = _activity_weighted_participants(
+        agent_ids,
+        len(agent_ids),
+        config=config,
+        route_id="activity-test",
+        token="all-one",
+    )
+    assert all_one == set(agent_ids)
+    assert calls == 0
+
+    probabilities = _activity_participation_probabilities(
+        agent_ids,
+        2,
+        config=config,
+    )
+    calls = 0
+    partial = _activity_weighted_participants(
+        agent_ids,
+        2,
+        config=config,
+        route_id="activity-test",
+        token="partial",
+    )
+    expected_partial = {
+        agent_id
+        for agent_id, probability in probabilities.items()
+        if (
+            original_stable_int(
+                config.seed,
+                "contact-activity-participation",
+                "activity-test",
+                "partial",
+                agent_id,
+            )
+            / 2**64
+        )
+        < probability
+    }
+    assert all(probability != 1.0 for probability in probabilities.values())
+    assert partial == expected_partial
+    assert calls == len(agent_ids)
+
+
+def test_primary_job_precompute_keeps_first_primary_match() -> None:
+    first_primary = {"job_id": "primary-first", "job_role": "primary"}
+    second_primary = {"job_id": "primary-second", "job_role": "primary"}
+    jobs = {
+        "agent-a": [
+            {"job_id": "secondary", "job_role": "secondary"},
+            first_primary,
+            second_primary,
+        ],
+        "agent-b": [{"job_id": "secondary-only", "job_role": "secondary"}],
+    }
+
+    assert _primary_jobs_by_agent(jobs) == {
+        "agent-a": first_primary,
+        "agent-b": None,
+    }
 
 
 @pytest.fixture(scope="module")
