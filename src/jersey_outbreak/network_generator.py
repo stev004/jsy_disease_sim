@@ -450,13 +450,12 @@ def _job_is_physical_on_date(
         int(job["remote_days_per_week"]),
     )
     if physical_weekdays_cache is None:
-        physical_weekdays = _job_physical_weekdays(job, agent_id, seed)
-    else:
-        physical_weekdays = physical_weekdays_cache.get(key)
-        if physical_weekdays is None:
-            physical_weekdays = _job_physical_weekdays(job, agent_id, seed)
-            physical_weekdays_cache[key] = physical_weekdays
-    return snapshot_date.weekday() in physical_weekdays
+        return snapshot_date.weekday() in _job_physical_weekdays(job, agent_id, seed)
+    cached = physical_weekdays_cache.get(key)
+    if cached is None:
+        cached = _job_physical_weekdays(job, agent_id, seed)
+        physical_weekdays_cache[key] = cached
+    return snapshot_date.weekday() in cached
 
 
 def _primary_jobs_by_agent(
@@ -1368,6 +1367,9 @@ def generate_networks(
         if agent_id in m3_by_agent and m3_by_agent[agent_id]["economic_status"] == "employed"
     }
     primary_job_by_agent = _primary_jobs_by_agent(worker_jobs)
+    primary_job_present = {
+        agent_id: job for agent_id, job in primary_job_by_agent.items() if job is not None
+    }
     car_commuters_by_household_destination: dict[tuple[str, str], list[str]] = defaultdict(list)
     bus_groups: dict[tuple[str, str, int], list[str]] = defaultdict(list)
     car_commuter_ids: set[str] = set()
@@ -1456,7 +1458,7 @@ def generate_networks(
                     agent_id
                     for agent_id in group
                     if _job_is_physical_on_date(
-                        primary_job_by_agent[agent_id],
+                        primary_job_present[agent_id],
                         agent_id,
                         snapshot_date,
                         config.seed,
@@ -1501,7 +1503,7 @@ def generate_networks(
                     agent_id
                     for agent_id in group
                     if _job_is_physical_on_date(
-                        primary_job_by_agent[agent_id],
+                        primary_job_present[agent_id],
                         agent_id,
                         snapshot_date,
                         config.seed,
