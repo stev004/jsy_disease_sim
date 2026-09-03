@@ -9,6 +9,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+STABLE_INT_COUNTER: list[int] | None = None
+
 
 def canonical_json_bytes(value: Any) -> bytes:
     """Serialize JSON-compatible data with stable ordering and separators."""
@@ -21,6 +23,8 @@ def canonical_json_bytes(value: Any) -> bytes:
 def stable_int(seed: int, *parts: object) -> int:
     """Return the frozen integer derived from a seed and stable key parts."""
 
+    if STABLE_INT_COUNTER is not None:
+        STABLE_INT_COUNTER[0] += 1
     payload = "|".join(str(part) for part in (seed, *parts)).encode("utf-8")
     return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big", signed=False)
 
