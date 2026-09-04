@@ -4,6 +4,11 @@
 
 ## Open
 
+### G16 — Merge the V1.2 evidence-foundation chain (`feat/v12-denominators-dictionary`)
+- **Question:** merge `9ac9d20872559ad4e2a0dc00bc1b73fc792048ab` into `main`? The branch contains iteration 1 (`865600e`, remaining freezes: JHU, respiratory PDFs + 3 authenticated Wayback editions, winter report, annual estimates; CI 33927957826 green) and iteration 2 (`9ac9d20`, age-band denominators + measure dictionary; CI logged in the trail when read). Data pipeline only — no simulation module touched; registry 28→37, tables 19→23; full suite 296. Reports: `docs/runs/2026-09-04-v12-run2-iter1-freezes-luna-report.md`, `docs/runs/2026-09-05-v12-run2-iter2-denominators-dictionary-luna-report.md`.
+- **Command (SHA-first):** `git -C ~/jsy_disease_sim fetch origin && git -C ~/jsy_disease_sim merge --no-ff 9ac9d20872559ad4e2a0dc00bc1b73fc792048ab -m "G16: merge feat/v12-denominators-dictionary @ 9ac9d20 (V1.2 remaining freezes + denominators + measure dictionary)" && git -C ~/jsy_disease_sim push`
+- **Default:** merge after the exit-gate audit verdict is filed (a PASS makes this the audited SHA; a FAIL spawns a corrective commit on the same branch and the command's SHA changes — re-read GATES before merging).
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
