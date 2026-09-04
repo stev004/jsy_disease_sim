@@ -246,11 +246,16 @@ def _rebalance_household_parishes(
     def total(parish: str) -> int:
         return sum(len(row["_roles"]) for row in households if row["home_parish"] == parish)
 
+    member_counts = {parish: total(parish) for parish in private_parishes}
     for _ in range(len(households) + 1):
-        over = max(private_parishes, key=lambda parish: total(parish) - private_parishes[parish])
-        under = min(private_parishes, key=lambda parish: total(parish) - private_parishes[parish])
-        surplus = total(over) - private_parishes[over]
-        capacity = private_parishes[under] - total(under)
+        over = max(
+            private_parishes, key=lambda parish: member_counts[parish] - private_parishes[parish]
+        )
+        under = min(
+            private_parishes, key=lambda parish: member_counts[parish] - private_parishes[parish]
+        )
+        surplus = member_counts[over] - private_parishes[over]
+        capacity = private_parishes[under] - member_counts[under]
         if surplus <= 0:
             break
         candidates = [
@@ -261,7 +266,10 @@ def _rebalance_household_parishes(
         if not candidates:
             raise DataBuildError("household parish capacity cannot be reconciled")
         row = max(candidates, key=lambda item: (len(item["_roles"]), item["household_id"]))
+        row_size = len(row["_roles"])
         row["home_parish"] = under
+        member_counts[over] -= row_size
+        member_counts[under] += row_size
     else:
         raise DataBuildError("household parish capacity balancing exceeded its iteration bound")
 
@@ -285,33 +293,42 @@ def _rebalance_household_parishes(
             {"Single parent (with dependent children)", "Couple with dependent children"},
         ),
     ):
+        role_counts = {
+            parish: sum(
+                row["_roles"].count(role_name) for row in households if row["home_parish"] == parish
+            )
+            for parish in private_parishes
+        }
         for _ in range(len(households) + 1):
-            counts = {
-                parish: sum(
-                    row["_roles"].count(role_name)
-                    for row in households
-                    if row["home_parish"] == parish
-                )
-                for parish in private_parishes
-            }
-            donor = max(counts, key=lambda parish: counts[parish] - capacity_by_parish[parish])
-            receiver = min(counts, key=lambda parish: counts[parish] - capacity_by_parish[parish])
-            if counts[donor] <= capacity_by_parish[donor]:
+            donor = max(
+                role_counts, key=lambda parish: role_counts[parish] - capacity_by_parish[parish]
+            )
+            receiver = min(
+                role_counts, key=lambda parish: role_counts[parish] - capacity_by_parish[parish]
+            )
+            if role_counts[donor] <= capacity_by_parish[donor]:
                 break
+            receiver_total = member_counts[receiver]
             candidates = [
                 row
                 for row in households
                 if row["home_parish"] == donor
                 and row["household_type"] in role_types
                 and row["_roles"].count(role_name) > 0
-                and total(receiver) + len(row["_roles"]) <= private_parishes[receiver]
+                and receiver_total + len(row["_roles"]) <= private_parishes[receiver]
             ]
             if not candidates:
                 raise DataBuildError(
                     f"{role_name} household allocation cannot be reconciled by parish"
                 )
             row = min(candidates, key=lambda item: (len(item["_roles"]), item["household_id"]))
+            row_size = len(row["_roles"])
+            role_count = row["_roles"].count(role_name)
             row["home_parish"] = receiver
+            member_counts[donor] -= row_size
+            member_counts[receiver] += row_size
+            role_counts[donor] -= role_count
+            role_counts[receiver] += role_count
         else:
             raise DataBuildError(f"{role_name} parish balancing exceeded its iteration bound")
 
