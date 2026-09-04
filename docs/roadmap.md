@@ -73,6 +73,7 @@
 ---
 
 ## Done log (newest first, with evidence)
+- ☑ 2026-09-04 **main CI verify fixed** (branch `fix/checkpoint-root-outside-worktree` @ `d873a80`, CI 33910950203 green; merge = G14): R8 E-1 checkpoints were written inside the git worktree → provenance mismatch → deterministic `test_restart_accepts_only_complete_valid_comparison` failure on clean checkouts — `docs/runs/2026-09-04-ci-red-checkpoint-root-fix.md`. PROV-2 was NOT the cause and stays open.
 - ☑ 2026-09-03 **R7 chain merged** (G12, `10d448c`): routes 5.11×, attribution 25.5×, 2.26 s/day marginal, hashes byte-identical — `docs/runs/2026-09-03-r7-chain-hash-gate.json`.
 - ☑ 2026-09-03 **Five Jersey COVID sources frozen** (G11, `5cdc780`) — `docs/research/v1_2/…inventory.md`.
 - ☑ 2026-09-03 **Claude Science audit** received + filed — `docs/audits/2026-09-03-claude-science-audit-findings.md`.

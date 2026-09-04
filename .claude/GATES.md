@@ -4,6 +4,12 @@
 
 ## Open
 
+### G14 — Merge the main-CI fix (`fix/checkpoint-root-outside-worktree`)
+- **Question:** merge `d873a80bc9027f2473a4620f1ca828f01c118c85` into `main`? It is the root-cause fix for the deterministic verify failure on every public-runner CI run since the R8 merge (checkpoints written inside the git worktree → provenance mismatch). Branch CI 33910950203: verify + frontend success; 284 tests; hash-neutral by construction (no manifest/schema/hash change). Report: `docs/runs/2026-09-04-ci-red-checkpoint-root-fix.md`.
+- **Command (SHA-first):** `git -C ~/jsy_disease_sim fetch origin && git -C ~/jsy_disease_sim merge --no-ff d873a80bc9027f2473a4620f1ca828f01c118c85 -m "G14: merge fix/checkpoint-root-outside-worktree @ d873a80 (main CI verify fix)" && git -C ~/jsy_disease_sim push`
+- **Default:** merge (the no-further-merges rule was conditioned on understanding the failure; it is now understood and fixed). Until merged, `main` CI stays red and nothing else should merge on top of it.
+
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.

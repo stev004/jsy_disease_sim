@@ -24,6 +24,9 @@
 - Contract surfaces are cross-checked: `ensemble_schemas.py` ↔ `ensemble_artifacts.py` ↔ `scientific_verification.py` must stay consistent when any default or diagnostic field changes.
 - Machine context (2026-09-02): implementation and gates run in WSL Ubuntu on DESKTOP-KQTC6VL (`~/jsy_disease_sim`); codex sandboxed exec does not work on native Windows here (probe evidence in `docs/runs/2026-09-02-desktop-transfer-wsl.md`).
 
+- Anything a job writes must land under `outputs/` (gitignored) or the job-owned directory — never elsewhere under the repo root. The job layer records `git status --porcelain` twice (submission + inside every artifact) and fails finalization on any mismatch, so a file created mid-run in the tree is a provenance defect, not a tidiness issue (CI-red 2026-09-04, `docs/runs/2026-09-04-ci-red-checkpoint-root-fix.md`). Corollary for gates: run the suite from a CLEAN tree at least once (a fresh clone in `/tmp`) — a dirty dev tree masks this whole class.
+- The dev-delegate spec file must stay OUTSIDE the worktree (untracked files in the tree trip the format/clean-tree gates).
+
 ## Environment
 - Passing commands into WSL: `wsl.exe -- bash -c "<inline>"` mangles quoting ($-vars, parens in the interop PATH, redirects) — write a script file, copy it via `/mnt/c/...`, `sed -i 's/\r$//'`, then `wsl.exe -- bash <script>`. From Git Bash, prefix `MSYS_NO_PATHCONV=1` so `/mnt/...` paths survive.
 - Long-running launches inside WSL need `setsid nohup … &` (see dev-delegate LESSONS 2026-09-02).

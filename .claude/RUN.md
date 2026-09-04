@@ -2,7 +2,7 @@
 
 **Validation VERDICT: PASS.** 44/44 replicates, **all 132 replicate-level hashes (latent/M4/observation × 44 seeds) byte-identical** to the frozen P4 artifact, wall **81 min at 6 workers** (was 10.6 h) — `docs/runs/2026-09-04-p4-validation-ensemble-report.md`. Repo made PUBLIC by Steven; Actions now free.
 
-**⚠ FIRST UNIT NEXT SESSION — main CI is RED (verify), deterministically, and the no-further-merges rule is active.** One single test fails on GitHub's 2-core public runners (3 runs incl. a rerun; runs 33876939216 + 33903977732): `tests/test_m9_1_job_integrity.py::test_restart_accepts_only_complete_valid_comparison` — job ends `INTERRUPTED` where `SUCCEEDED` is expected. Passes locally (4× full-suite on identical code). Two candidate causes: the audit's open **PROV-2** (startup reconciliation interrupts RUNNING rows with no liveness check — slow-runner hair-trigger), or a real interaction with the **R8/A-1 finalizer-comparison change** that this restart test exercises. Recipe: reproduce locally under constrained CPU (e.g. `taskset -c 0,1` in WSL), read the test alongside the A-1 `job_finalizer.py` diff, fix the root cause (likely = implementing PROV-2's lock/liveness properly), then get `main` CI green and log it. Note: the science is NOT in doubt — the validation ensemble above proves replicate-level identity; this is job-lifecycle robustness.
+**Main CI red — ROOT-CAUSED AND FIXED 2026-09-04 (fix branch pushed, CI green; merge = G14).** The failing test was deterministic, not a flake and not PROV-2: R8 E-1 wrote replicate checkpoints to `<project root>/.replicates-in-progress`, dirtying a clean checkout mid-job, so artifact provenance (`dirty=True`) disagreed with the submitted identity (`dirty=False`) → `artifact_provenance_mismatch` → INTERRUPTED. Reproduced in a fresh clone; local trees were already dirty, hence 'passed 4× locally'. Fix `fix/checkpoint-root-outside-worktree` @ `d873a80bc9027f2473a4620f1ca828f01c118c85`: `run_ensemble(checkpoint_root=...)`, default `outputs/.replicates-in-progress`, job-owned `job_directory/checkpoints` in the adapter; 284 passed, CI run 33910950203 verify+frontend success. Report: `docs/runs/2026-09-04-ci-red-checkpoint-root-fix.md`. **Steven: merge G14, then main CI is green again.**
 
 Next work after that: `docs/roadmap.md` (V1.2 canonical epi tables; R8 leftovers; scientific-corrections track needing Steven's model-owner rulings).
 
@@ -12,7 +12,7 @@ Next work after that: `docs/roadmap.md` (V1.2 canonical epi tables; R8 leftovers
 - Kill hygiene if needed: `pkill -f 'jos ensemble run'` AND `pkill -f 'multiprocessing.spawn'`. Checkpoints under `.replicates-in-progress/p4-validation-r8/` make any restart a resume, not a loss.
 
 ## Blocked on Steven
-- **GitHub Actions billing** (Settings → Billing & plans) — CI is dead on all branches; annotation says failed payment or spending limit. Once fixed: re-run CI on `main` @ `43008ff` and log the result.
+- **G14 — merge the main-CI fix** (`d873a80bc9027f2473a4620f1ca828f01c118c85`; exact command in `.claude/GATES.md`). Billing is no longer an issue (repo public since 2026-09-04).
 
 ## Next work (see docs/roadmap.md)
 - V1.2 Track B iteration 3: canonical epidemiology tables (independent, ready).
