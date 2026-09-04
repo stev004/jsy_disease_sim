@@ -4,15 +4,14 @@
 
 ## Open
 
-### G13 — Merge the R8 chain (one merge, eight stacked units) + fix GitHub Actions billing
-- **Question:** ① Fix GitHub Actions billing (Settings → Billing & plans: failed payment or spending limit — CI is dead on all branches until then). ② Merge `codex/r8-stageA` @ `2528733c8fd1e95a59ecc07782da1ed39e9407dc` (Stage A gate restorations, golden hashes, M2 memoization 510→78 s, intervention memoization, exact route tranche +1.30×, replicate persistence + honest 6-worker budget, namespace fix)? Every unit director-gated (full suites, byte-identical fingerprints/hashes at full scale); terra trail audit filed with all flags fixed or acknowledged (`docs/runs/2026-09-04-r8-trail-audit-terra.md`).
-- **Default:** fix billing, let CI confirm the tip, then merge SHA-first `--no-ff`. Fallback if billing takes time: merge on local evidence (suites passed repeatedly on the exact tree) and let CI confirm on main afterwards — say which you prefer. After merge: the validation ensemble (44 seeds at 6 workers, ~70–80 min projected) which doubles as the missing per-worker memory measurement; note the replicate hashes will match the frozen P4 artifact only if none of the merged changes alters latent identity — the R8 chain is proven hash-identical, so they should match exactly.
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G13 — Merge the R8 chain — RESOLVED 2026-09-04 (Steven, in chat: "merge it all and try again, then /closeout")
+Merged on local evidence per the stated fallback (CI remains billing-dead; annotation re-confirmed post-merge): SHA-first `--no-ff` of `2528733c8fd1e95a59ecc07782da1ed39e9407dc` -> merge `43008ff`; pre-push smoke 72 targeted tests + ruff + demo green; pushed. Validation ensemble launched same hour (44 seeds, 6 workers, ensemble-id p4-validation-r8, log p4v-ensemble-launch-20260904T131139Z.log). GitHub billing fix still outstanding (Steven; CI confirms main once restored).
 
 ### G11 + G12 — RESOLVED 2026-09-03 (Steven, in chat: "merge them")
 Both executed same hour by the agent on the explicit one-time instruction: G11 snapshots merge `5cdc780` (five frozen Jersey COVID sources now immutable on main), G12 R7-chain merge `10d448c` (route generation 5.11x, attribution 25.5x, 2.26 s/simulated-day, all full-scale hashes byte-identical), plus mechanical rename fix `df41196` (respiratory.py mypy nit outside CI's pinned list). Post-merge smoke green; main @ `df41196` pushed. Steven's follow-on sequence REPLACES the G12 default validation rerun: Claude Science audit (bundle `~/Documents/jos-claude-science-audit-2026-09-03.zip` delivered) -> implement findings -> then launch the new ensemble run.
