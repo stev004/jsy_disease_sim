@@ -182,6 +182,11 @@ def test_sequential_ensemble_persists_seed_results_and_is_reproducible(
     assert [record.seed for record in first.replicate_records] == [123, 124]
     assert first.logical_content_hash == second.logical_content_hash
     assert first.summary == second.summary
+    checkpoint_directory = tmp_path / "outputs" / ".replicates-in-progress" / "m6-sequential"
+    assert {path.name for path in checkpoint_directory.glob("seed-*.json")} == {
+        "seed-123.json",
+        "seed-124.json",
+    }
 
 
 def test_process_parallelism_preserves_declared_outputs(

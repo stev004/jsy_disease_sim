@@ -345,6 +345,8 @@ def test_restart_uses_same_finalizer_and_is_idempotent(tmp_path: Path, m6_latent
 
 def test_restart_accepts_only_complete_valid_comparison(tmp_path: Path) -> None:
     manager = JobManager(state_dir=tmp_path, project_root=ROOT)
+    root_checkpoint_directory = ROOT / ".replicates-in-progress"
+    existed_before = root_checkpoint_directory.exists()
     request = ScenarioCompareRequest(
         kind="scenario_compare",
         duration_days=1,
@@ -361,6 +363,15 @@ def test_restart_accepts_only_complete_valid_comparison(tmp_path: Path) -> None:
         root=ROOT,
         job_directory=manager._job_dir(job_id),
     )
+    baseline_ensemble_id = f"{request.comparison_id}-baseline"
+    treated_ensemble_id = f"{request.comparison_id}-treated"
+    assert not (root_checkpoint_directory / baseline_ensemble_id).exists()
+    assert not (root_checkpoint_directory / treated_ensemble_id).exists()
+    if not existed_before:
+        assert not root_checkpoint_directory.exists()
+    checkpoint_directory = manager._job_dir(job_id) / "checkpoints"
+    assert (checkpoint_directory / baseline_ensemble_id / "seed-123.json").is_file()
+    assert (checkpoint_directory / treated_ensemble_id / "seed-123.json").is_file()
     envelope = json.loads((manager._job_dir(job_id) / "request.json").read_text(encoding="utf-8"))
     identity = envelope["submitted_engine_identity"]
     manager.registry.set_worker_observed_identity_once(

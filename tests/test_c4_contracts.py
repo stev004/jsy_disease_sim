@@ -626,7 +626,10 @@ def test_matching_checkpoint_is_resumed_without_rerunning_seed(
         (123,),
         ensemble_id="c4-resume-match",
     )
-    checkpoint = json.loads(_replicate_state_path(tmp_path, "c4-resume-match", 123).read_text())
+    checkpoint_root = tmp_path / "outputs" / ".replicates-in-progress"
+    checkpoint = json.loads(
+        _replicate_state_path(checkpoint_root, "c4-resume-match", 123).read_text()
+    )
     assert set(checkpoint["provenance"]) == {
         "replicate_seed",
         "base_config_hash",
@@ -708,6 +711,7 @@ def test_broken_pool_keeps_completed_checkpoints_for_reinvocation(
             return future
 
     monkeypatch.setattr(ensemble_module, "ProcessPoolExecutor", MidRunBrokenPool)
+    checkpoint_root = tmp_path / "outputs" / ".replicates-in-progress"
     with pytest.raises(RuntimeError, match="persisted completed outputs=1"):
         run_ensemble(
             tmp_path,
@@ -720,8 +724,8 @@ def test_broken_pool_keeps_completed_checkpoints_for_reinvocation(
             workers=2,
             allow_unsafe_workers=True,
         )
-    assert _replicate_state_path(tmp_path, "c4-resume-broken", 123).exists()
-    assert not _replicate_state_path(tmp_path, "c4-resume-broken", 124).exists()
+    assert _replicate_state_path(checkpoint_root, "c4-resume-broken", 123).exists()
+    assert not _replicate_state_path(checkpoint_root, "c4-resume-broken", 124).exists()
     assert "re-invocation will resume them" in capsys.readouterr().err
 
     calls: list[int] = []
