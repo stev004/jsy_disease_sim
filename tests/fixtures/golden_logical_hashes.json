@@ -1,0 +1,114 @@
+{
+  "fixture_schema_version": "1.0",
+  "generated_under": "uv.lock",
+  "environment": {
+    "python": "3.12.13",
+    "numpy": "2.5.2",
+    "pandas": "3.0.5",
+    "pyarrow": "22.0.0",
+    "starsim": "3.5.2",
+    "git_commit": "a9c76f0ffe8ef9c5886fe8982a22ad1182978fd0"
+  },
+  "cross_process_baseline": {
+    "mode": "ci",
+    "seed": 123,
+    "m2_logical_content_hash": "28a6d90a96454d11dcd6ad9d4531d69f9e4ec4396b802780084d3ae598c839a0",
+    "m3_logical_content_hash": "f072042f07db46a94fd61781eb9ee99545a6dc169d34b83d6de21ffdf56e3ce3"
+  },
+  "generations": {
+    "ci-seed-123": {
+      "m2_logical_content_hash": "28a6d90a96454d11dcd6ad9d4531d69f9e4ec4396b802780084d3ae598c839a0",
+      "m3_logical_content_hash": "f072042f07db46a94fd61781eb9ee99545a6dc169d34b83d6de21ffdf56e3ce3",
+      "m4_logical_content_hash": "749e32383cbcfa5973cd2680e09b175267b12d72963cc286e6c4dd720ae53657",
+      "m2_table_sha256": {
+        "residents": "37282ff80b5d7c7a42444896944370b9e3dd5200b3c76d5b7f8a1261be9b01c5",
+        "households": "3f5e54d38514e6c8f3dbaeda882a3c44fb96d986c8b3353ee7ab9452d78d60fb",
+        "communal_settings": "07cd93a83b0cb1f36e947da01373f9d38f592459e4e4993bc5fe6a7b9e35f3f5"
+      },
+      "m3_table_sha256": {
+        "resident_structure": "cc010a28c8610a5dc82fba94122518ed89457abb4f7a4818501d10aa51611583",
+        "schools": "8acf09790adeabf4c3a79d005fc3ff828b04b13b0217f492dc2792fd9e2fce3d",
+        "classes": "19da280595dcd81c9fc42b52d3452aa6973eb204903a7fc7e7f68e863352b184",
+        "school_assignments": "0daf6c8ec7154886e0b9a7105887b7b28d340fed012caaa9d82ea1d571c160d4",
+        "workplaces": "2f15a2323b361284913d837e73e78b50bc9f6c571c3ac6affc7a5dce5d49ae8c",
+        "workplace_teams": "2870691cba70862449357a9d191d4e92eab4ada2ddcd2bed57f33472b8cfc332",
+        "job_assignments": "091478c3e5b9d4b5006437a15c38748d9a50e3e32ccb674900ac2b946b01254d"
+      }
+    },
+    "ci-seed-124": {
+      "m2_logical_content_hash": "bc0f0ddc2cd883a8045c30c05ae89faeec07c39bc36b7384e9e2fa605182ff48",
+      "m3_logical_content_hash": "a137e9a303ee15bb3180009c6eaeb346fc4f86392be4030462f90efc8abd9a4f",
+      "m2_table_sha256": {
+        "residents": "cfb114955b050a6d8e52c3a3801a9ecce337060110e0272bcc863db6934969c9",
+        "households": "29c3d2df459e6f5f4263e4efa9fede329ea1a1fe5452d0cc891b40747db51c3f",
+        "communal_settings": "0e8ea7d8928242040fa8dda3b0384ec5db2af32a80ec4b851adee594628cb383"
+      },
+      "m3_table_sha256": {
+        "resident_structure": "eb23f137660a4e746ef93d19d2e9378dcbb563e7ccb4ce722bfcb38d99b06a82",
+        "schools": "8acf09790adeabf4c3a79d005fc3ff828b04b13b0217f492dc2792fd9e2fce3d",
+        "classes": "19da280595dcd81c9fc42b52d3452aa6973eb204903a7fc7e7f68e863352b184",
+        "school_assignments": "8d4cc1ecff5374125abe900ccc838f6c1a5ba12936f05e90f0a4d64a84b9e1fe",
+        "workplaces": "c3dd4f535887bb8bfaabffec931ab63479b7bd577558e5dbc7dfa080274bd48d",
+        "workplace_teams": "9a80d3e4d20706e0cd85b26d945e217ab05cfdea48d7f251fc3387308741f7fa",
+        "job_assignments": "e15427e396e99502313d372b573b4a5038666a14ef28032703af1c55c783c57c"
+      }
+    },
+    "scaled-seed-123": {
+      "m2_logical_content_hash": "f44b2f457d0dbe21710fa355902e704366cb4af4b3b5e74d7f85af4f17ac6a37",
+      "m3_logical_content_hash": "01a783d38850012bbece6685d09b97735d298471065e8173f914c59a71c14e69",
+      "m4_logical_content_hash": "a4048ea8269f1df0660d2014663f3b98e3fa0d2213e421fab4bbee37b3811171"
+    },
+    "scaled-seed-124": {
+      "m2_logical_content_hash": "885023cf447f02b3e6a56376f6988c8334bac47e6786b0a1c186a61a93a4652d",
+      "m3_logical_content_hash": "0eaea2906640b27ab56cca9312cdd5e22e52921c8d4ca710749e40c0db8346d5"
+    }
+  },
+  "m8": {
+    "mode": "ci",
+    "seed": 123,
+    "start_date": "2025-01-06",
+    "duration_days": 30,
+    "configs": {
+      "m8_arrival_testing.yaml": {
+        "episode_hash": "6b3667475d090aff3607cb77c6b877af0e84e98820f044af4c8b457d53213207",
+        "visitor_hash": "a2fab6078b6a39d9475561e02a137ed2768bab90f37f5cf4860b07dadc803ae3",
+        "temporary_network_hash": "737d6ce49d4989a98029920f856baad4d3b1e0826006c8abeb4a580ddd86e1b6"
+      },
+      "m8_explicit_travel.yaml": {
+        "episode_hash": "bae94888684fda47fdbfa1792e4c3235d84299b063f01897397d1ad05210364d",
+        "visitor_hash": "cfd5485f3e5483dc00dae90966991317279230e4976f7ae39aab503c2d52c1d7",
+        "temporary_network_hash": "c3326e87849e697fd73a4c9c50adced3d2f4982efcac1a65a19c5af46e0f54e2"
+      },
+      "m8_high_season.yaml": {
+        "episode_hash": "81e85872d1236841a264c265494a62f62cf8cfdf70e324959ceb300d96b56286",
+        "visitor_hash": "42de38a662b94ec6d978724507d689732314a390cf1901d4772658982afcc7c9",
+        "temporary_network_hash": "7555c3e6e9400045e73c94d7c9da56eb6f8960ffc338b3f70edf7420b6e48d93"
+      },
+      "m8_low_season.yaml": {
+        "episode_hash": "421df64b9a01f3dbaace095e2b117024aab66a63b975a395973782805b42f243",
+        "visitor_hash": "21cfdbcb717aaa5c1c429bcbb6ad1095f51a7cf525ad389911da64b02b1bfd67",
+        "temporary_network_hash": "07f29bd63b64a188d038488a5ec12ea6070a7bde5327875b12352712f75ca3d7"
+      },
+      "m8_reduced_arrivals.yaml": {
+        "episode_hash": "78dc5219ca78d0683f3210737aa0942afab023e064f8858f59daef0475816db0",
+        "visitor_hash": "32f29682e374ed5eef32d1817f36098d474d7bef59435773a81e9fb0d165aae8",
+        "temporary_network_hash": "bb738e7479413634c4d72ddda667eb40e163cfd630213e88661df10d08103031"
+      },
+      "m8_returning_resident_acquisition.yaml": {
+        "episode_hash": "8d4977f9c7c95fcc5a67e9232e7af59548f17db9b13eec7be99cc0759fb35999",
+        "visitor_hash": "472d339949d7cf6415d598524909e0401cd2caeb72cbf76299f6a4080ca81103",
+        "temporary_network_hash": "0837b62a5eb13f7052039f405d35655e4b007627141a39dbc2e20115404e4096"
+      },
+      "m8_testing_quarantine.yaml": {
+        "episode_hash": "73faa9338ee5958b0efddadbfd262d504fb27bc34bb70d23a3453008a2acc944",
+        "visitor_hash": "861052fea87a13479feda79b055525149788224499ce82b5b54895c8ee5840cc",
+        "temporary_network_hash": "6ebc4efae553fe8eb8796d02aa8a5770affc152ee289f95dacb1e9269c0e637e"
+      },
+      "m8_zero_travel.yaml": {
+        "episode_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "visitor_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "temporary_network_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    }
+  }
+}
