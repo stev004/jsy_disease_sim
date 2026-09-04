@@ -411,8 +411,11 @@ def _replicate_provenance(
     }
 
 
-def _replicate_state_path(root: Path, _ensemble_id: str, seed: int) -> Path:
-    return root / _REPLICATE_STATE_DIRECTORY / f"seed-{seed}.json"
+def _replicate_state_path(root: Path, ensemble_id: str, seed: int) -> Path:
+    # Namespace checkpoints by ensemble so concurrent or successive ensembles
+    # sharing a seed can never overwrite each other's completed work.
+    safe_ensemble = "".join(c if c.isalnum() or c in "-_." else "_" for c in ensemble_id)
+    return root / _REPLICATE_STATE_DIRECTORY / safe_ensemble / f"seed-{seed}.json"
 
 
 def _replicate_output_payload(output: ReplicateOutput) -> dict[str, Any]:
@@ -505,12 +508,12 @@ def _read_replicate_output(
 
 def _load_replicate_checkpoints(
     root: Path,
-    _ensemble_id: str,
+    ensemble_id: str,
     expected_provenance: dict[int, dict[str, Any]],
 ) -> tuple[dict[int, ReplicateOutput], int]:
     """Load matching checkpoints and count malformed or stale files reported."""
 
-    state_directory = root / _REPLICATE_STATE_DIRECTORY
+    state_directory = _replicate_state_path(root, ensemble_id, 0).parent
     if not state_directory.exists():
         return {}, 0
     resumed: dict[int, ReplicateOutput] = {}
