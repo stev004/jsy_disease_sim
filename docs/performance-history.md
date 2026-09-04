@@ -31,6 +31,11 @@
 | **R7 S1b: workday-set cache + all-one participation bypass + primary-job precompute** | `bd75671` | routes cumulative 5.11× (242→47.3 s/30 d); `_stable_int` calls down ~64% in ci | fingerprints identical; per-transformation equivalence tests |
 | **R7 S2: attribution via numpy pair filtering + per-pair FIFO** (replaces full-edge Python hazard build) | `3213314` | lookup 25.5× (1M-edge fixture); zero-success days 1,453×; real 30-day wall 444→114 s | bit-identical hazards vs committed oracle; five full-scale hashes reproduced byte-identically |
 | Killed honestly along the way | — | R7 S2 run 1 (pure-Python FIFO): only 1.96×, killed under its own ≥5× rule | trail row `r7-s2-run1` |
+| **R8 C-1: M2 rebalancing memoization** | `codex/r8-c1-m2`, 2026-09-04 | M2 full-mode generation 510→78 s (6.6×); parent build 655→~230 s | identical logical hash director-verified pre/post; golden hashes |
+| **R8 D-1: intervention predicate memoization** | `codex/r8-d1-interventions` | honest −6.5% at full scale (ci micro said 3.5×; per-edge loop dominates) — numpy step 3 still open | M7 scenario hashes identical pre/post |
+| **R8 D-2: exact route tranche** (prefix-hoisted hashing, merge-not-rededup, dead-sort deletion, preamble pre-index, isin dispatch) | `codex/r8-d2-route-tranche` | route generation +1.30× (46.4→35.6 s/30 d) on top of R7 | fingerprints + Starsim arrays identical, all 11 routes, both windows |
+| **R8 E-1: replicate persistence + honest worker budget** | `codex/r8-e1-ensemble-robustness` | robustness, not speed: broken pools no longer lose completed replicates; measured bound = 6 workers | fixture ensembles hash-identical sequential vs parallel |
+| **R8 Stage-B measurement campaign** | `docs/runs/2026-09-04-r8-stageB-campaign.json` | ground truth: 180 d replicate = 433.7 s measured; intervention tax +1.4…+4.7 s/day; memory flat ~2.7 GB peak | the numbers that re-ranked the whole plan |
 
 ## Context and caveats
 - The 2.26 s/day was measured with no intervention manager and no travel attached; the Claude Science audit (2026-09-03, `docs/audits/`) shows intervention scenarios add an unprofiled 1.3–4 s/day that R8's DISEASE-1 memoization targets (10.2× in sandbox). Treat 7.5 min as a baseline-scenario lower bound until the Stage-B campaign (incl. one true 180-day run and two M7 30-day runs) lands.

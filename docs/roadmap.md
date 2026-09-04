@@ -16,28 +16,28 @@
 
 ### Stage B — re-measure on the production configuration, then re-rank
 - ☑ **CROSS-1/CROSS-2 campaign** (2026-09-04, `docs/runs/2026-09-04-r8-stageB-campaign.json`: 180d = 433.7 s confirmed; M2 = 78% of parent build; intervention tax +1.4 to +4.7 s/day; memory flat ceiling, 6-7 workers fit): 7/14/30/60-day + one real 180-day replicate with per-phase timers (M2/M3/M4 decomposed, Sim.init, routes, attribution, post-processing, hashing, Parquet, observation); 30-day runs under `m7_community_indoor` and `m7_combined` (the missing intervention measurement); DISEASE-11 memory campaign (shared-object sizer at 7 horizons). Deliverable: three-parameter cost model; confirm/refute the 7.5-min projection.
-- ◐ **DATA-6** (codex in flight) Golden logical hashes for M2/M3/M4/M8 committed + asserted in CI, cross-process/cross-machine baseline (hard blocker on all generator changes).
+- ☑ **DATA-6** (2026-09-04, `codex/r8-c0-golden-hashes`: cross-process determinism proven, golden fixture committed with pinned env versions) Golden logical hashes for M2/M3/M4/M8 committed + asserted in CI, cross-process/cross-machine baseline (hard blocker on all generator changes).
 
 ### Stage C — the overhead block (~33% of ensemble wall)
 - ☐ **ROUTE-11** Diagnostics switch for run/ensemble paths (hash-neutral by construction) + incremental M4 hash.
-- ☐ **DATA-2** M2 rebalancing loop-invariant hoist (sandbox 1,429× on one comprehension; instrument first).
+- ☑ **DATA-2** (2026-09-04, `codex/r8-c1-m2`: M2 full-mode 510→78 s, identical hash `69c183…bb11` director-verified; rebalancer 579→0.21 s) M2 rebalancing loop-invariant hoist (sandbox 1,429× on one comprehension; instrument first).
 - ☐ **DATA-1** M3 secondary-job loop (3 exact transformations; numpy-pinned equivalence check first).
 - ☐ **PROV-8** One parent build implementation (4 today), one scenario normalisation — prerequisite for reuse.
 - ☐ Verified M2/M3 parent reuse + pool initializer (R7 lead 4, now ~15% of ensemble wall).
 - ☐ **DISEASE-3** Grid built once not twice; memory is the real prize (~0.6–1.1 GB parent budget).
 
 ### Stage D — kernel remainder, in measured order
-- ☐ **DISEASE-1** (1)+(2) memoise run-constant adherence predicate + hoist str()/skip no-op copies (10.2× sandbox; the only item touching the production M7 path). (3) numpy arrays gated separately, after.
-- ☐ **ROUTE-1** prefix-hoisted `_stable_int` (~271 ms/day) — after ROUTE-10.
-- ☐ **ROUTE-3** ordered merge replaces re-dedup (~157 ms/day).
-- ☐ **ROUTE-7** two-line dead-sort deletion (~41 ms/day; the persistence *question* is in Scientific corrections).
-- ☐ **ROUTE-9** community preamble pre-index (~73 ms/day).
-- ☐ **DISEASE-7** `np.isin` size dispatch (removes the 8.9× step at ~58 successes).
+- ☑ **DISEASE-1 steps 1–2** (2026-09-04, `codex/r8-d1-interventions`: hashes identical; honest result −6.5% at full scale — the per-edge loop dominates; **step 3 numpy vectorization stays open as the M7 prize**) (1)+(2) memoise run-constant adherence predicate + hoist str()/skip no-op copies (10.2× sandbox; the only item touching the production M7 path). (3) numpy arrays gated separately, after.
+- ☑ **ROUTE-1** (2026-09-04, in `codex/r8-d2-route-tranche`) prefix-hoisted `_stable_int` (~271 ms/day) — after ROUTE-10.
+- ☑ **ROUTE-3** (2026-09-04, D-2) ordered merge replaces re-dedup (~157 ms/day).
+- ☑ **ROUTE-7 perf half** (2026-09-04, D-2) two-line dead-sort deletion (~41 ms/day; the persistence *question* is in Scientific corrections).
+- ☑ **ROUTE-9** (2026-09-04, D-2) community preamble pre-index (~73 ms/day).
+- ☑ **DISEASE-7** (2026-09-04, D-2: explicit size dispatch, threshold 64; D-2 combined = routes +1.30× vs v2 baseline, fingerprints+arrays identical) `np.isin` size dispatch (removes the 8.9× step at ~58 successes).
 - ☐ **ROUTE-5** columnar edges (largest structural item; three-phase gate; ROUTE-4 weekday memo after it, bus excluded).
 
 ### Stage E — robustness (parallel, independent)
-- ☐ **DISEASE-6** per-replicate result persistence + resume (broken pool must not lose completed replicates).
-- ☐ **DISEASE-5** honest worker bound (parent reserve, affinity-based CPU count, horizon-matched per-worker bytes; corrected bound 4–5).
+- ☑ **DISEASE-6** (2026-09-04, `codex/r8-e1-ensemble-robustness`: atomic per-replicate persistence + provenance-authenticated resume; broken pool no longer discards completed work) per-replicate result persistence + resume (broken pool must not lose completed replicates).
+- ☑ **DISEASE-5** (2026-09-04, E-1: explicit budget — 3 GiB parent reserve, 0.85 fraction, measured 3 GiB/worker, affinity CPU; bound = 6 on this host — Stage-B data superseded the audit's 4–5 guess) honest worker bound (parent reserve, affinity-based CPU count, horizon-matched per-worker bytes; corrected bound 4–5).
 - ☐ **PROV-2/PROV-9/PROV-7** job-layer liveness lock, publication ordering, submit ordering.
 - ☐ **PROV-10** scheduler idle polling + heartbeat authorship; **ROUTE-12** school-calendar horizon validation at config time; **PROV-6** verification_archive portable paths; **PROV-12** M8 verifier id binding; **PROV-3** API dataset label; **PROV-5** one git-provenance helper; **PROV-11** metric type registry; **PROV-13** self-test hash volatility.
 
