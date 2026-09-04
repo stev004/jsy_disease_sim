@@ -1,4 +1,11 @@
-# RUN — nothing in flight (R8 closed and merged; validation ensemble COMPLETE 2026-09-04)
+# RUN — Track B (V1.2 evidence foundation) iteration 3 IN FLIGHT: canonical COVID epi tables
+
+**In flight (launched 2026-09-04 20:41 local):** foreman Track B iteration 3 — five canonical COVID-era epidemiology tables (daily surveillance, current summary, weekly vaccination by dose×age band, weekly eligible population, 2020 serosurvey manual fixture) with explicit not-reported/`<N` semantics. Predicate for the Track B run (from the roadmap NEXT section): iteration 3 tables built deterministically from the five frozen snapshots with full provenance, gates green, branch pushed with CI green. Budget: this unit = 3 codex runs; Track B default 5 iterations (2 used before this).
+- Executor: Codex gpt-5.6-luna@xhigh via `fm.sh exec`; worktree WSL `~/jos-v12-epi-tables-wt`, branch `feat/v12-epi-tables` based on `d873a80bc9027f2473a4620f1ca828f01c118c85` (= main + the G14 CI fix, so the tree is clean-checkout-safe); brief `~/jos-v12-iter3-brief.md` (WSL); log `~/jos-v12-iter3.log`, final report `~/jos-v12-iter3.last.md`.
+- **Cold-start recipe:** `wsl -d Ubuntu`; `pgrep -af 'codex exec'` (running?) → if exited, read `~/jos-v12-iter3.last.md`, then in the worktree run the brief's ACCEPTANCE block (1–8) yourself; full-diff review (scope check, four failure modes, no weakened assertions); if green → commit in the worktree, push `feat/v12-epi-tables`, wait for CI on the pushed SHA (`gh run view --json jobs`), log `v12-iter3` row via `fm.sh log`, tick roadmap NEXT iteration 3, file `.last.md` into `docs/runs/`, park the merge in GATES (after G14). If red → re-brief with the exact failing output (max 3 runs), then escalate to sol@high.
+- Zero-write watchdog: no file change in the worktree for 20 min = wedged → `pkill -f 'codex exec'` and relaunch with the same brief.
+
+## Previous state (still true)
 
 **Validation VERDICT: PASS.** 44/44 replicates, **all 132 replicate-level hashes (latent/M4/observation × 44 seeds) byte-identical** to the frozen P4 artifact, wall **81 min at 6 workers** (was 10.6 h) — `docs/runs/2026-09-04-p4-validation-ensemble-report.md`. Repo made PUBLIC by Steven; Actions now free.
 
