@@ -29,6 +29,7 @@ from jersey_outbreak.interventions import (
     _stable_uniform,
 )
 from jersey_outbreak.outbreak_runner import run_outbreak
+from jersey_outbreak.starsim_adapter import build_starsim_networks
 
 
 def _scenario(config, intervention, scenario_id="c5-neutral"):
@@ -154,6 +155,71 @@ def test_npi_adherence_is_one_stable_versioned_person_trait(m6_network) -> None:
     }
     assert forward == reverse
     assert len(set(forward.values())) == 1
+
+
+def test_memoised_adherence_preserves_daily_route_application(m6_network) -> None:
+    config = InterventionConfig(
+        intervention_id="memoised-community",
+        version="7.1.0",
+        type="community_reduction",
+        start_date=date(2025, 1, 6),
+        adherence=0.60,
+        indoor_multiplier=0.5,
+    )
+    manager = InterventionManager(
+        m6_network,
+        (config,),
+        run_seed=123,
+        start_date=date(2025, 1, 6),
+        duration_days=1,
+    )
+    original_target_adheres = manager._target_adheres
+    original_edge_multiplier = manager._edge_multiplier
+    when = date(2025, 1, 6)
+
+    def fresh_route():
+        route_ids = sorted(m6_network.route_specs)
+        route_map = dict(zip(route_ids, build_starsim_networks(m6_network), strict=True))
+        return route_map["community_indoor"]
+
+    def apply(target_adheres):
+        route = fresh_route()
+        manager.setattribute("sim", SimpleNamespace(networks={"community_indoor": route}))
+        manager.route_effects.clear()
+        manager._target_adheres = target_adheres
+        multiplier_applications = []
+
+        def record_multiplier(config, route_id, p1, p2, when, ti):
+            value = original_edge_multiplier(config, route_id, p1, p2, when, ti)
+            multiplier_applications.append((p1, p2, value))
+            return value
+
+        manager._edge_multiplier = record_multiplier
+        manager._apply_effective_routes(when, 0)
+        route_state = tuple(
+            np.asarray(values).copy()
+            for values in (route.edges.p1, route.edges.p2, route.edges.beta, route.edges.dur)
+        )
+        return route_state, multiplier_applications, list(manager.route_effects)
+
+    def unmemoised_target_adheres(config, agent_id):
+        return (
+            manager._target_matches(config, agent_id)
+            and _npi_adherence_uniform(manager.run_seed, config, agent_id) < config.adherence
+        )
+
+    unmemoised = apply(unmemoised_target_adheres)
+    memoised = apply(original_target_adheres)
+
+    for expected, actual in zip(unmemoised[0], memoised[0], strict=True):
+        assert np.array_equal(expected, actual)
+    assert unmemoised[1] == memoised[1]
+    assert unmemoised[2] == memoised[2]
+    assert manager._adherence_cache
+    assert len(manager._adherence_cache) <= len(m6_network.agent_ids)
+    assert all(
+        key[:2] == (config.intervention_id, config.version) for key in manager._adherence_cache
+    )
 
 
 def _all_detected(base):
