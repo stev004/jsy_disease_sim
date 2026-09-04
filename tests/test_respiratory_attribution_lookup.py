@@ -251,6 +251,28 @@ def test_zero_successes_on_large_edge_set_do_not_construct_candidates() -> None:
     )
 
 
+def test_more_than_threshold_successes_on_large_edge_set_match_oracle() -> None:
+    size = 100_000
+    success_count = 128
+    direction = _direction(
+        "large-many-successes",
+        6,
+        list(range(size)),
+        list(range(1, size + 1)),
+        [0.25] * size,
+        [(index + 1, index) for index in reversed(range(success_count))],
+    )
+    large_fixture = {
+        "rel_trans": _RawValues(np.ones(size, dtype=float)),
+        "rel_sus": _RawValues(np.ones(size + 1, dtype=float)),
+        "directions": [direction],
+    }
+    _assert_equivalent(
+        _run_directions(_old_lookup, large_fixture),
+        _run_directions(_indexed_lookup, large_fixture),
+    )
+
+
 def _mutated_lookup(mutant: str):
     source = inspect.getsource(_match_success_hazards)
     replacements = {

@@ -1,8 +1,10 @@
 import json
+import random
 import statistics
 from dataclasses import replace
 from datetime import date, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -12,7 +14,13 @@ from jersey_outbreak.network_generator import (
     CONTACT_ACTIVITY_ROUTES,
     _activity_participation_probabilities,
     _activity_weighted_participants,
+    _community_agent_index,
+    _community_probability_pair,
+    _cumulative_probability_bounds,
+    _deduplicate_edges,
+    _grouped_ring_edges,
     _job_is_physical_on_date,
+    _merge_sorted_edges,
     _persistent_contact_activity,
     _primary_jobs_by_agent,
     _stable_int,
@@ -89,6 +97,108 @@ def test_community_target_index_arithmetic_matches_candidates() -> None:
                 actual = None if m == 0 else full[draw % m]
 
             assert actual == expected
+
+
+def test_sorted_edge_merge_matches_reference_deduplication() -> None:
+    generator = random.Random(20260904)
+    agent_ids = [f"agent-{index:02d}" for index in range(12)]
+    key_pool = [
+        (left, right)
+        for left_index, left in enumerate(agent_ids)
+        for right in agent_ids[left_index + 1 :]
+    ]
+
+    for _ in range(100):
+        first_keys = sorted(generator.sample(key_pool, generator.randrange(0, 30)))
+        second_keys = sorted(generator.sample(key_pool, generator.randrange(0, 30)))
+
+        def edges(keys: list[tuple[str, str]]) -> list[dict[str, Any]]:
+            return [
+                {
+                    "p1": left,
+                    "p2": right,
+                    "weight": generator.choice((0.1, 0.3, 0.7, 1.0)),
+                    "persistence_days": generator.choice((1, 7, 30)),
+                }
+                for left, right in keys
+            ]
+
+        first = edges(first_keys)
+        second = edges(second_keys)
+        assert _merge_sorted_edges(first, second) == _deduplicate_edges([*first, *second])
+
+
+def test_grouped_ring_edges_are_byte_identical_for_member_order_variants() -> None:
+    def encoded(groups: list[list[str]]) -> bytes:
+        edges = _grouped_ring_edges(
+            groups,
+            101,
+            "workplace_transient",
+            date(2025, 1, 6),
+            2,
+            0.3,
+            7,
+        )
+        return json.dumps(edges, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+    unique_variants = [
+        [["agent-a", "agent-b", "agent-c", "agent-d"], ["agent-e", "agent-f"]],
+        [["agent-d", "agent-c", "agent-b", "agent-a"], ["agent-f", "agent-e"]],
+        [["agent-b", "agent-d", "agent-a", "agent-c"], ["agent-e", "agent-f"]],
+    ]
+    unique_bytes = [encoded(groups) for groups in unique_variants]
+    assert unique_bytes[0] == unique_bytes[1] == unique_bytes[2]
+
+    duplicate_variants = [
+        [["agent-b", "agent-a", "agent-b", "agent-c"], ["agent-e", "agent-f"]],
+        [["agent-b", "agent-b", "agent-c", "agent-a"], ["agent-f", "agent-e"]],
+    ]
+    duplicate_bytes = [encoded(groups) for groups in duplicate_variants]
+    assert duplicate_bytes[0] == duplicate_bytes[1]
+
+
+def test_community_preamble_and_cumulative_bounds_match_reference() -> None:
+    agent_ids = ["adult", "child", "older-adult"]
+    m3_by_agent = {
+        "adult": {"age": 18, "home_parish": "St Helier"},
+        "child": {"age": 17, "home_parish": "St Clement"},
+        "older-adult": {"age": 65, "home_parish": "St Helier"},
+    }
+    assert _community_agent_index(agent_ids, m3_by_agent) == {
+        "adult": (True, "St Helier"),
+        "child": (False, "St Clement"),
+        "older-adult": (True, "St Helier"),
+    }
+    assert _community_probability_pair("community_indoor", False) == (58, 35)
+    assert _community_probability_pair("community_indoor", True) == (70, 55)
+    assert _community_probability_pair("community_outdoor", False) == (28, 20)
+    assert _community_probability_pair("community_outdoor", True) == (55, 45)
+
+    probabilities = [
+        [0.05, 0.15, 0.3, 0.25, 0.25],
+        [0.2, 0.1, 0.25, 0.2, 0.25],
+    ]
+    bounds = _cumulative_probability_bounds(probabilities)
+    for source_band, row in zip(probabilities, bounds, strict=True):
+        cumulative = 0.0
+        reference_bounds = []
+        for probability in source_band:
+            cumulative += float(probability)
+            reference_bounds.append(cumulative)
+        assert row == reference_bounds
+        for draw in (0.0, 0.049999, 0.15, 0.499999, 0.999999):
+            reference_band = len(source_band) - 1
+            for index, _probability in enumerate(source_band):
+                cumulative = sum(float(value) for value in source_band[: index + 1])
+                if draw < cumulative:
+                    reference_band = index
+                    break
+            actual_band = len(row) - 1
+            for index, cumulative in enumerate(row):
+                if draw < cumulative:
+                    actual_band = index
+                    break
+            assert actual_band == reference_band
 
 
 def test_job_weekday_cache_matches_uncached_selection_for_all_weekdays() -> None:
