@@ -1,4 +1,7 @@
+import base64
 import csv
+import datetime
+import hashlib
 import json
 from pathlib import Path
 
@@ -20,7 +23,7 @@ def test_canonical_build_reconciles_controls_and_is_repeatable(tmp_path: Path) -
 
     assert first["build_status"] == second["build_status"] == "passed"
     assert first_bytes == second_bytes
-    assert len(first["tables"]) == 19
+    assert len(first["tables"]) == 21
     assert {check["status"] for check in first["checks"]} >= {"passed", "warning"}
 
     with (output_dir / "household_types.csv").open(newline="", encoding="utf-8") as handle:
@@ -193,6 +196,13 @@ def test_covid_weekly_pair_set_and_quality_warnings(tmp_path: Path) -> None:
     report = json.loads((output_dir / "quality_report.json").read_text(encoding="utf-8"))
     assert any("undated row raw values: ,1165877,67397,0," in w for w in report["warnings"])
     assert any("float;#0" in w and "float;#1073672.00000000" in w for w in report["warnings"])
+    assert any(
+        "JHU cumulative confirmed first differences contain" in w for w in report["warnings"]
+    )
+    assert (
+        "annual population estimates are published rounded to the nearest 10; sums are not exact"
+        in report["warnings"]
+    )
 
 
 def test_covid_serosurvey_table_is_transcribed_fixture(tmp_path: Path) -> None:
@@ -209,6 +219,80 @@ def test_covid_serosurvey_table_is_transcribed_fixture(tmp_path: Path) -> None:
         )
         == "3.1"
     )
+
+
+def test_covid_jhu_daily_table_matches_frozen_series(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    build_canonical(ROOT, output_dir)
+    with (output_dir / "covid_jhu_daily.csv").open(newline="", encoding="utf-8") as handle:
+        table_rows = list(csv.DictReader(handle))
+    with (
+        ROOT / "data/raw/jhu_csse_confirmed_global_csv/time_series_covid19_confirmed_global.csv"
+    ).open(newline="", encoding="utf-8") as handle:
+        raw_rows = list(csv.DictReader(handle))
+    raw_jersey = [
+        row
+        for row in raw_rows
+        if row["Province/State"] == "Jersey" and row["Country/Region"] == "United Kingdom"
+    ]
+    assert len(raw_jersey) == 1
+    raw_dates = list(raw_rows[0])[4:]
+    raw_values = [int(raw_jersey[0][raw_date]) for raw_date in raw_dates]
+    expected_first_value = next(value for value in raw_values if value > 0)
+    expected_last_value = raw_values[-1]
+
+    cumulative_rows = [row for row in table_rows if row["measure"] == "cumulative_confirmed_cases"]
+    daily_rows = [row for row in table_rows if row["measure"] == "daily_new_confirmed_cases"]
+    assert len(cumulative_rows) == len(raw_dates) == len(daily_rows)
+    assert len({row["date"] for row in table_rows}) == len(raw_dates)
+    assert all(datetime.date.fromisoformat(row["date"]) for row in table_rows)
+    first_nonzero = next(row for row in cumulative_rows if int(row["value"]) > 0)
+    assert first_nonzero["date"] == "2020-03-22"
+    assert int(first_nonzero["value"]) == expected_first_value
+    assert int(cumulative_rows[-1]["value"]) == expected_last_value
+    assert sum(int(row["value"]) for row in daily_rows) == expected_last_value
+
+
+def test_population_estimates_annual_table_reconciles_sexes(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    build_canonical(ROOT, output_dir)
+    with (output_dir / "population_estimates_annual.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        rows = list(csv.DictReader(handle))
+    years = {int(row["year"]) for row in rows}
+    assert years == set(range(2011, 2025))
+    ages_by_year = {
+        year: {row["age"] for row in rows if int(row["year"]) == year} for year in years
+    }
+    assert {len(ages) for ages in ages_by_year.values()} == {101}
+    by_key = {(int(row["year"]), row["age"], row["sex"]): int(row["count"]) for row in rows}
+    for year, ages in ages_by_year.items():
+        for age in ages:
+            assert (
+                by_key[(year, age, "all")]
+                == by_key[(year, age, "male")] + by_key[(year, age, "female")]
+            )
+
+
+def test_wayback_respiratory_pdf_digests_match_cdx_pins() -> None:
+    expected = {
+        "respiratory_epidemiological_report_wayback_20240223_pdf": (
+            "VP7XXH3574O6WTH74AFNV7EJ3UOCOYW7"
+        ),
+        "respiratory_epidemiological_report_wayback_20240718_pdf": (
+            "XXYCUEBFI7MCLMJU773M4Y2MQOYT4NB4"
+        ),
+        "respiratory_epidemiological_report_wayback_20260102_pdf": (
+            "44QV6WTJNA3CQXZWM4CIU3TLD75T7UTK"
+        ),
+    }
+    for source_id, digest in expected.items():
+        path = next((ROOT / "data/raw" / source_id).glob("*.pdf"))
+        payload = path.read_bytes()
+        actual = base64.b32encode(hashlib.sha1(payload).digest()).decode()
+        assert payload.startswith(b"%PDF")
+        assert actual == digest
 
 
 def test_unmapped_vaccination_column_fails_the_build(

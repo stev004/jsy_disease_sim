@@ -11,7 +11,7 @@ import json
 import math
 import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +25,7 @@ from .canonical_schemas import (
     CommuteModeRow,
     CovidCurrentSummaryRow,
     CovidDailySurveillanceRow,
+    CovidJhuDailyRow,
     CovidSerosurveyRow,
     CovidWeeklyEligiblePopulationRow,
     CovidWeeklyVaccinationRow,
@@ -35,6 +36,7 @@ from .canonical_schemas import (
     ParishAgeSexRow,
     ParishPopulationRow,
     PassengerArrivalRow,
+    PopulationEstimateAnnualRow,
     PopulationTotalRow,
     SchoolStudentRow,
     WorkplaceDestinationRow,
@@ -483,6 +485,13 @@ _SEROSURVEY_MEASURES = (
     "minimum_age_years",
 )
 
+_JHU_DATE_COUNT = 1143
+_JHU_FIRST_NONZERO_DATE = "2020-03-22"
+_JHU_FIRST_NONZERO_VALUE = 12
+_JHU_FINAL_CONFIRMED = 66391
+_POPULATION_ESTIMATE_YEAR_COUNT = 14
+_POPULATION_ESTIMATE_ROWS_PER_YEAR = 101
+
 
 def _vaccination_column_spec(column: str, path: Path) -> tuple[str, str, str]:
     direct = _VACCINATION_DIRECT_COLUMNS.get(column)
@@ -507,6 +516,266 @@ def _vaccination_column_spec(column: str, path: Path) -> tuple[str, str, str]:
         )
         return dose, age_band, metric
     raise DataBuildError(f"{path}: unmapped vaccination column {column!r}")
+
+
+def _jhu_jersey_row(rows: list[dict[str, str]], path: Path, measure: str) -> dict[str, str]:
+    matches = [
+        row
+        for row in rows
+        if row.get("Province/State") == "Jersey" and row.get("Country/Region") == "United Kingdom"
+    ]
+    if len(matches) != 1:
+        state = "absent" if not matches else "duplicated"
+        raise DataBuildError(f"{path}: Jersey/United Kingdom {measure} row is {state}")
+    return matches[0]
+
+
+def _jhu_int(raw: str, *, path: Path, field: str) -> int:
+    value, status, _ = parse_published_value(raw, path=path, field=field)
+    if status != "reported" or value is None:
+        raise DataBuildError(f"{path}: JHU value is not reported in {field}")
+    if isinstance(value, float) and not value.is_integer():
+        raise DataBuildError(f"{path}: JHU value is not an integer in {field}")
+    return int(value)
+
+
+def _jhu_date_header(raw: str, *, path: Path) -> str:
+    if not re.fullmatch(r"\d{1,2}/\d{1,2}/\d{2}", raw):
+        raise DataBuildError(f"{path}: unparsable JHU date header {raw!r}")
+    try:
+        return datetime.strptime(raw, "%m/%d/%y").date().isoformat()
+    except ValueError as exc:
+        raise DataBuildError(f"{path}: unparsable JHU date header {raw!r}") from exc
+
+
+def _covid_jhu_tables(
+    context: SourceContext,
+    checks: list[dict[str, Any]],
+    daily_tables: list[dict[str, Any]],
+    warnings: list[str],
+) -> list[dict[str, Any]]:
+    confirmed_source = "jhu_csse_confirmed_global_csv"
+    deaths_source = "jhu_csse_deaths_global_csv"
+    confirmed_path = context.artifact_path(confirmed_source)
+    deaths_path = context.artifact_path(deaths_source)
+    confirmed_rows = read_csv_rows(confirmed_path, {"Province/State", "Country/Region"})
+    deaths_rows = read_csv_rows(deaths_path, {"Province/State", "Country/Region"})
+    confirmed_row = _jhu_jersey_row(confirmed_rows, confirmed_path, "confirmed")
+    deaths_row = _jhu_jersey_row(deaths_rows, deaths_path, "deaths")
+    confirmed_headers = list(confirmed_rows[0]) if confirmed_rows else []
+    deaths_headers = list(deaths_rows[0]) if deaths_rows else []
+    if len(confirmed_headers) < 5 or len(deaths_headers) < 5:
+        raise DataBuildError("JHU global files have no date columns")
+    date_headers = confirmed_headers[4:]
+    death_date_headers = deaths_headers[4:]
+    if date_headers != death_date_headers:
+        raise DataBuildError("JHU confirmed and deaths date headers differ")
+    iso_dates = [_jhu_date_header(header, path=confirmed_path) for header in date_headers]
+    if len(set(iso_dates)) != len(iso_dates):
+        raise DataBuildError(f"{confirmed_path}: duplicate JHU date headers")
+    confirmed_values = [
+        _jhu_int(confirmed_row[header], path=confirmed_path, field=header)
+        for header in date_headers
+    ]
+    death_values = [
+        _jhu_int(deaths_row[header], path=deaths_path, field=header) for header in date_headers
+    ]
+    tables: list[dict[str, Any]] = []
+    for iso_date, header, confirmed_value, death_value in zip(
+        iso_dates, date_headers, confirmed_values, death_values, strict=True
+    ):
+        tables.extend(
+            [
+                {
+                    **context.provenance(
+                        confirmed_source,
+                        locator=f"csv_row_Jersey_col_{header}",
+                        transformation_id="jhu_csv_observed_v1",
+                    ),
+                    "date": iso_date,
+                    "measure": "cumulative_confirmed_cases",
+                    "value": confirmed_value,
+                    "unit": "cases",
+                },
+                {
+                    **context.provenance(
+                        deaths_source,
+                        locator=f"csv_row_Jersey_col_{header}",
+                        transformation_id="jhu_csv_observed_v1",
+                    ),
+                    "date": iso_date,
+                    "measure": "cumulative_deaths",
+                    "value": death_value,
+                    "unit": "deaths",
+                },
+            ]
+        )
+    negative_days = 0
+    for index, iso_date in enumerate(iso_dates):
+        previous_date = iso_dates[index - 1] if index else "starting_cumulative"
+        daily_value = (
+            confirmed_values[index]
+            if index == 0
+            else confirmed_values[index] - confirmed_values[index - 1]
+        )
+        if daily_value < 0:
+            negative_days += 1
+        tables.append(
+            {
+                **context.provenance(
+                    confirmed_source,
+                    locator=f"derived_from_{iso_date}_and_{previous_date}",
+                    transformation_id="jhu_first_difference_v1",
+                    observation_status="derived",
+                ),
+                "date": iso_date,
+                "measure": "daily_new_confirmed_cases",
+                "value": daily_value,
+                "unit": "cases",
+            }
+        )
+    warnings.append(
+        "JHU cumulative confirmed first differences contain "
+        f"{negative_days} negative days; published corrections are preserved without clipping."
+    )
+    _add_check(checks, "covid_jhu_dates", len(date_headers), _JHU_DATE_COUNT)
+    first_nonzero_index = next(
+        (index for index, value in enumerate(confirmed_values) if value > 0), None
+    )
+    if first_nonzero_index is None:
+        raise DataBuildError(f"{confirmed_path}: Jersey confirmed series has no nonzero date")
+    first_nonzero_date = iso_dates[first_nonzero_index]
+    first_check = _add_check(
+        checks,
+        "covid_jhu_first_nonzero_confirmed",
+        confirmed_values[first_nonzero_index],
+        _JHU_FIRST_NONZERO_VALUE,
+    )
+    checks[-1]["details"] = (
+        f"first_date={first_nonzero_date}; expected_date={_JHU_FIRST_NONZERO_DATE}; "
+        f"status={first_check}"
+    )
+    if first_nonzero_date != _JHU_FIRST_NONZERO_DATE:
+        raise DataBuildError(
+            "reconciliation failed for covid_jhu_first_nonzero_confirmed date: "
+            f"actual={first_nonzero_date}, expected={_JHU_FIRST_NONZERO_DATE}"
+        )
+    _add_check(checks, "covid_jhu_final_confirmed", confirmed_values[-1], _JHU_FINAL_CONFIRMED)
+    govje_final = next(
+        (
+            row
+            for row in daily_tables
+            if row["date"] == "2023-02-01" and row["measure"] == "cumulative_confirmed_cases"
+        ),
+        None,
+    )
+    if govje_final is None or govje_final["value"] is None:
+        raise DataBuildError("JHU versus Government of Jersey cross-check has no published value")
+    jhu_final_index = iso_dates.index("2023-02-01")
+    _add_check(
+        checks,
+        "covid_jhu_vs_govje_cumulative_2023_02_01",
+        confirmed_values[jhu_final_index],
+        govje_final["value"],
+        tolerance=0,
+        warning=True,
+    )
+    return tables
+
+
+def _population_estimate_table(
+    context: SourceContext, checks: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    source_id = "annual_population_estimates_by_age_sex_csv"
+    path = context.artifact_path(source_id)
+    raw_rows = read_csv_rows(path, {"Year", "Age", "Male", "Female"})
+    if not raw_rows:
+        raise DataBuildError(f"{path}: no annual population estimate rows")
+    tables: list[dict[str, Any]] = []
+    years: set[int] = set()
+    rows_per_year: dict[int, int] = {}
+    seen: set[tuple[int, str]] = set()
+    for raw_row in raw_rows:
+        year = parse_int(raw_row["Year"], path=path, field="Year")
+        if year is None:
+            raise DataBuildError(f"{path}: blank Year")
+        age = _required(raw_row, "Age", path)
+        key = (year, age)
+        if key in seen:
+            raise DataBuildError(f"{path}: duplicate year/age row {year}/{age}")
+        seen.add(key)
+        years.add(year)
+        rows_per_year[year] = rows_per_year.get(year, 0) + 1
+        parsed: dict[str, tuple[int, str, int | None]] = {}
+        for column in ("Male", "Female"):
+            value, status, upper_bound = parse_published_value(
+                raw_row[column], path=path, field=column
+            )
+            if value is None:
+                raise DataBuildError(f"{path}: {column} is not reported for {year}/{age}")
+            if isinstance(value, float) and not value.is_integer():
+                raise DataBuildError(f"{path}: {column} is not an integer for {year}/{age}")
+            parsed[column] = (int(value), status, upper_bound)
+            tables.append(
+                {
+                    **context.provenance(
+                        source_id,
+                        locator=f"csv_row_{year}_age_{age}_col_{column}",
+                        transformation_id="annual_estimates_observed_v1",
+                    ),
+                    "year": year,
+                    "age": age,
+                    "sex": column.lower(),
+                    "count": int(value),
+                    "reporting_status": status,
+                    "upper_bound": upper_bound,
+                }
+            )
+        tables.append(
+            {
+                **context.provenance(
+                    source_id,
+                    locator=f"derived_from_{year}_age_{age}_Male_and_Female",
+                    transformation_id="annual_estimates_sex_sum_v1",
+                    observation_status="derived",
+                ),
+                "year": year,
+                "age": age,
+                "sex": "all",
+                "count": parsed["Male"][0] + parsed["Female"][0],
+                "reporting_status": "reported",
+                "upper_bound": None,
+            }
+        )
+    _add_check(checks, "population_estimates_years", len(years), _POPULATION_ESTIMATE_YEAR_COUNT)
+    if len(set(rows_per_year.values())) != 1:
+        raise DataBuildError(f"{path}: annual population age-row counts differ by year")
+    _add_check(
+        checks,
+        "population_estimates_rows_per_year",
+        next(iter(rows_per_year.values())),
+        _POPULATION_ESTIMATE_ROWS_PER_YEAR,
+    )
+    census_source = "census_2021_age_gender_csv"
+    census_path = context.artifact_path(census_source)
+    census_total = 0
+    for census_row in read_csv_rows(census_path, {"Age", "All"}):
+        value = parse_int(census_row["All"], path=census_path, field="All")
+        if value is None:
+            raise DataBuildError(f"{census_path}: blank All value")
+        census_total += value
+    estimate_2021_total = sum(
+        row["count"] for row in tables if row["year"] == 2021 and row["sex"] == "all"
+    )
+    _add_check(
+        checks,
+        "population_estimates_2021_vs_census_total",
+        estimate_2021_total,
+        census_total,
+        tolerance=0,
+        warning=True,
+    )
+    return tables
 
 
 def _covid_tables(
@@ -741,6 +1010,7 @@ def _covid_tables(
             }
         )
     _add_check(checks, "covid_serosurvey_measures", len(serosurvey_tables), 13)
+    jhu_tables = _covid_jhu_tables(context, checks, daily_tables, warnings)
 
     return {
         "covid_daily_surveillance": daily_tables,
@@ -748,6 +1018,7 @@ def _covid_tables(
         "covid_weekly_vaccination": weekly_tables,
         "covid_serosurvey_2020": serosurvey_tables,
         "covid_weekly_eligible_population": eligible_tables,
+        "covid_jhu_daily": jhu_tables,
         "covid_warnings": warnings,
     }
 
@@ -1525,6 +1796,7 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
     tables.update(_household_and_housing_tables(context, checks))
     tables.update(_employment_and_workplace_tables(context, checks))
     tables.update(_commute_education_arrivals_tables(context, checks))
+    tables["population_estimates_annual"] = _population_estimate_table(context, checks)
     covid_tables = _covid_tables(context, checks)
     covid_warnings = covid_tables.pop("covid_warnings")
     tables.update(covid_tables)
@@ -1553,6 +1825,11 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
         "covid_weekly_eligible_population": (
             "covid_weekly_eligible_population.csv",
             CovidWeeklyEligiblePopulationRow,
+        ),
+        "covid_jhu_daily": ("covid_jhu_daily.csv", CovidJhuDailyRow),
+        "population_estimates_annual": (
+            "population_estimates_annual.csv",
+            PopulationEstimateAnnualRow,
         ),
     }
     table_manifest: list[dict[str, Any]] = []
@@ -1587,6 +1864,7 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
             "Published CSV tables include rounded counts and suppressed small cells "
             "in places; raw values and suppression notes are preserved rather than imputed."
         ),
+        "annual population estimates are published rounded to the nearest 10; sums are not exact",
     ]
     warnings.extend(covid_warnings)
     quality_report = {

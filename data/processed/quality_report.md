@@ -34,6 +34,14 @@ Build status: **passed**
 | sars_cov2_serosurvey_2020_pdf | passed | automated | a74e606e5ef16544a763146249b42fba8ae61fb00526982793c6f9fbc300dd0d | data/raw/sars_cov2_serosurvey_2020_pdf/prevalence_of_antibodies_2020.pdf |
 | sars_cov2_serosurvey_2020_manual_fixture | passed | manual | ba1cc6e6d43cd377d89371e63fe13db956f18a03315dae837de25c648062c355 | data/raw/sars_cov2_serosurvey_2020_manual_fixture/serosurvey_2020_summary.csv |
 | covid19_vaccination_pcr_insights_pdf | passed | automated | c8a04fbfa06d9ed23dc71c7a5f46e2914dafd7484b80f104cc6550847c7848f8 | data/raw/covid19_vaccination_pcr_insights_pdf/vaccination_pcr_insights.pdf |
+| jhu_csse_confirmed_global_csv | passed | automated | e6234a59eec4359d2577358b5220e1a7e3da74c162913cdb7d882db1413f98c2 | data/raw/jhu_csse_confirmed_global_csv/time_series_covid19_confirmed_global.csv |
+| jhu_csse_deaths_global_csv | passed | automated | 4e87757a3e059c45650a1e1856614f8e339ee3c70653c378a7ba6f7b0ee8c72e | data/raw/jhu_csse_deaths_global_csv/time_series_covid19_deaths_global.csv |
+| respiratory_epidemiological_report_govje_current_pdf | passed | automated | 7bf3a10d5af2de7620bdd934fd52743b222b930515fffe0d3fab561406bba59b | data/raw/respiratory_epidemiological_report_govje_current_pdf/epidemiological_report.pdf |
+| respiratory_epidemiological_report_wayback_20240223_pdf | passed | automated | 7763aac0fb6b2c018b55455d52add037fa049aa60e9582c0fa765afb45f9479f | data/raw/respiratory_epidemiological_report_wayback_20240223_pdf/epidemiological_report.pdf |
+| respiratory_epidemiological_report_wayback_20240718_pdf | passed | automated | b75b08d014754d442da41f2e694b80d5bd0f6b8c0a4c9571e939c36a3381005c | data/raw/respiratory_epidemiological_report_wayback_20240718_pdf/epidemiological_report.pdf |
+| respiratory_epidemiological_report_wayback_20260102_pdf | passed | automated | a84d4b55d57ffbf74a671e794b594b79f9e99afe2afaf0522abf887694a4a759 | data/raw/respiratory_epidemiological_report_wayback_20260102_pdf/epidemiological_report.pdf |
+| influenza_winter_illness_report_2024_pdf | passed | automated | 8443a073e9d76496f0e63792f743ebd12d6ab8d488f6428e8e6902c17c4ff93e | data/raw/influenza_winter_illness_report_2024_pdf/influenza_winter_illness_report_2024.pdf |
+| annual_population_estimates_by_age_sex_csv | passed | automated | 1b7b14fa75cab035860dd865eedd72527a92dac1a9ca0fcf76bbb5a2b731e368 | data/raw/annual_population_estimates_by_age_sex_csv/annual-population-estimates-by-age-and-sex.csv |
 
 ## Canonical tables
 
@@ -58,6 +66,8 @@ Build status: **passed**
 | data/processed/covid_weekly_vaccination.csv | 19008 | c39ac432926e8e53411a40ced67d597f57cd67605023f5fb9e8ba937df0fe808 |
 | data/processed/covid_serosurvey_2020.csv | 13 | bb4ac1be8bfc2ffc64f5d18bf2b1cbf4e41d5a3fdf57369ae4eccd135389dd1b |
 | data/processed/covid_weekly_eligible_population.csv | 132 | 134478f9ef8205cadf63aef94f09e73bcd64720f987e819f3a6b8f2e783b1c1f |
+| data/processed/covid_jhu_daily.csv | 3429 | 6532eae1015a1deb53cdedbee73fe7168fe012eb2d1da27101841c971e20396d |
+| data/processed/population_estimates_annual.csv | 4242 | ee7dc6302193ea1abeeacb0e06063d9de05bedf30af8ec5a5533ecf181fc85ff |
 
 ## Validation and reconciliation
 
@@ -73,6 +83,9 @@ Build status: **passed**
 - **warning** `2021_commute_report_rounding_difference`: actual=57340, expected=57338, difference=2.
 - **passed** `2024_student_components_sum`: actual=13991, expected=13991, difference=0.
 - **passed** `2025_arrivals_components_sum`: actual=917465, expected=917465, difference=0.
+- **passed** `population_estimates_years`: actual=14, expected=14, difference=0.
+- **passed** `population_estimates_rows_per_year`: actual=101, expected=101, difference=0.
+- **warning** `population_estimates_2021_vs_census_total`: actual=103250, expected=103267, difference=-17.
 - **passed** `covid_daily_rows`: actual=917, expected=917, difference=0.
 - **passed** `covid_daily_not_reported_cumulative_cases`: actual=416, expected=416, difference=0.
 - **passed** `covid_current_dated_rows`: actual=1294, expected=1294, difference=0.
@@ -81,6 +94,10 @@ Build status: **passed**
 - **passed** `covid_weekly_columns_mapped_or_excluded`: actual=155, expected=155, difference=0.
 - **passed** `covid_weekly_rows`: actual=132, expected=132, difference=0.
 - **passed** `covid_serosurvey_measures`: actual=13, expected=13, difference=0.
+- **passed** `covid_jhu_dates`: actual=1143, expected=1143, difference=0.
+- **passed** `covid_jhu_first_nonzero_confirmed`: actual=12, expected=12, difference=0. first_date=2020-03-22; expected_date=2020-03-22; status=passed
+- **passed** `covid_jhu_final_confirmed`: actual=66391, expected=66391, difference=0.
+- **warning** `covid_jhu_vs_govje_cumulative_2023_02_01`: actual=66347, expected=66391, difference=-44.
 - **warning** `housing_mean_bedrooms_source_conflict`: actual=2.57, expected=2.47, difference=0.1. conflict is retained as a quality warning; no silent normalization
 
 ## Pipeline
@@ -98,6 +115,8 @@ Build status: **passed**
 - The 2025 labour-market sector values are jobs, not unique employees; they are not reconciled to 2021 resident workers.
 - The housing CSV all-row mean bedrooms value (2.57) conflicts with the official report value (2.47); the report value is the canonical manual control and the conflict is flagged.
 - Published CSV tables include rounded counts and suppressed small cells in places; raw values and suppression notes are preserved rather than imputed.
+- annual population estimates are published rounded to the nearest 10; sums are not exact
 - covid daily surveillance anomaly: TestsTotalNegativeTests is excluded because 917 of 917 cells use SharePoint calculated-field rendering, including 418 cells rendered as float;#0 and 1 cell rendered as float;#1073672.00000000.
 - covid current summary undated row raw values: ,1165877,67397,0,
 - vaccination percentages are publisher-computed against an unstated denominator per band; not recomputed here
+- JHU cumulative confirmed first differences contain 0 negative days; published corrections are preserved without clipping.

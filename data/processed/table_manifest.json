@@ -372,6 +372,46 @@
       "path": "data/processed/covid_weekly_eligible_population.csv",
       "rows": 132,
       "sha256": "134478f9ef8205cadf63aef94f09e73bcd64720f987e819f3a6b8f2e783b1c1f"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "date",
+        "measure",
+        "value",
+        "unit"
+      ],
+      "path": "data/processed/covid_jhu_daily.csv",
+      "rows": 3429,
+      "sha256": "6532eae1015a1deb53cdedbee73fe7168fe012eb2d1da27101841c971e20396d"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "year",
+        "age",
+        "sex",
+        "count",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/population_estimates_annual.csv",
+      "rows": 4242,
+      "sha256": "ee7dc6302193ea1abeeacb0e06063d9de05bedf30af8ec5a5533ecf181fc85ff"
     }
   ]
 }

@@ -98,6 +98,30 @@
       "tolerance": 0
     },
     {
+      "actual": 14,
+      "difference": 0,
+      "expected": 14,
+      "name": "population_estimates_years",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 101,
+      "difference": 0,
+      "expected": 101,
+      "name": "population_estimates_rows_per_year",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 103250,
+      "difference": -17,
+      "expected": 103267,
+      "name": "population_estimates_2021_vs_census_total",
+      "status": "warning",
+      "tolerance": 0
+    },
+    {
       "actual": 917,
       "difference": 0,
       "expected": 917,
@@ -159,6 +183,39 @@
       "expected": 13,
       "name": "covid_serosurvey_measures",
       "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 1143,
+      "difference": 0,
+      "expected": 1143,
+      "name": "covid_jhu_dates",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 12,
+      "details": "first_date=2020-03-22; expected_date=2020-03-22; status=passed",
+      "difference": 0,
+      "expected": 12,
+      "name": "covid_jhu_first_nonzero_confirmed",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 66391,
+      "difference": 0,
+      "expected": 66391,
+      "name": "covid_jhu_final_confirmed",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 66347,
+      "difference": -44,
+      "expected": 66391,
+      "name": "covid_jhu_vs_govje_cumulative_2023_02_01",
+      "status": "warning",
       "tolerance": 0
     },
     {
@@ -375,6 +432,62 @@
       "local_snapshot": "data/raw/covid19_vaccination_pcr_insights_pdf/vaccination_pcr_insights.pdf",
       "sha256": "c8a04fbfa06d9ed23dc71c7a5f46e2914dafd7484b80f104cc6550847c7848f8",
       "source_id": "covid19_vaccination_pcr_insights_pdf",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/jhu_csse_confirmed_global_csv/time_series_covid19_confirmed_global.csv",
+      "sha256": "e6234a59eec4359d2577358b5220e1a7e3da74c162913cdb7d882db1413f98c2",
+      "source_id": "jhu_csse_confirmed_global_csv",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/jhu_csse_deaths_global_csv/time_series_covid19_deaths_global.csv",
+      "sha256": "4e87757a3e059c45650a1e1856614f8e339ee3c70653c378a7ba6f7b0ee8c72e",
+      "source_id": "jhu_csse_deaths_global_csv",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/respiratory_epidemiological_report_govje_current_pdf/epidemiological_report.pdf",
+      "sha256": "7bf3a10d5af2de7620bdd934fd52743b222b930515fffe0d3fab561406bba59b",
+      "source_id": "respiratory_epidemiological_report_govje_current_pdf",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/respiratory_epidemiological_report_wayback_20240223_pdf/epidemiological_report.pdf",
+      "sha256": "7763aac0fb6b2c018b55455d52add037fa049aa60e9582c0fa765afb45f9479f",
+      "source_id": "respiratory_epidemiological_report_wayback_20240223_pdf",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/respiratory_epidemiological_report_wayback_20240718_pdf/epidemiological_report.pdf",
+      "sha256": "b75b08d014754d442da41f2e694b80d5bd0f6b8c0a4c9571e939c36a3381005c",
+      "source_id": "respiratory_epidemiological_report_wayback_20240718_pdf",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/respiratory_epidemiological_report_wayback_20260102_pdf/epidemiological_report.pdf",
+      "sha256": "a84d4b55d57ffbf74a671e794b594b79f9e99afe2afaf0522abf887694a4a759",
+      "source_id": "respiratory_epidemiological_report_wayback_20260102_pdf",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/influenza_winter_illness_report_2024_pdf/influenza_winter_illness_report_2024.pdf",
+      "sha256": "8443a073e9d76496f0e63792f743ebd12d6ab8d488f6428e8e6902c17c4ff93e",
+      "source_id": "influenza_winter_illness_report_2024_pdf",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "automated",
+      "local_snapshot": "data/raw/annual_population_estimates_by_age_sex_csv/annual-population-estimates-by-age-and-sex.csv",
+      "sha256": "1b7b14fa75cab035860dd865eedd72527a92dac1a9ca0fcf76bbb5a2b731e368",
+      "source_id": "annual_population_estimates_by_age_sex_csv",
       "status": "passed"
     }
   ],
@@ -750,6 +863,46 @@
       "path": "data/processed/covid_weekly_eligible_population.csv",
       "rows": 132,
       "sha256": "134478f9ef8205cadf63aef94f09e73bcd64720f987e819f3a6b8f2e783b1c1f"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "date",
+        "measure",
+        "value",
+        "unit"
+      ],
+      "path": "data/processed/covid_jhu_daily.csv",
+      "rows": 3429,
+      "sha256": "6532eae1015a1deb53cdedbee73fe7168fe012eb2d1da27101841c971e20396d"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "year",
+        "age",
+        "sex",
+        "count",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/population_estimates_annual.csv",
+      "rows": 4242,
+      "sha256": "ee7dc6302193ea1abeeacb0e06063d9de05bedf30af8ec5a5533ecf181fc85ff"
     }
   ],
   "warnings": [
@@ -758,8 +911,10 @@
     "The 2025 labour-market sector values are jobs, not unique employees; they are not reconciled to 2021 resident workers.",
     "The housing CSV all-row mean bedrooms value (2.57) conflicts with the official report value (2.47); the report value is the canonical manual control and the conflict is flagged.",
     "Published CSV tables include rounded counts and suppressed small cells in places; raw values and suppression notes are preserved rather than imputed.",
+    "annual population estimates are published rounded to the nearest 10; sums are not exact",
     "covid daily surveillance anomaly: TestsTotalNegativeTests is excluded because 917 of 917 cells use SharePoint calculated-field rendering, including 418 cells rendered as float;#0 and 1 cell rendered as float;#1073672.00000000.",
     "covid current summary undated row raw values: ,1165877,67397,0,",
-    "vaccination percentages are publisher-computed against an unstated denominator per band; not recomputed here"
+    "vaccination percentages are publisher-computed against an unstated denominator per band; not recomputed here",
+    "JHU cumulative confirmed first differences contain 0 negative days; published corrections are preserved without clipping."
   ]
 }

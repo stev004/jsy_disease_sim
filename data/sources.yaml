@@ -366,3 +366,107 @@ sources:
     local_snapshot: data/raw/covid19_vaccination_pcr_insights_pdf/vaccination_pcr_insights.pdf
     sha256: c8a04fbfa06d9ed23dc71c7a5f46e2914dafd7484b80f104cc6550847c7848f8
     notes: 28-page linked-administrative-data report; percent double-vaccinated and percent ever-PCR-positive by age, ethnicity, household type, occupation.
+
+  - source_id: jhu_csse_confirmed_global_csv
+    title: JHU CSSE COVID-19 time series confirmed global cases
+    publisher: Johns Hopkins University CSSE
+    url: https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv
+    retrieved_at: 2026-09-04
+    reference_period: "2020-01-22/2023-03-09"
+    license: CC BY 4.0 (JHU CSSE COVID-19 Data repository README; archived since 2023-03-10)
+    status: literature
+    acquisition_method: automated
+    local_snapshot: data/raw/jhu_csse_confirmed_global_csv/time_series_covid19_confirmed_global.csv
+    sha256: e6234a59eec4359d2577358b5220e1a7e3da74c162913cdb7d882db1413f98c2
+    notes: Frozen whole-file JHU CSSE global confirmed time series; 289 data rows and 1143 date columns.
+
+  - source_id: jhu_csse_deaths_global_csv
+    title: JHU CSSE COVID-19 time series deaths global cases
+    publisher: Johns Hopkins University CSSE
+    url: https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv
+    retrieved_at: 2026-09-04
+    reference_period: "2020-01-22/2023-03-09"
+    license: CC BY 4.0 (JHU CSSE COVID-19 Data repository README; archived since 2023-03-10)
+    status: literature
+    acquisition_method: automated
+    local_snapshot: data/raw/jhu_csse_deaths_global_csv/time_series_covid19_deaths_global.csv
+    sha256: 4e87757a3e059c45650a1e1856614f8e339ee3c70653c378a7ba6f7b0ee8c72e
+    notes: Frozen whole-file JHU CSSE global deaths time series; 289 data rows and 1143 date columns.
+
+  - source_id: respiratory_epidemiological_report_govje_current_pdf
+    title: Epidemiological Report for Respiratory Illnesses - 09 April 2026 edition
+    publisher: Public Health Intelligence, Government of Jersey
+    url: https://www.gov.je/SiteCollectionDocuments/Government%20and%20administration/Epidemiological%20Report.pdf
+    retrieved_at: 2026-09-04
+    reference_period: "2025/26"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/respiratory_epidemiological_report_govje_current_pdf/epidemiological_report.pdf
+    sha256: 7bf3a10d5af2de7620bdd934fd52743b222b930515fffe0d3fab561406bba59b
+    notes: 'Rolling URL snapshot; extracted edition date line verbatim: "Date:   09 April 2026"; final epidemiological report for the 2025/26 winter season.'
+
+  - source_id: respiratory_epidemiological_report_wayback_20240223_pdf
+    title: Epidemiological Report for Respiratory Illnesses - 31 January 2024 edition (Internet Archive Wayback capture)
+    publisher: Public Health Intelligence, Government of Jersey
+    url: https://web.archive.org/web/20240223143633id_/https://www.gov.je/SiteCollectionDocuments/Government%20and%20administration/Epidemiological%20Report.pdf
+    retrieved_at: 2026-09-04
+    reference_period: "2023/24"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/respiratory_epidemiological_report_wayback_20240223_pdf/epidemiological_report.pdf
+    sha256: 7763aac0fb6b2c018b55455d52add037fa049aa60e9582c0fa765afb45f9479f
+    notes: 'Wayback capture timestamp 20240223143633; extracted edition date line verbatim: "Date:   31 January 2024"; wayback CDX digest verified.'
+
+  - source_id: respiratory_epidemiological_report_wayback_20240718_pdf
+    title: Epidemiological Report for Respiratory Illnesses - 06 June 2024 edition (Internet Archive Wayback capture)
+    publisher: Public Health Intelligence, Government of Jersey
+    url: https://web.archive.org/web/20240718124211id_/https://www.gov.je/SiteCollectionDocuments/Government%20and%20administration/Epidemiological%20Report.pdf
+    retrieved_at: 2026-09-04
+    reference_period: "2023/24"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/respiratory_epidemiological_report_wayback_20240718_pdf/epidemiological_report.pdf
+    sha256: b75b08d014754d442da41f2e694b80d5bd0f6b8c0a4c9571e939c36a3381005c
+    notes: 'Wayback capture timestamp 20240718124211; extracted edition date line verbatim: "Date:   06 June 2024"; wayback CDX digest verified.'
+
+  - source_id: respiratory_epidemiological_report_wayback_20260102_pdf
+    title: Epidemiological Report for Respiratory Illnesses - 02 July 2025 edition (Internet Archive Wayback capture)
+    publisher: Public Health Intelligence, Government of Jersey
+    url: https://web.archive.org/web/20260102114452id_/https://www.gov.je/SiteCollectionDocuments/Government%20and%20administration/Epidemiological%20Report.pdf
+    retrieved_at: 2026-09-04
+    reference_period: "2024/25"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/respiratory_epidemiological_report_wayback_20260102_pdf/epidemiological_report.pdf
+    sha256: a84d4b55d57ffbf74a671e794b594b79f9e99afe2afaf0522abf887694a4a759
+    notes: 'Wayback capture timestamp 20260102114452; extracted edition date line verbatim: "Date:   02 July 2025"; wayback CDX digest verified.'
+
+  - source_id: influenza_winter_illness_report_2024_pdf
+    title: Influenza and Winter Illness Report 2024
+    publisher: Health and Care Jersey, Public Health Intelligence
+    url: https://www.gov.je/SiteCollectionDocuments/Health%20and%20wellbeing/Influenza%20and%20Winter%20Illness%20Report%202024.pdf
+    retrieved_at: 2026-09-04
+    reference_period: "2024-10/2025-03"
+    license: Open Government Licence - Jersey, where applicable
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/influenza_winter_illness_report_2024_pdf/influenza_winter_illness_report_2024.pdf
+    sha256: 8443a073e9d76496f0e63792f743ebd12d6ab8d488f6428e8e6902c17c4ff93e
+    notes: 'Extracted edition date line verbatim: "Date of report:   04 September 2025"; positive influenza test results for hospital admissions are excluded from this edition while newly identified datasets undergo validation and quality assurance.'
+
+  - source_id: annual_population_estimates_by_age_sex_csv
+    title: Annual population estimates by age and sex
+    publisher: Statistics Jersey
+    url: https://opendata.gov.je/dataset/199794de-4927-457a-9fc4-569c0d2f7b47/resource/4f0988d8-c5d2-4bff-af72-0a314b95024a/download/annual-population-estimates-by-age-and-sex.csv
+    retrieved_at: 2026-09-04
+    reference_period: "2011/2024"
+    license: Open Government Licence - Jersey v1.0
+    status: official
+    acquisition_method: automated
+    local_snapshot: data/raw/annual_population_estimates_by_age_sex_csv/annual-population-estimates-by-age-and-sex.csv
+    sha256: 1b7b14fa75cab035860dd865eedd72527a92dac1a9ca0fcf76bbb5a2b731e368
+    notes: 2011-2024 annual rows by single year of age and sex; published values are rounded to the nearest 10.

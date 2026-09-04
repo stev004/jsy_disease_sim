@@ -282,3 +282,30 @@ class CovidWeeklyEligiblePopulationRow(CanonicalProvenance):
     unit: Literal["persons"]
     reporting_status: Literal["reported", "not_reported", "positive_less_than"]
     upper_bound: StrictInt | None = None
+
+
+class CovidJhuDailyRow(CanonicalProvenance):
+    date: NonEmptyString
+    measure: Literal[
+        "cumulative_confirmed_cases",
+        "cumulative_deaths",
+        "daily_new_confirmed_cases",
+    ]
+    value: StrictInt
+    unit: NonEmptyString
+
+
+class PopulationEstimateAnnualRow(CanonicalProvenance):
+    year: StrictInt
+    age: NonEmptyString
+    sex: Literal["male", "female", "all"]
+    count: StrictInt
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
+
+    @field_validator("count", "upper_bound")
+    @classmethod
+    def validate_nonnegative(cls, value: int | None) -> int | None:
+        if value is not None and value < 0:
+            raise ValueError("population estimate values must be non-negative")
+        return value
