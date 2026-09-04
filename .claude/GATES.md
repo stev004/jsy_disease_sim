@@ -4,17 +4,17 @@
 
 ## Open
 
-### G14 — Merge the main-CI fix (`fix/checkpoint-root-outside-worktree`)
-- **Question:** merge `d873a80bc9027f2473a4620f1ca828f01c118c85` into `main`? It is the root-cause fix for the deterministic verify failure on every public-runner CI run since the R8 merge (checkpoints written inside the git worktree → provenance mismatch). Branch CI 33910950203: verify + frontend success; 284 tests; hash-neutral by construction (no manifest/schema/hash change). Report: `docs/runs/2026-09-04-ci-red-checkpoint-root-fix.md`.
-- **Command (SHA-first):** `git -C ~/jsy_disease_sim fetch origin && git -C ~/jsy_disease_sim merge --no-ff d873a80bc9027f2473a4620f1ca828f01c118c85 -m "G14: merge fix/checkpoint-root-outside-worktree @ d873a80 (main CI verify fix)" && git -C ~/jsy_disease_sim push`
-- **Default:** merge (the no-further-merges rule was conditioned on understanding the failure; it is now understood and fixed). Until merged, `main` CI stays red and nothing else should merge on top of it.
-
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G15 — Merge V1.2 Track B iteration 3 — RESOLVED 2026-09-04 (Steven, in chat: "merge G14 and G15")
+Executed by the agent on the explicit one-time instruction (not a standing authorization): SHA-first `--no-ff` of `de3a32d72d66fef5ed6291cbfc7b7ac3a090e4ab` → merge `32e9b954d84237b63efa4f3e68b6c335d56f52b0`, after G14. Branch CI 33915625764 green (verify+frontend); merged code tree byte-identical to the branch tree (0 differing files under src/tests/data); pre-push smoke: 62/63 targeted tests + ruff + format + `jos demo` — the one smoke failure was a stale scratch namespace under the primary checkout's root `.replicates-in-progress/` left by the director's 19:22 pre-fix reproduction (removed; test passes; CI runs on a clean checkout). Pushed; main CI on the merge SHA logged in the trail when read.
+
+### G14 — Merge the main-CI fix — RESOLVED 2026-09-04 (Steven, in chat: "merge G14 and G15")
+Executed by the agent on the explicit one-time instruction: SHA-first `--no-ff` of `d873a80bc9027f2473a4620f1ca828f01c118c85` → merge `91073af9d2278fa60ee049530fabac50fa34d005` (branch CI 33910950203 green). Root cause and evidence: `docs/runs/2026-09-04-ci-red-checkpoint-root-fix.md`.
 
 ### G13 — Merge the R8 chain — RESOLVED 2026-09-04 (Steven, in chat: "merge it all and try again, then /closeout")
 Merged on local evidence per the stated fallback (CI remains billing-dead; annotation re-confirmed post-merge): SHA-first `--no-ff` of `2528733c8fd1e95a59ecc07782da1ed39e9407dc` -> merge `43008ff`; pre-push smoke 72 targeted tests + ruff + demo green; pushed. Validation ensemble launched same hour (44 seeds, 6 workers, ensemble-id p4-validation-r8, log p4v-ensemble-launch-20260904T131139Z.log). GitHub billing fix still outstanding (Steven; CI confirms main once restored).

@@ -56,7 +56,8 @@
 ## NEXT — V1.2 evidence + observation foundation (Track B, foreman run open)
 - ☑ Iteration 1: Jersey data-source inventory, 27/28 verified (2026-09-03, `docs/research/v1_2/2026-09-03-jersey-data-source-inventory.md`).
 - ☑ Iteration 2a: five priority sources frozen + registered, merged to main (G11, `5cdc780`).
-- ☐ Iteration 3: canonical epidemiology tables (daily cases/tests, weekly vaccination by age band, serosurvey parameters) extending `data_pipeline.py` conventions; explicit suppression semantics (`<5` stays `<5`); sentinel handling for the daily CSV's blank/-1 cells and the current CSV's undated cumulative row.
+- ☑ Iteration 3 (2026-09-04, `feat/v12-epi-tables` @ `de3a32d`, based on the G14 fix SHA; CI run 33915625764 verify=success frontend=success; **merged G15 → main `32e9b95`**): five canonical COVID tables (daily surveillance 917×11, current summary 1,294×4 + undated row recorded not dated, weekly vaccination 132×144 cells with a fail-closed column guard, weekly eligible population, 2020 serosurvey fixture 13 measures with page locators) + `parse_published_value` (blank/-1 → not_reported, `<N` → positive_less_than, `float;#` → error); 289 tests, byte-identical rebuild — `docs/runs/2026-09-04-v12-iter3-epi-tables-luna-report.md`.
+- ☐ Iteration 3 follow-ups: `covid19_vaccination_pcr_insights_pdf` subgroup tables (needs a design decision on which subgroup cuts matter for V1.3); decide whether `TestsTotalNegativeTests` (all 917 cells SharePoint `float;#`-rendered) is worth a documented decode rule or stays excluded.
 - ☐ Remaining freezes: JHU first-wave series, census denominators refresh into epi tables, respiratory surveillance PDFs (rolling URL — snapshot each season).
 - ☐ Exit gate: cold-start auditor reproduces every calibration input from frozen snapshots. Calibration itself excluded.
 
@@ -73,7 +74,7 @@
 ---
 
 ## Done log (newest first, with evidence)
-- ☑ 2026-09-04 **main CI verify fixed** (branch `fix/checkpoint-root-outside-worktree` @ `d873a80`, CI 33910950203 green; merge = G14): R8 E-1 checkpoints were written inside the git worktree → provenance mismatch → deterministic `test_restart_accepts_only_complete_valid_comparison` failure on clean checkouts — `docs/runs/2026-09-04-ci-red-checkpoint-root-fix.md`. PROV-2 was NOT the cause and stays open.
+- ☑ 2026-09-04 **main CI verify fixed** (branch `fix/checkpoint-root-outside-worktree` @ `d873a80`, CI 33910950203 green; **merged G14 → `91073af`**): R8 E-1 checkpoints were written inside the git worktree → provenance mismatch → deterministic `test_restart_accepts_only_complete_valid_comparison` failure on clean checkouts — `docs/runs/2026-09-04-ci-red-checkpoint-root-fix.md`. PROV-2 was NOT the cause and stays open.
 - ☑ 2026-09-03 **R7 chain merged** (G12, `10d448c`): routes 5.11×, attribution 25.5×, 2.26 s/day marginal, hashes byte-identical — `docs/runs/2026-09-03-r7-chain-hash-gate.json`.
 - ☑ 2026-09-03 **Five Jersey COVID sources frozen** (G11, `5cdc780`) — `docs/research/v1_2/…inventory.md`.
 - ☑ 2026-09-03 **Claude Science audit** received + filed — `docs/audits/2026-09-03-claude-science-audit-findings.md`.
