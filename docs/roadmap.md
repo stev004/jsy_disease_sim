@@ -61,7 +61,7 @@
 - ☐ Exit gate: cold-start auditor reproduces every calibration input from frozen snapshots. Calibration itself excluded.
 
 ## THEN — after R8 + V1.2 land
-- ☐ **New full-scale ensemble** on the final code (Steven's sequence: audit → implement → run): 44 seeds; replicate hashes must match the frozen P4 artifact *if code is still hash-equivalent*, else it is the first artifact of the corrected-science lineage (DISEASE-4 changes the summary hash by design — decide which side of that line the run sits on before launching).
+- ☑ **Validation ensemble DONE** (2026-09-04, 81 min at 6 workers, all 132 replicate hashes byte-identical to frozen P4 — `docs/runs/2026-09-04-p4-validation-ensemble-report.md`; per-worker memory terra flag closed). Original wording: **New full-scale ensemble** on the final code (Steven's sequence: audit → implement → run): 44 seeds; replicate hashes must match the frozen P4 artifact *if code is still hash-equivalent*, else it is the first artifact of the corrected-science lineage (DISEASE-4 changes the summary hash by design — decide which side of that line the run sits on before launching).
 - ☐ Update `docs/desktop-setup.md` + FRONTIER memory model from Stage-B measurements.
 
 ## LONG-TERM (authority: Sol Pro audit §9–§11; §11 cut list binding)
