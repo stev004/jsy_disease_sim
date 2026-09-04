@@ -9,10 +9,12 @@ disease biology, interventions, observations and provenance separate.
 
 V1.0 (tag `jos-v1.0.0`) and V1.1 (tag `jos-v1.1.0`, scientific-hardening
 release, 2026-09-01) are released and frozen. The V1.2 cycle is open; `main`
-additionally carries the V1.2 carry-ins and the 2026-09-02 R6 performance
-merges (bounded route-snapshot cache; loud ensemble worker-pool degradation).
-The current-state authority is [`.claude/FRONTIER.md`](.claude/FRONTIER.md);
-agents start at `CLAUDE.md`.
+additionally carries the V1.2 carry-ins, frozen Jersey COVID-era source
+snapshots, and the 2026-09-02/04 audit-driven optimization cycles (R6/R7/R8:
+~10x faster runs with byte-identical scientific outputs — see
+[`docs/performance-history.md`](docs/performance-history.md)). The living
+backlog is [`docs/roadmap.md`](docs/roadmap.md); the current-state authority
+is [`.claude/FRONTIER.md`](.claude/FRONTIER.md); agents start at `CLAUDE.md`.
 
 ## Quick start
 

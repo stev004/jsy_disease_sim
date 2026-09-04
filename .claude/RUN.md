@@ -1,13 +1,16 @@
-# RUN — R8 foreman run: CLOSED 2026-09-04 (digest below in trail; awaiting Steven on G13 + GitHub billing)
+# RUN — no foreman run in flight (R8 closed 2026-09-04; G13 merged same day)
 
-**Chain complete:** `codex/r8-stageA` @ `2528733c8fd1e95a59ecc07782da1ed39e9407dc` = Stage A (PROV-1, DISEASE-2, ROUTE-2, ROUTE-10) + C-0 golden hashes + C-1 M2 memoization (510→78 s, hash-identical) + D-1 intervention memoization (honest −6.5%) + D-2 exact route tranche (+1.30×) + E-1 persistence/worker-budget + terra-flagged namespace fix. All director-gated: suites 253–284 green per unit, fingerprints/hashes byte-identical at full scale everywhere applicable. Evidence: `docs/runs/2026-09-0{3,4}-r8-*`; terra trail audit filed (`2026-09-04-r8-trail-audit-terra.md`) — stale-state and evidence-location flags fixed; the 6-worker-bound caveat and CROSS-1 residue acknowledged in roadmap.md; the 78%→76% M2-share correction recorded.
+## In flight (operational): P4 validation ensemble
+- Launched 2026-09-04 13:11Z on merged `main` @ `43008ff` (R8 chain): 44 seeds (101–144), `--mode full`, 180 days, `--workers 6`, `--ensemble-id p4-validation-r8`, log `~/Documents/JOS_v1_2_full_scale_evidence/p4v-ensemble-launch-20260904T131139Z.log`, pid file `p4v-ensemble.pid`. Projected ~75–90 min (≈ done 2026-09-04 ~15:00Z).
+- **On completion (next session or watcher):** ① compare every per-replicate `latent_logical_content_hash` in the new artifact's `replicate_records.json` against the frozen `jos-ensemble-m6-p4-v11-full-scale-c0134368bed2/replicate_records.json` — they MUST be identical (the R8 chain is proven hash-identical; any mismatch = stop and investigate before anything else). ② Record actual wall + worker RSS (this run IS the missing per-worker memory measurement — terra flag). ③ File a run report to `docs/runs/`, add the performance-history row, tick roadmap THEN item. The ensemble manifest/summary hashes will legitimately differ (schema 1.5 excludes execution fields) — only replicate-level identity is the gate.
+- Kill hygiene if needed: `pkill -f 'jos ensemble run'` AND `pkill -f 'multiprocessing.spawn'`. Checkpoints under `.replicates-in-progress/p4-validation-r8/` make any restart a resume, not a loss.
 
 ## Blocked on Steven
-1. **GitHub Actions billing** — CI cannot run on ANY branch ("recent account payments have failed or your spending limit needs to be increased" — GitHub Settings → Billing & plans). G13's default merge condition needs it.
-2. **G13** (GATES.md) — merge the R8 chain tip.
+- **GitHub Actions billing** (Settings → Billing & plans) — CI is dead on all branches; annotation says failed payment or spending limit. Once fixed: re-run CI on `main` @ `43008ff` and log the result.
 
-## Remaining R8 items (open on roadmap.md, next run)
-DISEASE-1 step 3 (numpy intervention vectorization — the M7 prize), ROUTE-5/4 columnar edges, PROV-2/3/5/6/7/9/10/11/12/13 cluster, ROUTE-11/DATA-1/DISEASE-3/PROV-8 + parent reuse, Stage-B residue (fine-grained timers, per-worker footprint), and the whole **scientific-corrections track** (DISEASE-4 fabricated zeros, CROSS-3 erratum, ROUTE-6/7 model decisions, DATA-7/8/9/10, DISEASE-10 — several need Steven's model-owner decisions).
+## Next work (see docs/roadmap.md)
+- V1.2 Track B iteration 3: canonical epidemiology tables (independent, ready).
+- R8 leftovers: DISEASE-1 step 3 (numpy interventions), ROUTE-5/4 columnar, PROV cluster, Stage-B residue (per-worker footprint closes with the validation run), scientific-corrections track (several need Steven's model-owner decisions — DISEASE-4, ROUTE-6, ROUTE-7 science half).
 
 ## Cold-start
-`docs/roadmap.md` NOW section → GATES.md (G13, G5) → decisions.tsv tail. V1.2 Track B iteration 3 (canonical epi tables) remains ready to run independently.
+`docs/roadmap.md` → this file → GATES.md (open: G5 only) → decisions.tsv tail.
