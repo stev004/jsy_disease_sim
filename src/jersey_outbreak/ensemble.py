@@ -411,11 +411,11 @@ def _replicate_provenance(
     }
 
 
-def _replicate_state_path(root: Path, ensemble_id: str, seed: int) -> Path:
+def _replicate_state_path(checkpoint_root: Path, ensemble_id: str, seed: int) -> Path:
     # Namespace checkpoints by ensemble so concurrent or successive ensembles
     # sharing a seed can never overwrite each other's completed work.
     safe_ensemble = "".join(c if c.isalnum() or c in "-_." else "_" for c in ensemble_id)
-    return root / _REPLICATE_STATE_DIRECTORY / safe_ensemble / f"seed-{seed}.json"
+    return checkpoint_root / safe_ensemble / f"seed-{seed}.json"
 
 
 def _replicate_output_payload(output: ReplicateOutput) -> dict[str, Any]:
@@ -507,13 +507,13 @@ def _read_replicate_output(
 
 
 def _load_replicate_checkpoints(
-    root: Path,
+    checkpoint_root: Path,
     ensemble_id: str,
     expected_provenance: dict[int, dict[str, Any]],
 ) -> tuple[dict[int, ReplicateOutput], int]:
     """Load matching checkpoints and count malformed or stale files reported."""
 
-    state_directory = _replicate_state_path(root, ensemble_id, 0).parent
+    state_directory = _replicate_state_path(checkpoint_root, ensemble_id, 0).parent
     if not state_directory.exists():
         return {}, 0
     resumed: dict[int, ReplicateOutput] = {}
@@ -819,6 +819,7 @@ def run_ensemble(
     replicate_seeds: tuple[int, ...],
     *,
     ensemble_id: str,
+    checkpoint_root: Path | None = None,
     workers: int = 1,
     lower_quantile: float = 0.025,
     upper_quantile: float = 0.975,
@@ -871,8 +872,10 @@ def run_ensemble(
         )
         for seed in config.replicate_seeds
     }
+    if checkpoint_root is None:
+        checkpoint_root = root / "outputs" / _REPLICATE_STATE_DIRECTORY
     outputs_by_seed, ignored_checkpoints = _load_replicate_checkpoints(
-        root, config.ensemble_id, expected_provenance
+        checkpoint_root, config.ensemble_id, expected_provenance
     )
     resumed_count = len(outputs_by_seed)
     pending_seeds = tuple(seed for seed in config.replicate_seeds if seed not in outputs_by_seed)
@@ -933,7 +936,7 @@ def run_ensemble(
         for job in jobs:
             output = _run_replicate_job(job)
             _persist_replicate_output(
-                _replicate_state_path(root, config.ensemble_id, output.seed),
+                _replicate_state_path(checkpoint_root, config.ensemble_id, output.seed),
                 job["provenance"],
                 output,
             )
@@ -963,7 +966,7 @@ def run_ensemble(
             for job in jobs:
                 output = _run_replicate_job(job)
                 _persist_replicate_output(
-                    _replicate_state_path(root, config.ensemble_id, output.seed),
+                    _replicate_state_path(checkpoint_root, config.ensemble_id, output.seed),
                     job["provenance"],
                     output,
                 )
@@ -981,7 +984,7 @@ def run_ensemble(
                     job = future_jobs[future]
                     output = future.result()
                     _persist_replicate_output(
-                        _replicate_state_path(root, config.ensemble_id, output.seed),
+                        _replicate_state_path(checkpoint_root, config.ensemble_id, output.seed),
                         job["provenance"],
                         output,
                     )
@@ -1001,7 +1004,7 @@ def run_ensemble(
                     if output.seed in outputs_by_seed:
                         continue
                     _persist_replicate_output(
-                        _replicate_state_path(root, config.ensemble_id, output.seed),
+                        _replicate_state_path(checkpoint_root, config.ensemble_id, output.seed),
                         job["provenance"],
                         output,
                     )
