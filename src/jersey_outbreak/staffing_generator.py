@@ -8,7 +8,6 @@ in this module is explicitly structural and synthetic.
 
 from __future__ import annotations
 
-import hashlib
 import math
 from collections import defaultdict
 from dataclasses import dataclass
@@ -16,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from .data_pipeline import DataBuildError
+from .hashing import stable_int
 from .population_structure_artifacts import M2PopulationInput, M3StructureInput
 from .staffing_evidence import (
     CareStaffingEvidence,
@@ -42,9 +42,7 @@ class StaffingAllocation:
     provenance: dict[str, Any]
 
 
-def _stable_int(seed: int, *parts: object) -> int:
-    payload = "|".join(str(part) for part in (seed, *parts)).encode("utf-8")
-    return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big", signed=False)
+_stable_int = stable_int
 
 
 def _ordered(ids: list[str], seed: int, *parts: object) -> list[str]:

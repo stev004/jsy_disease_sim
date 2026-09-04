@@ -18,6 +18,10 @@ import numpy as np
 
 from .outbreak_schemas import DurationSpecification
 
+SUCCESS_KEY_ISIN_THRESHOLD = 64
+# Quick NumPy 2.x measurement on 100k edge keys: np.isin wins through 64
+# successes; unique/searchsorted is faster from 65 onward.
+
 
 def _load_starsim() -> Any:
     """Import the pinned engine lazily at the disease boundary."""
@@ -31,6 +35,52 @@ def _load_starsim() -> Any:
 
 def _stable_key(seed: int, *parts: object) -> bytes:
     return hashlib.sha256("|".join(str(part) for part in (seed, *parts)).encode()).digest()
+
+
+def _match_success_hazards(
+    src: np.ndarray,
+    trg: np.ndarray,
+    beta_per_dt: np.ndarray,
+    rel_trans_raw: Any,
+    rel_sus_raw: Any,
+    target_uids: np.ndarray,
+    source_uids: np.ndarray,
+) -> list[tuple[tuple[int, int], float]]:
+    """Match successful pairs to their earliest duplicate edge occurrences."""
+
+    # Runtime UIDs are nonnegative and bounded below 2**32, so this
+    # fixed-width packing is an exact pair encoding (including duplicate
+    # occurrences); signed int64 preserves the unique 64-bit bit patterns.
+    K = 2**32
+    uid_arrays = (src, trg, source_uids, target_uids)
+    max_uid = max(
+        (int(np.max(values)) for values in uid_arrays if len(values)),
+        default=-1,
+    )
+    assert max_uid < K
+    edge_keys = np.asarray(src, dtype=np.int64) * K + np.asarray(trg, dtype=np.int64)
+    success_keys = np.asarray(source_uids, dtype=np.int64) * K + np.asarray(
+        target_uids, dtype=np.int64
+    )
+    if len(success_keys) <= SUCCESS_KEY_ISIN_THRESHOLD:
+        hit_indices = np.flatnonzero(np.isin(edge_keys, success_keys))
+    else:
+        unique_success_keys = np.unique(success_keys)
+        positions = np.searchsorted(unique_success_keys, edge_keys)
+        in_range = positions < len(unique_success_keys)
+        in_range[in_range] = unique_success_keys[positions[in_range]] == edge_keys[in_range]
+        hit_indices = np.flatnonzero(in_range)
+    indices_by_pair: dict[tuple[int, int], deque[int]] = defaultdict(deque)
+    for hit_index in hit_indices:
+        indices_by_pair[(int(src[hit_index]), int(trg[hit_index]))].append(int(hit_index))
+
+    matches: list[tuple[tuple[int, int], float]] = []
+    for target, source in zip(target_uids, source_uids, strict=True):
+        pair = (int(source), int(target))
+        edge_index = indices_by_pair[pair].popleft()
+        probability = float(rel_trans_raw[pair[0]] * rel_sus_raw[pair[1]] * beta_per_dt[edge_index])
+        matches.append((pair, max(0.0, min(1.0, probability))))
+    return matches
 
 
 def sample_episode_duration(
@@ -340,40 +390,21 @@ class RespiratorySEIRS(_load_starsim().Infection):  # type: ignore[misc]
                     target_uids, source_uids = self.compute_transmission(
                         src, trg, rel_trans, rel_sus, beta_per_dt, randvals
                     )
-                    # Runtime UIDs are nonnegative and bounded below 2**32, so this
-                    # fixed-width packing is an exact pair encoding (including duplicate
-                    # occurrences); signed int64 preserves the unique 64-bit bit patterns.
-                    K = 2**32
-                    uid_arrays = (src, trg, source_uids, target_uids)
-                    max_uid = max(
-                        (int(np.max(values)) for values in uid_arrays if len(values)),
-                        default=-1,
-                    )
-                    assert max_uid < K
-                    edge_keys = np.asarray(src, dtype=np.int64) * K + np.asarray(
-                        trg, dtype=np.int64
-                    )
-                    success_keys = np.asarray(source_uids, dtype=np.int64) * K + np.asarray(
-                        target_uids, dtype=np.int64
-                    )
-                    hit_indices = np.flatnonzero(np.isin(edge_keys, success_keys))
-                    indices_by_pair: dict[tuple[int, int], deque[int]] = defaultdict(deque)
-                    for hit_index in hit_indices:
-                        indices_by_pair[(int(src[hit_index]), int(trg[hit_index]))].append(
-                            int(hit_index)
-                        )
-                    for target, source in zip(target_uids, source_uids, strict=True):
-                        pair = (int(source), int(target))
-                        edge_index = indices_by_pair[pair].popleft()
-                        probability = float(
-                            rel_trans.raw[pair[0]] * rel_sus.raw[pair[1]] * beta_per_dt[edge_index]
-                        )
+                    for pair, hazard in _match_success_hazards(
+                        src,
+                        trg,
+                        beta_per_dt,
+                        rel_trans.raw,
+                        rel_sus.raw,
+                        target_uids,
+                        source_uids,
+                    ):
                         candidates_by_target[pair[1]].append(
                             {
                                 "route_id": route_id,
                                 "network_index": route_index[route_id],
                                 "source": pair[0],
-                                "hazard": max(0.0, min(1.0, probability)),
+                                "hazard": hazard,
                             }
                         )
             elif isinstance(route, ss.Route):

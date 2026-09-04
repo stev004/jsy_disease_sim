@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import json
+from concurrent.futures import Future
 from concurrent.futures.process import BrokenProcessPool
 from datetime import date, timedelta
 from pathlib import Path
@@ -14,14 +15,18 @@ from typer.testing import CliRunner
 from jersey_outbreak import cli as cli_module
 from jersey_outbreak import ensemble as ensemble_module
 from jersey_outbreak.ensemble import (
+    DEFAULT_PARENT_RESERVE_BYTES,
+    DEFAULT_PER_WORKER_BYTES,
+    DEFAULT_USABLE_FRACTION,
     ReplicateOutput,
     _completed_grid_rows,
+    _replicate_state_path,
     _summary_rows,
+    _worker_bound_terms,
     run_ensemble,
     safe_worker_bound,
 )
 from jersey_outbreak.ensemble_artifacts import write_ensemble_artifact
-from jersey_outbreak.ensemble_schemas import EnsembleConfig
 from jersey_outbreak.network_generator import generate_networks
 from jersey_outbreak.network_schemas import NetworkGenerationConfig
 from jersey_outbreak.observation import observe_latent_run
@@ -421,8 +426,9 @@ def test_controlled_process_fallback_warning_reports_actual_single_worker(
     assert result.diagnostics["execution_mode"] == "sequential_fallback"
     assert "controlled semaphore denial" in result.diagnostics["fallback_reason"]
     stderr = capsys.readouterr().err
-    assert stderr.startswith("ENSEMBLE WARNING: process pool unavailable")
+    assert "ENSEMBLE WARNING: process pool unavailable" in stderr
     assert "controlled semaphore denial" in stderr
+    assert "actual_workers=1" in stderr
     assert "running 2 replicates sequentially" in stderr
     artifact = write_ensemble_artifact(result, ROOT, tmp_path)
     manifest = json.loads((artifact.artifact_directory / "manifest.json").read_text())
@@ -514,14 +520,245 @@ def test_bounded_warning_is_emitted_for_memory_bound_workers(
 
 
 def test_memory_default_uses_measured_worker_estimate() -> None:
-    assert EnsembleConfig.model_fields["estimated_worker_memory_bytes"].default == 3_500_000_000
     assert (
-        inspect.signature(safe_worker_bound).parameters["estimated_worker_memory_bytes"].default
-        == 3_500_000_000
+        inspect.signature(safe_worker_bound).parameters["parent_reserve_bytes"].default
+        == DEFAULT_PARENT_RESERVE_BYTES
+    )
+    assert (
+        inspect.signature(safe_worker_bound).parameters["usable_fraction"].default
+        == DEFAULT_USABLE_FRACTION
+    )
+    assert (
+        inspect.signature(safe_worker_bound).parameters["per_worker_bytes"].default
+        == DEFAULT_PER_WORKER_BYTES
+    )
+    assert (
+        inspect.signature(run_ensemble).parameters["parent_reserve_bytes"].default
+        == DEFAULT_PARENT_RESERVE_BYTES
+    )
+    assert (
+        inspect.signature(run_ensemble).parameters["memory_safety_fraction"].default
+        == DEFAULT_USABLE_FRACTION
     )
     assert (
         inspect.signature(run_ensemble).parameters["estimated_worker_memory_bytes"].default
-        == 3_500_000_000
+        == DEFAULT_PER_WORKER_BYTES
+    )
+
+    gibibyte = 1024**3
+    terms = _worker_bound_terms(
+        32,
+        parent_reserve_bytes=3 * gibibyte,
+        usable_fraction=0.85,
+        per_worker_bytes=3 * gibibyte,
+        available_memory_bytes=26 * gibibyte,
+        cpu_count=16,
+    )
+    assert terms["parent_reserve_bytes"] == 3 * gibibyte
+    assert terms["usable_fraction"] == 0.85
+    assert terms["per_worker_bytes"] == 3 * gibibyte
+    assert terms["usable_memory_bytes"] == 23 * gibibyte
+    assert terms["memory_bound"] == 6  # floor((26 - 3) * 0.85 / 3)
+    assert terms["cpu_bound"] == 16
+    assert terms["resulting_bound"] == 6  # min(requested=32, cpu=16, memory=6)
+    assert (
+        safe_worker_bound(
+            32,
+            available_memory_bytes=26 * gibibyte,
+            cpu_count=16,
+        )
+        == 6
+    )
+
+
+def _checkpoint_test_output(seed: int, value: int = 1) -> ReplicateOutput:
+    return ReplicateOutput(
+        seed=seed,
+        status="passed",
+        latent_logical_content_hash="a" * 64,
+        observation_logical_content_hash="b" * 64,
+        m4_logical_content_hash="c" * 64,
+        runtime_seconds=0.0,
+        trajectories=(
+            {
+                "seed": seed,
+                "scope": "epidemic",
+                "key": "all",
+                "metric": "latent_new_infections",
+                "date": "2025-01-01",
+                "value": value,
+            },
+        ),
+        error=None,
+    )
+
+
+def test_matching_checkpoint_is_resumed_without_rerunning_seed(
+    monkeypatch,
+    m6_network,
+    m6_parameters,
+    m6_base_config,
+    m6_observation_config,
+    tmp_path,
+) -> None:
+    calls: list[int] = []
+
+    def counting_job(job):
+        calls.append(int(job["seed"]))
+        return _checkpoint_test_output(int(job["seed"]))
+
+    monkeypatch.setattr(ensemble_module, "_run_replicate_job", counting_job)
+    cold = run_ensemble(
+        tmp_path,
+        m6_network,
+        m6_parameters,
+        m6_base_config,
+        m6_observation_config,
+        (123,),
+        ensemble_id="c4-resume-match",
+    )
+    resumed = run_ensemble(
+        tmp_path,
+        m6_network,
+        m6_parameters,
+        m6_base_config,
+        m6_observation_config,
+        (123,),
+        ensemble_id="c4-resume-match",
+    )
+    checkpoint = json.loads(_replicate_state_path(tmp_path, "c4-resume-match", 123).read_text())
+    assert set(checkpoint["provenance"]) == {
+        "replicate_seed",
+        "base_config_hash",
+        "code_identity",
+        "m2_logical_content_hash",
+        "m3_logical_content_hash",
+    }
+    assert calls == [123]
+    assert resumed.diagnostics["resumed_replicates"] == 1
+    assert cold.logical_content_hash == resumed.logical_content_hash
+    assert cold.summary == resumed.summary
+
+
+def test_checkpoint_with_different_base_config_hash_is_ignored_and_rerun(
+    monkeypatch,
+    m6_network,
+    m6_parameters,
+    m6_base_config,
+    m6_observation_config,
+    tmp_path,
+) -> None:
+    calls: list[int] = []
+
+    def counting_job(job):
+        calls.append(int(job["seed"]))
+        return _checkpoint_test_output(int(job["seed"]))
+
+    monkeypatch.setattr(ensemble_module, "_run_replicate_job", counting_job)
+    run_ensemble(
+        tmp_path,
+        m6_network,
+        m6_parameters,
+        m6_base_config,
+        m6_observation_config,
+        (123,),
+        ensemble_id="c4-resume-mismatch",
+    )
+    changed_config = m6_base_config.model_copy(update={"duration_days": 7})
+    rerun = run_ensemble(
+        tmp_path,
+        m6_network,
+        m6_parameters,
+        changed_config,
+        m6_observation_config,
+        (123,),
+        ensemble_id="c4-resume-mismatch",
+    )
+    assert calls == [123, 123]
+    assert rerun.diagnostics["resumed_replicates"] == 0
+    assert rerun.diagnostics["ignored_replicate_checkpoints"] == 1
+
+
+def test_broken_pool_keeps_completed_checkpoints_for_reinvocation(
+    monkeypatch,
+    m6_network,
+    m6_parameters,
+    m6_base_config,
+    m6_observation_config,
+    tmp_path,
+    capsys,
+) -> None:
+    class MidRunBrokenPool:
+        def __init__(self, *args, **kwargs):
+            self.futures: list[Future] = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def submit(self, _worker, job):
+            future = Future()
+            self.futures.append(future)
+            if int(job["seed"]) == 123:
+                future.set_result(_checkpoint_test_output(123))
+            else:
+                future.set_exception(BrokenProcessPool("controlled worker death"))
+            return future
+
+    monkeypatch.setattr(ensemble_module, "ProcessPoolExecutor", MidRunBrokenPool)
+    with pytest.raises(RuntimeError, match="persisted completed outputs=1"):
+        run_ensemble(
+            tmp_path,
+            m6_network,
+            m6_parameters,
+            m6_base_config,
+            m6_observation_config,
+            (123, 124),
+            ensemble_id="c4-resume-broken",
+            workers=2,
+            allow_unsafe_workers=True,
+        )
+    assert _replicate_state_path(tmp_path, "c4-resume-broken", 123).exists()
+    assert not _replicate_state_path(tmp_path, "c4-resume-broken", 124).exists()
+    assert "re-invocation will resume them" in capsys.readouterr().err
+
+    calls: list[int] = []
+
+    def completing_job(job):
+        calls.append(int(job["seed"]))
+        return _checkpoint_test_output(int(job["seed"]))
+
+    monkeypatch.setattr(ensemble_module, "_run_replicate_job", completing_job)
+    result = run_ensemble(
+        tmp_path,
+        m6_network,
+        m6_parameters,
+        m6_base_config,
+        m6_observation_config,
+        (123, 124),
+        ensemble_id="c4-resume-broken",
+        workers=1,
+    )
+    assert calls == [124]
+    assert result.diagnostics["resumed_replicates"] == 1
+    assert result.diagnostics["status"] == "passed"
+    assert [record.seed for record in result.replicate_records] == [123, 124]
+
+
+def test_worker_bound_uses_explicit_budget_and_affinity_inputs() -> None:
+    gibibyte = 1024**3
+    assert (
+        safe_worker_bound(
+            32,
+            available_memory_bytes=26 * gibibyte,
+            cpu_count=16,
+            parent_reserve_bytes=3 * gibibyte,
+            usable_fraction=0.85,
+            per_worker_bytes=3 * gibibyte,
+        )
+        == 6
     )
 
 

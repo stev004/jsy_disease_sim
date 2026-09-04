@@ -7,7 +7,6 @@ undirected edge tables.  The Starsim dependency is deliberately confined to
 
 from __future__ import annotations
 
-import hashlib
 import math
 import random
 import resource
@@ -20,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from .data_pipeline import DataBuildError
-from .hashing import canonical_json_bytes, sha256_bytes
+from .hashing import canonical_json_bytes, sha256_bytes, stable_int, stable_int_suffix
 from .network_schemas import (
     Calendar,
     NetworkGenerationConfig,
@@ -147,9 +146,8 @@ class GeneratedNetworks:
         return snapshot
 
 
-def _stable_int(seed: int, *parts: object) -> int:
-    payload = "|".join(str(part) for part in (seed, *parts)).encode("utf-8")
-    return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big", signed=False)
+_stable_int = stable_int
+_stable_int_suffix = stable_int_suffix
 
 
 def _ordered_ids(ids: Iterable[str], seed: int, *parts: object) -> list[str]:
@@ -243,6 +241,35 @@ def _activity_weighted_participants(
         )
         < probability
     }
+
+
+def _merge_sorted_edges(
+    first: list[dict[str, Any]], second: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Merge canonical, sorted, duplicate-free edge lists by their pair keys."""
+
+    merged: list[dict[str, Any]] = []
+    first_index = second_index = 0
+    while first_index < len(first) and second_index < len(second):
+        first_edge = first[first_index]
+        second_edge = second[second_index]
+        first_key = (first_edge["p1"], first_edge["p2"])
+        second_key = (second_edge["p1"], second_edge["p2"])
+        if first_key < second_key:
+            merged.append(first_edge)
+            first_index += 1
+        elif second_key < first_key:
+            merged.append(second_edge)
+            second_index += 1
+        else:
+            merged.append(
+                second_edge if second_edge["weight"] > first_edge["weight"] else first_edge
+            )
+            first_index += 1
+            second_index += 1
+    merged.extend(first[first_index:])
+    merged.extend(second[second_index:])
+    return merged
 
 
 def _canonical_edge(
@@ -388,6 +415,41 @@ def _age_band(age: int) -> str:
     if age <= 64:
         return "35-64"
     return "65+"
+
+
+def _community_agent_index(
+    agent_ids: Iterable[str], m3_by_agent: dict[str, dict[str, Any]]
+) -> dict[str, tuple[bool, str]]:
+    """Pre-index the community fields used by every daily preamble."""
+
+    return {
+        agent_id: (m3_by_agent[agent_id]["age"] >= 18, m3_by_agent[agent_id]["home_parish"])
+        for agent_id in agent_ids
+    }
+
+
+def _community_probability_pair(route_id: str, is_weekend: bool) -> tuple[int, int]:
+    """Return the adult and child participation probabilities for one day type."""
+
+    if route_id == "community_indoor":
+        return (70, 55) if is_weekend else (58, 35)
+    return (55, 45) if is_weekend else (28, 20)
+
+
+def _cumulative_probability_bounds(
+    probabilities_by_source_band: Iterable[Iterable[float]],
+) -> list[list[float]]:
+    """Build cumulative age-band bounds with the reference addition order."""
+
+    bounds_by_source_band: list[list[float]] = []
+    for probabilities in probabilities_by_source_band:
+        cumulative = 0.0
+        bounds: list[float] = []
+        for probability in probabilities:
+            cumulative += float(probability)
+            bounds.append(cumulative)
+        bounds_by_source_band.append(bounds)
+    return bounds_by_source_band
 
 
 def _is_school_term(snapshot_date: date, config: NetworkGenerationConfig) -> bool:
@@ -1223,7 +1285,7 @@ def generate_networks(
 
         def build_workplace_transient(snapshot_date: date) -> list[dict[str, Any]]:
             groups: list[list[str]] = []
-            for workplace_id, jobs in sorted(work_route_jobs_by_workplace.items()):
+            for _workplace_id, jobs in sorted(work_route_jobs_by_workplace.items()):
                 active = [
                     job["agent_id"]
                     for job in jobs
@@ -1235,15 +1297,7 @@ def generate_networks(
                         physical_weekdays_cache=physical_weekdays_cache,
                     )
                 ]
-                groups.append(
-                    _ordered_ids(
-                        active,
-                        config.seed,
-                        "workplace",
-                        workplace_id,
-                        snapshot_date.isocalendar().week,
-                    )
-                )
+                groups.append(active)
             active_workers = _activity_weighted_participants(
                 (agent_id for group in groups for agent_id in group),
                 len({agent_id for group in groups for agent_id in group}),
@@ -1548,6 +1602,9 @@ def generate_networks(
             agent_id: _age_band(m3_by_agent[agent_id]["age"])
             for agent_id in general_community_agent_ids
         }
+        community_agent_info = _community_agent_index(general_community_agent_ids, m3_by_agent)
+        adult_count = sum(info[0] for info in community_agent_info.values())
+        child_count = len(general_community_agent_ids) - adult_count
 
         def mixed_edges(
             participants: dict[str, list[str]],
@@ -1555,6 +1612,13 @@ def generate_networks(
             contact_count: int,
             persistence_days: int,
         ) -> list[dict[str, Any]]:
+            cumulative_by_source_band = _cumulative_probability_bounds(config.community_age_mixing)
+            target_prefix = "|".join(
+                str(part) for part in (config.seed, "community-age-target", route_id, token)
+            ).encode("utf-8")
+            choice_prefix = "|".join(
+                str(part) for part in (config.seed, "community-age-choice", route_id, token)
+            ).encode("utf-8")
             by_band: dict[str, dict[str, list[str]]] = {}
             positions: dict[str, dict[str, int]] = {}
             for parish, ids in participants.items():
@@ -1574,27 +1638,22 @@ def generate_networks(
             for parish, band_groups in sorted(by_band.items()):
                 for source_band_index, source_band in enumerate(AGE_BANDS):
                     sources = band_groups[source_band]
-                    probabilities = config.community_age_mixing[source_band_index]
+                    cumulative_bounds = cumulative_by_source_band[source_band_index]
                     for source in sources:
                         for contact_index in range(contact_count):
                             draw = (
-                                _stable_int(
-                                    config.seed,
-                                    "community-age-target",
-                                    route_id,
-                                    token,
+                                _stable_int_suffix(
+                                    target_prefix,
                                     source,
                                     contact_index,
                                 )
                                 % 1_000_000
                                 / 1_000_000
                             )
-                            cumulative = 0.0
                             target_band = AGE_BANDS[-1]
-                            for candidate_band, probability in zip(
-                                AGE_BANDS, probabilities, strict=True
+                            for candidate_band, cumulative in zip(
+                                AGE_BANDS, cumulative_bounds, strict=True
                             ):
-                                cumulative += float(probability)
                                 if draw < cumulative:
                                     target_band = candidate_band
                                     break
@@ -1611,11 +1670,8 @@ def generate_networks(
                                 if m == 0:
                                     continue
                             index = (
-                                _stable_int(
-                                    config.seed,
-                                    "community-age-choice",
-                                    route_id,
-                                    token,
+                                _stable_int_suffix(
+                                    choice_prefix,
                                     source,
                                     contact_index,
                                 )
@@ -1633,11 +1689,14 @@ def generate_networks(
         regular_groups: dict[str, list[str]] = defaultdict(list)
         regular_probability = 65 if route_id == "community_indoor" else 45
         if config.activity_cv == 0:
+            regular_participation_prefix = "|".join(
+                str(part) for part in (config.seed, "community-regular", route_id)
+            ).encode("utf-8")
             regular_participants = {
                 agent_id
                 for agent_id in general_community_agent_ids
                 if (
-                    _stable_int(config.seed, "community-regular", route_id, agent_id) % 100
+                    _stable_int_suffix(regular_participation_prefix, agent_id) % 100
                     < regular_probability
                 )
             }
@@ -1649,9 +1708,9 @@ def generate_networks(
                 route_id=route_id,
                 token="regular",
             )
-        for agent_id in general_community_agent_ids:
+        for agent_id, (_is_adult, parish) in community_agent_info.items():
             if agent_id in regular_participants:
-                regular_groups[m3_by_agent[agent_id]["home_parish"]].append(agent_id)
+                regular_groups[parish].append(agent_id)
         regular_edges = mixed_edges(
             regular_groups,
             "regular",
@@ -1661,52 +1720,31 @@ def generate_networks(
 
         def build(snapshot_date: date) -> list[dict[str, Any]]:
             groups: dict[str, list[str]] = defaultdict(list)
-            probability_by_agent: dict[str, int] = {}
-            for agent_id in general_community_agent_ids:
-                info = m3_by_agent[agent_id]
-                if route_id == "community_indoor":
-                    weekday_probability = 58 if info["age"] >= 18 else 35
-                    weekend_probability = 70 if info["age"] >= 18 else 55
-                else:
-                    weekday_probability = 28 if info["age"] >= 18 else 20
-                    weekend_probability = 55 if info["age"] >= 18 else 45
-                probability_by_agent[agent_id] = (
-                    weekend_probability if snapshot_date.weekday() >= 5 else weekday_probability
-                )
+            is_weekend = snapshot_date.weekday() >= 5
+            adult_probability, child_probability = _community_probability_pair(route_id, is_weekend)
+            participation_prefix = "|".join(
+                str(part) for part in (config.seed, route_id, snapshot_date.isoformat())
+            ).encode("utf-8")
             if config.activity_cv == 0:
                 participants = {
                     agent_id
-                    for agent_id, probability in probability_by_agent.items()
-                    if (
-                        _stable_int(
-                            config.seed,
-                            route_id,
-                            snapshot_date.isoformat(),
-                            agent_id,
-                        )
-                        % 100
-                    )
-                    < probability
+                    for agent_id, (is_adult, _parish) in community_agent_info.items()
+                    if (_stable_int_suffix(participation_prefix, agent_id) % 100)
+                    < (adult_probability if is_adult else child_probability)
                 }
             else:
                 participants = _activity_weighted_participants(
                     general_community_agent_ids,
-                    sum(probability_by_agent.values()) / 100.0,
+                    (adult_probability * adult_count + child_probability * child_count) / 100.0,
                     config=config,
                     route_id=route_id,
                     token=snapshot_date.isoformat(),
                 )
-            for agent_id in general_community_agent_ids:
+            for agent_id, (_is_adult, parish) in community_agent_info.items():
                 if agent_id in participants:
-                    info = m3_by_agent[agent_id]
-                    groups[info["home_parish"]].append(agent_id)
+                    groups[parish].append(agent_id)
             daily_edges = mixed_edges(groups, snapshot_date.isoformat(), daily_contacts, 1)
-            return _deduplicate_edges(
-                [
-                    *regular_edges,
-                    *daily_edges,
-                ]
-            )
+            return _merge_sorted_edges(regular_edges, daily_edges)
 
         return build
 

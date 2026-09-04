@@ -8,7 +8,6 @@ so a detection on timestep *t* can first change contacts on *t + 1*.
 
 from __future__ import annotations
 
-import hashlib
 import math
 import weakref
 from collections import Counter, defaultdict
@@ -16,9 +15,9 @@ from datetime import date, timedelta
 from typing import Any
 
 import numpy as np
-import starsim as ss
+import starsim as ss  # type: ignore[import-untyped]
 
-from .hashing import canonical_json_bytes, sha256_bytes
+from .hashing import canonical_json_bytes, sha256_bytes, stable_int
 from .intervention_schemas import (
     INTERVENTION_SENSITIVITY_AXES,
     InterventionConfig,
@@ -46,9 +45,7 @@ EXTERNAL_ROUTES = (
 )
 
 
-def _stable_int(seed: int, *parts: object) -> int:
-    payload = "|".join(str(part) for part in (seed, *parts)).encode("utf-8")
-    return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big", signed=False)
+_stable_int = stable_int
 
 
 def _stable_uniform(seed: int, *parts: object) -> float:
@@ -113,6 +110,11 @@ class InterventionManager(ss.Intervention):
         self.event_log: list[dict[str, Any]] = []
         self.daily_state: list[dict[str, Any]] = []
         self.route_effects: list[dict[str, Any]] = []
+        # These predicates depend only on immutable run inputs.  Their keys
+        # deliberately contain no date or timestep, so the caches are bounded
+        # by the configured intervention/person pairs for the manager lifetime.
+        self._adherence_cache: dict[tuple[str, str, str], bool] = {}
+        self._npi_adherence_cache: dict[tuple[str, str, str], bool] = {}
         self._pending_detection_actions: list[tuple[int, str, Any]] = []
         self._calendar_was_active: dict[str, bool] = defaultdict(bool)
         self._isolation_until: dict[str, np.ndarray] = {}
@@ -305,12 +307,20 @@ class InterventionManager(ss.Intervention):
     def _intervention_adheres(self, config: InterventionConfig, agent_id: str) -> bool:
         """Return adherence keyed only by intervention version and person."""
 
-        return _npi_adherence_uniform(self.run_seed, config, agent_id) < config.adherence
+        cache_key = (config.intervention_id, config.version, agent_id)
+        if cache_key not in self._npi_adherence_cache:
+            self._npi_adherence_cache[cache_key] = (
+                _npi_adherence_uniform(self.run_seed, config, agent_id) < config.adherence
+            )
+        return self._npi_adherence_cache[cache_key]
 
     def _target_adheres(self, config: InterventionConfig, agent_id: str) -> bool:
-        return self._target_matches(config, agent_id) and self._intervention_adheres(
-            config, agent_id
-        )
+        cache_key = (config.intervention_id, config.version, agent_id)
+        if cache_key not in self._adherence_cache:
+            self._adherence_cache[cache_key] = self._target_matches(
+                config, agent_id
+            ) and self._intervention_adheres(config, agent_id)
+        return self._adherence_cache[cache_key]
 
     def _community_endpoint_adheres(self, config: InterventionConfig, agent_id: str) -> bool:
         if agent_id in self._m2_by_agent:
@@ -966,10 +976,10 @@ class InterventionManager(ss.Intervention):
             effective_edges: list[dict[str, Any]] = []
             multipliers: list[float] = []
             for edge in base_edges:
+                p1 = str(edge["p1"])
+                p2 = str(edge["p2"])
                 factors = [
-                    self._edge_multiplier(
-                        config, route_id, str(edge["p1"]), str(edge["p2"]), when, ti
-                    )
+                    self._edge_multiplier(config, route_id, p1, p2, when, ti)
                     for config in relevant_configs
                 ]
                 # Configs are sorted by (ID, version); one canonical reduction
@@ -981,7 +991,10 @@ class InterventionManager(ss.Intervention):
                 # setting topology while eliminating transmission opportunity.
                 keep_zero = route_id in CARE_ROUTES
                 if factor > 0 or keep_zero:
-                    effective_edges.append({**edge, "weight": float(edge["weight"]) * factor})
+                    if factor == 1.0:
+                        effective_edges.append(edge)
+                    else:
+                        effective_edges.append({**edge, "weight": float(edge["weight"]) * factor})
             touched = any(factor != 1.0 for factor in multipliers)
             if touched:
                 arrays = _edge_arrays(ss_module, effective_edges, self._uid_by_agent_id)
