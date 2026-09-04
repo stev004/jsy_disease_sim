@@ -412,6 +412,52 @@
       "path": "data/processed/population_estimates_annual.csv",
       "rows": 4242,
       "sha256": "ee7dc6302193ea1abeeacb0e06063d9de05bedf30af8ec5a5533ecf181fc85ff"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "year",
+        "age_band",
+        "sex",
+        "count",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/population_denominators_by_age_band.csv",
+      "rows": 714,
+      "sha256": "156d060bb758e71aefd1adef1cfeead8335f33cafc1b075bf115923d41b38428"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "table",
+        "measure",
+        "event_date_definition",
+        "geography",
+        "population_universe",
+        "unit",
+        "denominator",
+        "suppression_semantics",
+        "reporting_regime",
+        "known_exclusions"
+      ],
+      "path": "data/processed/measure_dictionary.csv",
+      "rows": 44,
+      "sha256": "f76189c9ee8fb84afc0c99718485ed81d5bce0d84c594243a3919b2d62e3d30f"
     }
   ]
 }

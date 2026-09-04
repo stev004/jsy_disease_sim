@@ -23,7 +23,7 @@ def test_canonical_build_reconciles_controls_and_is_repeatable(tmp_path: Path) -
 
     assert first["build_status"] == second["build_status"] == "passed"
     assert first_bytes == second_bytes
-    assert len(first["tables"]) == 21
+    assert len(first["tables"]) == 23
     assert {check["status"] for check in first["checks"]} >= {"passed", "warning"}
 
     with (output_dir / "household_types.csv").open(newline="", encoding="utf-8") as handle:
@@ -273,6 +273,148 @@ def test_population_estimates_annual_table_reconciles_sexes(tmp_path: Path) -> N
                 by_key[(year, age, "all")]
                 == by_key[(year, age, "male")] + by_key[(year, age, "female")]
             )
+
+
+def test_population_denominator_bands_reconcile_to_annual_estimates(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    build_canonical(ROOT, output_dir)
+    with (output_dir / "population_estimates_annual.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        annual_rows = list(csv.DictReader(handle))
+    with (output_dir / "population_denominators_by_age_band.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        denominator_rows = list(csv.DictReader(handle))
+
+    annual_by_key = {
+        (int(row["year"]), int(row["age"].removesuffix("+")), row["sex"]): int(row["count"])
+        for row in annual_rows
+    }
+    denominator_by_key = {
+        (int(row["year"]), row["age_band"], row["sex"]): int(row["count"])
+        for row in denominator_rows
+    }
+    assert len(denominator_rows) == 14 * 17 * 3
+    assert {row["observation_status"] for row in denominator_rows} == {"derived"}
+    partition_bands = (
+        "5_to_11",
+        "12_to_15",
+        "16_to_17",
+        "18_to_29",
+        "30_to_39",
+        "40_to_49",
+        "50_to_54",
+        "55_to_59",
+        "60_to_64",
+        "65_to_69",
+        "70_to_74",
+        "75_to_79",
+        "80_plus",
+    )
+    for year in range(2011, 2025):
+        for sex in ("male", "female", "all"):
+            remainder = sum(annual_by_key[(year, age, sex)] for age in range(5))
+            assert denominator_by_key[(year, "all", sex)] == remainder + sum(
+                denominator_by_key[(year, age_band, sex)] for age_band in partition_bands
+            )
+            assert denominator_by_key[(year, "17_and_under", sex)] == remainder + sum(
+                denominator_by_key[(year, age_band, sex)]
+                for age_band in ("5_to_11", "12_to_15", "16_to_17")
+            )
+
+
+def test_population_denominator_16_plus_matches_annual_estimates(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    build_canonical(ROOT, output_dir)
+    with (output_dir / "population_estimates_annual.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        annual_rows = list(csv.DictReader(handle))
+    with (output_dir / "population_denominators_by_age_band.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        denominator_rows = list(csv.DictReader(handle))
+    expected = sum(
+        int(row["count"])
+        for row in annual_rows
+        if row["year"] == "2021" and row["sex"] == "all" and int(row["age"].removesuffix("+")) >= 16
+    )
+    actual = next(
+        int(row["count"])
+        for row in denominator_rows
+        if row["year"] == "2021" and row["sex"] == "all" and row["age_band"] == "16_plus"
+    )
+    assert actual == expected
+
+
+def test_measure_dictionary_pairs_and_cells_are_complete(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    build_canonical(ROOT, output_dir)
+    table_names = {
+        "covid_daily_surveillance",
+        "covid_current_summary",
+        "covid_jhu_daily",
+        "covid_serosurvey_2020",
+        "covid_weekly_vaccination",
+        "covid_weekly_eligible_population",
+        "population_estimates_annual",
+        "population_denominators_by_age_band",
+    }
+    built_pairs: set[tuple[str, str]] = set()
+    for table_name in table_names:
+        with (output_dir / f"{table_name}.csv").open(newline="", encoding="utf-8") as handle:
+            rows = list(csv.DictReader(handle))
+        if table_name == "covid_weekly_vaccination":
+            built_pairs.update((table_name, f"{row['dose']}:{row['metric']}") for row in rows)
+        elif table_name == "covid_weekly_eligible_population":
+            built_pairs.add((table_name, "eligible_population"))
+        elif table_name in {"population_estimates_annual", "population_denominators_by_age_band"}:
+            built_pairs.add((table_name, "count"))
+        else:
+            built_pairs.update((table_name, row["measure"]) for row in rows)
+
+    with (output_dir / "measure_dictionary.csv").open(newline="", encoding="utf-8") as handle:
+        dictionary_rows = list(csv.DictReader(handle))
+    dictionary_pairs = {(row["table"], row["measure"]) for row in dictionary_rows}
+    assert dictionary_pairs == built_pairs
+    assert built_pairs <= dictionary_pairs
+    assert dictionary_pairs <= built_pairs
+    dictionary_fields = (
+        "table",
+        "measure",
+        "event_date_definition",
+        "geography",
+        "population_universe",
+        "unit",
+        "denominator",
+        "suppression_semantics",
+        "reporting_regime",
+        "known_exclusions",
+        "source_locator",
+        "reference_period",
+    )
+    assert all(all(row[field] for field in dictionary_fields) for row in dictionary_rows)
+    assert all(
+        row["event_date_definition"] == "unknown" or row["source_locator"]
+        for row in dictionary_rows
+    )
+
+
+def test_extra_measure_dictionary_pair_fails_the_build(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original_read_csv_rows = data_pipeline.read_csv_rows
+
+    def read_synthetic_rows(path: Path, required_columns: set[str]) -> list[dict[str, str]]:
+        rows = original_read_csv_rows(path, required_columns)
+        if path.name == "measure_dictionary.csv":
+            rows.append({**rows[-1], "measure": "synthetic_extra_measure"})
+        return rows
+
+    monkeypatch.setattr(data_pipeline, "read_csv_rows", read_synthetic_rows)
+    with pytest.raises(DataBuildError, match="measure dictionary pairs differ"):
+        build_canonical(ROOT, tmp_path / "processed")
 
 
 def test_wayback_respiratory_pdf_digests_match_cdx_pins() -> None:
