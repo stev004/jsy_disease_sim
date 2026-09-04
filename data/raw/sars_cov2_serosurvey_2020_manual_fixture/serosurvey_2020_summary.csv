@@ -1,0 +1,14 @@
+measure,value,unit,population,reference_period,source_locator,note
+estimated_population_prevalence_percent,3.1,percent,adults_16_plus_private_households,2020-04-29/2020-05-05,pdf_page_1,Headline estimated population prevalence; also repeated on pages 4 and 7.
+estimated_population_prevalence_ci95_half_width_percent,1.3,percent,adults_16_plus_private_households,2020-04-29/2020-05-05,pdf_page_1,95% confidence interval half-width for the headline estimate.
+observed_unweighted_prevalence_percent,2.9,percent,adults_16_plus_private_households,2020-04-29/2020-05-05,pdf_page_6,Observed prevalence before weighting.
+weighted_unadjusted_prevalence_percent,2.6,percent,adults_16_plus_private_households,2020-04-29/2020-05-05,pdf_page_6,Observed prevalence after weighting.
+households_tested,438,households,survey_sample,2020-04-29/2020-05-05,pdf_page_2,Households tested.
+individuals_tested,855,individuals,survey_sample,2020-04-29/2020-05-05,pdf_page_2,Individuals tested.
+response_rate_households_percent,63,percent,survey_sample,2020-04-29/2020-05-05,pdf_page_2,Household response rate.
+response_rate_individuals_percent,65,percent,survey_sample,2020-04-29/2020-05-05,pdf_page_2,Estimated individual response rate.
+assumed_test_sensitivity_percent,83.33,percent,assay_validation,2020-04-29/2020-05-05,pdf_page_7,Overall sensitivity.
+assumed_test_sensitivity_ci95_low_percent,74.94,percent,assay_validation,2020-04-29/2020-05-05,pdf_page_7,Lower 95% confidence limit for overall sensitivity.
+assumed_test_sensitivity_ci95_high_percent,89.81,percent,assay_validation,2020-04-29/2020-05-05,pdf_page_7,Upper 95% confidence limit for overall sensitivity.
+assumed_test_specificity_percent,100,percent,assay_validation,2020-04-29/2020-05-05,pdf_page_7,Overall specificity; specificity assumed to be 100%.
+minimum_age_years,16,years,adults_16_plus_private_households,2020-04-29/2020-05-05,pdf_page_1,Testing was not performed on persons aged under 16 years.

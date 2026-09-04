@@ -338,7 +338,21 @@ sources:
     acquisition_method: automated
     local_snapshot: data/raw/sars_cov2_serosurvey_2020_pdf/prevalence_of_antibodies_2020.pdf
     sha256: a74e606e5ef16544a763146249b42fba8ae61fb00526982793c6f9fbc300dd0d
-    notes: The Jersey community serosurvey; headline 3.1 percent +/- 1.3 (95 percent CI), JLPR cluster sample, 438 households / 855 individuals, Healgen LFT, adults 16+, care homes excluded. PDF is 8 pages (the 2026-09-03 inventory draft says 20pp - the inventory is wrong on that field).
+    notes: The Jersey community serosurvey; headline 3.1 percent +/- 1.3 (95 percent CI), JLPR cluster sample, 438 households / 855 individuals, Healgen LFT, adults 16+, care homes excluded. PDF is 20 pages.
+
+  - source_id: sars_cov2_serosurvey_2020_manual_fixture
+    title: SARS-CoV-2 serosurvey 2020 manual transcription fixture
+    publisher: Statistics Jersey
+    url: https://www.gov.je/SiteCollectionDocuments/Government%20and%20administration/R%20Prevalence%20of%20antibodies%202020508%20SJ.pdf
+    retrieved_at: 2026-09-04
+    reference_period: "2020-04-29/2020-05-05"
+    license: Open Government Licence - Jersey, where applicable
+    status: fixture
+    acquisition_method: manual
+    local_snapshot: data/raw/sars_cov2_serosurvey_2020_manual_fixture/serosurvey_2020_summary.csv
+    sha256: ba1cc6e6d43cd377d89371e63fe13db956f18a03315dae837de25c648062c355
+    evidence_source_id: sars_cov2_serosurvey_2020_pdf
+    notes: Narrow manual transcription of serosurvey PDF pages 1, 2, 4, 6 and 7; only the listed published figures are included.
 
   - source_id: covid19_vaccination_pcr_insights_pdf
     title: Insights from Jersey data on COVID-19 vaccinations and positive PCR tests

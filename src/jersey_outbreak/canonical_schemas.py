@@ -221,3 +221,64 @@ class DerivedControlRow(CanonicalProvenance):
     reference: NonEmptyString
     source_table: NonEmptyString
     check_status: Literal["passed", "warning"]
+
+
+class CovidDailySurveillanceRow(CanonicalProvenance):
+    date: NonEmptyString
+    measure: NonEmptyString
+    value: Number | None = None
+    unit: NonEmptyString
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
+
+
+class CovidCurrentSummaryRow(CanonicalProvenance):
+    date: NonEmptyString
+    measure: NonEmptyString
+    value: Number | None = None
+    unit: NonEmptyString
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
+
+
+class CovidWeeklyVaccinationRow(CanonicalProvenance):
+    week_ending: NonEmptyString
+    dose: Literal["dose_1", "dose_2", "dose_3", "dose_4", "autumn_2022_booster"]
+    age_band: Literal[
+        "5_to_11",
+        "12_to_15",
+        "16_to_17",
+        "17_and_under",
+        "18_to_29",
+        "30_to_39",
+        "40_to_49",
+        "50_to_54",
+        "55_to_59",
+        "60_to_64",
+        "65_to_69",
+        "70_to_74",
+        "75_to_79",
+        "80_plus",
+        "all",
+        "50_plus",
+    ]
+    metric: Literal["cumulative_doses", "percent_population"]
+    value: Number | None = None
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
+
+
+class CovidSerosurveyRow(CanonicalProvenance):
+    measure: NonEmptyString
+    value: Number
+    unit: NonEmptyString
+    population: NonEmptyString
+    note: NonEmptyString
+
+
+class CovidWeeklyEligiblePopulationRow(CanonicalProvenance):
+    week_ending: NonEmptyString
+    value: StrictInt | None = None
+    unit: Literal["persons"]
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
