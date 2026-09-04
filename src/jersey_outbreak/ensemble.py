@@ -2,23 +2,25 @@
 
 from __future__ import annotations
 
+import json
 import multiprocessing as mp
 import os
 import platform
 import resource
+import subprocess
 import sys
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from concurrent.futures.process import BrokenProcessPool
 from contextlib import ExitStack
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
 
 from .ensemble_schemas import EnsembleConfig, EnsembleReplicateRecord
-from .hashing import canonical_json_bytes, sha256_bytes
+from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .intervention_schemas import ScenarioConfig
 from .network_generator import GeneratedNetworks, generate_networks
 from .observation import ObservationRunResult, observe_latent_run
@@ -67,6 +69,15 @@ METRIC_SEMANTICS: dict[str, MetricSemantic] = {
     "intervention_protection_effective": "incidence",
     "intervention_protection_waned": "incidence",
 }
+
+DEFAULT_PARENT_RESERVE_BYTES = 3 * 1024**3
+DEFAULT_USABLE_FRACTION = 0.85
+# The 180-day Stage-B campaign measured a full process at 2.73 GB including
+# parents; the worker steady state was approximately 2.1 GB, so 3.0 GiB adds
+# peak headroom. See docs/runs/2026-09-04-r8-stageB-campaign.json.
+DEFAULT_PER_WORKER_BYTES = 3 * 1024**3
+
+_REPLICATE_STATE_DIRECTORY = ".replicates-in-progress"
 
 
 def _empirical_quantile_resolvable(sample_count: int, quantile: float) -> bool:
@@ -359,6 +370,167 @@ def _run_replicate_job(job: dict[str, Any]) -> ReplicateOutput:
         )
 
 
+def _git_commit_identity(root: Path) -> str | None:
+    """Return the code commit used for checkpoint provenance, when available."""
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        result = None
+    commit = result.stdout.strip() if result is not None else ""
+    if commit:
+        return commit
+    try:
+        return f"source:{sha256_file(Path(__file__))}"
+    except OSError:
+        return None
+
+
+def _replicate_provenance(
+    *,
+    seed: int,
+    base_config_hash: str,
+    code_identity: str | None,
+    m2_hash: str,
+    m3_hash: str,
+) -> dict[str, Any]:
+    """Build the complete identity tuple required to trust one checkpoint."""
+
+    return {
+        "replicate_seed": seed,
+        "base_config_hash": base_config_hash,
+        "code_identity": code_identity,
+        "m2_logical_content_hash": m2_hash,
+        "m3_logical_content_hash": m3_hash,
+    }
+
+
+def _replicate_state_path(root: Path, _ensemble_id: str, seed: int) -> Path:
+    return root / _REPLICATE_STATE_DIRECTORY / f"seed-{seed}.json"
+
+
+def _replicate_output_payload(output: ReplicateOutput) -> dict[str, Any]:
+    payload = asdict(output)
+    payload["trajectories"] = [dict(row) for row in output.trajectories]
+    return payload
+
+
+def _persist_replicate_output(
+    path: Path, provenance: dict[str, Any], output: ReplicateOutput
+) -> None:
+    """Atomically checkpoint one resolved result outside the artifact tree."""
+
+    from .execution_adapter import _atomic_write_json
+
+    output_payload = _replicate_output_payload(output)
+    _atomic_write_json(
+        path,
+        {
+            "provenance": provenance,
+            "output": output_payload,
+            "output_sha256": sha256_bytes(canonical_json_bytes(output_payload)),
+        },
+    )
+
+
+def _read_replicate_output(
+    path: Path, expected_provenance: dict[str, Any]
+) -> ReplicateOutput | None:
+    """Read a checkpoint only when its complete identity and content validate."""
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("checkpoint is not an object")
+        if payload.get("provenance") != expected_provenance:
+            return None
+        output_payload = payload.get("output")
+        if not isinstance(output_payload, dict):
+            raise ValueError("checkpoint output is not an object")
+        if payload.get("output_sha256") != sha256_bytes(canonical_json_bytes(output_payload)):
+            raise ValueError("checkpoint output digest mismatch")
+        required = {
+            "seed",
+            "status",
+            "latent_logical_content_hash",
+            "observation_logical_content_hash",
+            "m4_logical_content_hash",
+            "runtime_seconds",
+            "trajectories",
+            "error",
+            "scenario_hash",
+            "intervention_config_hashes",
+        }
+        if set(output_payload) != required:
+            raise ValueError("checkpoint output fields are incomplete")
+        trajectories = output_payload["trajectories"]
+        if not isinstance(trajectories, list) or not all(
+            isinstance(row, dict) for row in trajectories
+        ):
+            raise ValueError("checkpoint trajectories are invalid")
+        output = ReplicateOutput(
+            seed=output_payload["seed"],
+            status=output_payload["status"],
+            latent_logical_content_hash=output_payload["latent_logical_content_hash"],
+            observation_logical_content_hash=output_payload["observation_logical_content_hash"],
+            m4_logical_content_hash=output_payload["m4_logical_content_hash"],
+            runtime_seconds=output_payload["runtime_seconds"],
+            trajectories=tuple(trajectories),
+            error=output_payload["error"],
+            scenario_hash=output_payload["scenario_hash"],
+            intervention_config_hashes=output_payload["intervention_config_hashes"],
+        )
+        if output.seed != expected_provenance["replicate_seed"]:
+            raise ValueError("checkpoint seed does not match provenance")
+        if output.status not in {"passed", "failed"}:
+            raise ValueError("checkpoint status is invalid")
+        if output.status == "passed" and (
+            not output.latent_logical_content_hash
+            or not output.observation_logical_content_hash
+            or output.error is not None
+        ):
+            raise ValueError("passed checkpoint is invalid")
+        if output.status == "failed" and not output.error:
+            raise ValueError("failed checkpoint has no error")
+        return output
+    except (OSError, TypeError, ValueError, KeyError):
+        return None
+
+
+def _load_replicate_checkpoints(
+    root: Path,
+    _ensemble_id: str,
+    expected_provenance: dict[int, dict[str, Any]],
+) -> tuple[dict[int, ReplicateOutput], int]:
+    """Load matching checkpoints and count malformed or stale files reported."""
+
+    state_directory = root / _REPLICATE_STATE_DIRECTORY
+    if not state_directory.exists():
+        return {}, 0
+    resumed: dict[int, ReplicateOutput] = {}
+    ignored = 0
+    for path in sorted(state_directory.glob("*.json")):
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            provenance = raw.get("provenance") if isinstance(raw, dict) else None
+            seed = provenance.get("replicate_seed") if isinstance(provenance, dict) else None
+        except (OSError, TypeError, ValueError):
+            seed = None
+        expected = expected_provenance.get(seed) if isinstance(seed, int) else None
+        output = _read_replicate_output(path, expected) if expected is not None else None
+        if output is None or output.seed in resumed:
+            ignored += 1
+            continue
+        resumed[output.seed] = output
+    return resumed, ignored
+
+
 def _summary_rows(
     trajectories: dict[int, tuple[dict[str, Any], ...]],
     lower_quantile: float,
@@ -551,36 +723,88 @@ def available_physical_memory_bytes() -> int | None:
     return page_size * page_count if page_size > 0 and page_count > 0 else None
 
 
-def safe_worker_bound(
+def available_cpu_count() -> int:
+    """Return CPUs available to this process, respecting scheduler affinity."""
+
+    try:
+        return max(1, len(os.sched_getaffinity(0)))
+    except (AttributeError, OSError):
+        process_cpu_count = getattr(os, "process_cpu_count", None)
+        if process_cpu_count is not None:
+            count = process_cpu_count()
+            if count is not None:
+                return max(1, count)
+        return max(1, os.cpu_count() or 1)
+
+
+def _worker_bound_terms(
     requested_workers: int,
     *,
-    # Measured full-mode worker reached 3.36 GB anon-rss at the second 2026-09-02
-    # OOM kill (13:02Z); estimate rounded up.
-    estimated_worker_memory_bytes: int = 3_500_000_000,
-    memory_safety_fraction: float = 0.6,
-    available_memory_bytes: int | None = None,
-    cpu_count: int | None = None,
-) -> int:
-    """Bound workers by memory and CPU, retaining at least one worker."""
-
-    if requested_workers < 1 or estimated_worker_memory_bytes < 1:
+    parent_reserve_bytes: int,
+    usable_fraction: float,
+    per_worker_bytes: int,
+    available_memory_bytes: int | None,
+    cpu_count: int | None,
+) -> dict[str, int | float | None]:
+    if requested_workers < 1 or parent_reserve_bytes < 0 or per_worker_bytes < 1:
         raise ValueError("worker and memory estimates must be positive")
-    if not 0 < memory_safety_fraction <= 1:
-        raise ValueError("memory_safety_fraction must be in (0, 1]")
-    cpu_bound = max(1, cpu_count or (os.cpu_count() or 1))
+    if not 0 < usable_fraction <= 1:
+        raise ValueError("usable_fraction must be in (0, 1]")
+    cpu_bound = max(1, cpu_count) if cpu_count is not None else available_cpu_count()
     memory = (
         available_memory_bytes
         if available_memory_bytes is not None
         else available_physical_memory_bytes()
     )
-    if memory is None:
-        memory_bound = requested_workers
-    else:
-        memory_bound = max(
-            1,
-            int(memory * memory_safety_fraction // estimated_worker_memory_bytes),
-        )
-    return max(1, min(requested_workers, cpu_bound, memory_bound))
+    usable_memory = None if memory is None else max(0, memory - parent_reserve_bytes)
+    memory_bound = (
+        requested_workers
+        if usable_memory is None
+        else max(1, int(usable_memory * usable_fraction // per_worker_bytes))
+    )
+    resulting_bound = max(1, min(requested_workers, cpu_bound, memory_bound))
+    return {
+        "parent_reserve_bytes": parent_reserve_bytes,
+        "usable_fraction": usable_fraction,
+        "per_worker_bytes": per_worker_bytes,
+        "available_memory_bytes": memory,
+        "usable_memory_bytes": usable_memory,
+        "memory_bound": memory_bound,
+        "cpu_bound": cpu_bound,
+        "resulting_bound": resulting_bound,
+    }
+
+
+def safe_worker_bound(
+    requested_workers: int,
+    *,
+    parent_reserve_bytes: int = DEFAULT_PARENT_RESERVE_BYTES,
+    usable_fraction: float = DEFAULT_USABLE_FRACTION,
+    per_worker_bytes: int = DEFAULT_PER_WORKER_BYTES,
+    available_memory_bytes: int | None = None,
+    cpu_count: int | None = None,
+    # Retained as execution-only aliases for callers of the pre-R8 interface.
+    estimated_worker_memory_bytes: int | None = None,
+    memory_safety_fraction: float | None = None,
+) -> int:
+    """Bound workers by an explicit parent reserve, memory budget and CPU."""
+
+    if estimated_worker_memory_bytes is not None:
+        per_worker_bytes = estimated_worker_memory_bytes
+    if memory_safety_fraction is not None:
+        usable_fraction = memory_safety_fraction
+    terms = _worker_bound_terms(
+        requested_workers,
+        parent_reserve_bytes=parent_reserve_bytes,
+        usable_fraction=usable_fraction,
+        per_worker_bytes=per_worker_bytes,
+        available_memory_bytes=available_memory_bytes,
+        cpu_count=cpu_count,
+    )
+    resulting_bound = terms["resulting_bound"]
+    if resulting_bound is None:
+        raise RuntimeError("worker-bound calculation produced no resulting bound")
+    return int(resulting_bound)
 
 
 def run_ensemble(
@@ -595,18 +819,23 @@ def run_ensemble(
     workers: int = 1,
     lower_quantile: float = 0.025,
     upper_quantile: float = 0.975,
-    # Measured full-mode worker reached 3.36 GB anon-rss at the second 2026-09-02
-    # OOM kill (13:02Z); estimate rounded up.
-    estimated_worker_memory_bytes: int = 3_500_000_000,
-    memory_safety_fraction: float = 0.6,
+    estimated_worker_memory_bytes: int = DEFAULT_PER_WORKER_BYTES,
+    memory_safety_fraction: float = DEFAULT_USABLE_FRACTION,
     allow_unsafe_workers: bool = False,
     scenario: ScenarioConfig | None = None,
+    parent_reserve_bytes: int = DEFAULT_PARENT_RESERVE_BYTES,
+    usable_fraction: float | None = None,
+    per_worker_bytes: int | None = None,
 ) -> EnsembleResult:
     """Run explicit seeds sequentially or in a bounded process pool."""
 
     from .outbreak_schemas import OutbreakRunConfig
 
     base_run_config = OutbreakRunConfig.model_validate(base_run_config)
+    if per_worker_bytes is not None:
+        estimated_worker_memory_bytes = per_worker_bytes
+    if usable_fraction is not None:
+        memory_safety_fraction = usable_fraction
     config = EnsembleConfig(
         ensemble_id=ensemble_id,
         base_run_config=base_run_config,
@@ -625,6 +854,30 @@ def run_ensemble(
     source_root = (
         root if (root / "data" / "sources.yaml").exists() else Path(__file__).resolve().parents[2]
     )
+    base_config_hash = m6_ensemble_config_hash(config.model_dump(mode="json"))
+    m2_hash = generated.m2_input.manifest.logical_content_hash
+    m3_hash = generated.m3_input.manifest.logical_content_hash
+    code_identity = _git_commit_identity(source_root)
+    expected_provenance = {
+        seed: _replicate_provenance(
+            seed=seed,
+            base_config_hash=base_config_hash,
+            code_identity=code_identity,
+            m2_hash=m2_hash,
+            m3_hash=m3_hash,
+        )
+        for seed in config.replicate_seeds
+    }
+    outputs_by_seed, ignored_checkpoints = _load_replicate_checkpoints(
+        root, config.ensemble_id, expected_provenance
+    )
+    resumed_count = len(outputs_by_seed)
+    pending_seeds = tuple(seed for seed in config.replicate_seeds if seed not in outputs_by_seed)
+    print(
+        "ENSEMBLE RESUME: "
+        f"resumed={resumed_count} run={len(pending_seeds)} ignored={ignored_checkpoints}",
+        file=sys.stderr,
+    )
     job_base = {
         # ``root`` is normally the project root.  Tests and library callers
         # may use a temporary output directory, so fall back to the package's
@@ -642,17 +895,23 @@ def run_ensemble(
         "observation_config": observation_config,
         "scenario": scenario,
     }
-    jobs = [{**job_base, "seed": seed} for seed in config.replicate_seeds]
+    jobs = [
+        {**job_base, "seed": seed, "provenance": expected_provenance[seed]}
+        for seed in pending_seeds
+    ]
     requested_workers = config.workers
-    safe_bound = (
-        requested_workers
-        if config.allow_unsafe_workers
-        else safe_worker_bound(
-            requested_workers,
-            estimated_worker_memory_bytes=config.estimated_worker_memory_bytes,
-            memory_safety_fraction=config.memory_safety_fraction,
-        )
+    worker_bound_terms = _worker_bound_terms(
+        requested_workers,
+        parent_reserve_bytes=parent_reserve_bytes,
+        usable_fraction=config.memory_safety_fraction,
+        per_worker_bytes=config.estimated_worker_memory_bytes,
+        available_memory_bytes=None,
+        cpu_count=None,
     )
+    resulting_bound = worker_bound_terms["resulting_bound"]
+    if resulting_bound is None:
+        raise RuntimeError("worker-bound calculation produced no resulting bound")
+    safe_bound = requested_workers if config.allow_unsafe_workers else int(resulting_bound)
     planned_workers = min(requested_workers, safe_bound)
     if planned_workers < requested_workers:
         print(
@@ -663,8 +922,20 @@ def run_ensemble(
     actual_workers = planned_workers
     execution_mode = "sequential"
     fallback_reason: str | None = None
-    if planned_workers == 1:
-        outputs = [_run_replicate_job(job) for job in jobs]
+    persisted_count = 0
+    if not jobs:
+        actual_workers = 1
+        execution_mode = "resume_only"
+    elif planned_workers == 1:
+        for job in jobs:
+            output = _run_replicate_job(job)
+            _persist_replicate_output(
+                _replicate_state_path(root, config.ensemble_id, output.seed),
+                job["provenance"],
+                output,
+            )
+            outputs_by_seed[output.seed] = output
+            persisted_count += 1
         if requested_workers > 1:
             execution_mode = "sequential_memory_bound"
     else:
@@ -682,28 +953,69 @@ def run_ensemble(
             # semantics with an explicit, diagnostic sequential fallback.
             print(
                 "ENSEMBLE WARNING: process pool unavailable "
-                f"({type(exc).__name__}: {exc}); running {len(jobs)} replicates sequentially",
+                f"({type(exc).__name__}: {exc}); actual_workers=1; "
+                f"running {len(jobs)} replicates sequentially",
                 file=sys.stderr,
             )
-            outputs = [_run_replicate_job(job) for job in jobs]
+            for job in jobs:
+                output = _run_replicate_job(job)
+                _persist_replicate_output(
+                    _replicate_state_path(root, config.ensemble_id, output.seed),
+                    job["provenance"],
+                    output,
+                )
+                outputs_by_seed[output.seed] = output
+                persisted_count += 1
             actual_workers = 1
             execution_mode = "sequential_fallback"
             fallback_reason = f"{type(exc).__name__}: {exc}"
         else:
+            future_jobs = {}
             try:
-                futures = [pool.submit(_run_replicate_job, job) for job in jobs]
-                outputs = [future.result() for future in futures]
+                for job in jobs:
+                    future_jobs[pool.submit(_run_replicate_job, job)] = job
+                for future in as_completed(future_jobs):
+                    job = future_jobs[future]
+                    output = future.result()
+                    _persist_replicate_output(
+                        _replicate_state_path(root, config.ensemble_id, output.seed),
+                        job["provenance"],
+                        output,
+                    )
+                    outputs_by_seed[output.seed] = output
+                    persisted_count += 1
             except BrokenProcessPool as exc:
-                message = f"ensemble worker pool broke: {exc}; relaunch with fewer workers"
+                # A pool can report broken after one or more futures completed;
+                # collect any already-done successful/failure records before
+                # aborting so those records remain resumable.
+                for future, job in future_jobs.items():
+                    if not future.done():
+                        continue
+                    try:
+                        output = future.result()
+                    except Exception:
+                        continue
+                    if output.seed in outputs_by_seed:
+                        continue
+                    _persist_replicate_output(
+                        _replicate_state_path(root, config.ensemble_id, output.seed),
+                        job["provenance"],
+                        output,
+                    )
+                    outputs_by_seed[output.seed] = output
+                    persisted_count += 1
+                message = (
+                    f"ensemble worker pool broke: {exc}; relaunch with fewer workers; "
+                    f"persisted completed outputs={persisted_count}; "
+                    "re-invocation will resume them"
+                )
                 print(f"ENSEMBLE ERROR: {message}", file=sys.stderr)
-                # A broken pool means results are already lost; silent
-                # serialization multiplies wall time ~planned_workers-fold,
-                # so aborting fast is safer than committing days of compute.
                 raise RuntimeError(message) from exc
             finally:
                 pool_stack.close()
             execution_mode = "process_pool_spawn"
 
+    outputs = [outputs_by_seed[seed] for seed in config.replicate_seeds]
     records = tuple(
         EnsembleReplicateRecord(
             seed=output.seed,
@@ -752,12 +1064,23 @@ def run_ensemble(
         "parallelism": execution_mode,
         "worker_bound": {
             "safe_upper_bound": safe_bound,
+            "honest_resulting_bound": worker_bound_terms["resulting_bound"],
+            "parent_reserve_bytes": worker_bound_terms["parent_reserve_bytes"],
+            "usable_fraction": worker_bound_terms["usable_fraction"],
+            "per_worker_bytes": worker_bound_terms["per_worker_bytes"],
+            "usable_memory_bytes": worker_bound_terms["usable_memory_bytes"],
+            "memory_bound": worker_bound_terms["memory_bound"],
+            "cpu_bound": worker_bound_terms["cpu_bound"],
+            "resulting_bound": worker_bound_terms["resulting_bound"],
             "estimated_worker_memory_bytes": config.estimated_worker_memory_bytes,
             "memory_safety_fraction": config.memory_safety_fraction,
-            "available_physical_memory_bytes": available_physical_memory_bytes(),
-            "cpu_count": os.cpu_count(),
+            "available_physical_memory_bytes": worker_bound_terms["available_memory_bytes"],
+            "cpu_count": worker_bound_terms["cpu_bound"],
             "override_used": config.allow_unsafe_workers,
         },
+        "resumed_replicates": resumed_count,
+        "run_replicates": len(pending_seeds),
+        "ignored_replicate_checkpoints": ignored_checkpoints,
         "quantile_method": "numpy.quantile(method='linear')",
         "quantile_configuration": {
             "lower": config.lower_quantile,

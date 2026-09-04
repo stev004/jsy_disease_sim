@@ -189,7 +189,7 @@ def test_process_parallelism_preserves_declared_outputs(
 ) -> None:
     seeds = (123, 124)
     sequential = run_ensemble(
-        tmp_path,
+        tmp_path / "sequential",
         m6_network,
         m6_parameters,
         m6_base_config,
@@ -199,7 +199,7 @@ def test_process_parallelism_preserves_declared_outputs(
         workers=1,
     )
     parallel = run_ensemble(
-        tmp_path,
+        tmp_path / "parallel",
         m6_network,
         m6_parameters,
         m6_base_config,
@@ -409,6 +409,10 @@ def test_ensemble_and_comparison_artifacts_preserve_provenance(
         == m6_network.m2_input.manifest.logical_content_hash
     )
     assert ensemble_manifest["successful_replicates"] == 1
+    assert all(
+        ".replicates-in-progress" not in record["path"]
+        for record in ensemble_manifest["output_artifacts"]
+    )
     assert comparison_manifest["paired_count"] == 1
     assert (ensemble_artifact.artifact_directory / "ensemble_summary.parquet").exists()
     assert (comparison_artifact.artifact_directory / "matched_seed_comparison.parquet").exists()
