@@ -98,6 +98,70 @@
       "tolerance": 0
     },
     {
+      "actual": 917,
+      "difference": 0,
+      "expected": 917,
+      "name": "covid_daily_rows",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 416,
+      "difference": 0,
+      "expected": 416,
+      "name": "covid_daily_not_reported_cumulative_cases",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 1294,
+      "difference": 0,
+      "expected": 1294,
+      "name": "covid_current_dated_rows",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 1,
+      "difference": 0,
+      "expected": 1,
+      "name": "covid_current_summary_undated_rows",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 66391,
+      "difference": 0,
+      "expected": 66391,
+      "name": "covid_final_cumulative_cases_daily_vs_current",
+      "status": "warning",
+      "tolerance": 0
+    },
+    {
+      "actual": 155,
+      "difference": 0,
+      "expected": 155,
+      "name": "covid_weekly_columns_mapped_or_excluded",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 132,
+      "difference": 0,
+      "expected": 132,
+      "name": "covid_weekly_rows",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
+      "actual": 13,
+      "difference": 0,
+      "expected": 13,
+      "name": "covid_serosurvey_measures",
+      "status": "passed",
+      "tolerance": 0
+    },
+    {
       "actual": 2.57,
       "details": "conflict is retained as a quality warning; no silent normalization",
       "difference": 0.1,
@@ -297,6 +361,13 @@
       "local_snapshot": "data/raw/sars_cov2_serosurvey_2020_pdf/prevalence_of_antibodies_2020.pdf",
       "sha256": "a74e606e5ef16544a763146249b42fba8ae61fb00526982793c6f9fbc300dd0d",
       "source_id": "sars_cov2_serosurvey_2020_pdf",
+      "status": "passed"
+    },
+    {
+      "acquisition_method": "manual",
+      "local_snapshot": "data/raw/sars_cov2_serosurvey_2020_manual_fixture/serosurvey_2020_summary.csv",
+      "sha256": "ba1cc6e6d43cd377d89371e63fe13db956f18a03315dae837de25c648062c355",
+      "source_id": "sars_cov2_serosurvey_2020_manual_fixture",
       "status": "passed"
     },
     {
@@ -575,6 +646,110 @@
       "path": "data/processed/derived_controls.csv",
       "rows": 37,
       "sha256": "7681d0dca40a84cc2850fa9c147a780bf179a984c65b96c40f9c5c433684d135"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "date",
+        "measure",
+        "value",
+        "unit",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_daily_surveillance.csv",
+      "rows": 10087,
+      "sha256": "68fba14314dcce40c5c97eb59f51b5c539e93bef3188fdce59650996965c5858"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "date",
+        "measure",
+        "value",
+        "unit",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_current_summary.csv",
+      "rows": 5176,
+      "sha256": "96d1a10d64e5182304637b74af19a7cd2929478f6dde963fb5d0f41d9bb68c00"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "week_ending",
+        "dose",
+        "age_band",
+        "metric",
+        "value",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_weekly_vaccination.csv",
+      "rows": 19008,
+      "sha256": "c39ac432926e8e53411a40ced67d597f57cd67605023f5fb9e8ba937df0fe808"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "measure",
+        "value",
+        "unit",
+        "population",
+        "note"
+      ],
+      "path": "data/processed/covid_serosurvey_2020.csv",
+      "rows": 13,
+      "sha256": "bb4ac1be8bfc2ffc64f5d18bf2b1cbf4e41d5a3fdf57369ae4eccd135389dd1b"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "week_ending",
+        "value",
+        "unit",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_weekly_eligible_population.csv",
+      "rows": 132,
+      "sha256": "134478f9ef8205cadf63aef94f09e73bcd64720f987e819f3a6b8f2e783b1c1f"
     }
   ],
   "warnings": [
@@ -582,6 +757,9 @@
     "2021 commuting and workplace-destination controls describe the census reference period and include pandemic-era work-from-home effects.",
     "The 2025 labour-market sector values are jobs, not unique employees; they are not reconciled to 2021 resident workers.",
     "The housing CSV all-row mean bedrooms value (2.57) conflicts with the official report value (2.47); the report value is the canonical manual control and the conflict is flagged.",
-    "Published CSV tables include rounded counts and suppressed small cells in places; raw values and suppression notes are preserved rather than imputed."
+    "Published CSV tables include rounded counts and suppressed small cells in places; raw values and suppression notes are preserved rather than imputed.",
+    "covid daily surveillance anomaly: TestsTotalNegativeTests is excluded because 917 of 917 cells use SharePoint calculated-field rendering, including 418 cells rendered as float;#0 and 1 cell rendered as float;#1073672.00000000.",
+    "covid current summary undated row raw values: ,1165877,67397,0,",
+    "vaccination percentages are publisher-computed against an unstated denominator per band; not recomputed here"
   ]
 }

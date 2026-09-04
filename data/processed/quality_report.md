@@ -32,6 +32,7 @@ Build status: **passed**
 | covid19_current_summary_csv | passed | automated | 4566333483a6ac4229e86d009fff97caf8f8c52ef1c4758ad07e9558da3630dd | data/raw/covid19_current_summary_csv/covid19_current.csv |
 | covid19_weekly_vaccination_csv | passed | automated | f6708113693c77fefb0d43f8a2551d6f6fcb2fc1db69a5b128087c64280a382a | data/raw/covid19_weekly_vaccination_csv/covid19_weekly_vaccination.csv |
 | sars_cov2_serosurvey_2020_pdf | passed | automated | a74e606e5ef16544a763146249b42fba8ae61fb00526982793c6f9fbc300dd0d | data/raw/sars_cov2_serosurvey_2020_pdf/prevalence_of_antibodies_2020.pdf |
+| sars_cov2_serosurvey_2020_manual_fixture | passed | manual | ba1cc6e6d43cd377d89371e63fe13db956f18a03315dae837de25c648062c355 | data/raw/sars_cov2_serosurvey_2020_manual_fixture/serosurvey_2020_summary.csv |
 | covid19_vaccination_pcr_insights_pdf | passed | automated | c8a04fbfa06d9ed23dc71c7a5f46e2914dafd7484b80f104cc6550847c7848f8 | data/raw/covid19_vaccination_pcr_insights_pdf/vaccination_pcr_insights.pdf |
 
 ## Canonical tables
@@ -52,21 +53,34 @@ Build status: **passed**
 | data/processed/communal_settings.csv | 17 | 6001fa22ccd27a975c1611aa946fe7fcdb8292c4401d9cc75ffb5a12fc81cb23 |
 | data/processed/passenger_arrivals.csv | 3 | 92ad95faf52b969ad168f1d59001a4a2de56c9e250d3ee503e05c1a870517c4c |
 | data/processed/derived_controls.csv | 37 | 7681d0dca40a84cc2850fa9c147a780bf179a984c65b96c40f9c5c433684d135 |
+| data/processed/covid_daily_surveillance.csv | 10087 | 68fba14314dcce40c5c97eb59f51b5c539e93bef3188fdce59650996965c5858 |
+| data/processed/covid_current_summary.csv | 5176 | 96d1a10d64e5182304637b74af19a7cd2929478f6dde963fb5d0f41d9bb68c00 |
+| data/processed/covid_weekly_vaccination.csv | 19008 | c39ac432926e8e53411a40ced67d597f57cd67605023f5fb9e8ba937df0fe808 |
+| data/processed/covid_serosurvey_2020.csv | 13 | bb4ac1be8bfc2ffc64f5d18bf2b1cbf4e41d5a3fdf57369ae4eccd135389dd1b |
+| data/processed/covid_weekly_eligible_population.csv | 132 | 134478f9ef8205cadf63aef94f09e73bcd64720f987e819f3a6b8f2e783b1c1f |
 
 ## Validation and reconciliation
 
-- **passed** `parish_population_sum`: actual=103267, expected=103267, difference=0. 
-- **passed** `2021_age_gender_sum`: actual=103267, expected=103267, difference=0. 
-- **passed** `2024_broad_age_sum`: actual=104540, expected=104540, difference=0. 
-- **passed** `2024_sex_sum`: actual=104540, expected=104540, difference=0. 
-- **passed** `household_type_sum`: actual=44583, expected=44583, difference=0. 
-- **passed** `2021_employment_sector_sum`: actual=57338, expected=57338, difference=0. 
-- **warning** `2025_private_sector_jobs_sum`: actual=55360, expected=55370, difference=-10. 
-- **passed** `2025_workplace_size_band_sum`: actual=8500, expected=8500, difference=0. 
-- **passed** `2021_commute_mode_sum`: actual=57340, expected=57340, difference=0. 
-- **warning** `2021_commute_report_rounding_difference`: actual=57340, expected=57338, difference=2. 
-- **passed** `2024_student_components_sum`: actual=13991, expected=13991, difference=0. 
-- **passed** `2025_arrivals_components_sum`: actual=917465, expected=917465, difference=0. 
+- **passed** `parish_population_sum`: actual=103267, expected=103267, difference=0.
+- **passed** `2021_age_gender_sum`: actual=103267, expected=103267, difference=0.
+- **passed** `2024_broad_age_sum`: actual=104540, expected=104540, difference=0.
+- **passed** `2024_sex_sum`: actual=104540, expected=104540, difference=0.
+- **passed** `household_type_sum`: actual=44583, expected=44583, difference=0.
+- **passed** `2021_employment_sector_sum`: actual=57338, expected=57338, difference=0.
+- **warning** `2025_private_sector_jobs_sum`: actual=55360, expected=55370, difference=-10.
+- **passed** `2025_workplace_size_band_sum`: actual=8500, expected=8500, difference=0.
+- **passed** `2021_commute_mode_sum`: actual=57340, expected=57340, difference=0.
+- **warning** `2021_commute_report_rounding_difference`: actual=57340, expected=57338, difference=2.
+- **passed** `2024_student_components_sum`: actual=13991, expected=13991, difference=0.
+- **passed** `2025_arrivals_components_sum`: actual=917465, expected=917465, difference=0.
+- **passed** `covid_daily_rows`: actual=917, expected=917, difference=0.
+- **passed** `covid_daily_not_reported_cumulative_cases`: actual=416, expected=416, difference=0.
+- **passed** `covid_current_dated_rows`: actual=1294, expected=1294, difference=0.
+- **passed** `covid_current_summary_undated_rows`: actual=1, expected=1, difference=0.
+- **warning** `covid_final_cumulative_cases_daily_vs_current`: actual=66391, expected=66391, difference=0.
+- **passed** `covid_weekly_columns_mapped_or_excluded`: actual=155, expected=155, difference=0.
+- **passed** `covid_weekly_rows`: actual=132, expected=132, difference=0.
+- **passed** `covid_serosurvey_measures`: actual=13, expected=13, difference=0.
 - **warning** `housing_mean_bedrooms_source_conflict`: actual=2.57, expected=2.47, difference=0.1. conflict is retained as a quality warning; no silent normalization
 
 ## Pipeline
@@ -84,3 +98,6 @@ Build status: **passed**
 - The 2025 labour-market sector values are jobs, not unique employees; they are not reconciled to 2021 resident workers.
 - The housing CSV all-row mean bedrooms value (2.57) conflicts with the official report value (2.47); the report value is the canonical manual control and the conflict is flagged.
 - Published CSV tables include rounded counts and suppressed small cells in places; raw values and suppression notes are preserved rather than imputed.
+- covid daily surveillance anomaly: TestsTotalNegativeTests is excluded because 917 of 917 cells use SharePoint calculated-field rendering, including 418 cells rendered as float;#0 and 1 cell rendered as float;#1073672.00000000.
+- covid current summary undated row raw values: ,1165877,67397,0,
+- vaccination percentages are publisher-computed against an unstated denominator per band; not recomputed here

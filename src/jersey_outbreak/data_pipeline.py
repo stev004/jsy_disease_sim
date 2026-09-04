@@ -11,6 +11,7 @@ import json
 import math
 import re
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,11 @@ from .canonical_schemas import (
     CanonicalProvenance,
     CommunalSettingRow,
     CommuteModeRow,
+    CovidCurrentSummaryRow,
+    CovidDailySurveillanceRow,
+    CovidSerosurveyRow,
+    CovidWeeklyEligiblePopulationRow,
+    CovidWeeklyVaccinationRow,
     DerivedControlRow,
     EmploymentSectorRow,
     HouseholdTypeRow,
@@ -226,10 +232,41 @@ def parse_int(raw: str, *, path: Path, field: str, allow_blank: bool = False) ->
     return int(value)
 
 
+_POSITIVE_LESS_THAN_RE = re.compile(r"^<\s*(\d[\d,]*)$")
+
+
+def parse_published_value(
+    raw: str, *, path: Path, field: str
+) -> tuple[int | float | None, str, int | None]:
+    """Parse a published value while preserving missing and suppressed cells."""
+
+    token = raw.strip()
+    if not token or token == "-1":
+        return None, "not_reported", None
+    match = _POSITIVE_LESS_THAN_RE.fullmatch(token)
+    if match:
+        upper_bound = parse_int(match.group(1), path=path, field=field)
+        if upper_bound is None:
+            raise DataBuildError(f"{path}: blank suppression bound in {field}")
+        return None, "positive_less_than", upper_bound
+    return parse_number(token, path=path, field=field), "reported", None
+
+
 def _required(row: dict[str, str], field: str, path: Path) -> str:
     value = row.get(field, "").strip()
     if not value:
         raise DataBuildError(f"{path}: blank required field {field}")
+    return value
+
+
+def _iso_date(raw: str, *, path: Path, field: str) -> str:
+    value = _required({field: raw}, field, path)
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError as exc:
+        raise DataBuildError(f"{path}: invalid ISO date {value!r} in {field}") from exc
+    if parsed.isoformat() != value:
+        raise DataBuildError(f"{path}: non-canonical ISO date {value!r} in {field}")
     return value
 
 
@@ -332,6 +369,387 @@ def _add_check(
             f"reconciliation failed for {name}: actual={actual}, expected={expected}"
         )
     return status
+
+
+_COVID_DAILY_MEASURES = (
+    ("daily_new_confirmed_cases", "CasesDailyNewConfirmedCases", "cases"),
+    ("cumulative_confirmed_cases", "CasesTotalConfirmedPositiveCases", "cases"),
+    ("symptomatic_cases", "CasesSymptomatic", "cases"),
+    ("asymptomatic_cases", "CasesAsymptomatic", "cases"),
+    ("current_known_active_cases", "CasesCurrentKnownActiveCases", "cases"),
+    ("seven_day_rate_per_100k", "CasesSeven7DayNumberper100000", "per_100000"),
+    ("cumulative_tests", "TestsTotaltests", "tests"),
+    (
+        "tests_reason_symptomatic",
+        "TestsReasonfortestseekinghealthcaresymptomatic",
+        "tests",
+    ),
+    ("tests_reason_inbound_travel", "TestsReasonforTestInboundTravel", "tests"),
+    (
+        "tests_reason_on_island_screening",
+        "TestsReasonforTestOnIslandSurveillanceScreening",
+        "tests",
+    ),
+    ("cumulative_deaths", "MortalityTotalDeaths", "deaths"),
+)
+
+_COVID_CURRENT_MEASURES = (
+    ("cumulative_tests", "TestsTotalTests", "tests"),
+    ("cumulative_confirmed_cases", "CasesTotalConfirmedPositiveCases", "cases"),
+    ("seven_day_rate_per_100k", "CasesSeven7DayNumberper100000", "per_100000"),
+    ("cumulative_deaths", "MortalityTotalDeaths", "deaths"),
+)
+
+_VACCINATION_EXCLUSIONS = frozenset(
+    {
+        "VaccinationsTotalNumberDoses",
+        "VaccinationsDosesPer100PeopleInPopulation",
+        "EligiblePopulation",
+        "7DayRatePercentageChange",
+        "InboundTravel",
+        "On-islandSurveillanceScreening",
+        "SeekingHealthcareSymptomatic",
+        "DateTime",
+        "DateTimeShort",
+        "Note",
+    }
+)
+_VACCINATION_DOSES = {
+    "FirstDose": "dose_1",
+    "SecondDose": "dose_2",
+    "ThirdDose": "dose_3",
+    "FourthDose": "dose_4",
+    "AutumnBooster2022": "autumn_2022_booster",
+}
+_VACCINATION_AGE_BANDS = {
+    "5to11years": "5_to_11",
+    "12to15years": "12_to_15",
+    "16to17years": "16_to_17",
+    "17yearsandunder": "17_and_under",
+    "18to29years": "18_to_29",
+    "30to39years": "30_to_39",
+    "40to49years": "40_to_49",
+    "50to54years": "50_to_54",
+    "55to59years": "55_to_59",
+    "60to64years": "60_to_64",
+    "65to69years": "65_to_69",
+    "70to74years": "70_to_74",
+    "75to79years": "75_to_79",
+    "80yearsandover": "80_plus",
+}
+_VACCINATION_DIRECT_COLUMNS = {
+    **{
+        f"VaccinationsTotalNumber{source_dose}Vaccinations": (
+            dose,
+            "all",
+            "cumulative_doses",
+        )
+        for source_dose, dose in _VACCINATION_DOSES.items()
+        if source_dose != "AutumnBooster2022"
+    },
+    **{
+        f"VaccinationsTotalNumber{source_dose}VaccinationsPercentage": (
+            dose,
+            "all",
+            "percent_population",
+        )
+        for source_dose, dose in _VACCINATION_DOSES.items()
+        if source_dose != "AutumnBooster2022"
+    },
+    "VaccinationsTotalNumberAutumnBooster2022": (
+        "autumn_2022_booster",
+        "all",
+        "cumulative_doses",
+    ),
+    "VaccinationsTotalNumberAutumnBooster2022Percentage50plus": (
+        "autumn_2022_booster",
+        "50_plus",
+        "percent_population",
+    ),
+}
+_SEROSURVEY_MEASURES = (
+    "estimated_population_prevalence_percent",
+    "estimated_population_prevalence_ci95_half_width_percent",
+    "observed_unweighted_prevalence_percent",
+    "weighted_unadjusted_prevalence_percent",
+    "households_tested",
+    "individuals_tested",
+    "response_rate_households_percent",
+    "response_rate_individuals_percent",
+    "assumed_test_sensitivity_percent",
+    "assumed_test_sensitivity_ci95_low_percent",
+    "assumed_test_sensitivity_ci95_high_percent",
+    "assumed_test_specificity_percent",
+    "minimum_age_years",
+)
+
+
+def _vaccination_column_spec(column: str, path: Path) -> tuple[str, str, str]:
+    direct = _VACCINATION_DIRECT_COLUMNS.get(column)
+    if direct is not None:
+        return direct
+    match = re.fullmatch(
+        r"(VaccinationsTotalVaccinationDoses|VaccinationsPercentagePopulationVaccinated)"
+        r"(FirstDose|SecondDose|ThirdDose|FourthDose|AutumnBooster2022)(.+)",
+        column,
+    )
+    if match:
+        metric_prefix, source_dose, source_age_band = match.groups()
+        try:
+            dose = _VACCINATION_DOSES[source_dose]
+            age_band = _VACCINATION_AGE_BANDS[source_age_band]
+        except KeyError as exc:
+            raise DataBuildError(f"{path}: unmapped vaccination column {column!r}") from exc
+        metric = (
+            "cumulative_doses"
+            if metric_prefix == "VaccinationsTotalVaccinationDoses"
+            else "percent_population"
+        )
+        return dose, age_band, metric
+    raise DataBuildError(f"{path}: unmapped vaccination column {column!r}")
+
+
+def _covid_tables(
+    context: SourceContext, checks: list[dict[str, Any]]
+) -> dict[str, list[dict[str, Any]] | str]:
+    warnings: list[str] = []
+
+    daily_source = "covid19_daily_surveillance_csv"
+    daily_path = context.artifact_path(daily_source)
+    daily_required = {"Date", "TestsTotalNegativeTests"}
+    daily_required.update(column for _, column, _ in _COVID_DAILY_MEASURES)
+    daily_raw_rows = read_csv_rows(daily_path, daily_required)
+    negative_tests_values = [row["TestsTotalNegativeTests"] for row in daily_raw_rows]
+    rendered_count = sum(value.startswith("float;#") for value in negative_tests_values)
+    zero_rendered_count = sum(value == "float;#0" for value in negative_tests_values)
+    special_rendered_count = sum(
+        value == "float;#1073672.00000000" for value in negative_tests_values
+    )
+    warnings.append(
+        "covid daily surveillance anomaly: TestsTotalNegativeTests is excluded because "
+        f"{rendered_count} of {len(negative_tests_values)} cells use SharePoint "
+        "calculated-field rendering, including "
+        f"{zero_rendered_count} cells rendered as float;#0 and "
+        f"{special_rendered_count} cell rendered as float;#1073672.00000000."
+    )
+    daily_prepared = [
+        (_iso_date(row["Date"], path=daily_path, field="Date"), row) for row in daily_raw_rows
+    ]
+    daily_dates = [value for value, _ in daily_prepared]
+    if len(set(daily_dates)) != len(daily_dates):
+        raise DataBuildError(f"{daily_path}: duplicate Date values")
+    daily_tables: list[dict[str, Any]] = []
+    for date_value, row in sorted(daily_prepared):
+        for measure, column, unit in _COVID_DAILY_MEASURES:
+            value, reporting_status, upper_bound = parse_published_value(
+                row[column], path=daily_path, field=column
+            )
+            daily_tables.append(
+                {
+                    **context.provenance(
+                        daily_source,
+                        locator=f"csv_row_{date_value}_col_{column}",
+                        transformation_id="csv_covid_daily_surveillance_long_v1",
+                    ),
+                    "date": date_value,
+                    "measure": measure,
+                    "value": value,
+                    "unit": unit,
+                    "reporting_status": reporting_status,
+                    "upper_bound": upper_bound,
+                }
+            )
+    _add_check(checks, "covid_daily_rows", len(daily_raw_rows), 917)
+    _add_check(
+        checks,
+        "covid_daily_not_reported_cumulative_cases",
+        sum(
+            row["measure"] == "cumulative_confirmed_cases"
+            and row["reporting_status"] == "not_reported"
+            for row in daily_tables
+        ),
+        416,
+    )
+
+    current_source = "covid19_current_summary_csv"
+    current_path = context.artifact_path(current_source)
+    current_columns = [
+        "Date",
+        "TestsTotalTests",
+        "CasesTotalConfirmedPositiveCases",
+        "CasesSeven7DayNumberper100000",
+        "MortalityTotalDeaths",
+    ]
+    current_raw_rows = read_csv_rows(current_path, set(current_columns))
+    current_prepared: list[tuple[str, dict[str, str]]] = []
+    undated_raw_rows: list[str] = []
+    for row in current_raw_rows:
+        if not row["Date"]:
+            undated_raw_rows.append(",".join(row[column] for column in current_columns))
+            continue
+        current_prepared.append((_iso_date(row["Date"], path=current_path, field="Date"), row))
+    for raw_row in undated_raw_rows:
+        warnings.append(f"covid current summary undated row raw values: {raw_row}")
+    _add_check(checks, "covid_current_dated_rows", len(current_prepared), 1294)
+    _add_check(checks, "covid_current_summary_undated_rows", len(undated_raw_rows), 1)
+    current_tables: list[dict[str, Any]] = []
+    for date_value, row in sorted(current_prepared):
+        for measure, column, unit in _COVID_CURRENT_MEASURES:
+            value, reporting_status, upper_bound = parse_published_value(
+                row[column], path=current_path, field=column
+            )
+            current_tables.append(
+                {
+                    **context.provenance(
+                        current_source,
+                        locator=f"csv_row_{date_value}_col_{column}",
+                        transformation_id="csv_covid_current_summary_long_v1",
+                    ),
+                    "date": date_value,
+                    "measure": measure,
+                    "value": value,
+                    "unit": unit,
+                    "reporting_status": reporting_status,
+                    "upper_bound": upper_bound,
+                }
+            )
+    daily_final = next(
+        row
+        for row in daily_tables
+        if row["date"] == "2023-02-01" and row["measure"] == "cumulative_confirmed_cases"
+    )
+    current_final = next(
+        row
+        for row in current_tables
+        if row["date"] == "2023-02-01" and row["measure"] == "cumulative_confirmed_cases"
+    )
+    if daily_final["value"] is None or current_final["value"] is None:
+        raise DataBuildError("COVID final cumulative cases cross-check has no published value")
+    _add_check(
+        checks,
+        "covid_final_cumulative_cases_daily_vs_current",
+        daily_final["value"],
+        current_final["value"],
+        tolerance=0,
+        warning=True,
+    )
+
+    weekly_source = "covid19_weekly_vaccination_csv"
+    weekly_path = context.artifact_path(weekly_source)
+    weekly_raw_rows = read_csv_rows(weekly_path, {"Date", "EligiblePopulation"})
+    if not weekly_raw_rows:
+        raise DataBuildError(f"{weekly_path}: no weekly vaccination rows")
+    weekly_columns = list(weekly_raw_rows[0])
+    vaccination_specs: list[tuple[str, tuple[str, str, str]]] = []
+    for column in weekly_columns:
+        if column == "Date" or column in _VACCINATION_EXCLUSIONS:
+            continue
+        vaccination_specs.append((column, _vaccination_column_spec(column, weekly_path)))
+    _add_check(
+        checks,
+        "covid_weekly_columns_mapped_or_excluded",
+        1 + len(vaccination_specs) + len(_VACCINATION_EXCLUSIONS.intersection(weekly_columns)),
+        155,
+    )
+    weekly_prepared = [
+        (_iso_date(row["Date"], path=weekly_path, field="Date"), row) for row in weekly_raw_rows
+    ]
+    weekly_tables: list[dict[str, Any]] = []
+    eligible_tables: list[dict[str, Any]] = []
+    for week_ending, row in sorted(weekly_prepared):
+        eligible_value, eligible_status, eligible_upper_bound = parse_published_value(
+            row["EligiblePopulation"], path=weekly_path, field="EligiblePopulation"
+        )
+        if isinstance(eligible_value, float):
+            if not eligible_value.is_integer():
+                raise DataBuildError(f"{weekly_path}: non-integer EligiblePopulation")
+            eligible_value = int(eligible_value)
+        eligible_tables.append(
+            {
+                **context.provenance(
+                    weekly_source,
+                    locator=f"csv_row_{week_ending}_col_EligiblePopulation",
+                    transformation_id="csv_covid_weekly_eligible_population_v1",
+                ),
+                "week_ending": week_ending,
+                "value": eligible_value,
+                "unit": "persons",
+                "reporting_status": eligible_status,
+                "upper_bound": eligible_upper_bound,
+            }
+        )
+        for column, (dose, age_band, metric) in vaccination_specs:
+            value, reporting_status, upper_bound = parse_published_value(
+                row[column], path=weekly_path, field=column
+            )
+            weekly_tables.append(
+                {
+                    **context.provenance(
+                        weekly_source,
+                        locator=f"csv_row_{week_ending}_col_{column}",
+                        transformation_id="csv_covid_weekly_vaccination_long_v1",
+                    ),
+                    "week_ending": week_ending,
+                    "dose": dose,
+                    "age_band": age_band,
+                    "metric": metric,
+                    "value": value,
+                    "reporting_status": reporting_status,
+                    "upper_bound": upper_bound,
+                }
+            )
+    _add_check(checks, "covid_weekly_rows", len(weekly_raw_rows), 132)
+    warnings.append(
+        "vaccination percentages are publisher-computed against an unstated denominator "
+        "per band; not recomputed here"
+    )
+
+    serosurvey_source = "sars_cov2_serosurvey_2020_manual_fixture"
+    serosurvey_path = context.artifact_path(serosurvey_source)
+    serosurvey_columns = {
+        "measure",
+        "value",
+        "unit",
+        "population",
+        "reference_period",
+        "source_locator",
+        "note",
+    }
+    serosurvey_raw_rows = read_csv_rows(serosurvey_path, serosurvey_columns)
+    actual_measures = [_required(row, "measure", serosurvey_path) for row in serosurvey_raw_rows]
+    if len(actual_measures) != len(_SEROSURVEY_MEASURES) or set(actual_measures) != set(
+        _SEROSURVEY_MEASURES
+    ):
+        raise DataBuildError(
+            f"{serosurvey_path}: fixture measures do not match the canonical measure list"
+        )
+    serosurvey_tables: list[dict[str, Any]] = []
+    for row in serosurvey_raw_rows:
+        serosurvey_tables.append(
+            {
+                **_provenance(
+                    context,
+                    serosurvey_source,
+                    row,
+                    "manual_pdf_transcription_v1",
+                ),
+                "measure": _required(row, "measure", serosurvey_path),
+                "value": parse_number(row["value"], path=serosurvey_path, field="value"),
+                "unit": _required(row, "unit", serosurvey_path),
+                "population": _required(row, "population", serosurvey_path),
+                "note": _required(row, "note", serosurvey_path),
+            }
+        )
+    _add_check(checks, "covid_serosurvey_measures", len(serosurvey_tables), 13)
+
+    return {
+        "covid_daily_surveillance": daily_tables,
+        "covid_current_summary": current_tables,
+        "covid_weekly_vaccination": weekly_tables,
+        "covid_serosurvey_2020": serosurvey_tables,
+        "covid_weekly_eligible_population": eligible_tables,
+        "covid_warnings": warnings,
+    }
 
 
 def _population_tables(
@@ -1107,6 +1525,9 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
     tables.update(_household_and_housing_tables(context, checks))
     tables.update(_employment_and_workplace_tables(context, checks))
     tables.update(_commute_education_arrivals_tables(context, checks))
+    covid_tables = _covid_tables(context, checks)
+    covid_warnings = covid_tables.pop("covid_warnings")
+    tables.update(covid_tables)
     tables.pop("commute_rounding_status", None)
     tables["derived_controls"] = _derived_controls(context, tables, checks)
 
@@ -1125,6 +1546,14 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
         "communal_settings": ("communal_settings.csv", CommunalSettingRow),
         "passenger_arrivals": ("passenger_arrivals.csv", PassengerArrivalRow),
         "derived_controls": ("derived_controls.csv", DerivedControlRow),
+        "covid_daily_surveillance": ("covid_daily_surveillance.csv", CovidDailySurveillanceRow),
+        "covid_current_summary": ("covid_current_summary.csv", CovidCurrentSummaryRow),
+        "covid_weekly_vaccination": ("covid_weekly_vaccination.csv", CovidWeeklyVaccinationRow),
+        "covid_serosurvey_2020": ("covid_serosurvey_2020.csv", CovidSerosurveyRow),
+        "covid_weekly_eligible_population": (
+            "covid_weekly_eligible_population.csv",
+            CovidWeeklyEligiblePopulationRow,
+        ),
     }
     table_manifest: list[dict[str, Any]] = []
     for table_name, (filename, model) in table_models.items():
@@ -1159,6 +1588,7 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
             "in places; raw values and suppression notes are preserved rather than imputed."
         ),
     ]
+    warnings.extend(covid_warnings)
     quality_report = {
         "schema_version": "1.0",
         "build_status": "passed",
@@ -1207,10 +1637,11 @@ def _quality_report_markdown(report: dict[str, Any]) -> str:
     lines.extend(["", "## Validation and reconciliation", ""])
     for check in report["checks"]:
         detail = check.get("details", "")
+        detail_suffix = f" {detail}" if detail else ""
         lines.append(
             f"- **{check['status']}** `{check['name']}`: "
             f"actual={check.get('actual', '')}, expected={check.get('expected', '')}, "
-            f"difference={check.get('difference', '')}. {detail}"
+            f"difference={check.get('difference', '')}.{detail_suffix}"
         )
     lines.extend(["", "## Pipeline", ""])
     for stage in report["pipeline"]:

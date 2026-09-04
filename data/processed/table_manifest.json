@@ -268,6 +268,110 @@
       "path": "data/processed/derived_controls.csv",
       "rows": 37,
       "sha256": "7681d0dca40a84cc2850fa9c147a780bf179a984c65b96c40f9c5c433684d135"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "date",
+        "measure",
+        "value",
+        "unit",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_daily_surveillance.csv",
+      "rows": 10087,
+      "sha256": "68fba14314dcce40c5c97eb59f51b5c539e93bef3188fdce59650996965c5858"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "date",
+        "measure",
+        "value",
+        "unit",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_current_summary.csv",
+      "rows": 5176,
+      "sha256": "96d1a10d64e5182304637b74af19a7cd2929478f6dde963fb5d0f41d9bb68c00"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "week_ending",
+        "dose",
+        "age_band",
+        "metric",
+        "value",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_weekly_vaccination.csv",
+      "rows": 19008,
+      "sha256": "c39ac432926e8e53411a40ced67d597f57cd67605023f5fb9e8ba937df0fe808"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "measure",
+        "value",
+        "unit",
+        "population",
+        "note"
+      ],
+      "path": "data/processed/covid_serosurvey_2020.csv",
+      "rows": 13,
+      "sha256": "bb4ac1be8bfc2ffc64f5d18bf2b1cbf4e41d5a3fdf57369ae4eccd135389dd1b"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "week_ending",
+        "value",
+        "unit",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_weekly_eligible_population.csv",
+      "rows": 132,
+      "sha256": "134478f9ef8205cadf63aef94f09e73bcd64720f987e819f3a6b8f2e783b1c1f"
     }
   ]
 }
