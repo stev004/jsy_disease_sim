@@ -18,6 +18,10 @@ import numpy as np
 
 from .outbreak_schemas import DurationSpecification
 
+SUCCESS_KEY_ISIN_THRESHOLD = 64
+# Quick NumPy 2.x measurement on 100k edge keys: np.isin wins through 64
+# successes; unique/searchsorted is faster from 65 onward.
+
 
 def _load_starsim() -> Any:
     """Import the pinned engine lazily at the disease boundary."""
@@ -58,7 +62,14 @@ def _match_success_hazards(
     success_keys = np.asarray(source_uids, dtype=np.int64) * K + np.asarray(
         target_uids, dtype=np.int64
     )
-    hit_indices = np.flatnonzero(np.isin(edge_keys, success_keys))
+    if len(success_keys) <= SUCCESS_KEY_ISIN_THRESHOLD:
+        hit_indices = np.flatnonzero(np.isin(edge_keys, success_keys))
+    else:
+        unique_success_keys = np.unique(success_keys)
+        positions = np.searchsorted(unique_success_keys, edge_keys)
+        in_range = positions < len(unique_success_keys)
+        in_range[in_range] = unique_success_keys[positions[in_range]] == edge_keys[in_range]
+        hit_indices = np.flatnonzero(in_range)
     indices_by_pair: dict[tuple[int, int], deque[int]] = defaultdict(deque)
     for hit_index in hit_indices:
         indices_by_pair[(int(src[hit_index]), int(trg[hit_index]))].append(int(hit_index))
