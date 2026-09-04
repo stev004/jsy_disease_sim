@@ -1,0 +1,11 @@
+=== PRE (stageA @ pre-C1) ===
+a6a2650
+M2_HASH 69c183c2498a4c94fae5a6f6de408b149bfc2962c2ab5edfc3055702eab0bb11 wall=510.1s
+=== POST (C-1 branch) ===
+a6a2650
+M2_HASH 69c183c2498a4c94fae5a6f6de408b149bfc2962c2ab5edfc3055702eab0bb11 wall=77.8s
+=== full suite on C-1 ===
+274 passed, 5 warnings in 532.97s (0:08:52)
+All checks passed!
+152 files already formatted
+VERIFY_C1_DONE

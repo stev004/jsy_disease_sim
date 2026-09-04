@@ -4,6 +4,10 @@
 
 ## Open
 
+### G13 — Merge the R8 chain (one merge, eight stacked units) + fix GitHub Actions billing
+- **Question:** ① Fix GitHub Actions billing (Settings → Billing & plans: failed payment or spending limit — CI is dead on all branches until then). ② Merge `codex/r8-stageA` @ `2528733c8fd1e95a59ecc07782da1ed39e9407dc` (Stage A gate restorations, golden hashes, M2 memoization 510→78 s, intervention memoization, exact route tranche +1.30×, replicate persistence + honest 6-worker budget, namespace fix)? Every unit director-gated (full suites, byte-identical fingerprints/hashes at full scale); terra trail audit filed with all flags fixed or acknowledged (`docs/runs/2026-09-04-r8-trail-audit-terra.md`).
+- **Default:** fix billing, let CI confirm the tip, then merge SHA-first `--no-ff`. Fallback if billing takes time: merge on local evidence (suites passed repeatedly on the exact tree) and let CI confirm on main afterwards — say which you prefer. After merge: the validation ensemble (44 seeds at 6 workers, ~70–80 min projected) which doubles as the missing per-worker memory measurement; note the replicate hashes will match the frozen P4 artifact only if none of the merged changes alters latent identity — the R8 chain is proven hash-identical, so they should match exactly.
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.

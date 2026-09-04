@@ -1,0 +1,30 @@
+=== 1. ci compare: parent vs D-2 (standard) ===
+fingerprints identical
+standard bus: A_wall/B_wall=1.014970
+standard care_resident: A_wall/B_wall=0.832962
+standard care_staff: A_wall/B_wall=1.125806
+=== 2. ci compare: term-boundary window ===
+fingerprints identical
+term-boundary bus: A_wall/B_wall=0.949525
+term-boundary care_resident: A_wall/B_wall=1.061111
+term-boundary care_staff: A_wall/B_wall=0.728873
+=== 3. full-mode compare vs committed v2 baseline (standard 30d) ===
+fingerprints identical
+standard bus: A_wall/B_wall=1.022733
+standard care_resident: A_wall/B_wall=1.181645
+standard care_staff: A_wall/B_wall=1.041157
+standard community_indoor: A_wall/B_wall=1.451035
+standard community_outdoor: A_wall/B_wall=1.470409
+standard household: A_wall/B_wall=0.968192
+standard school_class: A_wall/B_wall=0.940005
+standard school_cross_class: A_wall/B_wall=1.024260
+standard shared_vehicle: A_wall/B_wall=1.028390
+standard workplace_team: A_wall/B_wall=1.030645
+standard workplace_transient: A_wall/B_wall=1.169391
+standard total: A_wall/B_wall=1.303243
+=== 4. suite + lint + mypy on D-2 ===
+280 passed, 5 warnings in 522.34s (0:08:42)
+No fixes available (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+2 files would be reformatted, 150 files already formatted
+Success: no issues found in 3 source files
+VERIFY_D2_DONE

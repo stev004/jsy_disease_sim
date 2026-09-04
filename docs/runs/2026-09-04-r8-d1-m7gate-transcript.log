@@ -1,0 +1,23 @@
+=== PRE (stageA @ ee996cd) ===
+build=220.5s
+m7_combined wall=244.4s latent=1a72de5dc784beb80ee510b321ff973e6320bd876b7de1b4da982b4671d14211 outcome=247dddb94abc842381fdb6adac8fe0489fcbab75a422644ef14eefa99136357a events=1670
+m7_community_indoor wall=169.7s latent=aa7a333b225ad8c88ae25e440de4e10d2c4725b27d2627652510ab5ec5108535 outcome=ea7a2f2634d2561f400a9bb234718503259f438ee1841e95e5f6e4bbf475c882 events=31891
+M7GATE_DONE
+=== POST (D-1) ===
+   Building jersey-outbreak-simulator @ file:///home/steven/jos-r8-d1-wt
+      Built jersey-outbreak-simulator @ file:///home/steven/jos-r8-d1-wt
+Installed 75 packages in 154ms
+Rebuilding font cache, please be patient...
+Font cache rebuilt in folder: /home/steven/.cache/matplotlib
+
+Note: rebuilding the font cache only happens once on first import, or set the environment variable STARSIM_INSTALL_FONTS=0 to disable.
+build=223.7s
+m7_combined wall=228.6s latent=1a72de5dc784beb80ee510b321ff973e6320bd876b7de1b4da982b4671d14211 outcome=247dddb94abc842381fdb6adac8fe0489fcbab75a422644ef14eefa99136357a events=1670
+m7_community_indoor wall=164.5s latent=aa7a333b225ad8c88ae25e440de4e10d2c4725b27d2627652510ab5ec5108535 outcome=ea7a2f2634d2561f400a9bb234718503259f438ee1841e95e5f6e4bbf475c882 events=31891
+M7GATE_DONE
+=== full suite on D-1 ===
+275 passed, 5 warnings in 531.29s (0:08:51)
+All checks passed!
+152 files already formatted
+Success: no issues found in 1 source file
+M7GATE_ALL_DONE

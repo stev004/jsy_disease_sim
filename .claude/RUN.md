@@ -1,19 +1,13 @@
-# RUN — R8 foreman run: Claude Science audit Stages A→E (started 2026-09-03 evening)
+# RUN — R8 foreman run: CLOSED 2026-09-04 (digest below in trail; awaiting Steven on G13 + GitHub billing)
 
-**Ruling:** Steven in chat: "yeah foreman a to e" + roadmap consolidation. **Authority for content:** `docs/audits/2026-09-03-claude-science-audit-findings.md` (51 findings; its "Recommended implementation order" §Stage A–E is the plan; its "Would not do" list is binding). **Living backlog:** `docs/roadmap.md` (new — reconciled at every closeout per CLOSEOUT.md).
+**Chain complete:** `codex/r8-stageA` @ `2528733c8fd1e95a59ecc07782da1ed39e9407dc` = Stage A (PROV-1, DISEASE-2, ROUTE-2, ROUTE-10) + C-0 golden hashes + C-1 M2 memoization (510→78 s, hash-identical) + D-1 intervention memoization (honest −6.5%) + D-2 exact route tranche (+1.30×) + E-1 persistence/worker-budget + terra-flagged namespace fix. All director-gated: suites 253–284 green per unit, fingerprints/hashes byte-identical at full scale everywhere applicable. Evidence: `docs/runs/2026-09-0{3,4}-r8-*`; terra trail audit filed (`2026-09-04-r8-trail-audit-terra.md`) — stale-state and evidence-location flags fixed; the 6-worker-bound caveat and CROSS-1 residue acknowledged in roadmap.md; the 78%→76% M2-share correction recorded.
 
-## Predicate
-Stages A–E implemented and merged (Steven-gated, SHA-first) with every item's own confirm-or-kill measurement honored; scientific corrections (DISEASE-4, CROSS-3, ROUTE-6/7-science, DATA-7/8/9/10, DISEASE-10) land on their own versioned track with hash migrations, never through equivalence gates; Stage-B measurement campaign produces the three-parameter cost model that re-ranks C/D before they are briefed. Then the new full-scale ensemble launches (THEN section of roadmap.md). **Budget: 12 iterations.**
+## Blocked on Steven
+1. **GitHub Actions billing** — CI cannot run on ANY branch ("recent account payments have failed or your spending limit needs to be increased" — GitHub Settings → Billing & plans). G13's default merge condition needs it.
+2. **G13** (GATES.md) — merge the R8 chain tip.
 
-## Progress: Stage A ☑ COMPLETE (`codex/r8-stageA` @ `a9c76f0`, five-hash full-scale gate passed) · Stage B ☑ campaign done (`docs/runs/2026-09-04-r8-stageB-campaign.json` — 180 d = 433.7 s confirmed; M2 = 78% of parent build; intervention tax +1.4…+4.7 s/day; memory flat, 6–7 workers fit) · Stage C-0 (DATA-6 golden hashes) ◐ codex in flight (`codex/r8-c0-golden-hashes`, report `~/jos-r8-c0.last.md`). Re-ranking per Stage B: C = DATA-6 → DATA-2 (M2 king) → parent reuse; D led by DISEASE-1. Roadmap.md is the live tick-list.
+## Remaining R8 items (open on roadmap.md, next run)
+DISEASE-1 step 3 (numpy intervention vectorization — the M7 prize), ROUTE-5/4 columnar edges, PROV-2/3/5/6/7/9/10/11/12/13 cluster, ROUTE-11/DATA-1/DISEASE-3/PROV-8 + parent reuse, Stage-B residue (fine-grained timers, per-worker footprint), and the whole **scientific-corrections track** (DISEASE-4 fabricated zeros, CROSS-3 erratum, ROUTE-6/7 model decisions, DATA-7/8/9/10, DISEASE-10 — several need Steven's model-owner decisions).
 
-## (historical) Iteration 1 — Stage A (gates), two parallel codex units + one queued
-- **A-1 (in flight):** PROV-1 — excise the four execution fields from the M6 ensemble logical hash, schema 1.4→1.5, verifier branch, finalizer comparison fix, invariance unit test. Branch `codex/r8-a1-prov1`, worktree `~/jos-r8-a1-wt`, brief `~/jos-brief-r8-a1.md`, report `~/jos-r8-a1.last.md`.
-- **A-2 (in flight):** ROUTE-10 + DISEASE-2 — consolidate `_stable_int` into `hashing.py` (equality proof over ≥10⁶ keys in 2 processes FIRST, pinned-digest test), extract the attribution lookup into a module-level pure function, re-point the oracle at it, add packing-bound/beta-difference/permuted fixtures, mutation-proof (3 mutants must go red). Branch `codex/r8-a2-primitives`, worktree `~/jos-r8-a2-wt`, brief `~/jos-brief-r8-a2.md`, report `~/jos-r8-a2.last.md`.
-- **A-3 (queued, after A-2 lands — touches the same primitive):** ROUTE-2 harness upgrade (11 routes, Starsim array fingerprints, declared route list, counter inside the consolidated `_stable_int` behind a flag, date-major mode, term-boundary window 2025-02-14…25, committed ci fixture; then re-baseline).
-- Director gates per unit: full CI-mirror (pytest, ruff check+format, **mypy over CI's pinned list PLUS respiratory.py**, uv lock check), diff review, and for A-1 the workers=1-vs-2 fixture identity check.
-
-## Cold-start resume
-1. Read `docs/roadmap.md` NOW section + the audit's implementation-order section.
-2. Check `~/jos-r8-a1.last.md` / `~/jos-r8-a2.last.md` in WSL; review-diff-gate-commit any that landed; A-3 next, then Stage B (the measurement campaign incl. one real 180-day replicate and the two M7 30-day runs).
-3. Trail rows from `r8-run-start`. Main @ `df41196`+state; no ensemble in flight.
+## Cold-start
+`docs/roadmap.md` NOW section → GATES.md (G13, G5) → decisions.tsv tail. V1.2 Track B iteration 3 (canonical epi tables) remains ready to run independently.
