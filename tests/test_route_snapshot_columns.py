@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import gc
 import importlib.util
 import sys
 import types
+import weakref
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -22,7 +24,12 @@ from jersey_outbreak.network_generator import (
     generate_networks,
 )
 from jersey_outbreak.network_schemas import NetworkGenerationConfig
-from jersey_outbreak.starsim_adapter import _edge_arrays, agent_uid_mapping
+from jersey_outbreak.starsim_adapter import (
+    JOSDynamicNetworkMixin,
+    _build_starsim_networks_for_mapping,
+    _edge_arrays,
+    agent_uid_mapping,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE_ROOT = Path("/tmp/jos-r5a-base")
@@ -182,6 +189,52 @@ def test_columnar_and_dict_adapter_bytes_match(m6_network) -> None:
                 assert dict_view[name].flags.c_contiguous
                 assert columnar[name].tobytes() == dict_view[name].tobytes()
                 assert columnar_container[name].tobytes() == dict_view[name].tobytes()
+
+
+def test_dynamic_uid_index_is_network_scoped_and_byte_identical(m6_network) -> None:
+    config = NetworkGenerationConfig(mode="ci", seed=123)
+    generated1 = generate_networks(config, m6_network.m2_input, m6_network.m3_input)
+
+    class _WeakMapping(dict[str, int]):
+        pass
+
+    mapping1 = _WeakMapping(agent_uid_mapping(generated1))
+    networks1 = _build_starsim_networks_for_mapping(generated1, mapping1)
+    dynamic1 = next(network for network in networks1 if isinstance(network, JOSDynamicNetworkMixin))
+    object.__setattr__(
+        dynamic1,
+        "sim",
+        types.SimpleNamespace(t=types.SimpleNamespace(now=lambda _format: "2025-01-06")),
+    )
+    dynamic1._replace_edges()
+    uid_of_index = dynamic1._uid_of_index
+    assert uid_of_index is not None
+
+    for route_id in sorted(generated1.route_specs):
+        for snapshot_date in config.snapshot_dates:
+            snapshot = generated1.route_snapshot(route_id, snapshot_date)
+            columnar = _edge_arrays(_FakeStarsim(), snapshot, mapping1, uid_of_index=uid_of_index)
+            dict_view = _edge_arrays(_FakeStarsim(), snapshot.edges, mapping1)
+            for name in ("p1", "p2", "beta"):
+                assert columnar[name].dtype == dict_view[name].dtype
+                assert columnar[name].shape == dict_view[name].shape
+                assert columnar[name].tobytes() == dict_view[name].tobytes()
+
+    mapping1_ref = weakref.ref(mapping1)
+    generated2 = generate_networks(config, m6_network.m2_input, m6_network.m3_input)
+    mapping2 = _WeakMapping(agent_uid_mapping(generated2))
+    networks2 = _build_starsim_networks_for_mapping(generated2, mapping2)
+    dynamic2 = next(network for network in networks2 if isinstance(network, JOSDynamicNetworkMixin))
+    object.__setattr__(
+        dynamic2,
+        "sim",
+        types.SimpleNamespace(t=types.SimpleNamespace(now=lambda _format: "2025-01-06")),
+    )
+    dynamic2._replace_edges()
+
+    del dynamic1, networks1, generated1, mapping1
+    gc.collect()
+    assert mapping1_ref() is None
 
 
 @pytest.mark.skipif(not BASE_ROOT.exists(), reason="base comparison tree is not present")
