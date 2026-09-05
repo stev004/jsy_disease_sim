@@ -1582,22 +1582,33 @@ def generate_networks(
             },
             "workplace_id",
         )
+        workplace_transient_groups_by_weekday: dict[int, list[list[str]]] = {}
 
         def build_workplace_transient(snapshot_date: date) -> list[dict[str, Any]]:
-            groups: list[list[str]] = []
-            for _workplace_id, jobs in sorted(work_route_jobs_by_workplace.items()):
-                active = [
-                    job["agent_id"]
-                    for job in jobs
-                    if _job_is_physical_on_date(
-                        job,
-                        job["agent_id"],
-                        snapshot_date,
-                        config.seed,
-                        physical_weekdays_cache=physical_weekdays_cache,
-                    )
-                ]
-                groups.append(active)
+            weekday = snapshot_date.weekday()
+            groups: list[list[str]]
+            if weekday >= 5:
+                groups = [[] for _ in work_route_jobs_by_workplace.values()]
+            else:
+                cached_groups = workplace_transient_groups_by_weekday.get(weekday)
+                if cached_groups is None:
+                    groups = []
+                    for _workplace_id, jobs in sorted(work_route_jobs_by_workplace.items()):
+                        active = [
+                            job["agent_id"]
+                            for job in jobs
+                            if _job_is_physical_on_date(
+                                job,
+                                job["agent_id"],
+                                snapshot_date,
+                                config.seed,
+                                physical_weekdays_cache=physical_weekdays_cache,
+                            )
+                        ]
+                        groups.append(active)
+                    workplace_transient_groups_by_weekday[weekday] = groups
+                else:
+                    groups = cached_groups
             active_workers = _activity_weighted_participants(
                 (agent_id for group in groups for agent_id in group),
                 len({agent_id for group in groups for agent_id in group}),
@@ -1622,29 +1633,49 @@ def generate_networks(
         dynamic_builders["workplace_transient"] = build_workplace_transient
 
     if "workplace_team" in route_specs:
+        workplace_team_columns_by_weekday: dict[int, EdgeColumns] = {}
 
-        def build_workplace_team(snapshot_date: date) -> list[dict[str, Any]]:
-            if snapshot_date.weekday() >= 5:
+        def build_workplace_team(snapshot_date: date) -> list[dict[str, Any]] | EdgeColumns:
+            weekday = snapshot_date.weekday()
+            if weekday >= 5:
                 return []
-            active_agents_by_team = {
-                team_id: [
-                    job["agent_id"]
-                    for job in jobs
-                    if _job_is_physical_on_date(
-                        job,
-                        job["agent_id"],
-                        snapshot_date,
-                        config.seed,
-                        physical_weekdays_cache=physical_weekdays_cache,
-                    )
-                ]
-                for team_id, jobs in work_route_jobs_by_team.items()
-            }
-            return _deduplicate_edges(
-                edge
-                for group in active_agents_by_team.values()
-                for edge in _complete_group(group, 0.7, 1)
-            )
+            columns = workplace_team_columns_by_weekday.get(weekday)
+            if columns is None:
+                active_agents_by_team = {
+                    team_id: [
+                        job["agent_id"]
+                        for job in jobs
+                        if _job_is_physical_on_date(
+                            job,
+                            job["agent_id"],
+                            snapshot_date,
+                            config.seed,
+                            physical_weekdays_cache=physical_weekdays_cache,
+                        )
+                    ]
+                    for team_id, jobs in work_route_jobs_by_team.items()
+                }
+                edges = _deduplicate_edges(
+                    edge
+                    for group in active_agents_by_team.values()
+                    for edge in _complete_group(group, 0.7, 1)
+                )
+                converted = RouteSnapshot.from_edge_dicts(
+                    "workplace_team",
+                    snapshot_date,
+                    edges,
+                    index_by_agent_id,
+                    agent_ids,
+                )
+                columns = EdgeColumns(
+                    converted.p1_index,
+                    converted.p2_index,
+                    converted.weight,
+                    converted.persistence_days,
+                    agent_ids,
+                )
+                workplace_team_columns_by_weekday[weekday] = columns
+            return columns
 
         dynamic_builders["workplace_team"] = build_workplace_team
 
