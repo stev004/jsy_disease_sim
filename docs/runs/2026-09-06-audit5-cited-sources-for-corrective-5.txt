@@ -1,0 +1,83 @@
+# Director extraction for corrective 5 (audit-5 findings): population report pages 4-6; vaccination fraction evidence.
+
+===== jersey_population_2024_total_pdf PAGE 4 =====
+ 
+ 
+ 
+4      stats.je Statistics Jersey | 24 September 2025 
+Total population: December 2024 
+The population at the end of each quarter (March, June, September, and December) of each year is 
+shown in Figure 3. There is typically a seasonal pattern with a larger population in the middle of the year, 
+when there are more seasonal workers living in the Island. The seasonal pattern was less prominent 
+during 2020 but returned in 2021.  
+Figure 3: The seasonal pattern typically seen in Jersey’ s population size has returned after the 
+COVID-19 pandemic 
+Total population size between 2016 and 2024 
+ 
+  
+
+===== jersey_population_2024_total_pdf PAGE 5 =====
+ 
+ 
+ 
+5      stats.je Statistics Jersey | 24 September 2025 
+Total population: December 2024 
+4.2 Natural change and net migration 
+The change in Jersey’ s resident population is made up of two components: 
+• natural change – the number of births minus the number of deaths 
+• net migration – the number of people arriving minus the number of people leaving 
+Natural change and net migration over the previous 12 months are shown in Figure 4. This shows: 
+• natural change remained negative in 2024 at -150 (more deaths than births) 
+• net migration was +670 in 2024 (more immigration than emigration) and the revised estimate 
+was +730 for 2023 
+• the total population change in 2024 was an increase of +510  
+Between 2017 and 2024, natural change was consistently close to zero, and net migration varied more 
+year-to-year. As a result, total change mostly followed net migration between 2017 and 2024.  
+In the previous report, net migration in 2023 was provisionally estimated to be +470. This report revises 
+the 2023 estimate to +730, now that additional administrative data relating to this period have been 
+received and estimates can be more accurate. See Methodology and quality report for details on 
+provisional estimates and revisions.  
+Figure 4: The total population increased by 510 people between the end of 2023 and the end 
+of 2024 
+Rolling 12-month natural change, net migration, and total change between 2012 and 2024 
+ 
+The estimates prior to 2017 use a different method and are only available for December of each year. This method is 
+described in the Population and migration statistics, 2011 to 2021 report.  
+
+===== jersey_population_2024_total_pdf PAGE 6 =====
+ 
+ 
+ 
+6      stats.je Statistics Jersey | 24 September 2025 
+Total population: December 2024 
+4.3 Births and deaths 
+Natural change is made up of births and deaths of Jersey residents.3 The number of annual births and 
+deaths can be seen in Figure 5 between 2017 and 2024.4 This shows:  
+• there were more deaths than births in 2024, as has been seen since 2022, which was the ﬁrst 
+time that this had happened since 19835 
+• there were 730 births of Jersey residents in 2024, a decline from 2019, where there were 890 
+births (a decrease of 18% over ﬁve years) 
+• there were 880 deaths of Jersey residents in 2024, which was similar to 2023, but was an 
+increase from 800 in 2019 (an increase of 9% over ﬁve years) 
+Figure 5: There were 150 more deaths than births in 2024 
+Annual (12-month rolling total) births and deaths between 2017 and 2024 
+ 
+  
+ 
+3 Numbers have all been rounded to the nearest 10 people. Therefore, the rounded natural change may not exactly 
+equal the difference of rounded birth and death numbers. 
+4 These ﬁgures are births and deaths of Jersey residents, with residency estimated from administrative data sources. 
+These will differ from births and deaths ﬁgures produced on a different basis. See the Methodology and quality 
+report for details.  
+5 Information on birth and death registrations from the Superintendent Registrar Annual Statement 2021 suggests 
+that a negative natural change was last seen in Jersey in 1983.  
+
+===== covid19_weekly_vaccination_csv: selected columns, first 3 and last 3 rows =====
+Date='2023-01-29' | VaccinationsTotalNumberFirstDoseVaccinations='84365' | VaccinationsTotalNumberFirstDoseVaccinationsPercentage='0.8' | EligiblePopulation='107800' | VaccinationsPercentagePopulationVaccinatedFirstDose80yearsandover='1' | VaccinationsTotalVaccinationDosesFirstDose80yearsandover='5401'
+Date='2023-01-22' | VaccinationsTotalNumberFirstDoseVaccinations='84365' | VaccinationsTotalNumberFirstDoseVaccinationsPercentage='0.8' | EligiblePopulation='107800' | VaccinationsPercentagePopulationVaccinatedFirstDose80yearsandover='1.03' | VaccinationsTotalVaccinationDosesFirstDose80yearsandover='5457'
+Date='2023-01-15' | VaccinationsTotalNumberFirstDoseVaccinations='84358' | VaccinationsTotalNumberFirstDoseVaccinationsPercentage='0.8' | EligiblePopulation='107800' | VaccinationsPercentagePopulationVaccinatedFirstDose80yearsandover='1.02' | VaccinationsTotalVaccinationDosesFirstDose80yearsandover='5446'
+Date='2021-03-28' | VaccinationsTotalNumberFirstDoseVaccinations='44318' | VaccinationsTotalNumberFirstDoseVaccinationsPercentage='' | EligiblePopulation='107800' | VaccinationsPercentagePopulationVaccinatedFirstDose80yearsandover='' | VaccinationsTotalVaccinationDosesFirstDose80yearsandover=''
+Date='2021-03-21' | VaccinationsTotalNumberFirstDoseVaccinations='43136' | VaccinationsTotalNumberFirstDoseVaccinationsPercentage='' | EligiblePopulation='107800' | VaccinationsPercentagePopulationVaccinatedFirstDose80yearsandover='' | VaccinationsTotalVaccinationDosesFirstDose80yearsandover=''
+Date='2021-03-14' | VaccinationsTotalNumberFirstDoseVaccinations='40137' | VaccinationsTotalNumberFirstDoseVaccinationsPercentage='' | EligiblePopulation='107800' | VaccinationsPercentagePopulationVaccinatedFirstDose80yearsandover='' | VaccinationsTotalVaccinationDosesFirstDose80yearsandover=''
+distinct VaccinationsTotalNumberFirstDoseVaccinationsPercentage values (sample): ['', '0.8', '0.80366', '0.81'] ... ['', '0.8', '0.80366', '0.81']
+all Percentage-column non-blank values: n=5323 min=0.0 max=1.17
