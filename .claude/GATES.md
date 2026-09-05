@@ -4,21 +4,17 @@
 
 ## Open
 
-### G16 — Merge the V1.2 evidence-foundation chain (`feat/v12-denominators-dictionary`)
-- **Question:** merge `446545377a49150b6dcb83f1575af023838178f7` into `main`? The branch contains iteration 1 (`865600e`, remaining freezes: JHU, respiratory PDFs + 3 authenticated Wayback editions, winter report, annual estimates; CI 33927957826 green) and iteration 2 (`9ac9d20`, age-band denominators + measure dictionary; CI 33930873632 green) and iteration 4 (`03ed6bc`, audit-1 corrections; CI 33932747765 green) and iteration 7 (`4465453`, audit-2 corrections: reporting fields on JHU/serosurvey rows, dictionary over all 22 tables, cited-or-unknown cells, known-gap warnings; M2 golden hash unchanged; CI 33936072022 green), plus merges of `main`'s state-layer commits. Data pipeline only — no simulation module touched; registry 28→37, tables 19→23; full suite 302 at `4465453` (Codex) / director focused + golden gates. Reports: `docs/runs/2026-09-04-v12-run2-iter1-freezes-luna-report.md`, `docs/runs/2026-09-05-v12-run2-iter2-denominators-dictionary-luna-report.md`.
-- **Command (SHA-first):** `git -C ~/jsy_disease_sim fetch origin && git -C ~/jsy_disease_sim merge --no-ff 446545377a49150b6dcb83f1575af023838178f7 -m "G16: merge feat/v12-denominators-dictionary @ 4465453 (V1.2 remaining freezes + denominators + measure dictionary + audit corrections)" && git -C ~/jsy_disease_sim push`
-- **Default:** MERGE **as a partial evidence-foundation merge — it does NOT satisfy the V1.2 exit gate** (three audits FAIL; `docs/audits/2026-09-05-v12-exit-gate-audit-{1,2,3}-sol-FAIL.md`). What the audits DO confirm: the tables rebuild byte-identically into any directory and every sampled row traces to a frozen cell. The remaining findings are measure-dictionary/contract items corrected by the next run on a new branch; merging now stops that branch from diverging.
-
-### G17 — Merge the robustness bundle (`fix/job-liveness-and-snapshot-eol`) — AFTER G16
-- **Question:** merge `c062d20afba94e03964216c62ca99e9d90d0825d` into `main`? Job layer: exclusive `scheduler.lock`, worker token + liveness probe so a live worker is ADOPTED on API restart instead of being marked INTERRUPTED (audit PROV-2); restart-test snapshot-before/after; `.gitattributes` `data/raw/** -text` (Windows autocrlf was rewriting six frozen fixtures). No scientific module touched. Director gate: 32 focused + 293 full, ruff/mypy clean; **CI 33934808135 verify+frontend success**. Report: `docs/runs/2026-09-05-robustness-bundle-luna-report.md`.
-- **Command (SHA-first, after G16 — it branches from `main` so the order is only to keep the trail linear):** `git -C ~/jsy_disease_sim fetch origin && git -C ~/jsy_disease_sim merge --no-ff c062d20afba94e03964216c62ca99e9d90d0825d -m "G17: merge fix/job-liveness-and-snapshot-eol @ c062d20 (PROV-2 scheduler lock + liveness adoption, restart-test snapshot, data/raw -text)" && git -C ~/jsy_disease_sim push`
-- **Default:** merge after CI green on the SHA (behavioural change in the job layer; no science).
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G17 — Merge the robustness bundle — RESOLVED 2026-09-05 (Steven, in chat: "merge G16 and G17")
+Executed by the agent on the explicit one-time instruction: SHA-first `--no-ff` of `c062d20afba94e03964216c62ca99e9d90d0825d` → merge `f5c246c6b2c78860000fe6124dc018a151bd1a50` (after G16). Branch CI 33934808135 green. Pre-push smoke on the merged tree: 56 targeted tests (data pipeline, sources, population, job liveness, M9.1) + ruff + format + `jos demo` + rebuild byte-identical + `check-attr text: unset`. Pushed; main CI logged in the trail when read.
+
+### G16 — Merge the V1.2 evidence-foundation chain — RESOLVED 2026-09-05 (Steven, in chat: "merge G16 and G17")
+Executed by the agent on the explicit one-time instruction: SHA-first `--no-ff` of `446545377a49150b6dcb83f1575af023838178f7` → merge `133a0990affa2e1443a809c33ef8be10cae6392b`. Branch CI 33936072022 green. Partial evidence-foundation merge: the V1.2 exit gate is NOT satisfied (three FAIL audits in `docs/audits/`); the corrective unit now branches from `main`.
 
 ### G15 — Merge V1.2 Track B iteration 3 — RESOLVED 2026-09-04 (Steven, in chat: "merge G14 and G15")
 Executed by the agent on the explicit one-time instruction (not a standing authorization): SHA-first `--no-ff` of `de3a32d72d66fef5ed6291cbfc7b7ac3a090e4ab` → merge `32e9b954d84237b63efa4f3e68b6c335d56f52b0`, after G14. Branch CI 33915625764 green (verify+frontend); merged code tree byte-identical to the branch tree (0 differing files under src/tests/data); pre-push smoke: 62/63 targeted tests + ruff + format + `jos demo` — the one smoke failure was a stale scratch namespace under the primary checkout's root `.replicates-in-progress/` left by the director's 19:22 pre-fix reproduction (removed; test passes; CI runs on a clean checkout). Pushed; main CI on the merge SHA logged in the trail when read.
