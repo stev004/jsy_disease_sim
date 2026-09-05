@@ -321,7 +321,7 @@
         "observation_status",
         "source_locator",
         "transformation_id",
-        "week_ending",
+        "date",
         "dose",
         "age_band",
         "metric",
@@ -331,7 +331,7 @@
       ],
       "path": "data/processed/covid_weekly_vaccination.csv",
       "rows": 19008,
-      "sha256": "c39ac432926e8e53411a40ced67d597f57cd67605023f5fb9e8ba937df0fe808"
+      "sha256": "b5acedbefff67c2725f36eadffb7dd6da6d55f0d4fed1a3e80b77ab6a694077b"
     },
     {
       "columns": [
@@ -365,7 +365,7 @@
         "observation_status",
         "source_locator",
         "transformation_id",
-        "week_ending",
+        "date",
         "value",
         "unit",
         "reporting_status",
@@ -373,7 +373,7 @@
       ],
       "path": "data/processed/covid_weekly_eligible_population.csv",
       "rows": 132,
-      "sha256": "134478f9ef8205cadf63aef94f09e73bcd64720f987e819f3a6b8f2e783b1c1f"
+      "sha256": "ede59462a9850fb6be0d7ba9838d21ccaadeb58841c1c79841ecae9c31355e8a"
     },
     {
       "columns": [
@@ -464,8 +464,8 @@
         "cited_source_version"
       ],
       "path": "data/processed/measure_dictionary.csv",
-      "rows": 87,
-      "sha256": "1ffe743aabce9ec3dfe583d0c08a40878164f861ce9de22d97b7bc69bc9a6526"
+      "rows": 92,
+      "sha256": "0dfbf3b9d89d7bfe4ece8c282361f0a56002e4ac8de03eeb89dfb79cb06212c3"
     }
   ]
 }

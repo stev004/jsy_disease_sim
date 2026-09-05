@@ -42,7 +42,7 @@ Build status: **passed**
 | respiratory_epidemiological_report_wayback_20260102_pdf | passed | automated | a84d4b55d57ffbf74a671e794b594b79f9e99afe2afaf0522abf887694a4a759 | data/raw/respiratory_epidemiological_report_wayback_20260102_pdf/epidemiological_report.pdf |
 | influenza_winter_illness_report_2024_pdf | passed | automated | 8443a073e9d76496f0e63792f743ebd12d6ab8d488f6428e8e6902c17c4ff93e | data/raw/influenza_winter_illness_report_2024_pdf/influenza_winter_illness_report_2024.pdf |
 | annual_population_estimates_by_age_sex_csv | passed | automated | 1b7b14fa75cab035860dd865eedd72527a92dac1a9ca0fcf76bbb5a2b731e368 | data/raw/annual_population_estimates_by_age_sex_csv/annual-population-estimates-by-age-and-sex.csv |
-| epi_measure_dictionary_manual_fixture | passed | manual | 024e9005a6633b7464e9b922aa4a1341ee79ef56e08689a3c1560ef7c0fc34a5 | data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv |
+| epi_measure_dictionary_manual_fixture | passed | manual | fd8b0c0f15bb8edca5a0a78dc0b6b80bd4f76184645f3f8ef5b6e7117bb8d5ba | data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv |
 
 ## Canonical tables
 
@@ -64,13 +64,13 @@ Build status: **passed**
 | data/processed/derived_controls.csv | 37 | 7681d0dca40a84cc2850fa9c147a780bf179a984c65b96c40f9c5c433684d135 |
 | data/processed/covid_daily_surveillance.csv | 10087 | 68fba14314dcce40c5c97eb59f51b5c539e93bef3188fdce59650996965c5858 |
 | data/processed/covid_current_summary.csv | 5176 | 96d1a10d64e5182304637b74af19a7cd2929478f6dde963fb5d0f41d9bb68c00 |
-| data/processed/covid_weekly_vaccination.csv | 19008 | c39ac432926e8e53411a40ced67d597f57cd67605023f5fb9e8ba937df0fe808 |
+| data/processed/covid_weekly_vaccination.csv | 19008 | b5acedbefff67c2725f36eadffb7dd6da6d55f0d4fed1a3e80b77ab6a694077b |
 | data/processed/covid_serosurvey_2020.csv | 13 | 717e08c68e0313ea6e771af13565bdc61a0ac13a6f1c3421a556f31b624568bd |
-| data/processed/covid_weekly_eligible_population.csv | 132 | 134478f9ef8205cadf63aef94f09e73bcd64720f987e819f3a6b8f2e783b1c1f |
+| data/processed/covid_weekly_eligible_population.csv | 132 | ede59462a9850fb6be0d7ba9838d21ccaadeb58841c1c79841ecae9c31355e8a |
 | data/processed/covid_jhu_daily.csv | 3429 | 205cf2366c05c6a543eb66bbbb3806181574828f7bc1a3b9b448083ec5e87289 |
 | data/processed/population_estimates_annual.csv | 4242 | ee7dc6302193ea1abeeacb0e06063d9de05bedf30af8ec5a5533ecf181fc85ff |
 | data/processed/population_denominators_by_age_band.csv | 714 | 156d060bb758e71aefd1adef1cfeead8335f33cafc1b075bf115923d41b38428 |
-| data/processed/measure_dictionary.csv | 87 | 1ffe743aabce9ec3dfe583d0c08a40878164f861ce9de22d97b7bc69bc9a6526 |
+| data/processed/measure_dictionary.csv | 92 | 0dfbf3b9d89d7bfe4ece8c282361f0a56002e4ac8de03eeb89dfb79cb06212c3 |
 
 ## Validation and reconciliation
 

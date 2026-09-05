@@ -1139,7 +1139,7 @@ def _covid_tables(
     ]
     weekly_tables: list[dict[str, Any]] = []
     eligible_tables: list[dict[str, Any]] = []
-    for week_ending, row in sorted(weekly_prepared):
+    for date_value, row in sorted(weekly_prepared):
         eligible_value, eligible_status, eligible_upper_bound = parse_published_value(
             row["EligiblePopulation"], path=weekly_path, field="EligiblePopulation"
         )
@@ -1151,10 +1151,10 @@ def _covid_tables(
             {
                 **context.provenance(
                     weekly_source,
-                    locator=f"csv_row_{week_ending}_col_EligiblePopulation",
+                    locator=f"csv_row_{date_value}_col_EligiblePopulation",
                     transformation_id="csv_covid_weekly_eligible_population_v1",
                 ),
-                "week_ending": week_ending,
+                "date": date_value,
                 "value": eligible_value,
                 "unit": "persons",
                 "reporting_status": eligible_status,
@@ -1169,10 +1169,10 @@ def _covid_tables(
                 {
                     **context.provenance(
                         weekly_source,
-                        locator=f"csv_row_{week_ending}_col_{column}",
+                        locator=f"csv_row_{date_value}_col_{column}",
                         transformation_id="csv_covid_weekly_vaccination_long_v1",
                     ),
-                    "week_ending": week_ending,
+                    "date": date_value,
                     "dose": dose,
                     "age_band": age_band,
                     "metric": metric,
@@ -1274,6 +1274,34 @@ def _dictionary_pairs(
     return pairs
 
 
+def _dictionary_source_pairs(
+    tables: dict[str, list[dict[str, Any]]],
+) -> set[tuple[str, str, str]]:
+    source_pairs: set[tuple[str, str, str]] = set()
+    for table_name in _DICTIONARY_TABLES:
+        table_rows = tables[table_name]
+        for row in table_rows:
+            if table_name == "covid_weekly_vaccination":
+                measure = f"{row['dose']}:{row['metric']}"
+            elif table_name == "covid_weekly_eligible_population":
+                measure = "eligible_population"
+            elif table_name in {
+                "population_estimates_annual",
+                "population_denominators_by_age_band",
+            }:
+                measure = "count"
+            elif "measure" in row:
+                measure = row["measure"]
+            else:
+                value_columns = _DICTIONARY_VALUE_COLUMNS[table_name]
+                for measure in value_columns:
+                    if measure in row:
+                        source_pairs.add((table_name, measure, row["source_id"]))
+                continue
+            source_pairs.add((table_name, measure, row["source_id"]))
+    return source_pairs
+
+
 def _measure_dictionary_table(
     context: SourceContext,
     tables: dict[str, list[dict[str, Any]]],
@@ -1289,6 +1317,7 @@ def _measure_dictionary_table(
         raise DataBuildError(f"{path}: unexpected measure dictionary columns: {extra}")
 
     fixture_pairs: set[tuple[str, str]] = set()
+    fixture_source_pairs: set[tuple[str, str, str]] = set()
     dictionary_rows: list[dict[str, Any]] = []
     for row in raw_rows:
         for column in _MEASURE_DICTIONARY_COLUMNS:
@@ -1298,9 +1327,11 @@ def _measure_dictionary_table(
         if cited_source.sha256 is None:
             raise DataBuildError(f"source has no sha256: {cited_source_id}")
         pair = (row["table"], row["measure"])
-        if pair in fixture_pairs:
-            raise DataBuildError(f"{path}: duplicate measure dictionary pair {pair}")
+        source_pair = (*pair, cited_source_id)
+        if source_pair in fixture_source_pairs:
+            raise DataBuildError(f"{path}: duplicate measure dictionary key {source_pair}")
         fixture_pairs.add(pair)
+        fixture_source_pairs.add(source_pair)
         dictionary_rows.append(
             {
                 **_provenance(
@@ -1338,6 +1369,14 @@ def _measure_dictionary_table(
         extra = sorted(fixture_pairs - built_pairs)
         raise DataBuildError(
             f"{path}: measure dictionary pairs differ from built tables; "
+            f"missing={missing}; extra={extra}"
+        )
+    built_source_pairs = _dictionary_source_pairs(tables)
+    if fixture_source_pairs != built_source_pairs:
+        missing = sorted(built_source_pairs - fixture_source_pairs)
+        extra = sorted(fixture_source_pairs - built_source_pairs)
+        raise DataBuildError(
+            f"{path}: measure dictionary source keys differ from built tables; "
             f"missing={missing}; extra={extra}"
         )
     return dictionary_rows
