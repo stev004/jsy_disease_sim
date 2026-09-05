@@ -1,4 +1,6 @@
-# RUN — foreman run `perf-v12-run3` IN FLIGHT (started 2026-09-05 20:35 BST, director Fable via /foreman)
+# RUN — foreman run `perf-v12-run3` ENDED 2026-09-06 (ts: trail rows exit-audit-6-FAIL-run1-end, tranche2b-review-PASS); nothing in flight except the terra trail audit
+
+**Run 1 (exit gate): NOT MET by one dictionary cell pair — corrective 6 + audit 7 wait on G21.** **Run 2 (perf tranche 2): MET** — PERF-1/2/3 + ROUTE-5 phase 1 + ROUTE-4 on `perf/integration-tranche2b` @ `0dec469`, CI green, two independent reviews PASS; merge = G18 (default: option B). Cold start: read GATES G18/G19/G21 first; the ledger below is the run history.
 
 ## START HERE (cold start / resume)
 1. Read `.claude/DIRECTOR.md` in full → this file → `.claude/GATES.md` (open: G5 only) → `tail -8 .claude/decisions.tsv` (rows from `run-start` 2026-09-05T20:35 onward).
@@ -21,7 +23,7 @@
 
 | **tranche2-review — PASS (ts: trail row)** (163,709 tokens; `docs/audits/2026-09-05-tranche2-perf-review-sol-PASS.md`) | clone `/tmp/jos-tranche2-review` @ `ac04bbb` | read-only | `~/jos-tranche2-review-brief.md` · `~/jos-tranche2-review.log` · `~/jos-tranche2-review.last.md` | Sol@high independent review of the PERF-1/2/3 diffs: behaviour-delta read, executor test batch, own ci seed-124 M2/M3/M4 + 30d equivalence vs base, 2-worker pool ensemble smoke (PERF-1 closure pickling risk). Verdict `TRANCHE-2 REVIEW: PASS|BLOCKED` → G18 default |
 
-**Integration-2 `perf/integration-tranche2b` @ `0dec469f83ee936b9b68e979e7a927807d7654e0`** (worktree `~/jos-integ2-wt`, pushed, CI pending) = integration-tranche2 `ac04bbb` + ROUTE-5 phase 1 + fix `6ff4870` + ROUTE-4 `6ffceca`; one conflict in `starsim_adapter.py` resolved by the director (uid-index array wrapped in `PlainMetadataBoundary`), one test adjusted. **Sol review 2 (tranche's last audit run) launched on it** — verdict decides whether G18's candidate moves from `ac04bbb` to `0dec469` (see G18 option B). Perf impl runs used: 6 of 9 (perf1/2/3, r5a, r5a-fix, r4); audit runs 2 of 2 after this review.
+**Integration-2 `perf/integration-tranche2b` @ `0dec469f83ee936b9b68e979e7a927807d7654e0`** (worktree `~/jos-integ2-wt`, pushed, CI pending) = integration-tranche2 `ac04bbb` + ROUTE-5 phase 1 + fix `6ff4870` + ROUTE-4 `6ffceca`; one conflict in `starsim_adapter.py` resolved by the director (uid-index array wrapped in `PlainMetadataBoundary`), one test adjusted. **Sol review 2 = PASS (ts: trail row tranche2b-review-PASS; `docs/audits/2026-09-06-tranche2b-perf-review-sol-PASS.md`; 361,585 tokens); CI 33998934843 green; r4 CI 33998705249 green → G18 option B qualified and is the default.** Perf impl runs used 6 of 9; audit runs 2 of 2 → **run 2 complete, predicate met.**
 
 Waiter: `wait2.sh '<units>'` (scratchpad) polls every 5 min for the next `.last.md`, 45-min cap; 20-min zero-write watchdog = log mtime age printed per poll.
 
