@@ -8,7 +8,12 @@ from pathlib import Path
 import pytest
 
 import jersey_outbreak.data_pipeline as data_pipeline
-from jersey_outbreak.data_pipeline import DataBuildError, build_canonical, parse_published_value
+from jersey_outbreak.data_pipeline import (
+    DataBuildError,
+    build_canonical,
+    load_source_registry,
+    parse_published_value,
+)
 from jersey_outbreak.hashing import sha256_file
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,6 +47,17 @@ def test_canonical_build_reconciles_controls_and_is_repeatable(tmp_path: Path) -
     assert suppressed
     assert all(row["workers"] == "" and row["upper_bound"] == "10" for row in suppressed)
     assert sha256_file(output_dir / "quality_report.json")
+
+
+def test_relocated_build_manifests_have_stable_logical_paths(tmp_path: Path) -> None:
+    first_dir = tmp_path / "first-destination"
+    second_dir = tmp_path / "second-destination"
+    build_canonical(ROOT, first_dir)
+    build_canonical(ROOT, second_dir)
+
+    assert (first_dir / "table_manifest.json").read_bytes() == (
+        second_dir / "table_manifest.json"
+    ).read_bytes()
 
 
 def test_parse_published_value_preserves_missing_and_suppression(tmp_path: Path) -> None:
@@ -393,12 +409,48 @@ def test_measure_dictionary_pairs_and_cells_are_complete(tmp_path: Path) -> None
         "known_exclusions",
         "source_locator",
         "reference_period",
+        "cited_source_id",
+        "cited_source_sha256",
+        "cited_source_retrieved_at",
+        "cited_source_version",
     )
     assert all(all(row[field] for field in dictionary_fields) for row in dictionary_rows)
     assert all(
         row["event_date_definition"] == "unknown" or row["source_locator"]
         for row in dictionary_rows
     )
+
+
+def test_measure_dictionary_citations_match_source_registry(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    build_canonical(ROOT, output_dir)
+    registry = load_source_registry(ROOT).by_id
+    with (output_dir / "measure_dictionary.csv").open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert all(row["geography"] != "Jersey (island-wide)" for row in rows)
+    assert all(
+        row["cited_source_sha256"] == registry[row["cited_source_id"]].sha256
+        and row["cited_source_retrieved_at"]
+        == registry[row["cited_source_id"]].retrieved_at.isoformat()
+        for row in rows
+    )
+
+
+def test_unregistered_measure_dictionary_source_id_fails_the_build(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original_read_csv_rows = data_pipeline.read_csv_rows
+
+    def read_synthetic_rows(path: Path, required_columns: set[str]) -> list[dict[str, str]]:
+        rows = original_read_csv_rows(path, required_columns)
+        if path.name == "measure_dictionary.csv":
+            rows[0]["source_id"] = "unregistered_source"
+        return rows
+
+    monkeypatch.setattr(data_pipeline, "read_csv_rows", read_synthetic_rows)
+    with pytest.raises(DataBuildError, match="unknown source_id: unregistered_source"):
+        build_canonical(ROOT, tmp_path / "processed")
 
 
 def test_extra_measure_dictionary_pair_fails_the_build(

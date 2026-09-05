@@ -356,3 +356,7 @@ class MeasureDictionaryRow(CanonicalProvenance):
     suppression_semantics: NonEmptyString
     reporting_regime: NonEmptyString
     known_exclusions: NonEmptyString
+    cited_source_id: NonEmptyString
+    cited_source_sha256: NonEmptyString
+    cited_source_retrieved_at: NonEmptyString
+    cited_source_version: NonEmptyString

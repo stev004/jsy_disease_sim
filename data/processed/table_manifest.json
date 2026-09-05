@@ -453,11 +453,15 @@
         "denominator",
         "suppression_semantics",
         "reporting_regime",
-        "known_exclusions"
+        "known_exclusions",
+        "cited_source_id",
+        "cited_source_sha256",
+        "cited_source_retrieved_at",
+        "cited_source_version"
       ],
       "path": "data/processed/measure_dictionary.csv",
       "rows": 44,
-      "sha256": "f76189c9ee8fb84afc0c99718485ed81d5bce0d84c594243a3919b2d62e3d30f"
+      "sha256": "3a0ad1fe3d3f8c3b00a65e7d244313754d264d6970826801af3c2a381ae810cb"
     }
   ]
 }

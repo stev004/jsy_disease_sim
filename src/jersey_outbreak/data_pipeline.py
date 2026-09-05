@@ -331,7 +331,7 @@ def _write_table[ModelT: CanonicalProvenance](
             values = row.model_dump(mode="python")
             writer.writerow({column: _csv_value(values.get(column)) for column in columns})
     return {
-        "path": str(path.relative_to(output_dir.parent.parent)),
+        "path": f"data/processed/{filename}",
         "rows": len(validated),
         "sha256": sha256_file(path),
         "columns": columns,
@@ -551,6 +551,7 @@ _MEASURE_DICTIONARY_COLUMNS = (
     "known_exclusions",
     "source_locator",
     "reference_period",
+    "source_id",
 )
 
 
@@ -1250,6 +1251,10 @@ def _measure_dictionary_table(
     for row in raw_rows:
         for column in _MEASURE_DICTIONARY_COLUMNS:
             _required(row, column, path)
+        cited_source_id = row["source_id"]
+        cited_source = context.source(cited_source_id)
+        if cited_source.sha256 is None:
+            raise DataBuildError(f"source has no sha256: {cited_source_id}")
         pair = (row["table"], row["measure"])
         if pair in fixture_pairs:
             raise DataBuildError(f"{path}: duplicate measure dictionary pair {pair}")
@@ -1265,13 +1270,23 @@ def _measure_dictionary_table(
                 "table": row["table"],
                 "measure": row["measure"],
                 "event_date_definition": row["event_date_definition"],
-                "geography": row["geography"],
+                "geography": (
+                    'Jersey row (Province/State == "Jersey", '
+                    'Country/Region == "United Kingdom") of a global file'
+                    if cited_source_id
+                    in {"jhu_csse_confirmed_global_csv", "jhu_csse_deaths_global_csv"}
+                    else f'Jersey (registry title: "{cited_source.title}")'
+                ),
                 "population_universe": row["population_universe"],
                 "unit": row["unit"],
                 "denominator": row["denominator"],
                 "suppression_semantics": row["suppression_semantics"],
                 "reporting_regime": row["reporting_regime"],
                 "known_exclusions": row["known_exclusions"],
+                "cited_source_id": cited_source_id,
+                "cited_source_sha256": cited_source.sha256,
+                "cited_source_retrieved_at": cited_source.retrieved_at.isoformat(),
+                "cited_source_version": cited_source.reference_period,
             }
         )
 

@@ -42,7 +42,7 @@ Build status: **passed**
 | respiratory_epidemiological_report_wayback_20260102_pdf | passed | automated | a84d4b55d57ffbf74a671e794b594b79f9e99afe2afaf0522abf887694a4a759 | data/raw/respiratory_epidemiological_report_wayback_20260102_pdf/epidemiological_report.pdf |
 | influenza_winter_illness_report_2024_pdf | passed | automated | 8443a073e9d76496f0e63792f743ebd12d6ab8d488f6428e8e6902c17c4ff93e | data/raw/influenza_winter_illness_report_2024_pdf/influenza_winter_illness_report_2024.pdf |
 | annual_population_estimates_by_age_sex_csv | passed | automated | 1b7b14fa75cab035860dd865eedd72527a92dac1a9ca0fcf76bbb5a2b731e368 | data/raw/annual_population_estimates_by_age_sex_csv/annual-population-estimates-by-age-and-sex.csv |
-| epi_measure_dictionary_manual_fixture | passed | manual | da01342aafc4fac30ca3bd9a81b1fb86250c9e9ea64c3fe4579158099a8e7f3d | data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv |
+| epi_measure_dictionary_manual_fixture | passed | manual | d3a53340cd5ce1f66c5042837f212177bc4c3fd7af2952915ca59e8182547d38 | data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv |
 
 ## Canonical tables
 
@@ -70,7 +70,7 @@ Build status: **passed**
 | data/processed/covid_jhu_daily.csv | 3429 | 6532eae1015a1deb53cdedbee73fe7168fe012eb2d1da27101841c971e20396d |
 | data/processed/population_estimates_annual.csv | 4242 | ee7dc6302193ea1abeeacb0e06063d9de05bedf30af8ec5a5533ecf181fc85ff |
 | data/processed/population_denominators_by_age_band.csv | 714 | 156d060bb758e71aefd1adef1cfeead8335f33cafc1b075bf115923d41b38428 |
-| data/processed/measure_dictionary.csv | 44 | f76189c9ee8fb84afc0c99718485ed81d5bce0d84c594243a3919b2d62e3d30f |
+| data/processed/measure_dictionary.csv | 44 | 3a0ad1fe3d3f8c3b00a65e7d244313754d264d6970826801af3c2a381ae810cb |
 
 ## Validation and reconciliation
 

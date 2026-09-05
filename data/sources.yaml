@@ -481,5 +481,5 @@ sources:
     status: fixture
     acquisition_method: manual
     local_snapshot: data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv
-    sha256: da01342aafc4fac30ca3bd9a81b1fb86250c9e9ea64c3fe4579158099a8e7f3d
-    notes: Cites source_ids covid19_daily_surveillance_csv, covid19_current_summary_csv, covid19_weekly_vaccination_csv, sars_cov2_serosurvey_2020_pdf, jhu_csse_confirmed_global_csv, jhu_csse_deaths_global_csv and annual_population_estimates_by_age_sex_csv; primary URL is the Government of Jersey COVID19 list.
+    sha256: d3a53340cd5ce1f66c5042837f212177bc4c3fd7af2952915ca59e8182547d38
+    notes: Cites source_ids covid19_daily_surveillance_csv, covid19_current_summary_csv, covid19_weekly_vaccination_csv, sars_cov2_serosurvey_2020_pdf, jhu_csse_confirmed_global_csv, jhu_csse_deaths_global_csv and annual_population_estimates_by_age_sex_csv; includes a source_id column naming the primary frozen source described by each row; primary URL is the Government of Jersey COVID19 list.
