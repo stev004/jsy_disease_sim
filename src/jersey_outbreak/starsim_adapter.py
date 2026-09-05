@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import contextlib
 import io
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import date, timedelta
 from typing import Any
 
 import numpy as np
 
-from .network_generator import GeneratedNetworks
+from .network_generator import EdgeColumns, GeneratedNetworks, RouteSnapshot
 
 SUPPORTED_STARSIM_VERSION = "3.5.2"
 
@@ -78,9 +78,28 @@ def _apply_demographics_arrays(sim: Any, ages: np.ndarray, female: np.ndarray) -
 
 def _edge_arrays(
     ss: Any,
-    edges: tuple[dict[str, Any], ...] | list[dict[str, Any]],
-    uid_by_agent_id: dict[str, int],
+    edges: RouteSnapshot | EdgeColumns | tuple[dict[str, Any], ...] | list[dict[str, Any]],
+    uid_by_agent_id: Mapping[str, int],
 ) -> dict[str, np.ndarray]:
+    if isinstance(edges, (RouteSnapshot, EdgeColumns)):
+        cache_key = id(uid_by_agent_id)
+        cached = _UID_INDEX_CACHE.get(cache_key)
+        if cached is None or cached[0] is not uid_by_agent_id:
+            try:
+                uid_of_index = np.fromiter(
+                    (uid_by_agent_id[agent_id] for agent_id in edges.agent_ids),
+                    dtype=np.int64,
+                    count=len(edges.agent_ids),
+                )
+            except KeyError as exc:
+                raise ValueError(f"route edge references unknown JOS agent: {exc.args[0]}") from exc
+            _UID_INDEX_CACHE[cache_key] = (uid_by_agent_id, uid_of_index)
+        else:
+            uid_of_index = cached[1]
+        p1 = uid_of_index[edges.p1_index]
+        p2 = uid_of_index[edges.p2_index]
+        beta = edges.weight.astype(float, copy=True)
+        return {"p1": ss.uids(p1), "p2": ss.uids(p2), "beta": beta}
     try:
         p1 = np.asarray([uid_by_agent_id[edge["p1"]] for edge in edges], dtype=np.int64)
         p2 = np.asarray([uid_by_agent_id[edge["p2"]] for edge in edges], dtype=np.int64)
@@ -88,6 +107,9 @@ def _edge_arrays(
         raise ValueError(f"route edge references unknown JOS agent: {exc.args[0]}") from exc
     beta = np.asarray([edge["weight"] for edge in edges], dtype=float)
     return {"p1": ss.uids(p1), "p2": ss.uids(p2), "beta": beta}
+
+
+_UID_INDEX_CACHE: dict[int, tuple[Mapping[str, int], np.ndarray]] = {}
 
 
 class JOSDynamicNetworkMixin:
@@ -171,7 +193,7 @@ def _build_starsim_networks_for_mapping(
         if needs_daily_update:
 
             def provider(snapshot_date: date, route_id: str = route_id) -> list[dict[str, Any]]:
-                return list(generated.route_snapshot(route_id, snapshot_date).edges)
+                return generated.route_snapshot(route_id, snapshot_date)  # type: ignore[return-value]
 
             networks.append(_make_dynamic_network(ss, route_id, provider, uid_by_agent_id))
         else:
