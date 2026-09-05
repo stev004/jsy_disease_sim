@@ -1,0 +1,17 @@
+# Wayback CDX evidence for the three frozen respiratory-report editions
+
+## 1. Director probe transcript, 2026-09-04 ~23:20 local (WSL curl; the CDX query that identified the captures) — copied from the session tool output, not a live response:
+$ curl -s "https://web.archive.org/cdx/search/cdx?url=gov.je/SiteCollectionDocuments/Government%20and%20administration/Epidemiological%20Report.pdf&output=txt&fl=timestamp,digest,length&collapse=digest"
+20240223143633 VP7XXH3574O6WTH74AFNV7EJ3UOCOYW7 612057
+20240718124211 XXYCUEBFI7MCLMJU773M4Y2MQOYT4NB4 606884
+20260102114452 NM3NVMGDNXG4QPBVRIIKEHPQJKO77A7E 327
+20260102114452 44QV6WTJNA3CQXZWM4CIU3TLD75T7UTK 602567
+
+## 2. Live re-fetch attempt 2026-09-05 01:48Z: Internet Archive returned its 'Temporarily Offline' page (HTML), so no fresh CDX response could be preserved. Re-run the query above when IA is back and append the raw output here.
+
+## 3. Frozen-file SHA-1 base32 digests recomputed at branch tip 446545377a49150b6dcb83f1575af023838178f7 (2026-09-05T01:49Z):
+20240223 bytes=643251 sha1b32=VP7XXH3574O6WTH74AFNV7EJ3UOCOYW7 sha256=7763aac0fb6b2c018b55455d52add037fa049aa60e9582c0fa765afb45f9479f
+20240718 bytes=621684 sha1b32=XXYCUEBFI7MCLMJU773M4Y2MQOYT4NB4 sha256=b75b08d014754d442da41f2e694b80d5bd0f6b8c0a4c9571e939c36a3381005c
+20260102 bytes=615649 sha1b32=44QV6WTJNA3CQXZWM4CIU3TLD75T7UTK sha256=a84d4b55d57ffbf74a671e794b594b79f9e99afe2afaf0522abf887694a4a759
+
+Match: 20240223 -> VP7XXH…, 20240718 -> XXYCUE…, 20260102 -> 44QV6W… (the 327-byte NM3NVM… record at the same timestamp is a redirect/placeholder capture, not the PDF).

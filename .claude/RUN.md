@@ -4,7 +4,7 @@
 
 **Branches awaiting Steven (SHA-first, GATES.md):** G16 `feat/v12-denominators-dictionary` @ `446545377a49150b6dcb83f1575af023838178f7` (CI 33936072022 green) · G17 `fix/job-liveness-and-snapshot-eol` @ `c062d20afba94e03964216c62ca99e9d90d0825d` (CI 33934808135 green).
 
-**Next run's predicate (obvious):** V1.2 exit gate PASS at a stated SHA — corrective unit 3 (M1-table dictionary cells transcribed per cell from census report pages 9/37/44/46/78/81 with exact citations; `age_sex` split into two dictionary rows by source; `week_ending` → `date` in the two vaccination tables; also-sourced notes moved out of `known_exclusions`) then audit 4. The census page text is pre-extracted at `docs/runs/2026-09-05-census-report-pages-for-dictionary.txt` (director, for the next brief).
+**Next run's predicate (obvious):** V1.2 exit gate PASS at a stated SHA, with the audit brief citing the exact gate-doc revision (`git log -1 -- docs/research/v1_2/V1_2_EXIT_GATE.md`) so re-scoping and remediation stay distinguishable (Terra item 5) — corrective unit 3 (M1-table dictionary cells transcribed per cell from census report pages 9/37/44/46/78/81 with exact citations; `age_sex` split into two dictionary rows by source; `week_ending` → `date` in the two vaccination tables; also-sourced notes moved out of `known_exclusions`) then audit 4. The census page text is pre-extracted at `docs/runs/2026-09-05-census-report-pages-for-dictionary.txt` (director, for the next brief).
 
 **Cold-start:** `docs/roadmap.md` → this file → GATES (G16, G17 open; G5 parked) → decisions.tsv tail (rows `v12-run2-start` … `v12-run2-close`). Cross-model trail audit of this run: `docs/runs/2026-09-05-v12-run2-trail-audit-terra.md` (filed at closeout).
 

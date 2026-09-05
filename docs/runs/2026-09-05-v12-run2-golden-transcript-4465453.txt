@@ -1,0 +1,16 @@
+# Golden logical-hash tests at branch tip
+commit: 446545377a49150b6dcb83f1575af023838178f7
+branch: feat/v12-denominators-dictionary
+date: 2026-09-05T01:46Z
+
+$ uv run --locked pytest -q -k golden -p no:cacheprovider
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+9 passed, 293 deselected, 1 warning in 93.20s (0:01:33)
+
+$ grep m2_logical_content_hash tests/fixtures/golden_logical_hashes.json
+"m2_logical_content_hash": "28a6d90a96454d11dcd6ad9d4531d69f9e4ec4396b802780084d3ae598c839a0"
+"m2_logical_content_hash": "28a6d90a96454d11dcd6ad9d4531d69f9e4ec4396b802780084d3ae598c839a0"
+"m2_logical_content_hash": "bc0f0ddc2cd883a8045c30c05ae89faeec07c39bc36b7384e9e2fa605182ff48"
+"m2_logical_content_hash": "f44b2f457d0dbe21710fa355902e704366cb4af4b3b5e74d7f85af4f17ac6a37"
+"m2_logical_content_hash": "885023cf447f02b3e6a56376f6988c8334bac47e6786b0a1c186a61a93a4652d"

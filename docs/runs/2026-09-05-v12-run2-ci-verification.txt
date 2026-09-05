@@ -1,0 +1,16 @@
+# CI verification transcript for foreman run v12-run2 (director, authenticated gh, 2026-09-05T01:49Z) — Terra attention item 1
+
+$ gh run view 33927957826 --json headSha,conclusion,jobs
+{"conclusion":"success","headSha":"865600eeee10616087a3c0552e07d030df8de380","jobs":[{"conclusion":"success","name":"verify"},{"conclusion":"success","name":"frontend"}]}
+
+$ gh run view 33930873632 --json headSha,conclusion,jobs
+{"conclusion":"success","headSha":"9ac9d20872559ad4e2a0dc00bc1b73fc792048ab","jobs":[{"conclusion":"success","name":"verify"},{"conclusion":"success","name":"frontend"}]}
+
+$ gh run view 33932747765 --json headSha,conclusion,jobs
+{"conclusion":"success","headSha":"03ed6bc05961c199cb64a181a9bf98c4475122c9","jobs":[{"conclusion":"success","name":"frontend"},{"conclusion":"success","name":"verify"}]}
+
+$ gh run view 33934808135 --json headSha,conclusion,jobs
+{"conclusion":"success","headSha":"c062d20afba94e03964216c62ca99e9d90d0825d","jobs":[{"conclusion":"success","name":"frontend"},{"conclusion":"success","name":"verify"}]}
+
+$ gh run view 33936072022 --json headSha,conclusion,jobs
+{"conclusion":"success","headSha":"446545377a49150b6dcb83f1575af023838178f7","jobs":[{"conclusion":"success","name":"frontend"},{"conclusion":"success","name":"verify"}]}
