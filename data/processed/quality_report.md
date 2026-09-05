@@ -42,7 +42,7 @@ Build status: **passed**
 | respiratory_epidemiological_report_wayback_20260102_pdf | passed | automated | a84d4b55d57ffbf74a671e794b594b79f9e99afe2afaf0522abf887694a4a759 | data/raw/respiratory_epidemiological_report_wayback_20260102_pdf/epidemiological_report.pdf |
 | influenza_winter_illness_report_2024_pdf | passed | automated | 8443a073e9d76496f0e63792f743ebd12d6ab8d488f6428e8e6902c17c4ff93e | data/raw/influenza_winter_illness_report_2024_pdf/influenza_winter_illness_report_2024.pdf |
 | annual_population_estimates_by_age_sex_csv | passed | automated | 1b7b14fa75cab035860dd865eedd72527a92dac1a9ca0fcf76bbb5a2b731e368 | data/raw/annual_population_estimates_by_age_sex_csv/annual-population-estimates-by-age-and-sex.csv |
-| epi_measure_dictionary_manual_fixture | passed | manual | 90051c1448a98cd05c25d7c3903b81d4ac82a99c701c0c4ad6d973ec417534b3 | data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv |
+| epi_measure_dictionary_manual_fixture | passed | manual | 7b831ce2f3a21d5597c23548394ce19e6b9bedb661df2162398f6b079d7b713a | data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv |
 
 ## Canonical tables
 
@@ -70,7 +70,7 @@ Build status: **passed**
 | data/processed/covid_jhu_daily.csv | 3429 | 205cf2366c05c6a543eb66bbbb3806181574828f7bc1a3b9b448083ec5e87289 |
 | data/processed/population_estimates_annual.csv | 4242 | ee7dc6302193ea1abeeacb0e06063d9de05bedf30af8ec5a5533ecf181fc85ff |
 | data/processed/population_denominators_by_age_band.csv | 714 | 156d060bb758e71aefd1adef1cfeead8335f33cafc1b075bf115923d41b38428 |
-| data/processed/measure_dictionary.csv | 92 | 06db52b2d7ab31a37fe605ac24c27631bc3b7d3c40f77e9975414f308d43da2c |
+| data/processed/measure_dictionary.csv | 92 | 2ef512158ae0fcd4f8a05f0138a2596b0121c97e84b2b6b674d484f0f317d96e |
 
 ## Validation and reconciliation
 
@@ -123,6 +123,11 @@ Build status: **passed**
 - Published CSV tables include rounded counts and suppressed small cells in places; raw values and suppression notes are preserved rather than imputed.
 - annual population estimates are published rounded to the nearest 10; sums are not exact
 - population denominator band sums inherit rounding because estimates are published rounded to the nearest 10
+- census blank cell omitted: census_2021_household_type_tenure_csv row "Couple (one pensioner)" column "Registered lodging house" (publisher states no meaning for a blank)
+- census blank cell omitted: census_2021_household_type_tenure_csv row "Couple (one pensioner)" column "Private lodging" (publisher states no meaning for a blank)
+- census blank cell omitted: census_2021_household_type_tenure_csv row "Two or more pensioners" column "Registered lodging house" (publisher states no meaning for a blank)
+- census blank cell omitted: census_2021_household_property_type_csv row "Temporary Structure/Tent, boat or PortakabinTM" column "Social housing rent" (publisher states no meaning for a blank)
+- census blank cell omitted: census_2021_household_property_type_csv row "Temporary Structure/Tent, boat or PortakabinTM" column "Qualified private rent" (publisher states no meaning for a blank)
 - covid daily surveillance anomaly: TestsTotalNegativeTests is excluded because 917 of 917 cells use SharePoint calculated-field rendering, including 418 cells rendered as float;#0 and 1 cell rendered as float;#1073672.00000000.
 - covid current summary undated row raw values: ,1165877,67397,0,
 - vaccination percentages are publisher-computed against an unstated denominator per band; not recomputed here

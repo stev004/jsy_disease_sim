@@ -517,7 +517,7 @@
     {
       "acquisition_method": "manual",
       "local_snapshot": "data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv",
-      "sha256": "90051c1448a98cd05c25d7c3903b81d4ac82a99c701c0c4ad6d973ec417534b3",
+      "sha256": "7b831ce2f3a21d5597c23548394ce19e6b9bedb661df2162398f6b079d7b713a",
       "source_id": "epi_measure_dictionary_manual_fixture",
       "status": "passed"
     }
@@ -987,7 +987,7 @@
       ],
       "path": "data/processed/measure_dictionary.csv",
       "rows": 92,
-      "sha256": "06db52b2d7ab31a37fe605ac24c27631bc3b7d3c40f77e9975414f308d43da2c"
+      "sha256": "2ef512158ae0fcd4f8a05f0138a2596b0121c97e84b2b6b674d484f0f317d96e"
     }
   ],
   "warnings": [
@@ -998,6 +998,11 @@
     "Published CSV tables include rounded counts and suppressed small cells in places; raw values and suppression notes are preserved rather than imputed.",
     "annual population estimates are published rounded to the nearest 10; sums are not exact",
     "population denominator band sums inherit rounding because estimates are published rounded to the nearest 10",
+    "census blank cell omitted: census_2021_household_type_tenure_csv row \"Couple (one pensioner)\" column \"Registered lodging house\" (publisher states no meaning for a blank)",
+    "census blank cell omitted: census_2021_household_type_tenure_csv row \"Couple (one pensioner)\" column \"Private lodging\" (publisher states no meaning for a blank)",
+    "census blank cell omitted: census_2021_household_type_tenure_csv row \"Two or more pensioners\" column \"Registered lodging house\" (publisher states no meaning for a blank)",
+    "census blank cell omitted: census_2021_household_property_type_csv row \"Temporary Structure/Tent, boat or PortakabinTM\" column \"Social housing rent\" (publisher states no meaning for a blank)",
+    "census blank cell omitted: census_2021_household_property_type_csv row \"Temporary Structure/Tent, boat or PortakabinTM\" column \"Qualified private rent\" (publisher states no meaning for a blank)",
     "covid daily surveillance anomaly: TestsTotalNegativeTests is excluded because 917 of 917 cells use SharePoint calculated-field rendering, including 418 cells rendered as float;#0 and 1 cell rendered as float;#1073672.00000000.",
     "covid current summary undated row raw values: ,1165877,67397,0,",
     "vaccination percentages are publisher-computed against an unstated denominator per band; not recomputed here",

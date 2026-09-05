@@ -1575,6 +1575,7 @@ def _population_tables(
 def _household_and_housing_tables(
     context: SourceContext,
     checks: list[dict[str, Any]],
+    warnings: list[str],
 ) -> dict[str, list[dict[str, Any]]]:
     manual_source = "census_2021_report_manual_fixture"
     manual_path, manual_rows = _manual_rows(context, manual_source)
@@ -1653,6 +1654,10 @@ def _household_and_housing_tables(
                 row.get(tenure, ""), path=tenure_path, field=tenure, allow_blank=True
             )
             if value is None:
+                warnings.append(
+                    f'census blank cell omitted: {tenure_source} row "{category}" '
+                    f'column "{tenure}" (publisher states no meaning for a blank)'
+                )
                 continue
             housing.append(
                 {
@@ -1684,6 +1689,10 @@ def _household_and_housing_tables(
                 row.get(tenure, ""), path=property_path, field=tenure, allow_blank=True
             )
             if value is None:
+                warnings.append(
+                    f'census blank cell omitted: {property_source} row "{category}" '
+                    f'column "{tenure}" (publisher states no meaning for a blank)'
+                )
                 continue
             housing.append(
                 {
@@ -2150,9 +2159,10 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
     destination = destination.resolve()
     destination.mkdir(parents=True, exist_ok=True)
     checks: list[dict[str, Any]] = []
+    housing_warnings: list[str] = []
     tables: dict[str, list[dict[str, Any]]] = {}
     tables.update(_population_tables(context, checks))
-    tables.update(_household_and_housing_tables(context, checks))
+    tables.update(_household_and_housing_tables(context, checks, housing_warnings))
     tables.update(_employment_and_workplace_tables(context, checks))
     tables.update(_commute_education_arrivals_tables(context, checks))
     tables["population_estimates_annual"] = _population_estimate_table(context, checks)
@@ -2238,6 +2248,7 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
         "population denominator band sums inherit rounding because estimates are published "
         "rounded to the nearest 10",
     ]
+    warnings.extend(housing_warnings)
     warnings.extend(covid_warnings)
     warnings.extend(
         [
