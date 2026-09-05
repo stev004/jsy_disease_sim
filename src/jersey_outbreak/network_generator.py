@@ -19,7 +19,11 @@ from pathlib import Path
 from typing import Any
 
 from .data_pipeline import DataBuildError
-from .hashing import canonical_json_bytes, sha256_bytes, stable_int, stable_int_suffix
+from .hashing import (
+    sha256_of_canonical_stream,
+    stable_int,
+    stable_int_suffix,
+)
 from .network_schemas import (
     Calendar,
     NetworkGenerationConfig,
@@ -2067,28 +2071,27 @@ def generate_networks(
         },
     }
     generated.diagnostics = diagnostics
-    generated.logical_content_hash = sha256_bytes(
-        canonical_json_bytes(
-            {
-                "agent_ids": agent_ids,
-                "route_specs": generated.route_specs,
-                "structural_edges": generated.structural_edges,
-                "memberships": generated.route_memberships,
-                "school_staff_assignments": generated.school_staff_assignments,
-                "care_staff_assignments": generated.care_staff_assignments,
-                "staffing_provenance": generated.staffing_provenance,
-                "snapshots": {
-                    route_id: [
-                        {
-                            "date": when.isoformat(),
-                            "edges": list(generated.route_snapshot(route_id, when).edges),
-                        }
-                        for when in config.snapshot_dates
-                    ]
-                    for route_id in sorted(route_specs)
-                },
+
+    def snapshot_payloads(route_id: str) -> Iterable[dict[str, Any]]:
+        for when in config.snapshot_dates:
+            yield {
+                "date": when.isoformat(),
+                "edges": list(generated.route_snapshot(route_id, when).edges),
             }
-        )
+
+    generated.logical_content_hash = sha256_of_canonical_stream(
+        {
+            "agent_ids": agent_ids,
+            "route_specs": generated.route_specs,
+            "structural_edges": generated.structural_edges,
+            "memberships": generated.route_memberships,
+            "school_staff_assignments": generated.school_staff_assignments,
+            "care_staff_assignments": generated.care_staff_assignments,
+            "staffing_provenance": generated.staffing_provenance,
+            "snapshots": {
+                route_id: snapshot_payloads(route_id) for route_id in sorted(route_specs)
+            },
+        }
     )
     generated.runtime_seconds = time.perf_counter() - started
     generated.peak_memory_bytes = max(
