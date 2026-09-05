@@ -207,7 +207,7 @@ def test_dynamic_uid_index_is_network_scoped_and_byte_identical(m6_network) -> N
         types.SimpleNamespace(t=types.SimpleNamespace(now=lambda _format: "2025-01-06")),
     )
     dynamic1._replace_edges()
-    uid_of_index = dynamic1._uid_of_index
+    uid_of_index = getattr(dynamic1._uid_of_index, "value", dynamic1._uid_of_index)
     assert uid_of_index is not None
 
     for route_id in sorted(generated1.route_specs):
