@@ -12,7 +12,8 @@ Newest first. History only — current truth lives in the docs named by
 **Open threads / resume points.**
 - **G16, G17** — Steven merges (SHA-first commands in GATES.md).
 - **Next run:** exit gate PASS — corrective unit 3 from `docs/runs/2026-09-05-census-report-pages-for-dictionary.txt` (per-cell census transcription, `age_sex` split by source, `week_ending`→`date`, also-sourced notes out of `known_exclusions`) + audit 4.
-- Cross-model trail audit of this run: `docs/runs/2026-09-05-v12-run2-trail-audit-terra.md`.
+- Cross-model trail audit (Terra): `docs/runs/2026-09-05-v12-run2-trail-audit-terra.md` — 12 attention items, 7 closed at closeout (FRONTIER baseline wording, G16 label + suite count, roadmap duplicate, CI/golden/CDX evidence transcripts filed), 5 carried (gate re-scoping to be cited by audit 4; live CDX response when the Internet Archive is back online; audit-record preamble wording; serialize executor runs during gate audits; the transcription-brief lesson).
+- Housekeeping for the next thread: WSL worktrees `~/jos-v12-freezes-wt`, `~/jos-v12-iter2-wt`, `~/jos-robust-wt` and `/tmp/jos-*` clones are disposable once G16/G17 merge; `~/jsy_disease_sim/.replicates-in-progress/p4-validation-r8/` is an orphaned checkpoint dir from the completed validation run.
 - Evidence: `docs/runs/2026-09-0{4,5}-v12-run2-*`, `docs/runs/2026-09-05-robustness-bundle-luna-report.md`, `docs/audits/2026-09-05-v12-exit-gate-audit-{1,2,3}-sol-FAIL.md`.
 
 ## 2026-09-04 (evening, DESKTOP-KQTC6VL) — validation PASS logged · main CI red root-caused (not a flake) · fix branch green, awaiting G14

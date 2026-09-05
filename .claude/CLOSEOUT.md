@@ -24,6 +24,8 @@ alone. Facts live where this map says; the session log carries history.
 | Decision trail (append-only TSV, one row per iteration) | `.claude/decisions.tsv` |
 | In-flight autonomous-run state + resume recipe | `.claude/RUN.md` |
 | Independent audit reports (immutable) | `docs/audits/` |
+| V1.2 exit-gate definition + audit protocol (the contract cold-start auditors judge; amend with a dated note, never silently) | `docs/research/v1_2/V1_2_EXIT_GATE.md` |
+| Verbatim page extractions / evidence transcripts (CI, golden tests, CDX) for briefs and trail audits | `docs/runs/` (`*-transcript-*.txt`, `*-evidence.txt`, `*-pages-for-*.txt`) |
 | Executor reports, gate transcripts, comparison/delta notes | `docs/runs/` |
 | Cold-start handoff from the original Sol chat (deep history, conventions) | `docs/handoff/2026-08-31-sol-handoff.md` |
 | Windows desktop handoff (agent runbook: native-first probe, WSL2 fallback, P4 sizing) | `docs/desktop-setup.md` + `scripts/{bootstrap-windows.ps1,probe-native.sh,install_skills.sh,setup-windows.ps1}` |
