@@ -1,3 +1,7 @@
+# Start here (any Codex session in this repo)
+
+If you are directing work (a `$foreman` run), read `.claude/RUN.md`, then `.claude/FRONTIER.md`, `.claude/GATES.md`, and `.claude/DIRECTOR.md` in full before anything else; `CLAUDE.md` is the router. If you are an executor launched from a brief, the brief is complete and this file is your behavioural contract; do not go looking for more context.
+
 # Purpose
 
 Use the minimal sufficient solution. Prohibit over-engineering. Aggressive planning is acceptable; execution should remain lightweight. Every design must prove its necessity for the current task.
