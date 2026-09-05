@@ -528,7 +528,21 @@ _POPULATION_DENOMINATOR_PARTITION_BANDS = (
     "80_plus",
 )
 _POPULATION_DENOMINATOR_ROW_COUNT = 714
-_EPIDEMIOLOGY_TABLES = (
+_DICTIONARY_TABLES = (
+    "population_totals",
+    "age_sex",
+    "parish_population",
+    "parish_age_sex",
+    "household_types",
+    "housing_controls",
+    "employment_sectors",
+    "workplace_sizes",
+    "workplace_destination",
+    "commute_modes",
+    "school_students",
+    "communal_settings",
+    "passenger_arrivals",
+    "derived_controls",
     "covid_daily_surveillance",
     "covid_current_summary",
     "covid_jhu_daily",
@@ -538,6 +552,18 @@ _EPIDEMIOLOGY_TABLES = (
     "population_estimates_annual",
     "population_denominators_by_age_band",
 )
+_DICTIONARY_VALUE_COLUMNS = {
+    "age_sex": ("count",),
+    "parish_population": ("population", "density_person_km2"),
+    "parish_age_sex": ("count",),
+    "household_types": ("households",),
+    "workplace_sizes": ("count",),
+    "commute_modes": ("workers",),
+    "school_students": ("students",),
+    "passenger_arrivals": ("passengers",),
+    "population_estimates_annual": ("count",),
+    "population_denominators_by_age_band": ("count",),
+}
 _MEASURE_DICTIONARY_COLUMNS = (
     "table",
     "measure",
@@ -658,6 +684,8 @@ def _covid_jhu_tables(
                     "measure": "cumulative_confirmed_cases",
                     "value": confirmed_value,
                     "unit": "cases",
+                    "reporting_status": "reported",
+                    "upper_bound": None,
                 },
                 {
                     **context.provenance(
@@ -669,6 +697,8 @@ def _covid_jhu_tables(
                     "measure": "cumulative_deaths",
                     "value": death_value,
                     "unit": "deaths",
+                    "reporting_status": "reported",
+                    "upper_bound": None,
                 },
             ]
         )
@@ -694,6 +724,8 @@ def _covid_jhu_tables(
                 "measure": "daily_new_confirmed_cases",
                 "value": daily_value,
                 "unit": "cases",
+                "reporting_status": "reported",
+                "upper_bound": None,
             }
         )
     warnings.append(
@@ -1189,6 +1221,8 @@ def _covid_tables(
                 "unit": _required(row, "unit", serosurvey_path),
                 "population": _required(row, "population", serosurvey_path),
                 "note": _required(row, "note", serosurvey_path),
+                "reporting_status": "reported",
+                "upper_bound": None,
             }
         )
     _add_check(checks, "covid_serosurvey_measures", len(serosurvey_tables), 13)
@@ -1205,11 +1239,11 @@ def _covid_tables(
     }
 
 
-def _canonical_epidemiology_measure_pairs(
+def _dictionary_pairs(
     tables: dict[str, list[dict[str, Any]]],
 ) -> set[tuple[str, str]]:
     pairs: set[tuple[str, str]] = set()
-    for table_name in _EPIDEMIOLOGY_TABLES:
+    for table_name in _DICTIONARY_TABLES:
         table_rows = tables.get(table_name)
         if table_rows is None:
             raise DataBuildError(f"missing canonical epidemiology table: {table_name}")
@@ -1221,7 +1255,7 @@ def _canonical_epidemiology_measure_pairs(
             pairs.add((table_name, "eligible_population"))
         elif table_name in {"population_estimates_annual", "population_denominators_by_age_band"}:
             pairs.add((table_name, "count"))
-        else:
+        elif "measure" in table_rows[0]:
             for row in table_rows:
                 measure = row.get("measure")
                 if not measure:
@@ -1229,6 +1263,14 @@ def _canonical_epidemiology_measure_pairs(
                         f"canonical epidemiology table row has no measure: {table_name}"
                     )
                 pairs.add((table_name, measure))
+        else:
+            try:
+                value_columns = _DICTIONARY_VALUE_COLUMNS[table_name]
+            except KeyError as exc:
+                raise DataBuildError(
+                    f"canonical dictionary table has no configured value columns: {table_name}"
+                ) from exc
+            pairs.update((table_name, column) for column in value_columns)
     return pairs
 
 
@@ -1290,7 +1332,7 @@ def _measure_dictionary_table(
             }
         )
 
-    built_pairs = _canonical_epidemiology_measure_pairs(tables)
+    built_pairs = _dictionary_pairs(tables)
     if fixture_pairs != built_pairs:
         missing = sorted(built_pairs - fixture_pairs)
         extra = sorted(fixture_pairs - built_pairs)
@@ -2083,9 +2125,9 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
     covid_tables = _covid_tables(context, checks)
     covid_warnings = covid_tables.pop("covid_warnings")
     tables.update(covid_tables)
-    tables["measure_dictionary"] = _measure_dictionary_table(context, tables)
     tables.pop("commute_rounding_status", None)
     tables["derived_controls"] = _derived_controls(context, tables, checks)
+    tables["measure_dictionary"] = _measure_dictionary_table(context, tables)
 
     table_models: dict[str, tuple[str, type[CanonicalProvenance]]] = {
         "population_totals": ("population_totals.csv", PopulationTotalRow),
@@ -2158,6 +2200,17 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
         "rounded to the nearest 10",
     ]
     warnings.extend(covid_warnings)
+    warnings.extend(
+        [
+            "known gap: no intervention/NPI timeline source is frozen or tabulated; V1.3 must "
+            "treat NPIs as declared scenario assumptions until a dated, cited fixture exists",
+            "known gap: no parish-level case series is frozen; every frozen case source is "
+            "island-level",
+            "positive influenza test results are excluded from the frozen Influenza and Winter "
+            "Illness Report 2024 by the publisher pending quality assurance "
+            "(influenza_winter_illness_report_2024_pdf, page 1)",
+        ]
+    )
     quality_report = {
         "schema_version": "1.0",
         "build_status": "passed",

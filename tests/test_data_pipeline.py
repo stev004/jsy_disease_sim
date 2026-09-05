@@ -126,6 +126,17 @@ def test_covid_daily_and_summary_tables_preserve_snapshot_values(tmp_path: Path)
     assert all(row["date"] for row in current_rows)
 
 
+def test_jhu_and_serosurvey_rows_have_reporting_status(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    build_canonical(ROOT, output_dir)
+    for table_name in ("covid_jhu_daily", "covid_serosurvey_2020"):
+        with (output_dir / f"{table_name}.csv").open(newline="", encoding="utf-8") as handle:
+            rows = list(csv.DictReader(handle))
+        assert rows
+        assert all(row["reporting_status"] == "reported" for row in rows)
+        assert all(row["upper_bound"] == "" for row in rows)
+
+
 def test_covid_weekly_pair_set_and_quality_warnings(tmp_path: Path) -> None:
     output_dir = tmp_path / "processed"
     build_canonical(ROOT, output_dir)
@@ -367,28 +378,31 @@ def test_population_denominator_16_plus_matches_annual_estimates(tmp_path: Path)
 def test_measure_dictionary_pairs_and_cells_are_complete(tmp_path: Path) -> None:
     output_dir = tmp_path / "processed"
     build_canonical(ROOT, output_dir)
-    table_names = {
-        "covid_daily_surveillance",
-        "covid_current_summary",
-        "covid_jhu_daily",
-        "covid_serosurvey_2020",
-        "covid_weekly_vaccination",
-        "covid_weekly_eligible_population",
-        "population_estimates_annual",
-        "population_denominators_by_age_band",
+    assert len(data_pipeline._DICTIONARY_TABLES) == 22
+    value_columns = {
+        "age_sex": ("count",),
+        "parish_population": ("population", "density_person_km2"),
+        "parish_age_sex": ("count",),
+        "household_types": ("households",),
+        "workplace_sizes": ("count",),
+        "commute_modes": ("workers",),
+        "school_students": ("students",),
+        "passenger_arrivals": ("passengers",),
+        "population_estimates_annual": ("count",),
+        "population_denominators_by_age_band": ("count",),
     }
     built_pairs: set[tuple[str, str]] = set()
-    for table_name in table_names:
+    for table_name in data_pipeline._DICTIONARY_TABLES:
         with (output_dir / f"{table_name}.csv").open(newline="", encoding="utf-8") as handle:
             rows = list(csv.DictReader(handle))
         if table_name == "covid_weekly_vaccination":
             built_pairs.update((table_name, f"{row['dose']}:{row['metric']}") for row in rows)
         elif table_name == "covid_weekly_eligible_population":
             built_pairs.add((table_name, "eligible_population"))
-        elif table_name in {"population_estimates_annual", "population_denominators_by_age_band"}:
-            built_pairs.add((table_name, "count"))
-        else:
+        elif "measure" in rows[0]:
             built_pairs.update((table_name, row["measure"]) for row in rows)
+        else:
+            built_pairs.update((table_name, column) for column in value_columns[table_name])
 
     with (output_dir / "measure_dictionary.csv").open(newline="", encoding="utf-8") as handle:
         dictionary_rows = list(csv.DictReader(handle))
@@ -419,6 +433,35 @@ def test_measure_dictionary_pairs_and_cells_are_complete(tmp_path: Path) -> None
         row["event_date_definition"] == "unknown" or row["source_locator"]
         for row in dictionary_rows
     )
+
+
+def test_dictionary_event_date_definitions_are_cited(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    build_canonical(ROOT, output_dir)
+    with (output_dir / "measure_dictionary.csv").open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    for row in rows:
+        definition = row["event_date_definition"]
+        if definition == "unknown" or definition.startswith(("unknown", "not applicable")):
+            continue
+        assert any(
+            citation in row["source_locator"]
+            for citation in ("data/sources.yaml:", "page", "Date", "Year", "Age", "Parish")
+        )
+
+
+def test_quality_report_contains_known_gap_warnings(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    report = build_canonical(ROOT, output_dir)
+    assert {
+        "known gap: no intervention/NPI timeline source is frozen or tabulated; V1.3 must "
+        "treat NPIs as declared scenario assumptions until a dated, cited fixture exists",
+        "known gap: no parish-level case series is frozen; every frozen case source is "
+        "island-level",
+        "positive influenza test results are excluded from the frozen Influenza and Winter "
+        "Illness Report 2024 by the publisher pending quality assurance "
+        "(influenza_winter_illness_report_2024_pdf, page 1)",
+    } <= set(report["warnings"])
 
 
 def test_measure_dictionary_citations_match_source_registry(tmp_path: Path) -> None:

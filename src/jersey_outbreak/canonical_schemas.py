@@ -274,6 +274,8 @@ class CovidSerosurveyRow(CanonicalProvenance):
     unit: NonEmptyString
     population: NonEmptyString
     note: NonEmptyString
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
 
 
 class CovidWeeklyEligiblePopulationRow(CanonicalProvenance):
@@ -293,6 +295,8 @@ class CovidJhuDailyRow(CanonicalProvenance):
     ]
     value: StrictInt
     unit: NonEmptyString
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
 
 
 class PopulationEstimateAnnualRow(CanonicalProvenance):

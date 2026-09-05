@@ -517,7 +517,7 @@
     {
       "acquisition_method": "manual",
       "local_snapshot": "data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv",
-      "sha256": "d3a53340cd5ce1f66c5042837f212177bc4c3fd7af2952915ca59e8182547d38",
+      "sha256": "024e9005a6633b7464e9b922aa4a1341ee79ef56e08689a3c1560ef7c0fc34a5",
       "source_id": "epi_measure_dictionary_manual_fixture",
       "status": "passed"
     }
@@ -869,11 +869,13 @@
         "value",
         "unit",
         "population",
-        "note"
+        "note",
+        "reporting_status",
+        "upper_bound"
       ],
       "path": "data/processed/covid_serosurvey_2020.csv",
       "rows": 13,
-      "sha256": "bb4ac1be8bfc2ffc64f5d18bf2b1cbf4e41d5a3fdf57369ae4eccd135389dd1b"
+      "sha256": "717e08c68e0313ea6e771af13565bdc61a0ac13a6f1c3421a556f31b624568bd"
     },
     {
       "columns": [
@@ -908,11 +910,13 @@
         "date",
         "measure",
         "value",
-        "unit"
+        "unit",
+        "reporting_status",
+        "upper_bound"
       ],
       "path": "data/processed/covid_jhu_daily.csv",
       "rows": 3429,
-      "sha256": "6532eae1015a1deb53cdedbee73fe7168fe012eb2d1da27101841c971e20396d"
+      "sha256": "205cf2366c05c6a543eb66bbbb3806181574828f7bc1a3b9b448083ec5e87289"
     },
     {
       "columns": [
@@ -982,8 +986,8 @@
         "cited_source_version"
       ],
       "path": "data/processed/measure_dictionary.csv",
-      "rows": 44,
-      "sha256": "3a0ad1fe3d3f8c3b00a65e7d244313754d264d6970826801af3c2a381ae810cb"
+      "rows": 87,
+      "sha256": "1ffe743aabce9ec3dfe583d0c08a40878164f861ce9de22d97b7bc69bc9a6526"
     }
   ],
   "warnings": [
@@ -997,6 +1001,9 @@
     "covid daily surveillance anomaly: TestsTotalNegativeTests is excluded because 917 of 917 cells use SharePoint calculated-field rendering, including 418 cells rendered as float;#0 and 1 cell rendered as float;#1073672.00000000.",
     "covid current summary undated row raw values: ,1165877,67397,0,",
     "vaccination percentages are publisher-computed against an unstated denominator per band; not recomputed here",
-    "JHU cumulative confirmed first differences contain 0 negative days; published corrections are preserved without clipping."
+    "JHU cumulative confirmed first differences contain 0 negative days; published corrections are preserved without clipping.",
+    "known gap: no intervention/NPI timeline source is frozen or tabulated; V1.3 must treat NPIs as declared scenario assumptions until a dated, cited fixture exists",
+    "known gap: no parish-level case series is frozen; every frozen case source is island-level",
+    "positive influenza test results are excluded from the frozen Influenza and Winter Illness Report 2024 by the publisher pending quality assurance (influenza_winter_illness_report_2024_pdf, page 1)"
   ]
 }
