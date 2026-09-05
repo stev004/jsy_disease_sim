@@ -11,7 +11,7 @@
 ## Resolved
 
 ### G17 — Merge the robustness bundle — RESOLVED 2026-09-05 (Steven, in chat: "merge G16 and G17")
-Executed by the agent on the explicit one-time instruction: SHA-first `--no-ff` of `c062d20afba94e03964216c62ca99e9d90d0825d` → merge `f5c246c6b2c78860000fe6124dc018a151bd1a50` (after G16). Branch CI 33934808135 green. Pre-push smoke on the merged tree: 56 targeted tests (data pipeline, sources, population, job liveness, M9.1) + ruff + format + `jos demo` + rebuild byte-identical + `check-attr text: unset`. Pushed; main CI logged in the trail when read.
+Executed by the agent on the explicit one-time instruction: SHA-first `--no-ff` of `c062d20afba94e03964216c62ca99e9d90d0825d` → merge `f5c246c6b2c78860000fe6124dc018a151bd1a50` (after G16). Branch CI 33934808135 green. Pre-push smoke on the merged tree: 56 targeted tests (data pipeline, sources, population, job liveness, M9.1) + ruff + format + `jos demo` + rebuild byte-identical + `check-attr text: unset`. Pushed; **main CI run 33974942892 on `f5c246c`: verify+frontend success**.
 
 ### G16 — Merge the V1.2 evidence-foundation chain — RESOLVED 2026-09-05 (Steven, in chat: "merge G16 and G17")
 Executed by the agent on the explicit one-time instruction: SHA-first `--no-ff` of `446545377a49150b6dcb83f1575af023838178f7` → merge `133a0990affa2e1443a809c33ef8be10cae6392b`. Branch CI 33936072022 green. Partial evidence-foundation merge: the V1.2 exit gate is NOT satisfied (three FAIL audits in `docs/audits/`); the corrective unit now branches from `main`.
