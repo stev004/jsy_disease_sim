@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import resource
 import time
+from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
@@ -867,6 +868,71 @@ def _build_diagnostics(
     }
 
 
+def _assign_secondary_jobs(
+    jobs: list[dict[str, Any]],
+    primary_workplace: dict[str, tuple[str, str | None]],
+    slots_by_sector: dict[str, list[tuple[str, str | None]]],
+    secondary_candidates: list[str],
+    secondary_count: int,
+    rng: np.random.Generator,
+    workplace_by_id: dict[str, dict[str, Any]],
+) -> tuple[list[tuple[str, int, tuple[str, str | None]]], set[str]]:
+    secondary_workers: set[str] = set()
+    remaining_slots = [
+        (sector, index, slot)
+        for sector, slots in slots_by_sector.items()
+        for index, slot in enumerate(slots)
+    ]
+    remaining_by_workplace = Counter(slot[0] for _, _, slot in remaining_slots)
+    available_candidates = list(secondary_candidates)
+    primary_job_by_agent = {job["agent_id"]: job for job in jobs if job["job_role"] == "primary"}
+    for _ in range(secondary_count):
+        if len(remaining_by_workplace) > 1:
+            eligible = available_candidates
+        elif len(remaining_by_workplace) == 1:
+            eligible = [
+                agent_id
+                for agent_id in available_candidates
+                if remaining_by_workplace[primary_workplace[agent_id][0]] < len(remaining_slots)
+            ]
+        else:
+            eligible = []
+        if not eligible:
+            raise DataBuildError("secondary jobs cannot be assigned without workplace duplication")
+        agent_id = eligible[int(rng.integers(0, len(eligible)))]
+        available_candidates.remove(agent_id)
+        primary_id = primary_workplace[agent_id][0]
+        slot_index = next(
+            index
+            for index, (_sector, _local_index, slot) in enumerate(remaining_slots)
+            if slot[0] != primary_id
+        )
+        sector, _local_index, (workplace_id, slot_team_id) = remaining_slots.pop(slot_index)
+        remaining_by_workplace[workplace_id] -= 1
+        if remaining_by_workplace[workplace_id] == 0:
+            del remaining_by_workplace[workplace_id]
+        slots_by_sector[sector].remove((workplace_id, slot_team_id))
+        secondary_workers.add(agent_id)
+        primary_job_by_agent[agent_id]["days_per_week"] = 4
+        workplace = workplace_by_id[workplace_id]
+        jobs.append(
+            {
+                "job_id": f"job-m3-{len(jobs):07d}",
+                "agent_id": agent_id,
+                "workplace_id": workplace_id,
+                "job_role": "secondary",
+                "sector": workplace["sector"],
+                "work_parish": workplace["work_parish"],
+                "days_per_week": 1,
+                "remote_days_per_week": 0,
+                "team_id": slot_team_id,
+                "job_universe": "synthetic_secondary",
+                "employment_universe": workplace["workplace_universe"],
+            }
+        )
+    return remaining_slots, secondary_workers
+
+
 def generate_structure(
     root: Any,
     config: StructureGenerationConfig,
@@ -1071,56 +1137,17 @@ def generate_structure(
                 }
             )
         slots_by_sector[sector] = slots[len(sector_workers) :]
-    secondary_workers: set[str] = set()
-    remaining_slots = [
-        (sector, index, slot)
-        for sector, slots in slots_by_sector.items()
-        for index, slot in enumerate(slots)
-    ]
     secondary_candidates = [agent_id for agent_id in worker_ids if agent_id not in wfh_workers]
     rng.shuffle(secondary_candidates)
-    for _ in range(secondary_count):
-        eligible = [
-            agent_id
-            for agent_id in secondary_candidates
-            if agent_id not in secondary_workers
-            and any(
-                slot[0] != primary_workplace[agent_id][0]
-                for _sector, _index, slot in remaining_slots
-            )
-        ]
-        if not eligible:
-            raise DataBuildError("secondary jobs cannot be assigned without workplace duplication")
-        agent_id = str(rng.choice(eligible))
-        primary_id = primary_workplace[agent_id][0]
-        slot_index = next(
-            index
-            for index, (_sector, _local_index, slot) in enumerate(remaining_slots)
-            if slot[0] != primary_id
-        )
-        sector, _local_index, (workplace_id, slot_team_id) = remaining_slots.pop(slot_index)
-        slots_by_sector[sector].remove((workplace_id, slot_team_id))
-        secondary_workers.add(agent_id)
-        primary_jobs_for_agent = next(
-            job for job in jobs if job["agent_id"] == agent_id and job["job_role"] == "primary"
-        )
-        primary_jobs_for_agent["days_per_week"] = 4
-        workplace = workplace_by_id[workplace_id]
-        jobs.append(
-            {
-                "job_id": f"job-m3-{len(jobs):07d}",
-                "agent_id": agent_id,
-                "workplace_id": workplace_id,
-                "job_role": "secondary",
-                "sector": workplace["sector"],
-                "work_parish": workplace["work_parish"],
-                "days_per_week": 1,
-                "remote_days_per_week": 0,
-                "team_id": slot_team_id,
-                "job_universe": "synthetic_secondary",
-                "employment_universe": workplace["workplace_universe"],
-            }
-        )
+    _assign_secondary_jobs(
+        jobs,
+        primary_workplace,
+        slots_by_sector,
+        secondary_candidates,
+        secondary_count,
+        rng,
+        workplace_by_id,
+    )
     if any(slots_by_sector.values()):
         raise DataBuildError("workplace slots were not fully consumed by generated jobs")
     for row in workplaces:
