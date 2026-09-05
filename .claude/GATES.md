@@ -9,11 +9,15 @@
 - **Command (SHA-first, after CI on `ac04bbb` is read green):** `git -C ~/jsy_disease_sim fetch origin && git -C ~/jsy_disease_sim merge --no-ff ac04bbb50aaea1070a4fbd5d645062e7470c4f3c -m "G18: merge perf/integration-tranche2 @ ac04bbb (PERF-1/2/3)" && git -C ~/jsy_disease_sim push`
 - **Default:** merge (both conditions met). Agent does not merge without an explicit instruction in chat.
 
+### G21 — Second run-1 extension: corrective 6 (one dictionary row) + audit 7
+- **Question:** audit 6 at `79cbf41` FAILs on exactly one cell pair — `housing_controls:overcrowded_households` from `census_2021_overcrowding_csv` leaves `population_universe`/`denominator` unknown although the frozen source is titled "Proportion of overcrowded households by tenure" with tenure rows and an `All households` total. Everything else passes (66/66 rows, all hashes, all audit-1..5 findings closed). The G20 rule said a second extension needs Steven's explicit word. Authorise corrective 6 (brief prepared: `~/jos-corr6-brief.md`, ~15 min, luna@high) + audit 7?
+- **Default:** wait for Steven (no launch). To release: say "run corrective 6 and audit 7"; the director then executes `launch-corr6.sh` → `audit7-launch.sh` (scratchpad pattern, same as 5/6).
+
 ### G20 — Run-1 budget extension (exit gate): one more corrective + one more audit
 - **Question:** the self-set run-1 budget (4 iterations) is spent with audit 5 = FAIL on three narrow dictionary cells (vaccination fraction-vs-percent encoding; per-100,000 rate denominator; population-flow definition on report page 5). The director extended the run by exactly one corrective unit (corr5) and one audit (audit 6) on Steven's standing instruction "make as much progress and parallelism as possible". Stop the extension?
 - **Default:** proceed (corr5 + audit 6 only; a second extension would need Steven's explicit word). Trail row `exit-audit-5-FAIL` records the decision.
 
-### G19 — Merge the V1.2 exit-gate corrective (after an exit-gate PASS; audits 4 and 5 = FAIL at `71e408c` / `5877e42`; corrective 5 landed → head `79cbf41eef9d2f0323da908fe57fea9b8860b503`; audit 6 running against it under G20)
+### G19 — Merge the V1.2 exit-gate corrective (after an exit-gate PASS; audits 4/5/6 = FAIL at `71e408c` / `5877e42` / `79cbf41`; one cell pair left — see G21)
 - **Question:** merge `fix/v12-exit-gate-corrective-3` @ `79cbf41eef9d2f0323da908fe57fea9b8860b503` (the SHA audit 6 judges; includes the gate-doc revisions) into `main`? Command after a filed PASS: `git -C ~/jsy_disease_sim merge --no-ff 79cbf41eef9d2f0323da908fe57fea9b8860b503 -m "G19: merge fix/v12-exit-gate-corrective-3 @ 79cbf41 (V1.2 exit gate PASS)" && git -C ~/jsy_disease_sim push`
 - **Default:** merge only on a filed `V1.2 EXIT GATE: PASS`; on FAIL the run spawns corrective 4 instead.
 
