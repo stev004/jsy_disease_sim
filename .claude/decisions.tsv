@@ -1,4 +1,4 @@
-ts	phase	decision	why	evidence	result
+ts	phase	decision	why	evidence	result	tokens
 2026-08-31T10:42	reconciliation	Filed Sol cold-start handoff into repo and built frontier layer (FRONTIER/GATES/DIRECTOR/decisions.tsv) on new docs/frontier branch off frozen main	chat was sole holder of project state; main frozen at V1 release per handoff s2.1 so docs branch pattern used (s7.13)	docs/handoff/2026-08-31-sol-handoff.md	open
 2026-08-31T10:42	reconciliation	Verified all handoff git facts: main=tag=9e9ce3a, candidate 461bf03 exists, sci-review=b8aeb8b, 11 worktrees intact incl pre-built audit worktree	claims must be checked against git not trusted (handoff s21)	git rev-parse output 2026-08-31	tests green
 2026-08-31T11:05	pilot-run	run-start: foreman pilot, predicate = independent audit of 461bf03 complete with verdict PASS or BLOCKED, budget 1 unit + 1 retry	Steven resolved G1 to launch-now in chat 2026-08-31, overriding after-EMA default	.claude/GATES.md G1	open
