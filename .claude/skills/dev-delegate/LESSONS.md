@@ -4,6 +4,7 @@ Binding rules distilled from failures. Format: `date · symptom → root cause �
 
 Seeded from the Regulate dev-team's history (these already graduated there):
 
+- 2026-09-02 · nohup'd codex in WSL died silently ~6 min in, zero writes, log truncated mid-plan → WSL tears down the session's process group when the launching wsl.exe exits; nohup alone doesn't survive it → RULE: launching codex (or any long job) inside WSL from Windows requires `setsid nohup … &`, then prove the pid alive on a later, separate wsl.exe call.
 - 2026-09-04 · Codex stalled at the end of its run on `ruff format --check` / `git status` gates → the orchestrator had copied the spec INTO the worktree as an untracked `.spec.md`, which the gates then saw as a foreign file → RULE: keep the spec file outside the worktree (pass it via `$(cat ~/spec.md)` or a path under `/tmp`), never as an untracked file in the tree Codex must leave clean.
 - 2026-07-15 · codex run produced no diff and no error → launched without `--sandbox workspace-write`, silently read-only → RULE: the sandbox flag is part of the invocation, never optional. [GRADUATED — step 4]
 - 2026-07-15 · codex hung forever on "Reading additional input from stdin…" → non-interactive launch with piped stdin → RULE: always `< /dev/null`. [GRADUATED — step 4]
