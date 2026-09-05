@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import contextlib
 import io
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from datetime import date, timedelta
 from typing import Any
 
 import numpy as np
 
-from .network_generator import GeneratedNetworks
+from .network_generator import EdgeColumns, GeneratedNetworks, RouteSnapshot
 
 SUPPORTED_STARSIM_VERSION = "3.5.2"
 
@@ -97,11 +97,32 @@ def _apply_demographics_arrays(sim: Any, ages: np.ndarray, female: np.ndarray) -
         raise RuntimeError("Starsim sex state does not match the explicit JOS population")
 
 
+def _uid_index_array(uid_by_agent_id: Mapping[str, int], agent_ids: Sequence[str]) -> np.ndarray:
+    """Translate stable JOS agent IDs to Starsim UIDs in route-column order."""
+
+    try:
+        return np.fromiter(
+            (uid_by_agent_id[agent_id] for agent_id in agent_ids),
+            dtype=np.int64,
+            count=len(agent_ids),
+        )
+    except KeyError as exc:
+        raise ValueError(f"route edge references unknown JOS agent: {exc.args[0]}") from exc
+
+
 def _edge_arrays(
     ss: Any,
-    edges: tuple[dict[str, Any], ...] | list[dict[str, Any]],
-    uid_by_agent_id: dict[str, int],
+    edges: RouteSnapshot | EdgeColumns | tuple[dict[str, Any], ...] | list[dict[str, Any]],
+    uid_by_agent_id: Mapping[str, int],
+    uid_of_index: np.ndarray | None = None,
 ) -> dict[str, np.ndarray]:
+    if isinstance(edges, (RouteSnapshot, EdgeColumns)):
+        if uid_of_index is None:
+            uid_of_index = _uid_index_array(uid_by_agent_id, edges.agent_ids)
+        p1 = uid_of_index[edges.p1_index]
+        p2 = uid_of_index[edges.p2_index]
+        beta = edges.weight.astype(float, copy=True)
+        return {"p1": ss.uids(p1), "p2": ss.uids(p2), "beta": beta}
     try:
         p1 = np.asarray([uid_by_agent_id[edge["p1"]] for edge in edges], dtype=np.int64)
         p2 = np.asarray([uid_by_agent_id[edge["p2"]] for edge in edges], dtype=np.int64)
@@ -116,14 +137,19 @@ class JOSDynamicNetworkMixin:
 
     sim: Any
     edges: Any
-    _snapshot_provider: Callable[[date], list[dict[str, Any]]]
+    _snapshot_provider: Callable[
+        [date], RouteSnapshot | EdgeColumns | tuple[dict[str, Any], ...] | list[dict[str, Any]]
+    ]
     _uid_by_agent_id: PlainMetadataBoundary
+    _uid_of_index: PlainMetadataBoundary
 
     def _replace_edges(self) -> None:
         raw_date = str(self.sim.t.now("str"))[:10].replace(".", "-")
         snapshot_date = date.fromisoformat(raw_date)
         edges = self._snapshot_provider(snapshot_date)
-        arrays = _edge_arrays(_load_starsim(), edges, self._uid_by_agent_id.value)
+        arrays = _edge_arrays(
+            _load_starsim(), edges, self._uid_by_agent_id.value, self._uid_of_index.value
+        )
         self.edges.p1 = arrays["p1"]
         self.edges.p2 = arrays["p2"]
         self.edges.beta = arrays["beta"]
@@ -142,14 +168,18 @@ class JOSDynamicNetworkMixin:
 def _make_dynamic_network(
     ss: Any,
     route_id: str,
-    provider: Callable[[date], list[dict[str, Any]]],
+    provider: Callable[
+        [date], RouteSnapshot | EdgeColumns | tuple[dict[str, Any], ...] | list[dict[str, Any]]
+    ],
     uid_by_agent_id: dict[str, int],
+    uid_of_index: np.ndarray,
 ) -> Any:
     class JOSDynamicNetwork(JOSDynamicNetworkMixin, ss.DynamicNetwork):
         def __init__(self) -> None:
             super().__init__(name=route_id, label=route_id)
             self._snapshot_provider = provider
             self._uid_by_agent_id = PlainMetadataBoundary(uid_by_agent_id)
+            self._uid_of_index = PlainMetadataBoundary(uid_of_index)
 
         def init_post(self, add_pairs: bool = True) -> None:
             super().init_post(add_pairs=False)
@@ -184,6 +214,7 @@ def _build_starsim_networks_for_mapping(
 
     ss = _load_starsim()
     networks: list[Any] = []
+    uid_of_index = _uid_index_array(uid_by_agent_id, generated.agent_ids)
     initial_date = generated.config.start_date
     for route_id, spec in sorted(generated.route_specs.items()):
         needs_daily_update = (
@@ -191,13 +222,15 @@ def _build_starsim_networks_for_mapping(
         )
         if needs_daily_update:
 
-            def provider(snapshot_date: date, route_id: str = route_id) -> list[dict[str, Any]]:
-                return list(generated.route_snapshot(route_id, snapshot_date).edges)
+            def provider(snapshot_date: date, route_id: str = route_id) -> RouteSnapshot:
+                return generated.route_snapshot(route_id, snapshot_date)
 
-            networks.append(_make_dynamic_network(ss, route_id, provider, uid_by_agent_id))
+            networks.append(
+                _make_dynamic_network(ss, route_id, provider, uid_by_agent_id, uid_of_index)
+            )
         else:
             edges = generated.route_snapshot(route_id, initial_date).edges
-            arrays = _edge_arrays(ss, edges, uid_by_agent_id)
+            arrays = _edge_arrays(ss, edges, uid_by_agent_id, uid_of_index)
             networks.append(_make_static_network(ss, route_id, arrays))
     return networks
 
