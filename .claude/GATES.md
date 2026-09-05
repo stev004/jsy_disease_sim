@@ -9,8 +9,8 @@
 - **Command (SHA-first, after CI on `ac04bbb` is read green):** `git -C ~/jsy_disease_sim fetch origin && git -C ~/jsy_disease_sim merge --no-ff ac04bbb50aaea1070a4fbd5d645062e7470c4f3c -m "G18: merge perf/integration-tranche2 @ ac04bbb (PERF-1/2/3)" && git -C ~/jsy_disease_sim push`
 - **Default:** merge (both conditions met). Agent does not merge without an explicit instruction in chat.
 
-### G19 — Merge the V1.2 exit-gate corrective (after an exit-gate PASS; audit 4 at `71e408c` = FAIL, corrective 4 + audit 5 in progress)
-- **Question:** merge `fix/v12-exit-gate-corrective-3` @ `71e408ca75c1477851fc8b5a8e8b5337a3429ac8` (the SHA audit 4 judges; includes the gate-doc revision) into `main`? Command after a filed PASS: `git -C ~/jsy_disease_sim merge --no-ff 71e408ca75c1477851fc8b5a8e8b5337a3429ac8 -m "G19: merge fix/v12-exit-gate-corrective-3 @ 71e408c (V1.2 exit gate PASS)" && git -C ~/jsy_disease_sim push`
+### G19 — Merge the V1.2 exit-gate corrective (after an exit-gate PASS; audit 4 at `71e408c` = FAIL; corrective 4 landed → head `5877e426870da2d03380877240c992d167ba1c38`; audit 5 running against it)
+- **Question:** merge `fix/v12-exit-gate-corrective-3` @ `5877e426870da2d03380877240c992d167ba1c38` (the SHA audit 5 judges; includes the gate-doc revisions) into `main`? Command after a filed PASS: `git -C ~/jsy_disease_sim merge --no-ff 5877e426870da2d03380877240c992d167ba1c38 -m "G19: merge fix/v12-exit-gate-corrective-3 @ 5877e42 (V1.2 exit gate PASS)" && git -C ~/jsy_disease_sim push`
 - **Default:** merge only on a filed `V1.2 EXIT GATE: PASS`; on FAIL the run spawns corrective 4 instead.
 
 
