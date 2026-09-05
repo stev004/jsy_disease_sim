@@ -274,6 +274,8 @@ class CovidSerosurveyRow(CanonicalProvenance):
     unit: NonEmptyString
     population: NonEmptyString
     note: NonEmptyString
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
 
 
 class CovidWeeklyEligiblePopulationRow(CanonicalProvenance):
@@ -282,3 +284,83 @@ class CovidWeeklyEligiblePopulationRow(CanonicalProvenance):
     unit: Literal["persons"]
     reporting_status: Literal["reported", "not_reported", "positive_less_than"]
     upper_bound: StrictInt | None = None
+
+
+class CovidJhuDailyRow(CanonicalProvenance):
+    date: NonEmptyString
+    measure: Literal[
+        "cumulative_confirmed_cases",
+        "cumulative_deaths",
+        "daily_new_confirmed_cases",
+    ]
+    value: StrictInt
+    unit: NonEmptyString
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
+
+
+class PopulationEstimateAnnualRow(CanonicalProvenance):
+    year: StrictInt
+    age: NonEmptyString
+    sex: Literal["male", "female", "all"]
+    count: StrictInt
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
+
+    @field_validator("count", "upper_bound")
+    @classmethod
+    def validate_nonnegative(cls, value: int | None) -> int | None:
+        if value is not None and value < 0:
+            raise ValueError("population estimate values must be non-negative")
+        return value
+
+
+class PopulationDenominatorAgeBandRow(CanonicalProvenance):
+    year: StrictInt
+    age_band: Literal[
+        "5_to_11",
+        "12_to_15",
+        "16_to_17",
+        "17_and_under",
+        "18_to_29",
+        "30_to_39",
+        "40_to_49",
+        "50_to_54",
+        "55_to_59",
+        "60_to_64",
+        "65_to_69",
+        "70_to_74",
+        "75_to_79",
+        "80_plus",
+        "50_plus",
+        "16_plus",
+        "all",
+    ]
+    sex: Literal["male", "female", "all"]
+    count: StrictInt | None = None
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
+
+    @field_validator("count", "upper_bound")
+    @classmethod
+    def validate_nonnegative(cls, value: int | None) -> int | None:
+        if value is not None and value < 0:
+            raise ValueError("population denominator values must be non-negative")
+        return value
+
+
+class MeasureDictionaryRow(CanonicalProvenance):
+    table: NonEmptyString
+    measure: NonEmptyString
+    event_date_definition: NonEmptyString
+    geography: NonEmptyString
+    population_universe: NonEmptyString
+    unit: NonEmptyString
+    denominator: NonEmptyString
+    suppression_semantics: NonEmptyString
+    reporting_regime: NonEmptyString
+    known_exclusions: NonEmptyString
+    cited_source_id: NonEmptyString
+    cited_source_sha256: NonEmptyString
+    cited_source_retrieved_at: NonEmptyString
+    cited_source_version: NonEmptyString

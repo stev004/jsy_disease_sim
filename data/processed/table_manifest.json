@@ -347,11 +347,13 @@
         "value",
         "unit",
         "population",
-        "note"
+        "note",
+        "reporting_status",
+        "upper_bound"
       ],
       "path": "data/processed/covid_serosurvey_2020.csv",
       "rows": 13,
-      "sha256": "bb4ac1be8bfc2ffc64f5d18bf2b1cbf4e41d5a3fdf57369ae4eccd135389dd1b"
+      "sha256": "717e08c68e0313ea6e771af13565bdc61a0ac13a6f1c3421a556f31b624568bd"
     },
     {
       "columns": [
@@ -372,6 +374,98 @@
       "path": "data/processed/covid_weekly_eligible_population.csv",
       "rows": 132,
       "sha256": "134478f9ef8205cadf63aef94f09e73bcd64720f987e819f3a6b8f2e783b1c1f"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "date",
+        "measure",
+        "value",
+        "unit",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_jhu_daily.csv",
+      "rows": 3429,
+      "sha256": "205cf2366c05c6a543eb66bbbb3806181574828f7bc1a3b9b448083ec5e87289"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "year",
+        "age",
+        "sex",
+        "count",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/population_estimates_annual.csv",
+      "rows": 4242,
+      "sha256": "ee7dc6302193ea1abeeacb0e06063d9de05bedf30af8ec5a5533ecf181fc85ff"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "year",
+        "age_band",
+        "sex",
+        "count",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/population_denominators_by_age_band.csv",
+      "rows": 714,
+      "sha256": "156d060bb758e71aefd1adef1cfeead8335f33cafc1b075bf115923d41b38428"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
+        "table",
+        "measure",
+        "event_date_definition",
+        "geography",
+        "population_universe",
+        "unit",
+        "denominator",
+        "suppression_semantics",
+        "reporting_regime",
+        "known_exclusions",
+        "cited_source_id",
+        "cited_source_sha256",
+        "cited_source_retrieved_at",
+        "cited_source_version"
+      ],
+      "path": "data/processed/measure_dictionary.csv",
+      "rows": 87,
+      "sha256": "1ffe743aabce9ec3dfe583d0c08a40878164f861ce9de22d97b7bc69bc9a6526"
     }
   ]
 }
