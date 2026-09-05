@@ -15,6 +15,27 @@ from .network_generator import GeneratedNetworks
 SUPPORTED_STARSIM_VERSION = "3.5.2"
 
 
+class PlainMetadataBoundary:
+    """Expose a plain mapping without making it part of Starsim discovery.
+
+    sciris descends through an object's ``__dict__`` or ``__slots__``.  The
+    mapping therefore lives in a closure, retained by the boundary's sole
+    slot, and is returned only through this accessor.  sciris sees the
+    callable slot but does not inspect Python closure cells.
+    """
+
+    __slots__ = ("_get_value",)
+
+    def __init__(self, value: Any) -> None:
+        self._get_value = lambda: value
+
+    @property
+    def value(self) -> Any:
+        """Return the original mapping for its owning JOS consumer."""
+
+        return self._get_value()
+
+
 def _load_starsim() -> Any:
     """Import and verify the exact Starsim version used at the adapter boundary."""
 
@@ -96,13 +117,13 @@ class JOSDynamicNetworkMixin:
     sim: Any
     edges: Any
     _snapshot_provider: Callable[[date], list[dict[str, Any]]]
-    _uid_by_agent_id: dict[str, int]
+    _uid_by_agent_id: PlainMetadataBoundary
 
     def _replace_edges(self) -> None:
         raw_date = str(self.sim.t.now("str"))[:10].replace(".", "-")
         snapshot_date = date.fromisoformat(raw_date)
         edges = self._snapshot_provider(snapshot_date)
-        arrays = _edge_arrays(_load_starsim(), edges, self._uid_by_agent_id)
+        arrays = _edge_arrays(_load_starsim(), edges, self._uid_by_agent_id.value)
         self.edges.p1 = arrays["p1"]
         self.edges.p2 = arrays["p2"]
         self.edges.beta = arrays["beta"]
@@ -128,7 +149,7 @@ def _make_dynamic_network(
         def __init__(self) -> None:
             super().__init__(name=route_id, label=route_id)
             self._snapshot_provider = provider
-            self._uid_by_agent_id = uid_by_agent_id
+            self._uid_by_agent_id = PlainMetadataBoundary(uid_by_agent_id)
 
         def init_post(self, add_pairs: bool = True) -> None:
             super().init_post(add_pairs=False)
