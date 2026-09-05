@@ -1,0 +1,677 @@
+# Verbatim frozen-source text cited by V1.2 exit-gate audit 4 — director extraction (pypdf / raw CSV lines) for corrective unit 4. Not a source itself; the frozen files are.
+
+##### labour_market_june_2025_pdf — data/raw/labour_market_june_2025_pdf/R-Labour-Market-June-2025.pdf — sha256 647cdf53997f66faa36f41036ec9fd904ae729d8bbccc01a97eb23cb5e398fe0 — registry sha256 647cdf53997f66faa36f41036ec9fd904ae729d8bbccc01a97eb23cb5e398fe0
+
+
+===== PAGE 11 =====
+  
+ 
+ 
+  
+stats.je  
+ 11 
+ Statistics Jersey | 
+ 31 October 2025  
+Labour Market June 2025  
+Number of undertakings 
+In June 2025, there were 8,500 active undertakings in the private sector that employed staff, 13 59% of which 
+were single -person undertakings. Note the single -person undertaking category includes self -employed 
+individuals who do not employ others. Table 6 shows the number of private sector undertakings by sector and 
+number of employees. In June 2025, 89% of undertakings employed fewer than 10 staff, a proportion that has 
+not substantially changed in the last two decade (85% in June 2005).  
+Table 6: Private sector undertakings by number of employees, June 2025 
+Sector 1 2-5 6-9 10-19 20-49 50+ Total 
+Agriculture and fishing 90 40 10 20 10 + 180 
+Manufacturing; utilities and waste 190 70 20 20 10 10 310 
+Construction and quarrying 870 430 110 70 40 10 1,520 
+Wholesale and retail 410 240 80 60 30 20 840 
+Hotels, restaurants and bars 120 180 70 70 40 20 500 
+Transport and storage 230 40 10 10 10 10 300 
+Information and communication 280 80 20 10 10 10 400 
+Financial and legal activities 300 200 60 50 40 70 710 
+Miscellaneous business activities 1,240 420 80 70 40 10 1,860 
+Private education, health and other 
+services 1,300 320 90 70 70 30 1,890 
+Total private sector undertakings 5,020 2,020 550 440 280 190 8,500 
++: non-zero less than 5 
+The total number of undertakings in June 2025 was 150 higher than a year earlier. The increase was due to an 
+increase of 150 single-person undertakings; see Figure 9 and Table 7. The annual increase was similar to the 
+average annual increase of 200 for the last decade. 
+Figure 9: There was an annual increase of 150 single-person undertakings in June 2025 
+Number of private sector undertakings, single-person compared with two or more persons, 2000 to 2025 
+ 
+ 
+13 
+Only undertakings that employ staff 
+ (including self
+ -
+employed sole traders) 
+ are required to submit manpower returns.  
+0
+1,000
+2,000
+3,000
+4,000
+5,000
+6,000
+2000 2002 2004 2006 2008 2010 2012 2014 2016 2018 2020 2022 2024
+Single-person
+Two or more persons
+
+
+===== PAGE 13 =====
+  
+ 
+ 
+  
+stats.je  
+ 13 
+ Statistics Jersey | 
+ 31 October 2025  
+Labour Market June 2025  
+Private sector 
+– sectoral breakdown 
+Table 9 shows the sectoral breakdown of jobs in the private sector in June 2024 and June 2025, the 
+corresponding annual changes, and the six-year changes. The six-monthly job totals for the period June 2020 
+to June 2025 are shown in Appendix Table A2. 
+Table 9: Private sector jobs by sector, June 2024 and 2025, and annual and six-year changes14 
+Sector Jun-24 Jun-25 Annual 
+change 
+Annual 
+% change 
+Six-year 
+change 
+Six-year 
+% change 
+Agriculture and fishing 1,120 1,200 80 7% -70 -6% 
+Manufacturing 920 940 20 2% -50 -5% 
+Construction and quarrying 6,320 6,130 -190 -3% 130 2% 
+Utilities and waste 780 800 20 3% 90 13% 
+Wholesale and retail 6,920 6,780 -140 -2% -500 -7% 
+Hotels, restaurants and bars 6,350 6,020 -330 -5% -380 -6% 
+Transport and storage 2,160 2,160 0 0% 70 3% 
+Information and communication 1,800 1,740 -60 -3% -100 -5% 
+Financial and legal activities 13,770 13,900 130 1% 200 1% 
+Miscellaneous business activities 6,310 6,330 20 0% 70 1% 
+Private education, health and other 
+services 9,040 9,360 320 4% 1,230 15% 
+Private sector 55,500 55,370 -130 -0.2% 710 1.3% 
+Employment status 
+In June 2025, four sectors saw an annual decrease in jobs, three sectors saw an annual increase, and four were 
+essentially unchanged. The largest annual decreases were: 
+• 330 jobs in hotels, restaurants and bars, with decreases of 140 full -time, 1 30 zero -hour, and 80 
+part-time jobs 
+• 190 jobs in construction and quarrying, due to a decrease of 250 full-time jobs 
+• 140 jobs in wholesale and retail, driven by a decrease of 130 full-time jobs 
+The largest annual increases: 
+• 320 jobs in private education, health and other services, with increases of 130 full-time, 110 part-time, 
+and 70 zero-hour jobs 
+• 130 jobs in financial and legal activities, due to an increase of 130 full-time jobs 
+• 80 jobs agriculture and fishing, primarily due to 60 more full-time jobs 
+See Appendix Table A2 for further details. 
+In June 2025 , there were 6,080 private sector jobs filled on zero -hours contracts. Figure 10 shows the 
+percentage of jobs filled in each of the private sectors through zero-hour contracts, compared with the public 
+sector and the average across the private sector.  
+ 
+14 
+Percentage changes for each sector are shown rounded to the nearest integer.  
+
+
+##### jersey_population_2024_total_pdf — data/raw/jersey_population_2024_total_pdf/population_2024_total.pdf — sha256 a21ab32f0117ee10334197f496b92348a70bed75677a500855092c3b73191ab3 — registry sha256 a21ab32f0117ee10334197f496b92348a70bed75677a500855092c3b73191ab3
+
+
+===== PAGE 3 =====
+ 
+ 
+ 
+3      stats.je Statistics Jersey | 24 September 2025 
+Total population: December 2024 
+4 Total population 
+4.1 Population size 
+The total population of Jersey at the end of 2024 is provisionally estimated to be 104,540. This was 510 
+higher than the revised total population at the end of 2023. 
+The updated estimate for the population size at the end of 2023 is 104,030. In the previous report, the 
+2023 population was provisionally estimated to be 103,650 and so this is an upwards revision of 380.2 
+The population grew in each year between December 2012 and December 2018. It then remained 
+relatively stable between December 2018 and December 2022 (which was close to when the UK left the 
+EU and when the COVID-19 pandemic happened).  
+Figure 2: The total population of Jersey is provisionally estimated to be 104,540 people at the 
+end of 2024 
+Total population size in December between 2012 and 2024 
+ 
+The estimates prior to 2016 use a different method and are only available for December of each year. This method is 
+described in the Population and migration statistics, 2011 to 2021 report. 
+  
+ 
+2 Section 6 contains more information about the revisions in this report. See also the Methodology and quality report 
+for more information about the revisions policy. 
+
+
+===== PAGE 8 =====
+ 
+ 
+ 
+8      stats.je Statistics Jersey | 24 September 2025 
+Total population: December 2024 
+5 Population by age 
+5.1 Population size by age 
+The population size is broken down into broad age categories in Table 1. The largest change in the 
+ﬁve-year period between the end of 2019 and the end of 2024 was among the population aged 65 years 
+and over, which increased by 12%. The population aged under 16 decreased by 7% and the aged 16 to 
+64 population remained about the same. 
+Table 1: The number of people aged 65 and over grew by 12% over ﬁve years 
+Population size by age at the end of 2019 and 2024 
+ Population Population change 
+ Dec 2019 Dec 2024 Number Percentage 
+Under 16 16,530 15,410 -1,120 -7 
+16 to 64 68,350 68,530 +180 0 
+65 and over 18,400 20,600 +2,210 +12 
+Total 103,280 104,540 +1,260 +1 
+Figures have been rounded to the nearest 10. Change has been calculated using unrounded ﬁgures. 
+5.2 Average age 
+The median age of the Jersey population is shown in Figure 7. The median age has been steadily 
+increasing since 1981.7 In 2024, the median age was 44.5 years. In other words, half of residents were 
+aged under 44 and a half years, and the other half were aged over 44 and a half years. 
+Figure 7: The median age increased over the last 10 years from 41.3 in 2014 to 44.5 in 2024 
+The median age between 2012 and 2024 
+   
+ 
+7 This is shown in the Jersey 2021 Census report (page 17). 
+
+
+===== PAGE 18 =====
+ 
+ 
+ 
+ 
+18      stats.je Statistics Jersey | 24 September 2025 
+Total population: December 2024 
+7 Data tables 
+The following data tables are summary datasets. For all available datasets, please see the www.opendata.gov.je website. 
+Data table 1: Total ﬁgures for December between 2012 and 2024 
+Year Population 
+Net 
+migration 
+Natural 
+change 
+Administrative 
+adjustment Immigration Emigration Births Deaths 
+2012 98,560 320 340 0 n/a n/a 1,130 790 
+2013 99,300 460 280 0 n/a n/a 1,030 750 
+2014 100,060 490 270 0 n/a n/a 990 720 
+2015 101,210 910 240 0 n/a n/a 1,020 780 
+2016 102,240 850 180 0 n/a n/a 1,020 840 
+2017 102,730 360 130 0 4,390 4,030 950 820 
+2018 103,290 450 110 0 4,580 4,130 940 830 
+2019 103,280 -100 90 0 4,330 4,430 890 800 
+2020 103,490 100 110 0 3,960 3,870 870 760 
+2021 103,190 -380 80 0 3,580 3,950 900 820 
+2022 103,300 200 -100 10 4,270 4,070 840 940 
+2023 104,030 730 -120 110 4,290 3,560 800 920 
+2024 104,540 670 -150 0 4,280 3,610 730 880 
+Figures rounded to nearest 10. Rounded totals may not equal the sum of rounded individual parts. Data is not available for cells containing n/a. 
+
+
+===== PAGE 19 =====
+ 
+ 
+ 
+19 
+ 
+     stats.je Statistics Jersey | 24 September 2025 
+Total population: December 2024 
+Data table 2: Population in December by age and sex between 2012 and 2024 
+  By age By sex   
+Y ear Under 16 16 to 64 65 and over Male Female Total 
+2012 16,350 66,800 15,410 48,650 49,910 98,560 
+2013 16,350 67,040 15,920 49,060 50,240 99,3 00 
+2014 16,300 67,370 16,390 49,510 50,550 100,060 
+2015 16,320 68,080 16,820 50,150 51,060 101,210 
+2016 16,470 68,530 17,240 50,760 51,490 102,240 
+2017 16,550 68,550 17,630 51,020 51,710 102,730 
+2018 16,570 68,730 18,000 51,300 51,990 103,290 
+2019 16,530 68,350 18,400 51,270 52,010 103,280 
+2020 16,380 68,270 18,830 51,310 52,180 103,490 
+2021 16,240 67,690 19,26 0 51,230 51,960 103,190 
+2022 15,960 67,720 19,62 0 51,330 51,970 103,300 
+2023 15,750 68,100 20,180 51,680 52,350 104,030 
+2024 15,410 68,530 20,600 52,150 52,390 104,540 
+Figures rounded to nearest 10. Rounded totals may not equal the sum of rounded individual parts. 
+ 
+Data table 3: Annual net migration by age and sex between 2012 and 2024 
+  By age By sex   
+Y ear Under 16 16 to 64 65 and over Male Female Total 
+2012 60 270 -10 200 120 320 
+2013 70 390 10 270 190 460 
+2014 60 420 0 290 200 490 
+2015 60 850 10 530 390 910 
+2016 100 750 10 500 350 850 
+2017 140 220 0 190 160 360 
+2018 40 440 -30 250 200 450 
+2019 100 -170 -30 -110 10 -100 
+2020 10 120 -40 -20 110 100 
+2021 -30 -280 -70 -140 -230 -380 
+2022 -110 380 -60 110 100 200 
+2023 30 700 0 350 390 730 
+2024 10 750 -100 530 140 670 
+Figures rounded to nearest 10. Rounded totals may not equal the sum of rounded individual parts. 
+
+
+##### sars_cov2_serosurvey_2020_pdf — data/raw/sars_cov2_serosurvey_2020_pdf/prevalence_of_antibodies_2020.pdf — sha256 a74e606e5ef16544a763146249b42fba8ae61fb00526982793c6f9fbc300dd0d — registry sha256 a74e606e5ef16544a763146249b42fba8ae61fb00526982793c6f9fbc300dd0d
+
+
+===== PAGE 5 =====
+ 
+ 
+ 
+ Statistics Jersey SARS-CoV-2 Prevalence of antibodies – preliminary analysis 5 
+There were other explanatory variables potentially of interest . H owever, due to specific design and data 
+quality issues with the survey, combined with the limited time constraints for this initial report,  meaningful 
+analysis of these has not been possible at this stage. In particular: 
+• breakdown by broad geographical area has not been possible due to ongoing quality issues with the 
+processes by which  addresses were recorded . This analysis would , however, have been limited in 
+scope given the relatively small sample size used for this survey 
+ 
+• breakdown by tenure category has not been possible due to particularly high non -response in the 
+non-qualified sector - see non-response error section for further details. 
+ 
+Potential sources of error / uncertainty 
+Non-response error 
+Adjusting for ineligible address, the survey obtained an overall response rate of 63% for households and an 
+estimated response rate of 65% for individuals.  
+ 
+Compensation for non-response error in this analysis has been addressed using appropriate household-level 
+and individual-level weighting. Specifically, weighting has been applied based on the characteristics of the 
+Jersey population (as observed in the 2011 Census) using the following variables: 
+ 
+• age 
+• sex 
+• household size 
+ 
+In population and household surveys, Statistics Jersey would generally also weight responses by household 
+tenure. This variable has proven to be an important weighting factor in such Jersey-based survey research as 
+there are often significant differences in both response rates and the behaviour exhibited across the tenure 
+categories, notably in the social housing and non-qualified sectors.  
+However, whilst the overall response rate to this survey was generally of an acceptable level, non -response 
+from the non-qualified sector was particularly high. This may in part due to the methods employed to engage 
+households in this survey and the time constraints imposed on the field work. As a result, weighting by tenure 
+was not possible. Therefore, particular care should be taken when considering the re sults in the context of 
+this particular tenure category. 
+The unweighted response rates for each of the variables used in weighting, together with the corresponding 
+proportions from the 2011 Census, are detailed in Tables 3, 4 and 5 below. 
+Table 3 – Age (individual level) profile of unweighted survey response compared to the 2011 Census 
+ Percent 
+ Survey Census 2011 
+16-34 years 25 30 
+35-44 years 17 19 
+45-54 years 17 19 
+55-64 years 19 15 
+65 years or over 21 17 
+Total 100 100 
+  
+
+
+===== PAGE 6 =====
+ 
+ 
+ 
+ Statistics Jersey SARS-CoV-2 Prevalence of antibodies – preliminary analysis 6 
+ 
+Table 4 – Sex (individual level) profile of unweighted survey response compared to the 2011 Census 
+ 
+ Percent 
+ Survey Census 2011 
+Men 47 49 
+Women 53 51 
+Total 100 100 
+ 
+Table 5 – Household size profile of unweighted survey response compared to the 2011 Census 
+ 
+ Percent 
+ Survey Census 2011 
+1 15 16 
+2 33 36 
+3 20 20 
+4 20 18 
+5+ 12 10 
+Total 100 100 
+ 
+ 
+Prior to weighting the observed prevalence rate was 2.9% and after weighting it was 2.6%.  
+It should be noted that it is not possible to completely control for non -response error as there may be 
+characteristics that impact non-response that may also impact the prevalence rate in that population. This is 
+a potential source of bias in the result that can be improved by achieving a higher level of response. 
+ 
+Sampling error 
+The sampling design used for this survey was that of cluster sampling, with a simple random sample of Jersey 
+addresses being drawn in order to identify Jersey households (the clusters) ; within sampled households, 
+all individuals (the subject of interest) were then asked to participate  in the testing . The resultant sample 
+consisted of 438 households and 855 individuals.  
+ 
+There was very little within cluster / household variance (most households eithe r had all individuals test 
+positive or negative). The resultant 95% confidence interval around the observed prevalence rate was: 
+ 
+ Observed prevalence rate: 2.6% ± 1.2% 
+ 
+  
+
+
+##### census_2021_household_type_tenure_csv — data/raw/census_2021_household_type_tenure_csv/2021-census-householdtype-tenure.csv — sha256 5404e3ccb551b5e27b4bd5edf1f628f9e52bf733cd495150746ecd7b6b059e66 — registry sha256 5404e3ccb551b5e27b4bd5edf1f628f9e52bf733cd495150746ecd7b6b059e66
+
+HEADER: Household type,Owner Occupied,Social Rental,Qualified Rental,Staff or service accom.,Registered lodging house,Private lodging,Other non-qualified accom.,All
+row 1: Single adult,2780,1120,3070,440,330,330,530,8600
+row 2: Couple (adult),3710,230,2070,210,140,180,340,6880
+row 3: Single parent (with dependent children),380,700,490,10,20,30,60,1700
+row 4: Single parent (all children 16 years or above),930,580,390,20,10,10,40,1980
+row 5: Couple with dependent children,4580,690,1920,160,100,140,290,7890
+row 6: Couple with children (all children 16 years or above),2530,410,550,60,10,30,30,3610
+row 7: Couple (one pensioner),980,120,200,10,,,10,1330
+row 8: Single pensioner,3090,1440,820,30,20,30,30,5460
+row 9: Two or more pensioners,3430,330,330,10,,10,30,4140
+row 10: Two or more unrelated persons,280,20,320,80,20,30,40,790
+row 11: Other,1170,190,580,70,30,60,100,2190
+row 12: All,23870,5830,10740,1100,700,860,1500,44580
+
+##### census_2021_household_property_type_csv — data/raw/census_2021_household_property_type_csv/2021-census-householdtype-propertytype.csv — sha256 498ed541367041ebe9e9a038995e608940b58588fdbfa4211349027a812c0569 — registry sha256 498ed541367041ebe9e9a038995e608940b58588fdbfa4211349027a812c0569
+
+HEADER: Property Type,Owner-occupied,Social housing rent,Qualified private rent,Non-qualified accommodation
+row 1: House/ Detached,9270,180,1420,250
+row 2: House/Semi-detached,6310,990,1510,290
+row 3: House/Terraced,3210,480,710,110
+row 4: Flat/Purpose build block,3630,4030,4540,1800
+row 5: Flat/Part of converted house,1320,140,2040,1220
+row 6: Flat/In a commercial building,110,10,510,380
+row 7: "Temporary Structure/Tent, boat or PortakabinTM",20,,,100
+row 8: All(excluding vacant properties),23870,5830,10740,4150
+
+##### census_2021_parish_population_density_csv — data/raw/census_2021_parish_population_density_csv/2021-census-parish-population-density.csv — sha256 e46abd1eac1c13087fa92a3ecba9bb049b179d94868b7b9c967224f5127818ab — registry sha256 e46abd1eac1c13087fa92a3ecba9bb049b179d94868b7b9c967224f5127818ab
+
+HEADER: Parish,2021 population,2021 density (person/km2)
+row 1: Grouville,5401,658
+row 2: St Brelade,11012,830
+row 3: St Clement,9925,2262
+row 4: St Helier,35822,3716
+row 5: St John,3051,332
+row 6: St Lawrence,5561,566
+row 7: St Martin,3948,384
+row 8: St Mary,1818,277
+row 9: St Ouen,4206,274
+row 10: St Peter,5264,448
+row 11: St Saviour,13904,1498
+row 12: Trinity,3355,267
+row 13: TOTAL,103267,859
+
+##### covid19_daily_surveillance_csv — data/raw/covid19_daily_surveillance_csv/covid19_daily.csv — sha256 ea51daa689a851af6fedb45e1520abfc235bc350113cbde1cd49b880d7aa512b — registry sha256 ea51daa689a851af6fedb45e1520abfc235bc350113cbde1cd49b880d7aa512b
+
+COLUMNS:
+  Date
+  TestsTotaltests
+  TestsTotalsamplestestedpriorto1July2020
+  TestsTotalsamplestestedsince1July2020
+  TestsReasonfortestseekinghealthcaresymptomatic
+  TestsReasonforTestInboundTravel
+  TestsReasonforTestOnIslandSurveillanceScreening
+  TestsPendingResults
+  TestsNegativeTestsPriorto1July2020
+  TestsNegativeTestssince1July2020
+  TestsAverageTurnaroundTimeAllSwabsLast7days
+  TestsTotalNegativeTests
+  CasesTotalConfirmedPositiveCases
+  CasesFemalePositiveNumber
+  CasesMalePositiveNumber
+  CasesFemalePositivePercentage
+  CasesMalePositivePercentage
+  CasesAverageAgeTestedPositive
+  CasesSeven7DayNumberper100000
+  CasesFortnight14dayNumberper100000
+  CasesPositiveCasesIdentifiedPriorto1July2020
+  CasesPositiveCasesIdentifiedSince1July2020
+  CasesPositiveCasesIdentifiedSymptomaticIndividualsSeekingHealthcare
+  CasesPositiveCasesIdentifiedInboundTravelArrivalsScreening
+  CasesPositiveCasesIdentifiedAdmissionsScreening
+  CasesPositiveCasesIdentifiedWorkforceScreening
+  CasesPositiveCasesIdentifiedCohortScreening
+  CasesPositiveCasesIdentifiedContactTracing
+  CasesOldCasesConfirmedBySerology
+  CasesManagedInOtherJurisdictions
+  CasesCurrentKnownActiveCases
+  CasesSymptomatic
+  CasesAsymptomatic
+  CasesNumberOfKnownDirectContactsOfCurrentActiveCases
+  CasesDailyNewConfirmedCases
+  CasesKnownCasesInCareHomes
+  CasesKnownCasesInCommunity
+  CasesKnownCasesInHospital
+  RecoveriesTotalRecovered
+  RecoveriesFemaleRecoveredNumber
+  RecoveriesMaleRecoveredNumber
+  RecoveriesFemaleRecoveredPercentage
+  RecoveriesMaleRecoveredPercentage
+  RecoveriesAverageAgeRecovered
+  MortalityTotalDeaths
+  MortalityLaboratoryProvenDeaths
+  MortalityProbableCovid-19
+  MortalityDeathsGeneralHospital
+  MortalityDeathsStSaviours
+  MortalityDeathsCareHomes
+  MortalityDeathsDomesticProperties
+  MortalityDeathsAge40to49
+  Mortalitypercentageregistereddeathsaged40-49
+  MortalityDeathsAge50to59
+  Mortalitypercentageregistereddeathsaged50-59
+  MortalityDeathsAge60to69
+  Mortalitypercentageregistereddeathsaged60-69
+  MortalityDeathsAge70to79
+  Mortalitypercentageregistereddeathsaged70-79
+  MortalityDeathsAge80to89
+  Mortalitypercentageregistereddeathsaged80-89
+  MortalityDeathsAge90andover
+  Mortalitypercentageregistereddeathsaged90andover
+  MortalityDeathsFemale
+  MortalityDeathsMale
+  InboundTravelPercentageArrivalsScreeningIdentifiedatDay0
+  InboundTravelPercentageArrivalsScreeningIdentifiedatDay5
+  InboundTravelPercentageArrivalsScreeningIdentifiedatDay8or10
+  InboundTravelPercentageArrivingfromRed
+  InboundTravelPercentageArrivingfromAmber
+  InboundTravelPercentageArrivingfromGreen
+  InboundTravelPercentageArrivingbyAir
+  InboundTravelPercentageArrivingBySea
+  InboundTravelPercentageTravellersDeclaredasResident
+  InboundTravelReasonforTravelBusinessVisitortoJersey
+  InboundTravelReasonforTravelCriticalWorker
+  InboundTravelReasonforTravelHolidayLeisureVisitortoJersey
+  InboundTravelReasonforTravelJerseyResidentReturningHome
+  InboundTravelReasonforTravelNotRecorded
+  InboundTravelReasonforTravelSeasonalWorker
+  InboundTravelReasonforTravelUniversityStudentReturningHome
+  InboundTravelReasonforTravelVisitingFriendsRelativesinJersey
+  InboundTravelReasonforTravelCrewonInboundCraft
+  InboundTravelArrivalsfromAmber
+  InboundTravelArrivalsfromGreen
+  InboundTravelArrivalsfromRed
+  InboundTravelPositiveArrivalsByAir
+  InboundTravelPositiveArrivalsBySea
+  InboundTravelNumberArrivalsScreeningIdentifiedatDay0
+  InboundTravelNumberArrivalsScreeningIdentifiedatDay8or10
+  InboundTravelNumberArrivalsScreeningIdentifiedatDay5
+  InboundTravelReasonforTravelBoardingSchoolStudentReturningHome
+  InboundTravelReasonforTravelPercentageBoardingSchoolStudentReturningHome
+  InboundTravelReasonforTravelPercentageBusinessVisitortoJersey
+  InboundTravelReasonforTravelPercentageCriticalWorker
+  InboundTravelReasonforTravelPercentageHolidayLeisureVisitortoJersey
+  InboundTravelReasonforTravelPercentageJerseyResidentReturningHome
+  InboundTravelReasonforTravelPercentageNotRecorded
+  InboundTravelReasonforTravelPercentageSeasonalWorker
+  InboundTravelReasonforTravelPercentageUniversityStudentReturningHome
+  InboundTravelReasonforTravelPercentageVisitingFriendsRelativesinJersey
+  InboundTravelReasonforTravelPercentageCrewonInboundCraft
+  7DayRate18to39
+  7DayRate40to59
+  7DayRateOver60
+  7DayRateUnder18
+  TestReasonbyWeekInboundTravel
+  TestReasonbyWeekOnIslandSurveillanceScreening
+  TestReasonbyWeekSeekingHealthcareSymptomatic
+  7DayRatePercentageChange
+  DateTime
+  DateTimeShort
+
+##### covid19_weekly_vaccination_csv — data/raw/covid19_weekly_vaccination_csv/covid19_weekly_vaccination.csv — sha256 f6708113693c77fefb0d43f8a2551d6f6fcb2fc1db69a5b128087c64280a382a — registry sha256 f6708113693c77fefb0d43f8a2551d6f6fcb2fc1db69a5b128087c64280a382a
+
+COLUMNS:
+  Date
+  VaccinationsTotalNumberDoses
+  VaccinationsTotalNumberFirstDoseVaccinations
+  VaccinationsTotalNumberSecondDoseVaccinations
+  VaccinationsTotalNumberThirdDoseVaccinations
+  VaccinationsTotalNumberFourthDoseVaccinations
+  VaccinationsTotalNumberFirstDoseVaccinationsPercentage
+  VaccinationsTotalNumberSecondDoseVaccinationsPercentage
+  VaccinationsTotalNumberThirdDoseVaccinationsPercentage
+  VaccinationsTotalNumberFourthDoseVaccinationsPercentage
+  VaccinationsDosesPer100PeopleInPopulation
+  VaccinationsTotalVaccinationDosesFirstDose80yearsandover
+  VaccinationsTotalVaccinationDosesFirstDose75to79years
+  VaccinationsTotalVaccinationDosesFirstDose70to74years
+  VaccinationsTotalVaccinationDosesFirstDose65to69years
+  VaccinationsTotalVaccinationDosesFirstDose60to64years
+  VaccinationsTotalVaccinationDosesFirstDose55to59years
+  VaccinationsTotalVaccinationDosesFirstDose50to54years
+  VaccinationsTotalVaccinationDosesFirstDose40to49years
+  VaccinationsTotalVaccinationDosesFirstDose30to39years
+  VaccinationsTotalVaccinationDosesFirstDose18to29years
+  VaccinationsTotalVaccinationDosesFirstDose17yearsandunder
+  VaccinationsTotalVaccinationDosesFirstDose16to17years
+  VaccinationsTotalVaccinationDosesFirstDose12to15years
+  VaccinationsTotalVaccinationDosesFirstDose5to11years
+  VaccinationsPercentagePopulationVaccinatedFirstDose80yearsandover
+  VaccinationsPercentagePopulationVaccinatedFirstDose75to79years
+  VaccinationsPercentagePopulationVaccinatedFirstDose70to74years
+  VaccinationsPercentagePopulationVaccinatedFirstDose65to69years
+  VaccinationsPercentagePopulationVaccinatedFirstDose60to64years
+  VaccinationsPercentagePopulationVaccinatedFirstDose55to59years
+  VaccinationsPercentagePopulationVaccinatedFirstDose50to54years
+  VaccinationsPercentagePopulationVaccinatedFirstDose40to49years
+  VaccinationsPercentagePopulationVaccinatedFirstDose30to39years
+  VaccinationsPercentagePopulationVaccinatedFirstDose18to29years
+  VaccinationsPercentagePopulationVaccinatedFirstDose17yearsandunder
+  VaccinationsPercentagePopulationVaccinatedFirstDose16to17years
+  VaccinationsPercentagePopulationVaccinatedFirstDose12to15years
+  VaccinationsPercentagePopulationVaccinatedFirstDose5to11years
+  VaccinationsTotalVaccinationDosesSecondDose80yearsandover
+  VaccinationsTotalVaccinationDosesSecondDose75to79years
+  VaccinationsTotalVaccinationDosesSecondDose70to74years
+  VaccinationsTotalVaccinationDosesSecondDose65to69years
+  VaccinationsTotalVaccinationDosesSecondDose60to64years
+  VaccinationsTotalVaccinationDosesSecondDose55to59years
+  VaccinationsTotalVaccinationDosesSecondDose50to54years
+  VaccinationsTotalVaccinationDosesSecondDose40to49years
+  VaccinationsTotalVaccinationDosesSecondDose30to39years
+  VaccinationsTotalVaccinationDosesSecondDose18to29years
+  VaccinationsTotalVaccinationDosesSecondDose17yearsandunder
+  VaccinationsTotalVaccinationDosesSecondDose16to17years
+  VaccinationsTotalVaccinationDosesSecondDose12to15years
+  VaccinationsTotalVaccinationDosesSecondDose5to11years
+  VaccinationsPercentagePopulationVaccinatedSecondDose80yearsandover
+  VaccinationsPercentagePopulationVaccinatedSecondDose75to79years
+  VaccinationsPercentagePopulationVaccinatedSecondDose70to74years
+  VaccinationsPercentagePopulationVaccinatedSecondDose65to69years
+  VaccinationsPercentagePopulationVaccinatedSecondDose60to64years
+  VaccinationsPercentagePopulationVaccinatedSecondDose55to59years
+  VaccinationsPercentagePopulationVaccinatedSecondDose50to54years
+  VaccinationsPercentagePopulationVaccinatedSecondDose40to49years
+  VaccinationsPercentagePopulationVaccinatedSecondDose30to39years
+  VaccinationsPercentagePopulationVaccinatedSecondDose18to29years
+  VaccinationsPercentagePopulationVaccinatedSecondDose17yearsandunder
+  VaccinationsPercentagePopulationVaccinatedSecondDose16to17years
+  VaccinationsPercentagePopulationVaccinatedSecondDose12to15years
+  VaccinationsPercentagePopulationVaccinatedSecondDose5to11years
+  VaccinationsTotalVaccinationDosesThirdDose80yearsandover
+  VaccinationsTotalVaccinationDosesThirdDose75to79years
+  VaccinationsTotalVaccinationDosesThirdDose70to74years
+  VaccinationsTotalVaccinationDosesThirdDose65to69years
+  VaccinationsTotalVaccinationDosesThirdDose60to64years
+  VaccinationsTotalVaccinationDosesThirdDose55to59years
+  VaccinationsTotalVaccinationDosesThirdDose50to54years
+  VaccinationsTotalVaccinationDosesThirdDose40to49years
+  VaccinationsTotalVaccinationDosesThirdDose30to39years
+  VaccinationsTotalVaccinationDosesThirdDose18to29years
+  VaccinationsTotalVaccinationDosesThirdDose16to17years
+  VaccinationsTotalVaccinationDosesThirdDose12to15years
+  VaccinationsTotalVaccinationDosesThirdDose5to11years
+  VaccinationsPercentagePopulationVaccinatedThirdDose80yearsandover
+  VaccinationsPercentagePopulationVaccinatedThirdDose75to79years
+  VaccinationsPercentagePopulationVaccinatedThirdDose70to74years
+  VaccinationsPercentagePopulationVaccinatedThirdDose65to69years
+  VaccinationsPercentagePopulationVaccinatedThirdDose60to64years
+  VaccinationsPercentagePopulationVaccinatedThirdDose55to59years
+  VaccinationsPercentagePopulationVaccinatedThirdDose50to54years
+  VaccinationsPercentagePopulationVaccinatedThirdDose40to49years
+  VaccinationsPercentagePopulationVaccinatedThirdDose30to39years
+  VaccinationsPercentagePopulationVaccinatedThirdDose18to29years
+  VaccinationsPercentagePopulationVaccinatedThirdDose16to17years
+  VaccinationsPercentagePopulationVaccinatedThirdDose12to15years
+  VaccinationsPercentagePopulationVaccinatedThirdDose5to11years
+  VaccinationsTotalVaccinationDosesFourthDose80yearsandover
+  VaccinationsTotalVaccinationDosesFourthDose75to79years
+  VaccinationsTotalVaccinationDosesFourthDose70to74years
+  VaccinationsTotalVaccinationDosesFourthDose65to69years
+  VaccinationsTotalVaccinationDosesFourthDose60to64years
+  VaccinationsTotalVaccinationDosesFourthDose55to59years
+  VaccinationsTotalVaccinationDosesFourthDose50to54years
+  VaccinationsTotalVaccinationDosesFourthDose40to49years
+  VaccinationsTotalVaccinationDosesFourthDose30to39years
+  VaccinationsTotalVaccinationDosesFourthDose18to29years
+  VaccinationsTotalVaccinationDosesFourthDose16to17years
+  VaccinationsTotalVaccinationDosesFourthDose12to15years
+  VaccinationsTotalVaccinationDosesFourthDose5to11years
+  VaccinationsPercentagePopulationVaccinatedFourthDose80yearsandover
+  VaccinationsPercentagePopulationVaccinatedFourthDose75to79years
+  VaccinationsPercentagePopulationVaccinatedFourthDose70to74years
+  VaccinationsPercentagePopulationVaccinatedFourthDose65to69years
+  VaccinationsPercentagePopulationVaccinatedFourthDose60to64years
+  VaccinationsPercentagePopulationVaccinatedFourthDose55to59years
+  VaccinationsPercentagePopulationVaccinatedFourthDose50to54years
+  VaccinationsPercentagePopulationVaccinatedFourthDose40to49years
+  VaccinationsPercentagePopulationVaccinatedFourthDose30to39years
+  VaccinationsPercentagePopulationVaccinatedFourthDose18to29years
+  VaccinationsPercentagePopulationVaccinatedFourthDose16to17years
+  VaccinationsPercentagePopulationVaccinatedFourthDose12to15years
+  VaccinationsPercentagePopulationVaccinatedFourthDose5to11years
+  7DayRatePercentageChange
+  InboundTravel
+  On-islandSurveillanceScreening
+  SeekingHealthcareSymptomatic
+  EligiblePopulation
+  DateTime
+  DateTimeShort
+  Note
+  VaccinationsTotalNumberAutumnBooster2022Percentage50plus
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202212to15years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202216to17years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202218to29years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202230to39years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202240to49years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202250to54years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202255to59years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster20225to11years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202260to64years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202265to69years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202270to74years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202275to79years
+  VaccinationsPercentagePopulationVaccinatedAutumnBooster202280yearsandover
+  VaccinationsTotalNumberAutumnBooster2022
+  VaccinationsTotalVaccinationDosesAutumnBooster202212to15years
+  VaccinationsTotalVaccinationDosesAutumnBooster202216to17years
+  VaccinationsTotalVaccinationDosesAutumnBooster202218to29years
+  VaccinationsTotalVaccinationDosesAutumnBooster202230to39years
+  VaccinationsTotalVaccinationDosesAutumnBooster202240to49years
+  VaccinationsTotalVaccinationDosesAutumnBooster202250to54years
+  VaccinationsTotalVaccinationDosesAutumnBooster202255to59years
+  VaccinationsTotalVaccinationDosesAutumnBooster20225to11years
+  VaccinationsTotalVaccinationDosesAutumnBooster202260to64years
+  VaccinationsTotalVaccinationDosesAutumnBooster202265to69years
+  VaccinationsTotalVaccinationDosesAutumnBooster202270to74years
+  VaccinationsTotalVaccinationDosesAutumnBooster202275to79years
+  VaccinationsTotalVaccinationDosesAutumnBooster202280yearsandover
