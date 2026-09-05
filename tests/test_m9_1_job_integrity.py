@@ -347,6 +347,11 @@ def test_restart_accepts_only_complete_valid_comparison(tmp_path: Path) -> None:
     manager = JobManager(state_dir=tmp_path, project_root=ROOT)
     root_checkpoint_directory = ROOT / ".replicates-in-progress"
     existed_before = root_checkpoint_directory.exists()
+    root_checkpoint_entries_before = (
+        {entry.name for entry in root_checkpoint_directory.iterdir()}
+        if root_checkpoint_directory.is_dir()
+        else set()
+    )
     request = ScenarioCompareRequest(
         kind="scenario_compare",
         duration_days=1,
@@ -365,8 +370,12 @@ def test_restart_accepts_only_complete_valid_comparison(tmp_path: Path) -> None:
     )
     baseline_ensemble_id = f"{request.comparison_id}-baseline"
     treated_ensemble_id = f"{request.comparison_id}-treated"
-    assert not (root_checkpoint_directory / baseline_ensemble_id).exists()
-    assert not (root_checkpoint_directory / treated_ensemble_id).exists()
+    root_checkpoint_entries_after = (
+        {entry.name for entry in root_checkpoint_directory.iterdir()}
+        if root_checkpoint_directory.is_dir()
+        else set()
+    )
+    assert root_checkpoint_entries_after == root_checkpoint_entries_before
     if not existed_before:
         assert not root_checkpoint_directory.exists()
     checkpoint_directory = manager._job_dir(job_id) / "checkpoints"

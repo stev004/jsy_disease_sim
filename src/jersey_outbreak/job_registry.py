@@ -709,17 +709,30 @@ class JobRegistry:
         return [json.loads(row["metadata"]) for row in rows]
 
     def reconcile_stale_jobs(
-        self, *, failures: dict[str, dict[str, str]] | None = None
+        self,
+        *,
+        failures: dict[str, dict[str, str]] | None = None,
+        only: set[str] | None = None,
     ) -> list[str]:
-        """Mark every remaining active job terminal after finalization attempts."""
+        """Mark selected, or all, remaining active jobs terminal after restart."""
 
         failures = failures or {}
         reconciled: list[str] = []
+        if only is not None and not only:
+            return reconciled
         with self._lock, self._connection() as connection:
             connection.execute("BEGIN IMMEDIATE")
-            rows = connection.execute(
-                "SELECT job_id, state FROM jobs WHERE state IN ('RUNNING', 'CANCEL_REQUESTED')"
-            ).fetchall()
+            if only is None:
+                rows = connection.execute(
+                    "SELECT job_id, state FROM jobs WHERE state IN ('RUNNING', 'CANCEL_REQUESTED')"
+                ).fetchall()
+            else:
+                placeholders = ", ".join("?" for _ in only)
+                rows = connection.execute(
+                    "SELECT job_id, state FROM jobs WHERE state IN ('RUNNING', 'CANCEL_REQUESTED') "
+                    f"AND job_id IN ({placeholders})",
+                    sorted(only),
+                ).fetchall()
             for row in rows:
                 job_id = str(row["job_id"])
                 target = "CANCELLED" if row["state"] == "CANCEL_REQUESTED" else "INTERRUPTED"

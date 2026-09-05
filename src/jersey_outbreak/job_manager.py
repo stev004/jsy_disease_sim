@@ -8,9 +8,21 @@ import signal
 import subprocess
 import sys
 import threading
+import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
+
+if os.name == "posix":
+    import fcntl
+
+    msvcrt = None
+else:  # pragma: no cover - Windows is not the verification host
+    fcntl = None
+    try:
+        import msvcrt
+    except ImportError:
+        msvcrt = None
 
 from .api_schemas import API_SCHEMA_VERSION
 from .execution_adapter import (
@@ -25,6 +37,53 @@ from .job_registry import InvalidJobTransitionError, JobNotFoundError, JobRegist
 
 class JobSubmissionError(RuntimeError):
     """Raised when a request cannot be persisted as a job."""
+
+
+class SchedulerLockError(RuntimeError):
+    """Raised when another scheduler owns the state directory."""
+
+    def __init__(self, holder_pid: int | None) -> None:
+        self.holder_pid = holder_pid
+        holder = f" pid {holder_pid}" if holder_pid is not None else ""
+        super().__init__(f"scheduler lock is already held{holder}")
+
+
+class _ProcessHandle(Protocol):
+    pid: int
+
+    def poll(self) -> int | None: ...
+
+    def wait(self, timeout: float | None = None) -> int: ...
+
+
+class _AdoptedProcess:
+    """Minimal process handle for a worker inherited across an API restart."""
+
+    def __init__(self, pid: int) -> None:
+        self.pid = pid
+
+    def poll(self) -> int | None:
+        try:
+            os.kill(self.pid, 0)
+        except PermissionError:
+            return None
+        except OSError:
+            return 1
+        return None
+
+    def wait(self, timeout: float | None = None) -> int:
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while True:
+            return_code = self.poll()
+            if return_code is not None:
+                return return_code
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(self.pid, timeout)
+                time.sleep(min(0.05, remaining))
+            else:
+                time.sleep(0.05)
 
 
 def default_state_dir() -> Path:
@@ -56,6 +115,25 @@ def _atomic_json(path: Path, payload: Any) -> None:
     temporary.replace(path)
 
 
+def _atomic_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary.write_text(content, encoding="utf-8")
+    temporary.replace(path)
+
+
+def _pid_is_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
 class JobManager:
     """Own the local scheduler and API-created worker subprocesses."""
 
@@ -78,49 +156,182 @@ class JobManager:
         self.registry = JobRegistry(self.state_dir / "jobs.sqlite")
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
-        self._processes: dict[str, subprocess.Popen[bytes]] = {}
+        self._processes: dict[str, _ProcessHandle] = {}
         self._process_lock = threading.RLock()
+        self._scheduler_lock_path = self.state_dir / "scheduler.lock"
+        self._scheduler_lock_handle: Any | None = None
+        self._scheduler_lock_kind: str | None = None
         self._started = False
 
     def _job_dir(self, job_id: str) -> Path:
         return (self.jobs_dir / job_id).resolve()
 
-    def _reconcile_startup(self) -> None:
-        # The same finalizer used by a live worker is the only restart path to
-        # success.  Every remaining active row becomes explicitly terminal.
-        finalizer = JobFinalizer(
-            registry=self.registry, state_dir=self.state_dir, project_root=self.project_root
-        )
-        failures: dict[str, dict[str, str]] = {}
-        for job in self.registry.list_jobs(limit=10_000):
-            if job["state"] != "RUNNING":
-                continue
-            if not (self._job_dir(job["job_id"]) / "result_candidate.json").is_file():
-                continue
+    @staticmethod
+    def _lock_holder_pid(handle: Any) -> int | None:
+        try:
+            handle.seek(0)
+            first_line = handle.readline().strip()
+            return int(first_line)
+        except (OSError, TypeError, ValueError):
+            return None
+
+    def _acquire_scheduler_lock(self) -> None:
+        if self._scheduler_lock_handle is not None:
+            return
+        handle: Any | None = None
+        lock_kind: str | None = None
+        try:
+            if os.name == "posix":
+                handle = self._scheduler_lock_path.open("a+", encoding="utf-8")
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                lock_kind = "flock"
+            elif msvcrt is not None:  # pragma: no cover - Windows is not verification host
+                handle = self._scheduler_lock_path.open("a+", encoding="utf-8")
+                if self._scheduler_lock_path.stat().st_size == 0:
+                    handle.write("\n")
+                    handle.flush()
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                lock_kind = "msvcrt"
+            else:  # pragma: no cover - Windows is not verification host
+                descriptor = os.open(
+                    self._scheduler_lock_path,
+                    os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+                )
+                handle = os.fdopen(descriptor, "w+", encoding="utf-8")
+                lock_kind = "exclusive"
+        except FileExistsError as exc:  # pragma: no cover - Windows fallback
+            if handle is not None:
+                handle.close()
             try:
-                finalizer.finalize(job["job_id"])
-            except FinalizationError as exc:
-                failures[job["job_id"]] = {
-                    "error_code": exc.code,
-                    "error_message": str(exc)[:1000],
-                }
-            except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
-                failures[job["job_id"]] = {
-                    "error_code": "restart_finalization_failed",
-                    "error_message": f"Restart finalization failed: {type(exc).__name__}",
-                }
-        self.registry.reconcile_stale_jobs(failures=failures)
+                holder_text = self._scheduler_lock_path.read_text(encoding="utf-8")
+                holder_pid = int(holder_text.splitlines()[0])
+            except (OSError, ValueError, IndexError):
+                holder_pid = None
+            raise SchedulerLockError(holder_pid) from exc
+        except OSError as exc:
+            holder_pid = self._lock_holder_pid(handle) if handle is not None else None
+            if handle is not None:
+                handle.close()
+            raise SchedulerLockError(holder_pid) from exc
+
+        try:
+            handle.seek(0)
+            handle.truncate()
+            handle.write(f"{os.getpid()}\n{datetime.now(UTC).isoformat()}\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        except OSError:
+            handle.close()
+            raise
+        self._scheduler_lock_handle = handle
+        self._scheduler_lock_kind = lock_kind
+
+    def _release_scheduler_lock(self) -> None:
+        handle = self._scheduler_lock_handle
+        if handle is None:
+            return
+        self._scheduler_lock_handle = None
+        lock_kind = self._scheduler_lock_kind
+        self._scheduler_lock_kind = None
+        try:
+            if lock_kind == "flock":
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            elif lock_kind == "msvcrt":  # pragma: no cover - Windows is not verification host
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        finally:
+            handle.close()
+            if lock_kind == "exclusive":  # pragma: no cover - Windows is not verification host
+                try:
+                    self._scheduler_lock_path.unlink()
+                except FileNotFoundError:
+                    pass
+
+    def _worker_is_live(self, job: dict[str, Any]) -> bool:
+        worker_pid = job.get("worker_pid")
+        if not isinstance(worker_pid, int) or not _pid_is_alive(worker_pid):
+            return False
+        token_path = self._job_dir(str(job["job_id"])) / "worker.token"
+        try:
+            token_pid = token_path.read_text(encoding="utf-8").splitlines()[0].strip()
+        except (OSError, UnicodeError, IndexError):
+            return False
+        return token_pid == str(worker_pid)
+
+    def _adopt_worker(self, job: dict[str, Any]) -> None:
+        job_id = str(job["job_id"])
+        worker_pid = int(job["worker_pid"])
+        with self._process_lock:
+            process = self._processes.get(job_id)
+            if process is not None and process.poll() is None:
+                return
+            self._processes[job_id] = _AdoptedProcess(worker_pid)
+        self.registry.add_event(
+            job_id,
+            "job_adopted",
+            "Live worker adopted after API restart",
+            {"worker_pid": worker_pid},
+        )
+
+    def _reconcile_startup(self) -> None:
+        acquired = self._scheduler_lock_handle is None
+        self._acquire_scheduler_lock()
+        # The same finalizer used by a live worker is the only restart path to
+        # success.  Remaining stale active rows become explicitly terminal.
+        try:
+            finalizer = JobFinalizer(
+                registry=self.registry, state_dir=self.state_dir, project_root=self.project_root
+            )
+            failures: dict[str, dict[str, str]] = {}
+            stale_job_ids: set[str] = set()
+            for job in self.registry.list_jobs(limit=10_000):
+                job_id = str(job["job_id"])
+                if job["state"] == "CANCEL_REQUESTED":
+                    stale_job_ids.add(job_id)
+                    continue
+                if job["state"] != "RUNNING":
+                    continue
+                if (self._job_dir(job_id) / "result_candidate.json").is_file():
+                    try:
+                        finalizer.finalize(job_id)
+                    except FinalizationError as exc:
+                        failures[job_id] = {
+                            "error_code": exc.code,
+                            "error_message": str(exc)[:1000],
+                        }
+                    except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                        failures[job_id] = {
+                            "error_code": "restart_finalization_failed",
+                            "error_message": f"Restart finalization failed: {type(exc).__name__}",
+                        }
+                    if job_id in failures:
+                        stale_job_ids.add(job_id)
+                elif self._worker_is_live(job):
+                    self._adopt_worker(job)
+                else:
+                    stale_job_ids.add(job_id)
+            self.registry.reconcile_stale_jobs(failures=failures, only=stale_job_ids)
+        except BaseException:
+            if acquired:
+                self._release_scheduler_lock()
+            raise
 
     def start(self) -> None:
         if self._started:
             return
-        self._reconcile_startup()
-        self._stop.clear()
-        self._started = True
-        self._thread = threading.Thread(
-            target=self._run_loop, name="jos-job-scheduler", daemon=True
-        )
-        self._thread.start()
+        try:
+            self._reconcile_startup()
+            self._stop.clear()
+            self._started = True
+            self._thread = threading.Thread(
+                target=self._run_loop, name="jos-job-scheduler", daemon=True
+            )
+            self._thread.start()
+        except BaseException:
+            self._started = False
+            self._release_scheduler_lock()
+            raise
 
     def submit(self, request: Any, *, idempotency_key: str | None = None) -> dict[str, Any]:
         """Validate, canonicalize and persist a request before returning."""
@@ -222,6 +433,10 @@ class JobManager:
                 start_new_session=(os.name == "posix"),
                 shell=False,
             )
+        _atomic_text(
+            job_dir / "worker.token",
+            f"{process.pid}\n{datetime.now(UTC).isoformat()}\n",
+        )
         with self._process_lock:
             self._processes[job_id] = process
         self.registry.update_fields(
@@ -350,37 +565,46 @@ class JobManager:
 
     def close(self) -> None:
         if not self._started:
+            self._release_scheduler_lock()
             return
-        self._stop.set()
-        if self._thread is not None:
-            self._thread.join(timeout=3)
-        with self._process_lock:
-            active = list(self._processes)
-        for job_id in active:
-            self._terminate_process(job_id)
-        with self._process_lock:
-            self._processes.clear()
-        for job in self.registry.list_jobs(limit=10_000):
-            if job["state"] == "RUNNING":
-                try:
-                    self.registry.transition(
-                        job["job_id"],
-                        "INTERRUPTED",
-                        phase="interrupted",
-                        event_type="job_interrupted",
-                        event_message="Active worker interrupted by API shutdown",
-                    )
-                except InvalidJobTransitionError:
-                    pass
-            elif job["state"] == "CANCEL_REQUESTED":
-                try:
-                    self.registry.transition(
-                        job["job_id"],
-                        "CANCELLED",
-                        phase="cancelled",
-                        event_type="job_cancelled",
-                        event_message="Cancellation finalized during API shutdown",
-                    )
-                except InvalidJobTransitionError:
-                    pass
-        self._started = False
+        try:
+            self._stop.set()
+            if self._thread is not None:
+                self._thread.join(timeout=3)
+            with self._process_lock:
+                active = list(self._processes)
+            for job_id in active:
+                self._terminate_process(job_id)
+            with self._process_lock:
+                self._processes.clear()
+            for job in self.registry.list_jobs(limit=10_000):
+                if job["state"] == "RUNNING":
+                    try:
+                        self.registry.transition(
+                            job["job_id"],
+                            "INTERRUPTED",
+                            phase="interrupted",
+                            event_type="job_interrupted",
+                            event_message="Active worker interrupted by API shutdown",
+                        )
+                    except InvalidJobTransitionError:
+                        pass
+                elif job["state"] == "CANCEL_REQUESTED":
+                    try:
+                        self.registry.transition(
+                            job["job_id"],
+                            "CANCELLED",
+                            phase="cancelled",
+                            event_type="job_cancelled",
+                            event_message="Cancellation finalized during API shutdown",
+                        )
+                    except InvalidJobTransitionError:
+                        pass
+        finally:
+            self._started = False
+            self._release_scheduler_lock()
+
+    def stop(self) -> None:
+        """Stop the scheduler and release its state-directory lock."""
+
+        self.close()
