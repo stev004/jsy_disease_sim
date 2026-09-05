@@ -16,6 +16,8 @@
 
 | **r5a** (run 2, launched 22:05 BST) | `~/jos-r5a-wt` | `perf/route5-phase1-columnar-community` (off perf3 head `7b64629`) | `~/jos-r5a-brief.md` · `~/jos-r5a.log` · `~/jos-r5a.last.md` | ROUTE-5 phase 1: columnar `RouteSnapshot` core + lazy exact dict view + columnar `_edge_arrays` path + community_indoor/outdoor builders emitting columns; three-phase route gate (dict rows, 11-route fingerprints both windows via harness compare, exact array bytes) + goldens + full M4 hash + 7d-full/30d-ci latent hash equality vs base; fallback = boundary only |
 
+**Integration branch `perf/integration-tranche2` @ `ac04bbb50aaea1070a4fbd5d645062e7470c4f3c`** (worktree `~/jos-integ-wt`, pushed, CI pending) = main + PERF-3 + PERF-2 + PERF-1; merge gate G18 parked. Branch CIs: perf3 33989793406 green · perf2 33990091712 green · corr3 33990879448 green · perf1 33991825337 pending.
+
 Waiter: `wait2.sh '<units>'` (scratchpad) polls every 5 min for the next `.last.md`, 45-min cap; 20-min zero-write watchdog = log mtime age printed per poll.
 
 ## Resume recipe (if this session dies)

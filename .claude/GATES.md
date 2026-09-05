@@ -4,6 +4,16 @@
 
 ## Open
 
+### G18 — Merge the Astra performance tranche 2 (PERF-1 + PERF-2 + PERF-3) into `main`
+- **Question:** merge `perf/integration-tranche2` @ `ac04bbb50aaea1070a4fbd5d645062e7470c4f3c` (= main + no-ff merges of PERF-3 `7b64629cba686ca21b0cd5015c564c18748f5273`, PERF-2 `2a70915a91862f63f112d001b97bce661d4a90fc`, PERF-1 `7fe7df0fb2e9e2f4510555c4e555c31b981c13dd`)? Every unit is byte-identical on its gate (full-mode M4 hash `49464e77…`, M3 hash `b7d2fb34…`, seed-101 30-day latent/outcome hashes `bbca6028…`/`b8433f0d…`), branch CIs green for perf3/perf2/corr3 at the time of writing (perf1 + integration CI pending — read `gh run view` before merging). Gains: Sim.init 48 s → 1.07 s per replicate; M3 build 147 s → 5 s; M4 hash transient allocation 482 MiB → 4 MiB.
+- **Command (SHA-first, after CI on `ac04bbb` is read green):** `git -C ~/jsy_disease_sim fetch origin && git -C ~/jsy_disease_sim merge --no-ff ac04bbb50aaea1070a4fbd5d645062e7470c4f3c -m "G18: merge perf/integration-tranche2 @ ac04bbb (PERF-1/2/3)" && git -C ~/jsy_disease_sim push`
+- **Default:** merge once CI on the integration SHA is green and the independent Sol review of the three diffs (queued in this run) reports no blocking finding. Agent does not merge without an explicit instruction.
+
+### G19 — Merge the V1.2 exit-gate corrective (after audit 4 PASS)
+- **Question:** merge `fix/v12-exit-gate-corrective-3` at the SHA audit 4 judged (recorded in RUN.md / the audit file) into `main`?
+- **Default:** merge only on a filed `V1.2 EXIT GATE: PASS`; on FAIL the run spawns corrective 4 instead.
+
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
