@@ -10,7 +10,7 @@
 - **Default:** merge once CI on the integration SHA is green and the independent Sol review of the three diffs (queued in this run) reports no blocking finding. Agent does not merge without an explicit instruction.
 
 ### G19 — Merge the V1.2 exit-gate corrective (after audit 4 PASS)
-- **Question:** merge `fix/v12-exit-gate-corrective-3` at the SHA audit 4 judged (recorded in RUN.md / the audit file) into `main`?
+- **Question:** merge `fix/v12-exit-gate-corrective-3` @ `71e408ca75c1477851fc8b5a8e8b5337a3429ac8` (the SHA audit 4 judges; includes the gate-doc revision) into `main`? Command after a filed PASS: `git -C ~/jsy_disease_sim merge --no-ff 71e408ca75c1477851fc8b5a8e8b5337a3429ac8 -m "G19: merge fix/v12-exit-gate-corrective-3 @ 71e408c (V1.2 exit gate PASS)" && git -C ~/jsy_disease_sim push`
 - **Default:** merge only on a filed `V1.2 EXIT GATE: PASS`; on FAIL the run spawns corrective 4 instead.
 
 
