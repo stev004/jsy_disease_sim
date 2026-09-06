@@ -1,3 +1,4 @@
+<!-- DIRECTOR ERRATUM 2026-09-06 (trail-audit Attention 4): the proof JSON embedded below is an intermediate bench pass; its ci:101:7 observed_hash 70d54219... differs from the filed authoritative proof docs/runs/2026-09-05-perf1-proof.json (70e537b3...). Director probe on perf/integration-tranche2b @ 0dec469: two consecutive ci seed-101 7-day runs -> observed 70e537b3dc495a1674edc34386d48fc8f1fa87f99e68471e7e2257a27bc18f5f both times (latent 46d4e82c..., outcome ddcd298e..., 90 events), equal to the proof file. Trail row trail-audit-errata. -->
 Implemented PERF-1.
 
 Design: `PlainMetadataBoundary` stores mappings in a closure behind a `__slots__` callable. sciris’s `check_iter_type()` descends into `__dict__`/`__slots__` objects (`sc_nested.py:149–156`) and `iteritems()` enumerates slots (`:490–504`), but does not inspect callable closure cells. Consumers access mappings through `.value` or scheduler properties.

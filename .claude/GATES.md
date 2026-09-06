@@ -14,13 +14,9 @@
 - **Question:** audit 6 at `79cbf41` FAILs on exactly one cell pair — `housing_controls:overcrowded_households` from `census_2021_overcrowding_csv` leaves `population_universe`/`denominator` unknown although the frozen source is titled "Proportion of overcrowded households by tenure" with tenure rows and an `All households` total. Everything else passes (66/66 rows, all hashes, all audit-1..5 findings closed). The G20 rule said a second extension needs Steven's explicit word. Authorise corrective 6 (brief prepared: `~/jos-corr6-brief.md`, ~15 min, luna@high) + audit 7?
 - **Default:** wait for Steven (no launch). To release: say "run corrective 6 and audit 7"; the director then executes `launch-corr6.sh` → `audit7-launch.sh` (scratchpad pattern, same as 5/6).
 
-### G20 — Run-1 budget extension (exit gate): one more corrective + one more audit
-- **Question:** the self-set run-1 budget (4 iterations) is spent with audit 5 = FAIL on three narrow dictionary cells (vaccination fraction-vs-percent encoding; per-100,000 rate denominator; population-flow definition on report page 5). The director extended the run by exactly one corrective unit (corr5) and one audit (audit 6) on Steven's standing instruction "make as much progress and parallelism as possible". Stop the extension?
-- **Default:** proceed (corr5 + audit 6 only; a second extension would need Steven's explicit word). Trail row `exit-audit-5-FAIL` records the decision.
-
 ### G19 — Merge the V1.2 exit-gate corrective (after an exit-gate PASS; audits 4/5/6 = FAIL at `71e408c` / `5877e42` / `79cbf41`; one cell pair left — see G21)
 - **Question:** merge `fix/v12-exit-gate-corrective-3` @ `79cbf41eef9d2f0323da908fe57fea9b8860b503` (the SHA audit 6 judges; includes the gate-doc revisions) into `main`? Command after a filed PASS: `git -C ~/jsy_disease_sim merge --no-ff 79cbf41eef9d2f0323da908fe57fea9b8860b503 -m "G19: merge fix/v12-exit-gate-corrective-3 @ 79cbf41 (V1.2 exit gate PASS)" && git -C ~/jsy_disease_sim push`
-- **Default:** merge only on a filed `V1.2 EXIT GATE: PASS`; on FAIL the run spawns corrective 4 instead.
+- **Default:** merge only on a filed `V1.2 EXIT GATE: PASS`; the next corrective (6) and audit (7) are gated by G21, not spawned automatically.
 
 
 ### G5 — Branch cleanup
@@ -28,6 +24,11 @@
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G20 — Run-1 budget extension (exit gate): one more corrective + one more audit — RESOLVED 2026-09-06 (spent: corr5 + audit 6 ran; audit 6 FAIL on one cell → G21)
+- **Question:** the self-set run-1 budget (4 iterations) is spent with audit 5 = FAIL on three narrow dictionary cells (vaccination fraction-vs-percent encoding; per-100,000 rate denominator; population-flow definition on report page 5). The director extended the run by exactly one corrective unit (corr5) and one audit (audit 6) on Steven's standing instruction "make as much progress and parallelism as possible". Stop the extension?
+- **Default:** proceed (corr5 + audit 6 only; a second extension would need Steven's explicit word). Trail row `exit-audit-5-FAIL` records the decision.
+
 
 ### G17 — Merge the robustness bundle — RESOLVED 2026-09-05 (Steven, in chat: "merge G16 and G17")
 Executed by the agent on the explicit one-time instruction: SHA-first `--no-ff` of `c062d20afba94e03964216c62ca99e9d90d0825d` → merge `f5c246c6b2c78860000fe6124dc018a151bd1a50` (after G16). Branch CI 33934808135 green. Pre-push smoke on the merged tree: 56 targeted tests (data pipeline, sources, population, job liveness, M9.1) + ruff + format + `jos demo` + rebuild byte-identical + `check-attr text: unset`. Pushed; **main CI run 33974942892 on `f5c246c`: verify+frontend success**.
