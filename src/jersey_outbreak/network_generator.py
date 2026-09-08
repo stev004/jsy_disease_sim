@@ -16,7 +16,7 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 
@@ -1402,11 +1402,15 @@ def generate_networks(
     m2_input: M2PopulationInput,
     m3_input: M3StructureInput,
     root: Path | None = None,
+    *,
+    diagnostics: Literal["full", "internal"] = "full",
 ) -> GeneratedNetworks:
     """Generate reproducible M4 route structure from validated M2/M3 artifacts."""
 
     started = time.perf_counter()
     before_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if diagnostics not in {"full", "internal"}:
+        raise ValueError("diagnostics must be 'full' or 'internal'")
     if m2_input.manifest.mode != config.mode or m3_input.manifest.mode != config.mode:
         raise DataBuildError("M4 mode must match both M2 and M3 artifacts")
     if m2_input.manifest.actual_population != m3_input.manifest.actual_population:
@@ -2161,9 +2165,12 @@ def generate_networks(
         _indexed_agent_ids=agent_ids,
     )
     baseline_date = config.snapshot_dates[0]
-    route_diagnostics = _route_diagnostics(generated, baseline_date)
     baseline_snapshot = generated.snapshot(baseline_date)
     route_overlap_matrix = _route_overlap_matrix(generated, baseline_date)
+    if diagnostics == "full":
+        route_diagnostics = _route_diagnostics(generated, baseline_date)
+    else:
+        route_diagnostics = {"omitted": "internal_replicate_mode"}
     ordinary_workplace_participants = {
         endpoint
         for snapshot_date in config.snapshot_dates
@@ -2172,23 +2179,26 @@ def generate_networks(
         for edge in generated.route_snapshot(route_id, snapshot_date).edges
         for endpoint in (edge["p1"], edge["p2"])
     }
-    route_participation: dict[str, set[str]] = {
-        route_id: {endpoint for edge in snapshot.edges for endpoint in (edge["p1"], edge["p2"])}
-        for route_id, snapshot in baseline_snapshot.items()
-    }
-    non_household_route_ids = [
-        route_id for route_id, spec in route_specs.items() if spec["route_family"] != "household"
-    ]
-    non_household_participants = (
-        set().union(*(route_participation[route_id] for route_id in non_household_route_ids))
-        if non_household_route_ids
-        else set()
-    )
-    route_type_count: dict[int, int] = defaultdict(int)
-    for agent_id in agent_ids:
-        route_type_count[
-            sum(agent_id in participants for participants in route_participation.values())
-        ] += 1
+    if diagnostics == "full":
+        route_participation: dict[str, set[str]] = {
+            route_id: {endpoint for edge in snapshot.edges for endpoint in (edge["p1"], edge["p2"])}
+            for route_id, snapshot in baseline_snapshot.items()
+        }
+        non_household_route_ids = [
+            route_id
+            for route_id, spec in route_specs.items()
+            if spec["route_family"] != "household"
+        ]
+        non_household_participants = (
+            set().union(*(route_participation[route_id] for route_id in non_household_route_ids))
+            if non_household_route_ids
+            else set()
+        )
+        route_type_count: dict[int, int] = defaultdict(int)
+        for agent_id in agent_ids:
+            route_type_count[
+                sum(agent_id in participants for participants in route_participation.values())
+            ] += 1
     secondary_job_agents = {
         agent_id
         for agent_id, jobs in jobs_by_agent.items()
@@ -2219,26 +2229,28 @@ def generate_networks(
         )
         for row in m2_input.residents
     }
-    community_participation_by_residence_type = {
-        residence_type: {
-            "resident_count": sum(
-                kind == residence_type for kind in residence_type_by_agent.values()
-            ),
-            "eligible_pool_count": sum(
-                kind == residence_type and agent_id in community_members
-                for agent_id, kind in residence_type_by_agent.items()
-            ),
-            "baseline_endpoint_count_by_route": {
-                route_id: sum(
-                    kind == residence_type and agent_id in route_participation.get(route_id, set())
+    if diagnostics == "full":
+        community_participation_by_residence_type = {
+            residence_type: {
+                "resident_count": sum(
+                    kind == residence_type for kind in residence_type_by_agent.values()
+                ),
+                "eligible_pool_count": sum(
+                    kind == residence_type and agent_id in community_members
                     for agent_id, kind in residence_type_by_agent.items()
-                )
-                for route_id in ("community_indoor", "community_outdoor")
-                if route_id in route_specs
-            },
+                ),
+                "baseline_endpoint_count_by_route": {
+                    route_id: sum(
+                        kind == residence_type
+                        and agent_id in route_participation.get(route_id, set())
+                        for agent_id, kind in residence_type_by_agent.items()
+                    )
+                    for route_id in ("community_indoor", "community_outdoor")
+                    if route_id in route_specs
+                },
+            }
+            for residence_type in sorted(set(residence_type_by_agent.values()))
         }
-        for residence_type in sorted(set(residence_type_by_agent.values()))
-    }
     activity_values = [
         _persistent_contact_activity(
             config.seed,
@@ -2313,7 +2325,7 @@ def generate_networks(
         },
     }
     generated.staffing_diagnostics = staffing_diagnostics
-    diagnostics = {
+    diagnostic_payload = {
         "schema_version": "1.0",
         "status": (
             "failed" if any(row["status"] == "failed" for row in route_overlap_matrix) else "passed"
@@ -2323,10 +2335,16 @@ def generate_networks(
         "route_count": len(route_specs),
         "routes": route_diagnostics,
         "cross_route": {
-            "zero_non_household_contacts": len(set(agent_ids) - non_household_participants),
-            "agents_by_route_type_count": {
-                str(count): number for count, number in sorted(route_type_count.items())
-            },
+            "zero_non_household_contacts": (
+                len(set(agent_ids) - non_household_participants)
+                if diagnostics == "full"
+                else {"omitted": "internal_replicate_mode"}
+            ),
+            "agents_by_route_type_count": (
+                {str(count): number for count, number in sorted(route_type_count.items())}
+                if diagnostics == "full"
+                else {"omitted": "internal_replicate_mode"}
+            ),
             "multi_job_workers": len(secondary_job_agents),
             "multi_job_workplace_bridges": len(bridge_agents),
             "households_with_school_connectivity": household_school_connectivity,
@@ -2334,6 +2352,13 @@ def generate_networks(
             "care_staff_community_bridges": len(care_staff_ids & community_members),
             "community_participation_by_residence_type": (
                 community_participation_by_residence_type
+                if diagnostics == "full"
+                else {"omitted": "internal_replicate_mode"}
+            ),
+            **(
+                {"route_participation": {"omitted": "internal_replicate_mode"}}
+                if diagnostics == "internal"
+                else {}
             ),
             "route_overlap_matrix": route_overlap_matrix,
             "shared_vehicle": shared_vehicle_diagnostics,
@@ -2439,7 +2464,18 @@ def generate_networks(
             ],
         },
     }
-    generated.diagnostics = diagnostics
+    if diagnostics == "internal":
+        diagnostic_payload["route_analysis"] = {
+            "omitted": "internal_replicate_mode",
+            "omitted_keys": [
+                "routes",
+                "cross_route.zero_non_household_contacts",
+                "cross_route.agents_by_route_type_count",
+                "cross_route.community_participation_by_residence_type",
+                "cross_route.route_participation",
+            ],
+        }
+    generated.diagnostics = diagnostic_payload
 
     def snapshot_payloads(route_id: str) -> Iterable[dict[str, Any]]:
         for when in config.snapshot_dates:
