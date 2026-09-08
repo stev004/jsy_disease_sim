@@ -9,7 +9,7 @@
 - **RELEASED 2026-09-08** (Steven: "continue with foreman and moving forward with it all"). Corrective 6 → audit 7 in progress; G19 merge follows a filed PASS under the same instruction ("merge things needed").
 
 ### G19 — Merge the V1.2 exit-gate corrective (after an exit-gate PASS; audits 4/5/6 = FAIL at `71e408c` / `5877e42` / `79cbf41`; one cell pair left — see G21)
-- **Question:** merge `fix/v12-exit-gate-corrective-3` @ `79cbf41eef9d2f0323da908fe57fea9b8860b503` (the SHA audit 6 judges; includes the gate-doc revisions) into `main`? Command after a filed PASS: `git -C ~/jsy_disease_sim merge --no-ff 79cbf41eef9d2f0323da908fe57fea9b8860b503 -m "G19: merge fix/v12-exit-gate-corrective-3 @ 79cbf41 (V1.2 exit gate PASS)" && git -C ~/jsy_disease_sim push`
+- **Question:** merge `fix/v12-exit-gate-corrective-3` @ `0cf649925191fc9de2037847ac3048f10397a75a` (the SHA audit 7 judges) into `main`? Steven's 2026-09-08 instruction ('merge things needed') covers this merge once a PASS is filed. Command: `git -C ~/jsy_disease_sim merge --no-ff 0cf649925191fc9de2037847ac3048f10397a75a -m "G19: merge fix/v12-exit-gate-corrective-3 @ 0cf6499 (V1.2 exit gate PASS)" && git -C ~/jsy_disease_sim push`
 - **Default:** merge only on a filed `V1.2 EXIT GATE: PASS`; the next corrective (6) and audit (7) are gated by G21, not spawned automatically.
 
 
