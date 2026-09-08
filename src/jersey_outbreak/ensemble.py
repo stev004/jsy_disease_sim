@@ -324,6 +324,7 @@ def _run_replicate_job(job: dict[str, Any]) -> ReplicateOutput:
             job["m2_input"],
             job["m3_input"],
             Path(job["root"]),
+            diagnostics="internal",
         )
         run_config = OutbreakRunConfig.model_validate(job["base_run_config"]).model_copy(
             update={"seed": seed}
