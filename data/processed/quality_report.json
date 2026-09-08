@@ -517,7 +517,7 @@
     {
       "acquisition_method": "manual",
       "local_snapshot": "data/raw/epi_measure_dictionary_manual_fixture/measure_dictionary.csv",
-      "sha256": "692c1d2c3172598faff67d489fb623f8f027875ee2308b96673991e93e9161fd",
+      "sha256": "16ba6ed70b02fb84bf10757102376348ef89030bdc761a8e6e561163c279525b",
       "source_id": "epi_measure_dictionary_manual_fixture",
       "status": "passed"
     }
@@ -987,7 +987,7 @@
       ],
       "path": "data/processed/measure_dictionary.csv",
       "rows": 92,
-      "sha256": "a793af0138eb3eed95220e681660cd7ec7c7f9f83ed9ba49262970a561c98ae1"
+      "sha256": "5cf3e99087d79cde5837f7c08daf86c1936d459cc11c7eb4227b505a825f02c3"
     }
   ],
   "warnings": [
