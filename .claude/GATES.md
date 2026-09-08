@@ -4,15 +4,17 @@
 
 ## Open
 
-### G22 — Merge run-4 perf units (`perf/integration-run4` @ `e26ef918ae09509cf9959af9aaa3f522e825ea56` = main + hash-key pre-encoding + PERF-4 diagnostics switch + ROUTE-5 phase 2 builders)
-- **Question:** merge after Sol review 3 PASS (running) + local smoke? Each unit is exact on its gate (fingerprints identical both windows, stable-int counts equal, M4/7-day hashes unchanged; PERF-4 median saving 8.16 s per M4 build).
-- **Default:** merge on a filed PASS, executed under Steven's 2026-09-08 instruction ("merge things needed… get things moving") — as G19 was; say "hold" to stop. Command: `git -C ~/jsy_disease_sim merge --no-ff e26ef918ae09509cf9959af9aaa3f522e825ea56 -m "G22: merge perf/integration-run4 @ e26ef91" && git -C ~/jsy_disease_sim push`.
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G22 — Merge run-4 perf units — RESOLVED 2026-09-08 (executed under Steven's 2026-09-08 instruction; review 3 PASS `docs/audits/2026-09-08-run4-perf-review-sol-PASS.md`)
+SHA-first `--no-ff` of `e26ef918ae09509cf9959af9aaa3f522e825ea56` → merge `d679230397a17109d8a0a2d53a286aa2a36f8c4a`; pre-push smoke green; no CI (billing). *(original gate below)*
+- **Question:** merge after Sol review 3 PASS (running) + local smoke? Each unit is exact on its gate (fingerprints identical both windows, stable-int counts equal, M4/7-day hashes unchanged; PERF-4 median saving 8.16 s per M4 build).
+- **Default:** merge on a filed PASS, executed under Steven's 2026-09-08 instruction ("merge things needed… get things moving") — as G19 was; say "hold" to stop. Command: `git -C ~/jsy_disease_sim merge --no-ff e26ef918ae09509cf9959af9aaa3f522e825ea56 -m "G22: merge perf/integration-run4 @ e26ef91" && git -C ~/jsy_disease_sim push`.
+
 
 ### G21 — Second run-1 extension: corrective 6 + audit 7 — RESOLVED 2026-09-08 (Steven released it: "continue with foreman and moving forward with it all"); audit 7 = PASS
 - **Question:** audit 6 at `79cbf41` FAILs on exactly one cell pair — `housing_controls:overcrowded_households` from `census_2021_overcrowding_csv` leaves `population_universe`/`denominator` unknown although the frozen source is titled "Proportion of overcrowded households by tenure" with tenure rows and an `All households` total. Everything else passes (66/66 rows, all hashes, all audit-1..5 findings closed). The G20 rule said a second extension needs Steven's explicit word. Authorise corrective 6 (brief prepared: `~/jos-corr6-brief.md`, ~15 min, luna@high) + audit 7?
