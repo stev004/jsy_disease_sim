@@ -242,7 +242,7 @@ class CovidCurrentSummaryRow(CanonicalProvenance):
 
 
 class CovidWeeklyVaccinationRow(CanonicalProvenance):
-    week_ending: NonEmptyString
+    date: NonEmptyString
     dose: Literal["dose_1", "dose_2", "dose_3", "dose_4", "autumn_2022_booster"]
     age_band: Literal[
         "5_to_11",
@@ -279,7 +279,7 @@ class CovidSerosurveyRow(CanonicalProvenance):
 
 
 class CovidWeeklyEligiblePopulationRow(CanonicalProvenance):
-    week_ending: NonEmptyString
+    date: NonEmptyString
     value: StrictInt | None = None
     unit: Literal["persons"]
     reporting_status: Literal["reported", "not_reported", "positive_less_than"]
