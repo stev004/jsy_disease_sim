@@ -1,5 +1,7 @@
 # RUN — foreman run `perf-v12-run4` STARTED 2026-09-08 (Steven: "merge things needed. continue with foreman… get things moving… rely on codex"; GitHub Actions billing exhausted → local gate mirror is the evidence, no CI rows). G18 MERGED (`main` carries the perf tranche). Predicates: (1) exit gate PASS via corrective 6 + audit 7 (G21 released) then G19 merge; (2) next perf units — ensemble-audit #3 hash-key suffixes, ROUTE-5 phase 2 — budget 6 impl runs + 2 reviews. Director token economy: terse briefs, tail-only reads.
 
+**In flight (run 4):** corr6 (luna@high, `~/jos-v12-corr3-wt`, log `~/jos-corr6.log`) → audit 7 via `audit7-launch.sh`; hk = hash-key suffix pre-encoding (luna@xhigh, `~/jos-hk-wt`, branch `perf/hashkey-suffix-preencode` off main `cb42948`, log `~/jos-hk.log`). Codex auth: WSL now uses the token copied from the Windows `~/.codex/auth.json` (backup `~/.codex/auth.json.bak-*`); do not run the Windows codex concurrently.
+
 ## Previous run `perf-v12-run3` ENDED 2026-09-06 (ts: trail rows exit-audit-6-FAIL-run1-end, tranche2b-review-PASS); nothing in flight except the terra trail audit
 
 **Run 1 (exit gate): NOT MET by one dictionary cell pair — corrective 6 + audit 7 wait on G21.** **Run 2 (perf tranche 2): MET** — PERF-1/2/3 + ROUTE-5 phase 1 + ROUTE-4 on `perf/integration-tranche2b` @ `0dec469`, CI green, two independent reviews PASS; merge = G18 (default: option B). Cold start: read GATES G18/G19/G21 first; the ledger below is the run history.
