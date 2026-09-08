@@ -4,6 +4,10 @@
 
 ## Open
 
+### G22 — Merge run-4 perf units (`perf/integration-run4` @ `e26ef918ae09509cf9959af9aaa3f522e825ea56` = main + hash-key pre-encoding + PERF-4 diagnostics switch + ROUTE-5 phase 2 builders)
+- **Question:** merge after Sol review 3 PASS (running) + local smoke? Each unit is exact on its gate (fingerprints identical both windows, stable-int counts equal, M4/7-day hashes unchanged; PERF-4 median saving 8.16 s per M4 build).
+- **Default:** merge on a filed PASS, executed under Steven's 2026-09-08 instruction ("merge things needed… get things moving") — as G19 was; say "hold" to stop. Command: `git -C ~/jsy_disease_sim merge --no-ff e26ef918ae09509cf9959af9aaa3f522e825ea56 -m "G22: merge perf/integration-run4 @ e26ef91" && git -C ~/jsy_disease_sim push`.
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
