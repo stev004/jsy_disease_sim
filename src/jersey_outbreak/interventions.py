@@ -8,7 +8,6 @@ so a detection on timestep *t* can first change contacts on *t + 1*.
 
 from __future__ import annotations
 
-import math
 import weakref
 from collections import Counter, defaultdict
 from datetime import date, timedelta
@@ -149,6 +148,14 @@ class InterventionManager(ss.Intervention):
         self._agent_id_by_uid = {
             index: agent_id for agent_id, index in self._uid_by_agent_id.items()
         }
+        self._uid_of_index = np.arange(len(self._uid_by_agent_id), dtype=np.int64)
+        self._workplace_index_by_id: dict[str, int] = {}
+        self._workplace_indices_by_uid = np.empty((len(self._uid_by_agent_id), 0), dtype=np.int64)
+        self._vector_target_adheres_cache: dict[tuple[str, str], np.ndarray] = {}
+        self._vector_target_matches_cache: dict[tuple[str, str], np.ndarray] = {}
+        self._vector_community_adheres_cache: dict[tuple[str, str], np.ndarray] = {}
+        self._vector_targeted_workplaces_cache: dict[tuple[str, str], np.ndarray] = {}
+        self._school_present_by_uid = np.zeros(len(self._uid_by_agent_id), dtype=bool)
         self._prepare_metadata()
 
     @property
@@ -195,6 +202,28 @@ class InterventionManager(ss.Intervention):
             self._care_staff_ids.add(agent_id)
             self._institutional_staff_ids.add(agent_id)
             self._care_setting_by_agent[agent_id] = str(row["setting_id"])
+
+        for agent_id, schools in self._school_by_agent.items():
+            self._school_present_by_uid[self._uid_by_agent_id[agent_id]] = bool(schools)
+
+        workplace_ids = sorted(
+            {str(job["workplace_id"]) for jobs in self._jobs_by_agent.values() for job in jobs}
+        )
+        self._workplace_index_by_id = {
+            workplace_id: index for index, workplace_id in enumerate(workplace_ids)
+        }
+        max_workplaces = max(
+            (len(workplaces) for workplaces in self._workplaces_by_agent.values()), default=0
+        )
+        workplace_indices = np.full(
+            (len(self._uid_by_agent_id), max_workplaces), -1, dtype=np.int64
+        )
+        for agent_id, workplaces in self._workplaces_by_agent.items():
+            uid = self._uid_by_agent_id[agent_id]
+            workplace_indices[uid, : len(workplaces)] = [
+                self._workplace_index_by_id[workplace_id] for workplace_id in sorted(workplaces)
+            ]
+        self._workplace_indices_by_uid = workplace_indices
 
     @ss.required("disable")
     def init_pre(self, sim: Any) -> None:
@@ -816,6 +845,352 @@ class InterventionManager(ss.Intervention):
         }[config.care_target]
         return setting_type in allowed
 
+    def _vector_cache_key(self, config: InterventionConfig) -> tuple[str, str]:
+        return config.intervention_id, config.version
+
+    def _vector_target_matches(self, config: InterventionConfig) -> np.ndarray:
+        key = self._vector_cache_key(config)
+        values = self._vector_target_matches_cache.get(key)
+        if values is None:
+            values = np.fromiter(
+                (
+                    self._target_matches(config, self._agent_id_by_uid[uid])
+                    for uid in range(len(self._uid_by_agent_id))
+                ),
+                dtype=bool,
+                count=len(self._uid_by_agent_id),
+            )
+            self._vector_target_matches_cache[key] = values
+        return values
+
+    def _vector_target_adheres(self, config: InterventionConfig) -> np.ndarray:
+        key = self._vector_cache_key(config)
+        overridden = "_target_adheres" in self.__dict__
+        values = None if overridden else self._vector_target_adheres_cache.get(key)
+        if values is None:
+            values = np.fromiter(
+                (
+                    self._target_adheres(config, self._agent_id_by_uid[uid])
+                    for uid in range(len(self._uid_by_agent_id))
+                ),
+                dtype=bool,
+                count=len(self._uid_by_agent_id),
+            )
+            if not overridden:
+                self._vector_target_adheres_cache[key] = values
+        return values
+
+    def _vector_community_adheres(self, config: InterventionConfig) -> np.ndarray:
+        key = self._vector_cache_key(config)
+        overridden = "_target_adheres" in self.__dict__
+        values = None if overridden else self._vector_community_adheres_cache.get(key)
+        if values is not None:
+            return values
+        target = config.target
+        restricted = any(
+            (
+                target.agent_ids,
+                target.age_min is not None,
+                target.age_max is not None,
+                target.age_bands,
+                target.home_parishes,
+                target.employment_sectors,
+                target.school_types,
+                target.school_ids,
+                target.workplace_ids,
+                target.care_setting_types,
+                target.care_role != "any",
+                target.worker_only,
+            )
+        )
+        if config.community_scope != "everyone_present" or restricted:
+            values = np.zeros(len(self._uid_by_agent_id), dtype=bool)
+        else:
+            values = np.fromiter(
+                (
+                    self._target_adheres(config, self._agent_id_by_uid[uid])
+                    if self._agent_id_by_uid[uid] in self._m2_by_agent
+                    else self._intervention_adheres(config, self._agent_id_by_uid[uid])
+                    for uid in range(len(self._uid_by_agent_id))
+                ),
+                dtype=bool,
+                count=len(self._uid_by_agent_id),
+            )
+        if not overridden:
+            self._vector_community_adheres_cache[key] = values
+        return values
+
+    def _vector_targeted_workplaces(self, config: InterventionConfig) -> np.ndarray:
+        key = self._vector_cache_key(config)
+        values = self._vector_targeted_workplaces_cache.get(key)
+        if values is not None:
+            return values
+        targeted_jobs = [
+            self._targeted_jobs(config, self._agent_id_by_uid[uid])
+            for uid in range(len(self._uid_by_agent_id))
+        ]
+        max_targeted = max((len(jobs) for jobs in targeted_jobs), default=0)
+        values = np.full((len(self._uid_by_agent_id), max_targeted), -1, dtype=np.int64)
+        for uid, jobs in enumerate(targeted_jobs):
+            values[uid, : len(jobs)] = [
+                self._workplace_index_by_id[str(job["workplace_id"])] for job in jobs
+            ]
+        self._vector_targeted_workplaces_cache[key] = values
+        return values
+
+    def _snapshot_uid_endpoints(self, snapshot: Any) -> tuple[np.ndarray, np.ndarray]:
+        if snapshot.agent_ids is self.generated.agent_ids:
+            uid_of_index = self._uid_of_index
+        else:
+            uid_of_index = np.fromiter(
+                (self._uid_by_agent_id[agent_id] for agent_id in snapshot.agent_ids),
+                dtype=np.int64,
+                count=len(snapshot.agent_ids),
+            )
+        return uid_of_index[snapshot.p1_index], uid_of_index[snapshot.p2_index]
+
+    @staticmethod
+    def _shared_workplace_flags(left: np.ndarray, right: np.ndarray) -> np.ndarray:
+        if left.shape[1] == 0 or right.shape[1] == 0:
+            return np.zeros(len(left), dtype=bool)
+        return np.any(
+            (left[:, :, None] >= 0)
+            & (right[:, None, :] >= 0)
+            & (left[:, :, None] == right[:, None, :]),
+            axis=(1, 2),
+        )
+
+    def _vector_wfh_workplaces(self, config: InterventionConfig) -> np.ndarray:
+        current_jobs = self._wfh_jobs_current[config.intervention_id]
+        max_workplaces = max(
+            1, max((len(jobs) for jobs in self._jobs_by_agent.values()), default=0)
+        )
+        values = np.full((len(self._uid_by_agent_id), max_workplaces), -1, dtype=np.int64)
+        positions = np.zeros(len(self._uid_by_agent_id), dtype=np.int64)
+        for agent_id, workplace_id in sorted(current_jobs):
+            uid = self._uid_by_agent_id[agent_id]
+            position = positions[uid]
+            if position >= values.shape[1]:
+                continue
+            values[uid, position] = self._workplace_index_by_id[workplace_id]
+            positions[uid] += 1
+        return values
+
+    def _edge_multiplier_array(
+        self,
+        config: InterventionConfig,
+        route_id: str,
+        snapshot: Any,
+        p1_uids: np.ndarray,
+        p2_uids: np.ndarray,
+        when: date,
+        ti: int,
+    ) -> np.ndarray:
+        """Return one vector of config factors using the scalar predicates."""
+
+        edge_count = len(snapshot)
+        ones = np.ones(edge_count, dtype=np.float64)
+        if not config.enabled:
+            return ones
+        if config.activation_rule == "calendar" and not self._calendar_active(config, when):
+            return ones
+
+        if config.type in {"case_isolation", "household_quarantine"}:
+            route_multiplier = config.route_effects.get(
+                route_id, 1.0 if route_id == "household" else 0.0
+            )
+            if config.type == "case_isolation":
+                states = self._isolation_until[config.intervention_id]
+                active_by_uid = states > ti
+            else:
+                quarantine_states = self._quarantine_until[config.intervention_id]
+                active_by_uid = np.fromiter(
+                    (
+                        (
+                            self._m2_by_agent[agent_id].get("household_id") is not None
+                            and quarantine_states.get(
+                                str(self._m2_by_agent[agent_id]["household_id"]), -1
+                            )
+                            > ti
+                        )
+                        if agent_id in self._m2_by_agent
+                        else False
+                        for agent_id in self._agent_id_by_uid.values()
+                    ),
+                    dtype=bool,
+                    count=len(self._uid_by_agent_id),
+                )
+            p1_active = active_by_uid[p1_uids]
+            p2_active = active_by_uid[p2_uids]
+            p1_factor = np.where(p1_active, route_multiplier, 1.0)
+            p2_factor = np.where(p2_active, route_multiplier, 1.0)
+            result = np.ones(edge_count, dtype=np.float64)
+            result *= p1_factor
+            result *= p2_factor
+            return result
+
+        explicit = config.route_effects.get(route_id)
+        if config.type in {"masking", "gathering_reduction"}:
+            adheres = self._vector_target_adheres(config)
+            active = adheres[p1_uids] | adheres[p2_uids]
+            return np.where(active, 1.0 if explicit is None else explicit, 1.0)
+
+        if config.type == "school_closure":
+            if route_id not in SCHOOL_ROUTES:
+                return ones
+            target_matches = self._vector_target_matches(config)
+            adheres = self._vector_target_adheres(config)
+            edge_schools = (
+                self._school_present_by_uid[p1_uids] | self._school_present_by_uid[p2_uids]
+            )
+            active = (
+                (target_matches[p1_uids] | target_matches[p2_uids])
+                & edge_schools
+                & (adheres[p1_uids] | adheres[p2_uids])
+            )
+            multiplier = (
+                config.class_multiplier
+                if route_id == "school_class"
+                else config.cross_class_multiplier
+            )
+            return np.where(active, multiplier if explicit is None else explicit, 1.0)
+
+        if config.type == "workplace_reduction":
+            if route_id in WORKPLACE_ROUTES:
+                targeted_workplaces = self._vector_targeted_workplaces(config)
+                p1_targeted = self._shared_workplace_flags(
+                    targeted_workplaces[p1_uids], self._workplace_indices_by_uid[p2_uids]
+                )
+                p2_targeted = self._shared_workplace_flags(
+                    targeted_workplaces[p2_uids], self._workplace_indices_by_uid[p1_uids]
+                )
+                adheres = self._vector_target_adheres(config)
+                targeted = (p1_targeted & adheres[p1_uids]) | (p2_targeted & adheres[p2_uids])
+                wfh_workplaces = self._vector_wfh_workplaces(config)
+                wfh = self._shared_workplace_flags(
+                    wfh_workplaces[p1_uids], self._workplace_indices_by_uid[p2_uids]
+                ) | self._shared_workplace_flags(
+                    wfh_workplaces[p2_uids], self._workplace_indices_by_uid[p1_uids]
+                )
+                multiplier = config.workplace_multiplier if explicit is None else explicit
+                return np.where(wfh, 0.0, np.where(targeted, multiplier, 1.0))
+            if route_id in TRANSPORT_ROUTES:
+                commute_targeted = np.fromiter(
+                    (
+                        self._commute_agent_targeted(config, self._agent_id_by_uid[uid])
+                        for uid in range(len(self._uid_by_agent_id))
+                    ),
+                    dtype=bool,
+                    count=len(self._uid_by_agent_id),
+                )
+                adheres = self._vector_target_adheres(config)
+                targeted = (commute_targeted[p1_uids] & adheres[p1_uids]) | (
+                    commute_targeted[p2_uids] & adheres[p2_uids]
+                )
+                wfh_current = np.fromiter(
+                    (
+                        self._agent_id_by_uid[uid] in self._wfh_current[config.intervention_id]
+                        and commute_targeted[uid]
+                        for uid in range(len(self._uid_by_agent_id))
+                    ),
+                    dtype=bool,
+                    count=len(self._uid_by_agent_id),
+                )
+                wfh = wfh_current[p1_uids] | wfh_current[p2_uids]
+                multiplier = config.commute_multiplier if explicit is None else explicit
+                return np.where(wfh, 0.0, np.where(targeted, multiplier, 1.0))
+            return ones
+
+        if config.type == "community_reduction":
+            if route_id not in COMMUNITY_ROUTES:
+                return ones
+            adheres = self._vector_community_adheres(config)
+            active = adheres[p1_uids] | adheres[p2_uids]
+            multiplier = (
+                config.indoor_multiplier
+                if route_id.endswith("indoor")
+                else config.outdoor_multiplier
+            )
+            return np.where(active, multiplier if explicit is None else explicit, 1.0)
+
+        if config.type == "care_home_protection":
+            care_setting_matches = np.fromiter(
+                (
+                    bool(
+                        self._care_setting_by_agent.get(self._agent_id_by_uid[uid])
+                        and self._care_target_matches_setting(
+                            config,
+                            self._care_setting_by_agent[self._agent_id_by_uid[uid]],
+                        )
+                    )
+                    for uid in range(len(self._uid_by_agent_id))
+                ),
+                dtype=bool,
+                count=len(self._uid_by_agent_id),
+            )
+            care_member = np.fromiter(
+                (
+                    self._agent_id_by_uid[uid] in self._care_setting_by_agent
+                    for uid in range(len(self._uid_by_agent_id))
+                ),
+                dtype=bool,
+                count=len(self._uid_by_agent_id),
+            )
+            adheres = self._vector_target_adheres(config)
+            care_target = (care_setting_matches[p1_uids] | care_setting_matches[p2_uids]) & (
+                (care_member[p1_uids] & adheres[p1_uids])
+                | (care_member[p2_uids] & adheres[p2_uids])
+            )
+            if route_id in CARE_ROUTES:
+                return np.where(
+                    care_target,
+                    config.care_contact_multiplier if explicit is None else explicit,
+                    1.0 if explicit is None else explicit,
+                )
+            if route_id not in {"household", *CARE_ROUTES}:
+                resident_target_by_uid = np.fromiter(
+                    (
+                        self._agent_id_by_uid[uid] in self._care_resident_ids
+                        and care_setting_matches[uid]
+                        and adheres[uid]
+                        for uid in range(len(self._uid_by_agent_id))
+                    ),
+                    dtype=bool,
+                    count=len(self._uid_by_agent_id),
+                )
+                staff_target_by_uid = np.fromiter(
+                    (
+                        self._agent_id_by_uid[uid] in self._care_staff_ids
+                        and care_setting_matches[uid]
+                        and adheres[uid]
+                        for uid in range(len(self._uid_by_agent_id))
+                    ),
+                    dtype=bool,
+                    count=len(self._uid_by_agent_id),
+                )
+                resident_target = resident_target_by_uid[p1_uids] | resident_target_by_uid[p2_uids]
+                staff_target = staff_target_by_uid[p1_uids] | staff_target_by_uid[p2_uids]
+                return np.where(
+                    resident_target,
+                    config.care_external_resident_multiplier,
+                    np.where(staff_target, config.care_external_staff_multiplier, 1.0),
+                )
+            return np.full(edge_count, 1.0 if explicit is None else explicit, dtype=np.float64)
+        return np.full(edge_count, 1.0 if explicit is None else explicit, dtype=np.float64)
+
+    @staticmethod
+    def _compose_edge_multipliers(vectors: list[np.ndarray]) -> np.ndarray:
+        """Compose config vectors in canonical order with scalar-prod semantics."""
+
+        if not vectors:
+            return np.ones(0, dtype=np.float64)
+        factor = np.ones(len(vectors[0]), dtype=np.float64)
+        for vector in vectors:
+            factor *= vector
+        if np.isnan(factor).any():
+            raise RuntimeError("vectorised route multiplier produced NaN")
+        return np.minimum(1.0, np.maximum(0.0, factor))
+
     def _edge_multiplier(
         self, config: InterventionConfig, route_id: str, p1: str, p2: str, when: date, ti: int
     ) -> float:
@@ -972,36 +1347,38 @@ class InterventionManager(ss.Intervention):
                     }
                 )
                 continue
-            base_edges = list(self.generated.route_snapshot(route_id, when).edges)
-            effective_edges: list[dict[str, Any]] = []
-            multipliers: list[float] = []
-            for edge in base_edges:
-                p1 = str(edge["p1"])
-                p2 = str(edge["p2"])
-                factors = [
-                    self._edge_multiplier(config, route_id, p1, p2, when, ti)
+            snapshot = self.generated.route_snapshot(route_id, when)
+            p1_uids, p2_uids = self._snapshot_uid_endpoints(snapshot)
+            # Configs are sorted by (ID, version); the cumulative in-place
+            # product preserves math.prod's left-to-right multiplication.
+            factor = self._compose_edge_multipliers(
+                [
+                    self._edge_multiplier_array(
+                        config, route_id, snapshot, p1_uids, p2_uids, when, ti
+                    )
                     for config in relevant_configs
                 ]
-                # Configs are sorted by (ID, version); one canonical reduction
-                # removes tuple-order floating-point differences.
-                factor = max(0.0, min(1.0, math.prod(factors)))
-                multipliers.append(factor)
-                # Care roster edges remain represented with beta=0 when a care
-                # intervention suppresses them.  This preserves staffing and
-                # setting topology while eliminating transmission opportunity.
-                keep_zero = route_id in CARE_ROUTES
-                if factor > 0 or keep_zero:
-                    if factor == 1.0:
-                        effective_edges.append(edge)
-                    else:
-                        effective_edges.append({**edge, "weight": float(edge["weight"]) * factor})
-            touched = any(factor != 1.0 for factor in multipliers)
+            )
+            # Care roster edges remain represented with beta=0 when a care
+            # intervention suppresses them.  This preserves staffing and
+            # setting topology while eliminating transmission opportunity.
+            keep_zero = route_id in CARE_ROUTES
+            retained = (factor > 0) | keep_zero
+            retained_indices = np.flatnonzero(retained)
+            touched = bool(np.any(factor != 1.0))
             if touched:
-                arrays = _edge_arrays(ss_module, effective_edges, self._uid_by_agent_id)
-                route.edges.p1 = arrays["p1"]
-                route.edges.p2 = arrays["p2"]
-                route.edges.beta = arrays["beta"]
-                route.edges.dur = np.ones(len(effective_edges), dtype=float)
+                arrays = _edge_arrays(
+                    ss_module, snapshot, self._uid_by_agent_id, self._uid_of_index
+                )
+                route.edges.p1 = arrays["p1"][retained_indices]
+                route.edges.p2 = arrays["p2"][retained_indices]
+                beta = snapshot.weight[retained_indices].copy()
+                changed = factor[retained_indices] != 1.0
+                beta[changed] = (
+                    snapshot.weight[retained_indices][changed] * factor[retained_indices][changed]
+                )
+                route.edges.beta = beta
+                route.edges.dur = np.ones(len(retained_indices), dtype=float)
             # Exact-neutral contract: when every factor is one, the Starsim
             # route already contains the canonical M4 snapshot refreshed by
             # the network phase.  Do not cast, copy, or replace its arrays.
@@ -1010,12 +1387,12 @@ class InterventionManager(ss.Intervention):
                     "date": when.isoformat(),
                     "time_index": ti,
                     "route_id": route_id,
-                    "base_edge_count": len(base_edges),
-                    "effective_edge_count": len(effective_edges),
-                    "suppressed_edge_count": len(base_edges) - len(effective_edges),
-                    "mean_multiplier": float(np.mean(multipliers)) if multipliers else 1.0,
-                    "minimum_multiplier": min(multipliers) if multipliers else 1.0,
-                    "maximum_multiplier": max(multipliers) if multipliers else 1.0,
+                    "base_edge_count": len(snapshot),
+                    "effective_edge_count": len(retained_indices),
+                    "suppressed_edge_count": len(snapshot) - len(retained_indices),
+                    "mean_multiplier": float(np.mean(factor)) if len(factor) else 1.0,
+                    "minimum_multiplier": float(np.min(factor)) if len(factor) else 1.0,
+                    "maximum_multiplier": float(np.max(factor)) if len(factor) else 1.0,
                     "representation": "effective" if touched else "canonical_reused",
                 }
             )
