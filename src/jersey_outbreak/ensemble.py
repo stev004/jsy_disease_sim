@@ -22,11 +22,12 @@ import numpy as np
 from .ensemble_schemas import EnsembleConfig, EnsembleReplicateRecord
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .intervention_schemas import ScenarioConfig
-from .network_generator import GeneratedNetworks, generate_networks
+from .network_generator import GeneratedNetworks
 from .observation import ObservationRunResult, observe_latent_run
 from .observation_schemas import ObservationConfig
 from .outbreak_runner import OutbreakRunResult, run_outbreak
 from .outbreak_schemas import RespiratoryParameterSet
+from .parent_build import build_network, generate_networks
 from .scientific_hashes import (
     m6_comparison_logical_hash,
     m6_ensemble_config_hash,
@@ -319,12 +320,13 @@ def _run_replicate_job(job: dict[str, Any]) -> ReplicateOutput:
         network_config = NetworkGenerationConfig.model_validate(job["network_config"]).model_copy(
             update={"seed": seed}
         )
-        generated = generate_networks(
+        generated, _ = build_network(
+            Path(job["root"]),
             network_config,
             job["m2_input"],
             job["m3_input"],
-            Path(job["root"]),
             diagnostics="internal",
+            generator=generate_networks,
         )
         run_config = OutbreakRunConfig.model_validate(job["base_run_config"]).model_copy(
             update={"seed": seed}

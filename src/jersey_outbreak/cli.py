@@ -23,22 +23,12 @@ from .intervention_artifacts import (
     write_intervention_artifact,
     write_intervention_comparison_artifact,
 )
-from .network_artifacts import write_network_artifact
-from .network_generator import generate_networks
-from .network_schemas import NetworkGenerationConfig
 from .observation import load_observation_config, observe_latent_run
 from .observation_artifacts import write_observation_artifact
 from .outbreak_artifacts import write_outbreak_artifact
 from .outbreak_runner import default_run_config, load_parameter_set, run_outbreak
-from .population_artifacts import write_population_artifact
-from .population_generator import generate_population
+from .parent_build import build_parent, build_population, build_structure
 from .population_schemas import PopulationGenerationConfig, PopulationMode
-from .population_structure_artifacts import (
-    load_m2_population_artifact,
-    load_m3_structure_artifact,
-    write_structure_artifact,
-)
-from .population_structure_generator import generate_structure
 from .population_structure_schemas import StructureGenerationConfig
 from .scenario import load_scenario_config
 from .travel import (
@@ -163,19 +153,7 @@ def _build_m4_for_m6(
     """Build the existing M2/M3/M4.1 stack for an M6 command."""
 
     parent_output = destination / "parents" if isolate_parents else destination.parent
-    m2_output = parent_output / "populations"
-    m3_output = parent_output / "structures"
-    m2_generated = generate_population(root, PopulationGenerationConfig(mode=mode, seed=seed))
-    m2_artifact = write_population_artifact(m2_generated, root, m2_output)
-    m2_input = load_m2_population_artifact(root, m2_artifact.artifact_directory)
-    m3_generated = generate_structure(
-        root, StructureGenerationConfig(mode=mode, seed=seed), m2_input
-    )
-    m3_artifact = write_structure_artifact(m3_generated, root, m3_output, m2_input)
-    m3_input = load_m3_structure_artifact(root, m3_artifact.artifact_directory)
-    return generate_networks(
-        NetworkGenerationConfig(mode=mode, seed=seed), m2_input, m3_input, root
-    )
+    return build_parent(root, mode, seed, parent_output).generated
 
 
 @data_app.command("build")
@@ -218,8 +196,7 @@ def population_generate(
     root = _repo_root()
     destination = output_dir if output_dir.is_absolute() else root / output_dir
     config = PopulationGenerationConfig(mode=mode, seed=seed)
-    generated = generate_population(root, config)
-    artifact = write_population_artifact(generated, root, destination)
+    generated, artifact = build_population(root, config, destination)
     typer.echo(
         json.dumps(
             {
@@ -258,19 +235,10 @@ def structure_generate(
     root = _repo_root()
     destination = output_dir if output_dir.is_absolute() else root / output_dir
     config = StructureGenerationConfig(mode=mode, seed=seed)
-    if population_artifact is None:
-        m2_output = destination.parent / "populations"
-        m2_config = PopulationGenerationConfig(mode=mode, seed=seed)
-        m2_generated = generate_population(root, m2_config)
-        m2_artifact = write_population_artifact(m2_generated, root, m2_output)
-        m2_path = m2_artifact.artifact_directory
-    else:
-        m2_path = population_artifact
-        if not m2_path.is_absolute():
-            m2_path = root / m2_path
-    m2_input = load_m2_population_artifact(root, m2_path)
-    generated = generate_structure(root, config, m2_input)
-    artifact = write_structure_artifact(generated, root, destination, m2_input)
+    m2_path = population_artifact
+    if m2_path is not None and not m2_path.is_absolute():
+        m2_path = root / m2_path
+    generated, artifact, _ = build_structure(root, config, destination, population_artifact=m2_path)
     typer.echo(
         json.dumps(
             {
@@ -313,47 +281,30 @@ def network_generate(
 
     root = _repo_root()
     destination = output_dir if output_dir.is_absolute() else root / output_dir
-    config = NetworkGenerationConfig(mode=mode, seed=seed)
     if population_artifact is None and structure_artifact is not None:
         raise typer.BadParameter(
             "--structure-artifact requires --population-artifact so the "
             "M2 hash boundary is explicit"
         )
-    if population_artifact is None:
-        m2_output = destination.parent / "populations"
-        m3_output = destination.parent / "structures"
-        m2_generated = generate_population(root, PopulationGenerationConfig(mode=mode, seed=seed))
-        m2_artifact = write_population_artifact(m2_generated, root, m2_output)
-        m2_path = m2_artifact.artifact_directory
-        m2_input = load_m2_population_artifact(root, m2_path)
-        m3_generated = generate_structure(
-            root,
-            StructureGenerationConfig(mode=mode, seed=seed),
-            m2_input,
-        )
-        m3_artifact = write_structure_artifact(m3_generated, root, m3_output, m2_input)
-        m3_path = m3_artifact.artifact_directory
-    else:
-        m2_path = population_artifact
-        if not m2_path.is_absolute():
-            m2_path = root / m2_path
-        m2_input = load_m2_population_artifact(root, m2_path)
-        if structure_artifact is None:
-            m3_output = destination.parent / "structures"
-            m3_generated = generate_structure(
-                root,
-                StructureGenerationConfig(mode=mode, seed=seed),
-                m2_input,
-            )
-            m3_artifact = write_structure_artifact(m3_generated, root, m3_output, m2_input)
-            m3_path = m3_artifact.artifact_directory
-        else:
-            m3_path = structure_artifact
-            if not m3_path.is_absolute():
-                m3_path = root / m3_path
-    m3_input = load_m3_structure_artifact(root, m3_path)
-    generated = generate_networks(config, m2_input, m3_input, root)
-    artifact = write_network_artifact(generated, root, destination)
+    m2_path = population_artifact
+    if m2_path is not None and not m2_path.is_absolute():
+        m2_path = root / m2_path
+    m3_path = structure_artifact
+    if m3_path is not None and not m3_path.is_absolute():
+        m3_path = root / m3_path
+    parent = build_parent(
+        root,
+        mode,
+        seed,
+        destination.parent,
+        population_artifact=m2_path,
+        structure_artifact=m3_path,
+        write_m4=True,
+        m4_output=destination,
+    )
+    generated = parent.generated
+    assert parent.m4_artifact is not None
+    artifact = parent.m4_artifact
     typer.echo(
         json.dumps(
             {
@@ -401,21 +352,10 @@ def outbreak_run(
         parameters,
         duration_days=duration_days,
     )
-    m2_output = destination.parent / "populations"
-    m3_output = destination.parent / "structures"
-    m4_output = destination.parent / "networks"
-    m2_generated = generate_population(root, PopulationGenerationConfig(mode=mode, seed=seed))
-    m2_artifact = write_population_artifact(m2_generated, root, m2_output)
-    m2_input = load_m2_population_artifact(root, m2_artifact.artifact_directory)
-    m3_generated = generate_structure(
-        root, StructureGenerationConfig(mode=mode, seed=seed), m2_input
-    )
-    m3_artifact = write_structure_artifact(m3_generated, root, m3_output, m2_input)
-    m3_input = load_m3_structure_artifact(root, m3_artifact.artifact_directory)
-    generated = generate_networks(
-        NetworkGenerationConfig(mode=mode, seed=seed), m2_input, m3_input, root
-    )
-    m4_artifact = write_network_artifact(generated, root, m4_output)
+    parent = build_parent(root, mode, seed, destination.parent, write_m4=True)
+    generated = parent.generated
+    assert parent.m4_artifact is not None
+    m4_artifact = parent.m4_artifact
     result = run_outbreak(generated, config, parameters)
     artifact = write_outbreak_artifact(result, root, destination)
     typer.echo(

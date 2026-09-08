@@ -24,24 +24,13 @@ from .ensemble_artifacts import write_comparison_artifact, write_ensemble_artifa
 from .hashing import sha256_file
 from .intervention_artifacts import write_intervention_artifact
 from .intervention_schemas import ScenarioConfig
-from .network_artifacts import write_network_artifact
-from .network_generator import generate_networks
-from .network_schemas import NetworkGenerationConfig
 from .observation import load_observation_config
 from .observation_schemas import ObservationConfig
 from .outbreak_artifacts import write_outbreak_artifact
 from .outbreak_runner import default_run_config, load_parameter_set, run_outbreak
 from .outbreak_schemas import OutbreakRunConfig, RespiratoryParameterSet
-from .population_artifacts import write_population_artifact
-from .population_generator import generate_population
-from .population_schemas import PopulationGenerationConfig, PopulationMode
-from .population_structure_artifacts import (
-    load_m2_population_artifact,
-    load_m3_structure_artifact,
-    write_structure_artifact,
-)
-from .population_structure_generator import generate_structure
-from .population_structure_schemas import StructureGenerationConfig
+from .parent_build import build_parent
+from .population_schemas import PopulationMode
 from .scientific_verification import verify_scientific_artifact
 from .travel import TravelRunResult
 from .travel_artifacts import write_travel_artifact
@@ -98,24 +87,7 @@ def _atomic_write_json(path: Path, payload: Any) -> None:
 def _build_parent(root: Path, mode: PopulationMode, seed: int, destination: Path):
     """Build the existing M2/M3/M4 parent inside the job-owned directory."""
 
-    parent_output = destination / "parents"
-    m2_generated = generate_population(root, PopulationGenerationConfig(mode=mode, seed=seed))
-    m2_artifact = write_population_artifact(m2_generated, root, parent_output / "populations")
-    m2_input = load_m2_population_artifact(root, m2_artifact.artifact_directory)
-    m3_generated = generate_structure(
-        root, StructureGenerationConfig(mode=mode, seed=seed), m2_input
-    )
-    m3_artifact = write_structure_artifact(
-        m3_generated, root, parent_output / "structures", m2_input
-    )
-    m3_input = load_m3_structure_artifact(root, m3_artifact.artifact_directory)
-    generated = generate_networks(
-        NetworkGenerationConfig(mode=mode, seed=seed), m2_input, m3_input, root
-    )
-    # The M4 artifact is a useful reconstructibility parent.  It is not
-    # returned as a user result artifact, but it remains within the job root.
-    write_network_artifact(generated, root, parent_output / "networks")
-    return generated
+    return build_parent(root, mode, seed, destination / "parents", write_m4=True).generated
 
 
 def _parameters(root: Path, supplied: RespiratoryParameterSet | None) -> RespiratoryParameterSet:

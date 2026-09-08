@@ -11,11 +11,12 @@ from typing import Any
 
 from .calibration_schemas import CalibrationConfig
 from .hashing import canonical_json_bytes, sha256_bytes
-from .network_generator import GeneratedNetworks, generate_networks
+from .network_generator import GeneratedNetworks
 from .observation import ObservationRunResult, observe_latent_run
 from .observation_schemas import ObservationConfig, ReportingDelayDistribution
 from .outbreak_runner import OutbreakRunResult, run_outbreak
 from .outbreak_schemas import OutbreakRunConfig, RespiratoryParameterSet
+from .parent_build import build_network
 
 
 @dataclass(frozen=True)
@@ -189,11 +190,11 @@ def run_synthetic_recovery(
     recovered = int(study.best_trial.params["reporting_delay_days"])
 
     heldout_network_config = generated.config.model_copy(update={"seed": config.heldout_seed})
-    heldout_generated = generate_networks(
+    heldout_generated, _ = build_network(
+        root,
         heldout_network_config,
         generated.m2_input,
         generated.m3_input,
-        root,
     )
     heldout_run_config = base_run_config.model_copy(
         update={"seed": config.heldout_seed, "beta": 0.0, "initial_seed_count": 10}
@@ -285,12 +286,13 @@ def run_synthetic_recovery(
 def _network_for_seed(root: Path, generated: GeneratedNetworks, seed: int) -> GeneratedNetworks:
     if generated.config.seed == seed:
         return generated
-    return generate_networks(
+    generated_network, _ = build_network(
+        root,
         generated.config.model_copy(update={"seed": seed}),
         generated.m2_input,
         generated.m3_input,
-        root,
     )
+    return generated_network
 
 
 def _beta_observation_config(base: ObservationConfig) -> ObservationConfig:
