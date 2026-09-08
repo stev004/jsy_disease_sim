@@ -97,6 +97,15 @@ def stable_int_suffix(prefix_bytes: bytes, *suffix_parts: object) -> int:
     return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big", signed=False)
 
 
+def stable_int_prefixed(prefix_bytes: bytes, suffix_bytes: bytes) -> int:
+    """Return ``stable_int_suffix`` for an already encoded suffix."""
+
+    if STABLE_INT_COUNTER is not None:
+        STABLE_INT_COUNTER[0] += 1
+    payload = prefix_bytes + b"|" + suffix_bytes
+    return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big", signed=False)
+
+
 def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
