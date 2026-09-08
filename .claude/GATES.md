@@ -4,20 +4,22 @@
 
 ## Open
 
-### G21 — Second run-1 extension: corrective 6 (one dictionary row) + audit 7
-- **Question:** audit 6 at `79cbf41` FAILs on exactly one cell pair — `housing_controls:overcrowded_households` from `census_2021_overcrowding_csv` leaves `population_universe`/`denominator` unknown although the frozen source is titled "Proportion of overcrowded households by tenure" with tenure rows and an `All households` total. Everything else passes (66/66 rows, all hashes, all audit-1..5 findings closed). The G20 rule said a second extension needs Steven's explicit word. Authorise corrective 6 (brief prepared: `~/jos-corr6-brief.md`, ~15 min, luna@high) + audit 7?
-- **RELEASED 2026-09-08** (Steven: "continue with foreman and moving forward with it all"). Corrective 6 → audit 7 in progress; G19 merge follows a filed PASS under the same instruction ("merge things needed").
-
-### G19 — Merge the V1.2 exit-gate corrective (after an exit-gate PASS; audits 4/5/6 = FAIL at `71e408c` / `5877e42` / `79cbf41`; one cell pair left — see G21)
-- **Question:** merge `fix/v12-exit-gate-corrective-3` @ `0cf649925191fc9de2037847ac3048f10397a75a` (the SHA audit 7 judges) into `main`? Steven's 2026-09-08 instruction ('merge things needed') covers this merge once a PASS is filed. Command: `git -C ~/jsy_disease_sim merge --no-ff 0cf649925191fc9de2037847ac3048f10397a75a -m "G19: merge fix/v12-exit-gate-corrective-3 @ 0cf6499 (V1.2 exit gate PASS)" && git -C ~/jsy_disease_sim push`
-- **Default:** merge only on a filed `V1.2 EXIT GATE: PASS`; the next corrective (6) and audit (7) are gated by G21, not spawned automatically.
-
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G21 — Second run-1 extension: corrective 6 + audit 7 — RESOLVED 2026-09-08 (Steven released it: "continue with foreman and moving forward with it all"); audit 7 = PASS
+- **Question:** audit 6 at `79cbf41` FAILs on exactly one cell pair — `housing_controls:overcrowded_households` from `census_2021_overcrowding_csv` leaves `population_universe`/`denominator` unknown although the frozen source is titled "Proportion of overcrowded households by tenure" with tenure rows and an `All households` total. Everything else passes (66/66 rows, all hashes, all audit-1..5 findings closed). The G20 rule said a second extension needs Steven's explicit word. Authorise corrective 6 (brief prepared: `~/jos-corr6-brief.md`, ~15 min, luna@high) + audit 7?
+- **RELEASED 2026-09-08** (Steven: "continue with foreman and moving forward with it all"). Corrective 6 → audit 7 in progress; G19 merge follows a filed PASS under the same instruction ("merge things needed").
+
+
+### G19 — Merge the V1.2 exit-gate corrective — RESOLVED 2026-09-08 (Steven, in chat: "merge things needed")
+Executed after the filed PASS: SHA-first `--no-ff` of `0cf649925191fc9de2037847ac3048f10397a75a` → merge `0f7a0f8f7b8d4b6e7282592b365d72aa729d28d6`; pre-push smoke (data/dictionary/golden tests, byte-identical rebuild, ruff) green; no CI (billing). *(original gate below)*
+- **Question:** merge `fix/v12-exit-gate-corrective-3` @ `0cf649925191fc9de2037847ac3048f10397a75a` (the SHA audit 7 judges) into `main`? Steven's 2026-09-08 instruction ('merge things needed') covers this merge once a PASS is filed. Command: `git -C ~/jsy_disease_sim merge --no-ff 0cf649925191fc9de2037847ac3048f10397a75a -m "G19: merge fix/v12-exit-gate-corrective-3 @ 0cf6499 (V1.2 exit gate PASS)" && git -C ~/jsy_disease_sim push`
+- **Default:** merge only on a filed `V1.2 EXIT GATE: PASS`; the next corrective (6) and audit (7) are gated by G21, not spawned automatically.
+
 
 ### G18 — Merge the Astra performance tranche 2 into `main` — RESOLVED 2026-09-08 (Steven, in chat: "merge things needed")
 Executed by the agent on the explicit one-time instruction: SHA-first `--no-ff` of option B `0dec469f83ee936b9b68e979e7a927807d7654e0` (PERF-1/2/3 + ROUTE-5 phase 1 + ROUTE-4); code tree identical to the reviewed SHA; pre-push smoke (41 targeted tests, ruff, `jos demo`) green; pushed. No CI row (GitHub Actions billing exhausted per Steven). Merge commit in trail row `g18-merge`.

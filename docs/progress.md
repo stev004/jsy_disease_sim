@@ -45,6 +45,7 @@ Carried into the V1.2 cycle (not gates): travel-ensemble summary booleans relabe
 | M6 / C3 | PASS | Observation, ensemble, calibration, process-safety and archive contracts verified at `658364c7f02cf44f9392116e7db44c94bdb3175a` |
 | C4 | PASS | Runtime detection delivery, metric-aware ensemble grids, truthful fallback workers and zero-contact boundary verified on a fresh full-island path |
 | M7 | PASS | Typed composable interventions, causal detection effects, route composition, vaccination, artifacts, comparisons and bounded ensembles |
+| V1.2 exit gate (evidence + observation foundation) | `0cf6499` → merge `0f7a0f8` | **`V1.2 EXIT GATE: PASS`** — seventh cold-start audit (Sol@high, fresh clone): registry/snapshot/determinism tests, byte-identical rebuild, 66/66 sampled rows traced with all source hashes, every measure-dictionary cell supported by a frozen locator or honestly `unknown`, known gaps intact; audits 1–6 FAIL each narrowed the residue | `docs/audits/2026-09-08-v12-exit-gate-audit-7-sol-PASS.md` (+ `…audit-{1..6}-sol-FAIL.md`) |
 | M8 | PASS | M8.2 closes the three blockers remaining after the independent M8.1 FAIL: episode-safe observations, departed-result lifecycle and typed combined-event artifacts |
 | M9 / M9.1 / M9.2 | PASS | Local API/jobs, strict finalization/content verification and immutable provenance closure |
 | M9.4 | PASS | Canonical calendar-intervention JSON round-trips through strict scientific verifier reload |
