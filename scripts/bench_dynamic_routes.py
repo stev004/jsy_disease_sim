@@ -75,9 +75,9 @@ def _adapter_array_fingerprint(
     uid_by_agent_id: Mapping[str, int],
     snapshot: Any,
 ) -> str:
-    arrays = _edge_arrays(starsim, snapshot.edges, dict(uid_by_agent_id))
+    arrays = _edge_arrays(starsim, snapshot, uid_by_agent_id)
     # This is the exact assignment made by JOSDynamicNetworkMixin._replace_edges.
-    arrays["dur"] = np.ones(len(snapshot.edges), dtype=float)
+    arrays["dur"] = np.ones(len(snapshot), dtype=float)
     return _array_fingerprint(arrays)
 
 

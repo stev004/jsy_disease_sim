@@ -12,14 +12,20 @@ import random
 import resource
 import time
 from collections import Counter, OrderedDict, defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from .data_pipeline import DataBuildError
-from .hashing import canonical_json_bytes, sha256_bytes, stable_int, stable_int_suffix
+from .hashing import (
+    sha256_of_canonical_stream,
+    stable_int,
+    stable_int_suffix,
+)
 from .network_schemas import (
     Calendar,
     NetworkGenerationConfig,
@@ -76,12 +82,176 @@ SNAPSHOT_CACHE_PER_ROUTE = 3
 
 
 @dataclass(frozen=True)
+class EdgeColumns:
+    """Columnar representation of a canonical, ordered edge table."""
+
+    p1_index: np.ndarray
+    p2_index: np.ndarray
+    weight: np.ndarray
+    persistence_days: np.ndarray
+    agent_ids: Sequence[str]
+
+    def __post_init__(self) -> None:
+        arrays = (
+            ("p1_index", self.p1_index, np.int64),
+            ("p2_index", self.p2_index, np.int64),
+            ("weight", self.weight, np.float64),
+            ("persistence_days", self.persistence_days, np.int64),
+        )
+        lengths: set[int] = set()
+        for name, array, dtype in arrays:
+            normalised = np.ascontiguousarray(np.asarray(array, dtype=dtype))
+            if normalised.ndim != 1:
+                raise ValueError(f"{name} must be a one-dimensional array")
+            object.__setattr__(self, name, normalised)
+            lengths.add(len(normalised))
+        if len(lengths) != 1:
+            raise ValueError("edge columns must have equal lengths")
+
+    def __len__(self) -> int:
+        return len(self.p1_index)
+
+
+@dataclass(frozen=True, eq=False)
 class RouteSnapshot:
-    """One deterministic daily edge state for one route."""
+    """One deterministic daily edge state for one route.
+
+    The four arrays are the retained representation.  ``edges`` is an
+    intentionally uncached compatibility view for the relatively rare dict
+    consumers, so an LRU entry never retains both representations.
+    """
 
     route_id: str
     snapshot_date: date
-    edges: tuple[dict[str, Any], ...]
+    p1_index: np.ndarray
+    p2_index: np.ndarray
+    weight: np.ndarray
+    persistence_days: np.ndarray
+    agent_ids: Sequence[str]
+    _persistence_keys: tuple[str, ...] | None = field(default=None, repr=False)
+
+    def __post_init__(self) -> None:
+        columns = EdgeColumns(
+            self.p1_index,
+            self.p2_index,
+            self.weight,
+            self.persistence_days,
+            self.agent_ids,
+        )
+        for name in ("p1_index", "p2_index", "weight", "persistence_days"):
+            object.__setattr__(self, name, getattr(columns, name))
+        object.__setattr__(self, "agent_ids", columns.agent_ids)
+
+    @classmethod
+    def from_edge_columns(
+        cls, route_id: str, snapshot_date: date, columns: EdgeColumns
+    ) -> RouteSnapshot:
+        return cls(
+            route_id,
+            snapshot_date,
+            columns.p1_index,
+            columns.p2_index,
+            columns.weight,
+            columns.persistence_days,
+            columns.agent_ids,
+            None,
+        )
+
+    @classmethod
+    def from_edge_dicts(
+        cls,
+        route_id: str,
+        snapshot_date: date,
+        edges: Iterable[dict[str, Any]],
+        index_by_agent_id: dict[str, int],
+        agent_ids: Sequence[str],
+    ) -> RouteSnapshot:
+        p1_indices: list[int] = []
+        p2_indices: list[int] = []
+        weights: list[float] = []
+        persistence: list[int] = []
+        persistence_keys: list[str] = []
+        try:
+            for edge in edges:
+                persistence_key = (
+                    "persistence_days" if "persistence_days" in edge else "duration_days"
+                )
+                p1_indices.append(index_by_agent_id[edge["p1"]])
+                p2_indices.append(index_by_agent_id[edge["p2"]])
+                weights.append(float(edge["weight"]))
+                persistence.append(int(edge[persistence_key]))
+                persistence_keys.append(persistence_key)
+        except KeyError as exc:
+            raise ValueError(f"route edge references unknown JOS agent: {exc.args[0]}") from exc
+        return cls(
+            route_id,
+            snapshot_date,
+            np.asarray(p1_indices, dtype=np.int64),
+            np.asarray(p2_indices, dtype=np.int64),
+            np.asarray(weights, dtype=np.float64),
+            np.asarray(persistence, dtype=np.int64),
+            agent_ids,
+            (
+                None
+                if all(key == "persistence_days" for key in persistence_keys)
+                else tuple(persistence_keys)
+            ),
+        )
+
+    @classmethod
+    def empty(cls, route_id: str, snapshot_date: date, agent_ids: Sequence[str]) -> RouteSnapshot:
+        return cls.from_edge_columns(
+            route_id,
+            snapshot_date,
+            EdgeColumns(
+                np.empty(0, dtype=np.int64),
+                np.empty(0, dtype=np.int64),
+                np.empty(0, dtype=np.float64),
+                np.empty(0, dtype=np.int64),
+                agent_ids,
+            ),
+        )
+
+    @property
+    def edges(self) -> tuple[dict[str, Any], ...]:
+        return tuple(
+            {
+                "p1": str(self.agent_ids[int(p1_index)]),
+                "p2": str(self.agent_ids[int(p2_index)]),
+                "weight": float(weight),
+                (
+                    "persistence_days"
+                    if self._persistence_keys is None
+                    else self._persistence_keys[index]
+                ): int(persistence_days),
+            }
+            for index, (p1_index, p2_index, weight, persistence_days) in enumerate(
+                zip(
+                    self.p1_index,
+                    self.p2_index,
+                    self.weight,
+                    self.persistence_days,
+                    strict=True,
+                )
+            )
+        )
+
+    def __len__(self) -> int:
+        return len(self.p1_index)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RouteSnapshot):
+            return NotImplemented
+        return (
+            self.route_id == other.route_id
+            and self.snapshot_date == other.snapshot_date
+            and self.agent_ids == other.agent_ids
+            and self._persistence_keys == other._persistence_keys
+            and np.array_equal(self.p1_index, other.p1_index)
+            and np.array_equal(self.p2_index, other.p2_index)
+            and np.array_equal(self.weight, other.weight)
+            and np.array_equal(self.persistence_days, other.persistence_days)
+        )
 
 
 @dataclass
@@ -103,9 +273,11 @@ class GeneratedNetworks:
     logical_content_hash: str
     runtime_seconds: float
     peak_memory_bytes: int | None
-    _dynamic_builders: dict[str, Callable[[date], list[dict[str, Any]]]] = field(
+    _dynamic_builders: dict[str, Callable[[date], list[dict[str, Any]] | EdgeColumns]] = field(
         repr=False, default_factory=dict
     )
+    _index_by_agent_id: dict[str, int] = field(repr=False, default_factory=dict)
+    _indexed_agent_ids: Sequence[str] | None = field(repr=False, default=None)
     _snapshot_cache: OrderedDict[tuple[str, date], RouteSnapshot] = field(
         repr=False, default_factory=OrderedDict
     )
@@ -123,6 +295,11 @@ class GeneratedNetworks:
 
         if route_id not in self.route_specs:
             raise KeyError(f"unknown route: {route_id}")
+        if self._indexed_agent_ids is not self.agent_ids:
+            self._index_by_agent_id = {
+                agent_id: index for index, agent_id in enumerate(self.agent_ids)
+            }
+            self._indexed_agent_ids = self.agent_ids
         if not isinstance(self._snapshot_cache, OrderedDict):
             self._snapshot_cache = OrderedDict(self._snapshot_cache)
         key = (route_id, snapshot_date)
@@ -132,12 +309,42 @@ class GeneratedNetworks:
             return snapshot
         spec = self.route_specs[route_id]
         if not _route_active(spec["active_calendar"], snapshot_date, self.config):
-            edges: list[dict[str, Any]] = []
+            snapshot = RouteSnapshot.from_edge_dicts(
+                route_id,
+                snapshot_date,
+                (),
+                self._index_by_agent_id,
+                self.agent_ids,
+            )
         elif route_id in self._dynamic_builders:
             edges = self._dynamic_builders[route_id](snapshot_date)
+            if isinstance(edges, EdgeColumns):
+                if edges.agent_ids is not self.agent_ids:
+                    edges = EdgeColumns(
+                        edges.p1_index,
+                        edges.p2_index,
+                        edges.weight,
+                        edges.persistence_days,
+                        self.agent_ids,
+                    )
+                snapshot = RouteSnapshot.from_edge_columns(route_id, snapshot_date, edges)
+            else:
+                snapshot = RouteSnapshot.from_edge_dicts(
+                    route_id,
+                    snapshot_date,
+                    edges,
+                    self._index_by_agent_id,
+                    self.agent_ids,
+                )
         else:
             edges = list(self.structural_edges.get(route_id, []))
-        snapshot = RouteSnapshot(route_id, snapshot_date, tuple(edges))
+            snapshot = RouteSnapshot.from_edge_dicts(
+                route_id,
+                snapshot_date,
+                edges,
+                self._index_by_agent_id,
+                self.agent_ids,
+            )
         self._snapshot_cache[key] = snapshot
         self._snapshot_cache.move_to_end(key)
         cache_limit = SNAPSHOT_CACHE_PER_ROUTE * max(1, len(self.route_specs))
@@ -294,6 +501,97 @@ def _deduplicate_edges(edges: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
         if existing is None or edge["weight"] > existing["weight"]:
             unique[key] = edge
     return [unique[key] for key in sorted(unique)]
+
+
+def _string_ranks(agent_ids: Sequence[str]) -> np.ndarray:
+    """Return each endpoint index's rank in canonical string order."""
+
+    rank = np.empty(len(agent_ids), dtype=np.int64)
+    index_by_agent_id = {agent_id: index for index, agent_id in enumerate(agent_ids)}
+    for string_rank, agent_id in enumerate(sorted(agent_ids)):
+        rank[index_by_agent_id[agent_id]] = string_rank
+    return rank
+
+
+def _deduplicate_edge_columns(
+    columns: EdgeColumns, string_rank: np.ndarray | None = None
+) -> EdgeColumns:
+    """Deduplicate canonical columns with dict-path max/first-tie semantics."""
+
+    if len(columns) == 0:
+        return columns
+    string_rank = _string_ranks(columns.agent_ids) if string_rank is None else string_rank
+    emit_order = np.arange(len(columns), dtype=np.int64)
+    p1_rank = string_rank[columns.p1_index]
+    p2_rank = string_rank[columns.p2_index]
+    pair_key = p1_rank * len(columns.agent_ids) + p2_rank
+    # Pair is primary, then larger weight, then earlier emission.  The final
+    # key makes equal floating-point weights retain the first emitted row;
+    # negation cannot distinguish equal values, so it cannot alter that tie.
+    order = np.lexsort((emit_order, -columns.weight, pair_key))
+    ordered_pair_key = pair_key[order]
+    keep = np.ones(len(order), dtype=bool)
+    keep[1:] = ordered_pair_key[1:] != ordered_pair_key[:-1]
+    selected = order[keep]
+    return EdgeColumns(
+        columns.p1_index[selected],
+        columns.p2_index[selected],
+        columns.weight[selected],
+        columns.persistence_days[selected],
+        columns.agent_ids,
+    )
+
+
+def _merge_sorted_edge_columns(
+    first: EdgeColumns,
+    second: EdgeColumns,
+    first_string_rank: np.ndarray | None = None,
+    second_string_rank: np.ndarray | None = None,
+) -> EdgeColumns:
+    """Merge sorted duplicate-free columns using the dict merge tie rule."""
+
+    first_rank = _string_ranks(first.agent_ids) if first_string_rank is None else first_string_rank
+    second_rank = (
+        _string_ranks(second.agent_ids) if second_string_rank is None else second_string_rank
+    )
+    p1_index = np.concatenate((first.p1_index, second.p1_index))
+    p2_index = np.concatenate((first.p2_index, second.p2_index))
+    weight = np.concatenate((first.weight, second.weight))
+    persistence = np.concatenate((first.persistence_days, second.persistence_days))
+    source = np.concatenate(
+        (
+            np.zeros(len(first), dtype=np.int8),
+            np.ones(len(second), dtype=np.int8),
+        )
+    )
+    p1_rank = np.concatenate((first_rank[first.p1_index], second_rank[second.p1_index]))
+    p2_rank = np.concatenate((first_rank[first.p2_index], second_rank[second.p2_index]))
+    pair_key = p1_rank * len(first.agent_ids) + p2_rank
+    order = np.lexsort((source, pair_key))
+    sorted_pair_key = pair_key[order]
+    group_start = np.ones(len(order), dtype=bool)
+    group_start[1:] = sorted_pair_key[1:] != sorted_pair_key[:-1]
+    starts = np.flatnonzero(group_start)
+    second_positions = np.flatnonzero(~group_start)
+    if len(second_positions):
+        first_positions = second_positions - 1
+        duplicate_groups = np.searchsorted(starts, first_positions)
+        selected = starts.copy()
+        selected[duplicate_groups] = np.where(
+            weight[order[second_positions]] > weight[order[first_positions]],
+            second_positions,
+            first_positions,
+        )
+    else:
+        selected = starts
+    selected_order = order[selected]
+    return EdgeColumns(
+        p1_index[selected_order],
+        p2_index[selected_order],
+        weight[selected_order],
+        persistence[selected_order],
+        first.agent_ids,
+    )
 
 
 def _complete_group(
@@ -1119,6 +1417,8 @@ def generate_networks(
     if set(m2_by_agent) != set(m3_by_agent):
         raise DataBuildError("M2 and M3 agent ID universes do not match")
     agent_ids = sorted(m2_by_agent)
+    index_by_agent_id = {agent_id: index for index, agent_id in enumerate(agent_ids)}
+    string_rank = _string_ranks(agent_ids)
     route_specs = _build_route_specs(config)
     staffing: StaffingAllocation = build_staffing_allocation(
         root or Path(__file__).resolve().parents[2],
@@ -1131,7 +1431,7 @@ def generate_networks(
     )
     structural_edges: dict[str, list[dict[str, Any]]] = {}
     route_memberships: dict[str, list[dict[str, Any]]] = {}
-    dynamic_builders: dict[str, Callable[[date], list[dict[str, Any]]]] = {}
+    dynamic_builders: dict[str, Callable[[date], list[dict[str, Any]] | EdgeColumns]] = {}
 
     households: dict[str, list[str]] = defaultdict(list)
     private_agents: set[str] = set()
@@ -1282,22 +1582,33 @@ def generate_networks(
             },
             "workplace_id",
         )
+        workplace_transient_groups_by_weekday: dict[int, list[list[str]]] = {}
 
         def build_workplace_transient(snapshot_date: date) -> list[dict[str, Any]]:
-            groups: list[list[str]] = []
-            for _workplace_id, jobs in sorted(work_route_jobs_by_workplace.items()):
-                active = [
-                    job["agent_id"]
-                    for job in jobs
-                    if _job_is_physical_on_date(
-                        job,
-                        job["agent_id"],
-                        snapshot_date,
-                        config.seed,
-                        physical_weekdays_cache=physical_weekdays_cache,
-                    )
-                ]
-                groups.append(active)
+            weekday = snapshot_date.weekday()
+            groups: list[list[str]]
+            if weekday >= 5:
+                groups = [[] for _ in work_route_jobs_by_workplace.values()]
+            else:
+                cached_groups = workplace_transient_groups_by_weekday.get(weekday)
+                if cached_groups is None:
+                    groups = []
+                    for _workplace_id, jobs in sorted(work_route_jobs_by_workplace.items()):
+                        active = [
+                            job["agent_id"]
+                            for job in jobs
+                            if _job_is_physical_on_date(
+                                job,
+                                job["agent_id"],
+                                snapshot_date,
+                                config.seed,
+                                physical_weekdays_cache=physical_weekdays_cache,
+                            )
+                        ]
+                        groups.append(active)
+                    workplace_transient_groups_by_weekday[weekday] = groups
+                else:
+                    groups = cached_groups
             active_workers = _activity_weighted_participants(
                 (agent_id for group in groups for agent_id in group),
                 len({agent_id for group in groups for agent_id in group}),
@@ -1322,29 +1633,49 @@ def generate_networks(
         dynamic_builders["workplace_transient"] = build_workplace_transient
 
     if "workplace_team" in route_specs:
+        workplace_team_columns_by_weekday: dict[int, EdgeColumns] = {}
 
-        def build_workplace_team(snapshot_date: date) -> list[dict[str, Any]]:
-            if snapshot_date.weekday() >= 5:
+        def build_workplace_team(snapshot_date: date) -> list[dict[str, Any]] | EdgeColumns:
+            weekday = snapshot_date.weekday()
+            if weekday >= 5:
                 return []
-            active_agents_by_team = {
-                team_id: [
-                    job["agent_id"]
-                    for job in jobs
-                    if _job_is_physical_on_date(
-                        job,
-                        job["agent_id"],
-                        snapshot_date,
-                        config.seed,
-                        physical_weekdays_cache=physical_weekdays_cache,
-                    )
-                ]
-                for team_id, jobs in work_route_jobs_by_team.items()
-            }
-            return _deduplicate_edges(
-                edge
-                for group in active_agents_by_team.values()
-                for edge in _complete_group(group, 0.7, 1)
-            )
+            columns = workplace_team_columns_by_weekday.get(weekday)
+            if columns is None:
+                active_agents_by_team = {
+                    team_id: [
+                        job["agent_id"]
+                        for job in jobs
+                        if _job_is_physical_on_date(
+                            job,
+                            job["agent_id"],
+                            snapshot_date,
+                            config.seed,
+                            physical_weekdays_cache=physical_weekdays_cache,
+                        )
+                    ]
+                    for team_id, jobs in work_route_jobs_by_team.items()
+                }
+                edges = _deduplicate_edges(
+                    edge
+                    for group in active_agents_by_team.values()
+                    for edge in _complete_group(group, 0.7, 1)
+                )
+                converted = RouteSnapshot.from_edge_dicts(
+                    "workplace_team",
+                    snapshot_date,
+                    edges,
+                    index_by_agent_id,
+                    agent_ids,
+                )
+                columns = EdgeColumns(
+                    converted.p1_index,
+                    converted.p2_index,
+                    converted.weight,
+                    converted.persistence_days,
+                    agent_ids,
+                )
+                workplace_team_columns_by_weekday[weekday] = columns
+            return columns
 
         dynamic_builders["workplace_team"] = build_workplace_team
 
@@ -1595,7 +1926,7 @@ def generate_networks(
 
     def community_builder(
         route_id: str, contacts: int, weight: float
-    ) -> Callable[[date], list[dict[str, Any]]]:
+    ) -> Callable[[date], EdgeColumns]:
         regular_contacts = round(contacts * float(config.community_regular_edge_fraction))
         daily_contacts = max(0, contacts - regular_contacts)
         age_band_by_agent = {
@@ -1611,7 +1942,7 @@ def generate_networks(
             token: object,
             contact_count: int,
             persistence_days: int,
-        ) -> list[dict[str, Any]]:
+        ) -> EdgeColumns:
             cumulative_by_source_band = _cumulative_probability_bounds(config.community_age_mixing)
             target_prefix = "|".join(
                 str(part) for part in (config.seed, "community-age-target", route_id, token)
@@ -1634,7 +1965,15 @@ def generate_networks(
                     )
                 by_band[parish] = band_groups
                 positions[parish] = parish_positions
-            edges: list[dict[str, Any]] = []
+            max_rows = sum(
+                len(sources) for groups in by_band.values() for sources in groups.values()
+            )
+            max_rows *= contact_count
+            p1_indices = np.empty(max_rows, dtype=np.int64)
+            p2_indices = np.empty(max_rows, dtype=np.int64)
+            weights = np.empty(max_rows, dtype=np.float64)
+            persistence = np.empty(max_rows, dtype=np.int64)
+            emitted = 0
             for parish, band_groups in sorted(by_band.items()):
                 for source_band_index, source_band in enumerate(AGE_BANDS):
                     sources = band_groups[source_band]
@@ -1681,10 +2020,25 @@ def generate_networks(
                                 target = full[index] if index < source_index else full[index + 1]
                             else:
                                 target = full[index]
-                            edge = _canonical_edge(source, target, weight, persistence_days)
-                            if edge is not None:
-                                edges.append(edge)
-            return _deduplicate_edges(edges)
+                            source_index = index_by_agent_id[source]
+                            target_index = index_by_agent_id[target]
+                            if source_index == target_index:
+                                continue
+                            if string_rank[source_index] > string_rank[target_index]:
+                                source_index, target_index = target_index, source_index
+                            p1_indices[emitted] = source_index
+                            p2_indices[emitted] = target_index
+                            weights[emitted] = float(weight)
+                            persistence[emitted] = int(persistence_days)
+                            emitted += 1
+            raw = EdgeColumns(
+                p1_indices[:emitted].copy(),
+                p2_indices[:emitted].copy(),
+                weights[:emitted].copy(),
+                persistence[:emitted].copy(),
+                agent_ids,
+            )
+            return _deduplicate_edge_columns(raw, string_rank)
 
         regular_groups: dict[str, list[str]] = defaultdict(list)
         regular_probability = 65 if route_id == "community_indoor" else 45
@@ -1718,7 +2072,7 @@ def generate_networks(
             int(max(7, config.community_regular_edge_fraction * 30)),
         )
 
-        def build(snapshot_date: date) -> list[dict[str, Any]]:
+        def build(snapshot_date: date) -> EdgeColumns:
             groups: dict[str, list[str]] = defaultdict(list)
             is_weekend = snapshot_date.weekday() >= 5
             adult_probability, child_probability = _community_probability_pair(route_id, is_weekend)
@@ -1744,7 +2098,12 @@ def generate_networks(
                 if agent_id in participants:
                     groups[parish].append(agent_id)
             daily_edges = mixed_edges(groups, snapshot_date.isoformat(), daily_contacts, 1)
-            return _merge_sorted_edges(regular_edges, daily_edges)
+            return _merge_sorted_edge_columns(
+                regular_edges,
+                daily_edges,
+                string_rank,
+                string_rank,
+            )
 
         return build
 
@@ -1787,6 +2146,8 @@ def generate_networks(
         runtime_seconds=0.0,
         peak_memory_bytes=None,
         _dynamic_builders=dynamic_builders,
+        _index_by_agent_id=index_by_agent_id,
+        _indexed_agent_ids=agent_ids,
     )
     baseline_date = config.snapshot_dates[0]
     route_diagnostics = _route_diagnostics(generated, baseline_date)
@@ -1922,7 +2283,8 @@ def generate_networks(
             **staffing.diagnostics["care"],
             "resident_staff_edge_count": len(
                 baseline_snapshot.get(
-                    "care_staff", RouteSnapshot("care_staff", baseline_date, ())
+                    "care_staff",
+                    RouteSnapshot.empty("care_staff", baseline_date, generated.agent_ids),
                 ).edges
             ),
             "staff_with_community_bridge_membership": len(care_staff_ids & community_members),
@@ -2067,28 +2429,27 @@ def generate_networks(
         },
     }
     generated.diagnostics = diagnostics
-    generated.logical_content_hash = sha256_bytes(
-        canonical_json_bytes(
-            {
-                "agent_ids": agent_ids,
-                "route_specs": generated.route_specs,
-                "structural_edges": generated.structural_edges,
-                "memberships": generated.route_memberships,
-                "school_staff_assignments": generated.school_staff_assignments,
-                "care_staff_assignments": generated.care_staff_assignments,
-                "staffing_provenance": generated.staffing_provenance,
-                "snapshots": {
-                    route_id: [
-                        {
-                            "date": when.isoformat(),
-                            "edges": list(generated.route_snapshot(route_id, when).edges),
-                        }
-                        for when in config.snapshot_dates
-                    ]
-                    for route_id in sorted(route_specs)
-                },
+
+    def snapshot_payloads(route_id: str) -> Iterable[dict[str, Any]]:
+        for when in config.snapshot_dates:
+            yield {
+                "date": when.isoformat(),
+                "edges": list(generated.route_snapshot(route_id, when).edges),
             }
-        )
+
+    generated.logical_content_hash = sha256_of_canonical_stream(
+        {
+            "agent_ids": agent_ids,
+            "route_specs": generated.route_specs,
+            "structural_edges": generated.structural_edges,
+            "memberships": generated.route_memberships,
+            "school_staff_assignments": generated.school_staff_assignments,
+            "care_staff_assignments": generated.care_staff_assignments,
+            "staffing_provenance": generated.staffing_provenance,
+            "snapshots": {
+                route_id: snapshot_payloads(route_id) for route_id in sorted(route_specs)
+            },
+        }
     )
     generated.runtime_seconds = time.perf_counter() - started
     generated.peak_memory_bytes = max(

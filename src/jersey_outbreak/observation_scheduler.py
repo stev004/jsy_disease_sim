@@ -14,6 +14,7 @@ import numpy as np
 
 from .hashing import canonical_json_bytes, sha256_bytes
 from .observation_schemas import ObservationConfig
+from .starsim_adapter import PlainMetadataBoundary
 
 
 def _stable_seed(seed: int, *parts: object) -> int:
@@ -140,8 +141,8 @@ class ObservationScheduler:
         self.latent_seed = latent_seed
         self.start_date = start_date
         self.config = config
-        self.agent_id_by_uid = dict(agent_id_by_uid)
-        self.resident_by_agent_id = resident_by_agent_id
+        self._agent_id_by_uid = PlainMetadataBoundary(dict(agent_id_by_uid))
+        self._resident_by_agent_id = PlainMetadataBoundary(resident_by_agent_id)
         self.consumer = consumer
         self.stream_seed = observation_stream_seed(latent_seed, config)
         self._observation_events: list[dict[str, Any]] = []
@@ -149,6 +150,18 @@ class ObservationScheduler:
         self._delivered: list[DetectionEvent] = []
         self._queue: list[tuple[int, str, int, str, str, DetectionEvent]] = []
         self._scheduled_keys: set[tuple[int, str, str, str]] = set()
+
+    @property
+    def agent_id_by_uid(self) -> dict[int, str]:
+        """Return the scheduler's stable UID-to-agent lookup."""
+
+        return self._agent_id_by_uid.value
+
+    @property
+    def resident_by_agent_id(self) -> Mapping[str, Mapping[str, Any]]:
+        """Return the scheduler's resident metadata lookup."""
+
+        return self._resident_by_agent_id.value
 
     @property
     def stream_fingerprint(self) -> str:
