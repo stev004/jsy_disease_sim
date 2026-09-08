@@ -84,10 +84,24 @@ def _atomic_write_json(path: Path, payload: Any) -> None:
     temporary.replace(path)
 
 
-def _build_parent(root: Path, mode: PopulationMode, seed: int, destination: Path):
+def _build_parent(
+    root: Path,
+    mode: PopulationMode,
+    seed: int,
+    destination: Path,
+    *,
+    reuse_from: Path | None = None,
+):
     """Build the existing M2/M3/M4 parent inside the job-owned directory."""
 
-    return build_parent(root, mode, seed, destination / "parents", write_m4=True).generated
+    return build_parent(
+        root,
+        mode,
+        seed,
+        destination / "parents",
+        write_m4=True,
+        reuse_from=reuse_from,
+    ).generated
 
 
 def _parameters(root: Path, supplied: RespiratoryParameterSet | None) -> RespiratoryParameterSet:

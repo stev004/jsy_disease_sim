@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import multiprocessing as mp
 import os
+import pickle
 import platform
 import resource
 import subprocess
@@ -79,6 +80,21 @@ DEFAULT_USABLE_FRACTION = 0.85
 DEFAULT_PER_WORKER_BYTES = 3 * 1024**3
 
 _REPLICATE_STATE_DIRECTORY = ".replicates-in-progress"
+
+# Installed once in each spawned worker; replicate jobs intentionally do not
+# carry these immutable, verified artifact snapshots.
+_WORKER_PARENTS: tuple[Any, Any] | None = None
+
+
+def _initialize_replicate_worker(m2_input: Any, m3_input: Any) -> None:
+    """Install the immutable M2/M3 snapshots once in a spawned worker."""
+
+    global _WORKER_PARENTS
+    _WORKER_PARENTS = (m2_input, m3_input)
+
+
+def _pickle_size(value: Any) -> int:
+    return len(pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL))
 
 
 def _empirical_quantile_resolvable(sample_count: int, quantile: float) -> bool:
@@ -317,14 +333,20 @@ def _run_replicate_job(job: dict[str, Any]) -> ReplicateOutput:
         from .network_schemas import NetworkGenerationConfig
         from .outbreak_schemas import OutbreakRunConfig
 
+        parents = _WORKER_PARENTS
+        if parents is None:
+            if "m2_input" not in job or "m3_input" not in job:
+                raise RuntimeError("replicate worker has no initialized M2/M3 parents")
+            parents = (job["m2_input"], job["m3_input"])
+        m2_input, m3_input = parents
         network_config = NetworkGenerationConfig.model_validate(job["network_config"]).model_copy(
             update={"seed": seed}
         )
         generated, _ = build_network(
             Path(job["root"]),
             network_config,
-            job["m2_input"],
-            job["m3_input"],
+            m2_input,
+            m3_input,
             diagnostics="internal",
             generator=generate_networks,
         )
@@ -893,8 +915,6 @@ def run_ensemble(
         # project root for the M4 source registry required during seeded
         # network regeneration.
         "root": str(source_root.resolve()),
-        "m2_input": generated.m2_input,
-        "m3_input": generated.m3_input,
         # Keep the validated model objects across the worker boundary.  Their
         # date/tuple fields are intentionally strict, and a JSON round-trip
         # would turn those types into strings/lists before validation.
@@ -908,6 +928,12 @@ def run_ensemble(
         {**job_base, "seed": seed, "provenance": expected_provenance[seed]}
         for seed in pending_seeds
     ]
+    jobs_with_parents = [
+        {**job, "m2_input": generated.m2_input, "m3_input": generated.m3_input} for job in jobs
+    ]
+    job_payload_bytes_before = 0
+    job_payload_bytes_after = 0
+    initializer_payload_bytes = 0
     requested_workers = config.workers
     worker_bound_terms = _worker_bound_terms(
         requested_workers,
@@ -929,6 +955,17 @@ def run_ensemble(
             file=sys.stderr,
         )
     actual_workers = planned_workers
+    if planned_workers > 1 and jobs:
+        job_payload_bytes_before = sum(_pickle_size(job) for job in jobs_with_parents)
+        job_payload_bytes_after = sum(_pickle_size(job) for job in jobs)
+        initializer_payload_bytes = _pickle_size((generated.m2_input, generated.m3_input))
+        print(
+            "ENSEMBLE WORKER PAYLOAD: "
+            f"before={job_payload_bytes_before} bytes "
+            f"after={job_payload_bytes_after} bytes "
+            f"initializer={initializer_payload_bytes} bytes",
+            file=sys.stderr,
+        )
     execution_mode = "sequential"
     fallback_reason: str | None = None
     persisted_count = 0
@@ -936,7 +973,7 @@ def run_ensemble(
         actual_workers = 1
         execution_mode = "resume_only"
     elif planned_workers == 1:
-        for job in jobs:
+        for job in jobs_with_parents:
             output = _run_replicate_job(job)
             _persist_replicate_output(
                 _replicate_state_path(checkpoint_root, config.ensemble_id, output.seed),
@@ -952,7 +989,12 @@ def run_ensemble(
         try:
             context = mp.get_context("spawn")
             pool = pool_stack.enter_context(
-                ProcessPoolExecutor(max_workers=planned_workers, mp_context=context)
+                ProcessPoolExecutor(
+                    max_workers=planned_workers,
+                    mp_context=context,
+                    initializer=_initialize_replicate_worker,
+                    initargs=(generated.m2_input, generated.m3_input),
+                )
             )
         except (NotImplementedError, OSError, PermissionError, RuntimeError) as exc:
             pool_stack.close()
@@ -966,7 +1008,7 @@ def run_ensemble(
                 f"running {len(jobs)} replicates sequentially",
                 file=sys.stderr,
             )
-            for job in jobs:
+            for job in jobs_with_parents:
                 output = _run_replicate_job(job)
                 _persist_replicate_output(
                     _replicate_state_path(checkpoint_root, config.ensemble_id, output.seed),
@@ -1090,6 +1132,9 @@ def run_ensemble(
         "resumed_replicates": resumed_count,
         "run_replicates": len(pending_seeds),
         "ignored_replicate_checkpoints": ignored_checkpoints,
+        "job_payload_bytes_before": job_payload_bytes_before,
+        "job_payload_bytes_after": job_payload_bytes_after,
+        "initializer_payload_bytes": initializer_payload_bytes,
         "quantile_method": "numpy.quantile(method='linear')",
         "quantile_configuration": {
             "lower": config.lower_quantile,

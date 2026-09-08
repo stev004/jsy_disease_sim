@@ -142,6 +142,12 @@ def _display_path(path: Path, root: Path) -> str:
         return str(path)
 
 
+def _resolve_reuse_root(root: Path, reuse_from: Path | None) -> Path | None:
+    if reuse_from is None:
+        return None
+    return reuse_from if reuse_from.is_absolute() else root / reuse_from
+
+
 def _build_m4_for_m6(
     root: Path,
     mode: PopulationMode,
@@ -149,11 +155,18 @@ def _build_m4_for_m6(
     destination: Path,
     *,
     isolate_parents: bool = False,
+    reuse_from: Path | None = None,
 ):
     """Build the existing M2/M3/M4.1 stack for an M6 command."""
 
     parent_output = destination / "parents" if isolate_parents else destination.parent
-    return build_parent(root, mode, seed, parent_output).generated
+    return build_parent(
+        root,
+        mode,
+        seed,
+        parent_output,
+        reuse_from=_resolve_reuse_root(root, reuse_from),
+    ).generated
 
 
 @data_app.command("build")
@@ -273,6 +286,9 @@ def network_generate(
         Path | None,
         typer.Option(help="Existing validated Milestone 3 artifact directory."),
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[
         Path, typer.Option(help="Directory for versioned Milestone 4 route artifacts.")
     ] = Path("outputs/networks"),
@@ -301,6 +317,7 @@ def network_generate(
         structure_artifact=m3_path,
         write_m4=True,
         m4_output=destination,
+        reuse_from=_resolve_reuse_root(root, reuse_from),
     )
     generated = parent.generated
     assert parent.m4_artifact is not None
@@ -334,6 +351,9 @@ def outbreak_run(
     parameter_set: Annotated[
         Path | None, typer.Option(help="Versioned respiratory parameter YAML.")
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[
         Path, typer.Option(help="Directory for versioned M5 outbreak artifacts.")
     ] = Path("outputs/outbreaks"),
@@ -352,7 +372,14 @@ def outbreak_run(
         parameters,
         duration_days=duration_days,
     )
-    parent = build_parent(root, mode, seed, destination.parent, write_m4=True)
+    parent = build_parent(
+        root,
+        mode,
+        seed,
+        destination.parent,
+        write_m4=True,
+        reuse_from=_resolve_reuse_root(root, reuse_from),
+    )
     generated = parent.generated
     assert parent.m4_artifact is not None
     m4_artifact = parent.m4_artifact
@@ -391,6 +418,9 @@ def observe_run(
     observation_config: Annotated[
         Path | None, typer.Option(help="Versioned observation-model YAML.")
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[
         Path, typer.Option(help="Directory for versioned M6 observation artifacts.")
     ] = Path("outputs/observations"),
@@ -412,7 +442,7 @@ def observe_run(
     parameters = load_parameter_set(root, parameter_path)
     observation = load_observation_config(root, observation_path)
     run_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
-    generated = _build_m4_for_m6(root, mode, seed, destination)
+    generated = _build_m4_for_m6(root, mode, seed, destination, reuse_from=reuse_from)
     latent = run_outbreak(
         generated,
         run_config,
@@ -465,6 +495,9 @@ def ensemble_run(
     observation_config: Annotated[
         Path | None, typer.Option(help="Versioned observation-model YAML.")
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     ensemble_id: Annotated[
         str, typer.Option(help="Stable identifier for this ensemble.")
     ] = "m6-demo",
@@ -491,7 +524,7 @@ def ensemble_run(
     base_config = default_run_config(
         mode, replicate_seeds[0], parameters, duration_days=duration_days
     )
-    generated = _build_m4_for_m6(root, mode, replicate_seeds[0], destination)
+    generated = _build_m4_for_m6(root, mode, replicate_seeds[0], destination, reuse_from=reuse_from)
     try:
         result = run_ensemble(
             root,
@@ -536,6 +569,7 @@ def _run_m7_scenario(
     parameter_path: Path | None,
     observation_path: Path | None,
     output_dir: Path,
+    reuse_from: Path | None = None,
 ) -> dict[str, object]:
     root = _repo_root()
     destination = output_dir if output_dir.is_absolute() else root / output_dir
@@ -564,7 +598,7 @@ def _run_m7_scenario(
         # run-level date overrides remain a library contract for later work.
         raise typer.BadParameter("M7 CLI currently requires scenario start_date 2025-01-06")
     run_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
-    generated = _build_m4_for_m6(root, mode, seed, destination)
+    generated = _build_m4_for_m6(root, mode, seed, destination, reuse_from=reuse_from)
     result = run_outbreak(
         generated,
         run_config,
@@ -615,6 +649,7 @@ def _run_m8_scenario(
     parameter_path: Path | None,
     observation_path: Path | None,
     output_dir: Path,
+    reuse_from: Path | None = None,
 ) -> dict[str, object]:
     """Build the canonical resident parent and execute one M8 run."""
 
@@ -647,7 +682,9 @@ def _run_m8_scenario(
         else load_travel_config(root, travel_path)
     )
     run_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
-    generated = _build_m4_for_m6(root, mode, seed, destination, isolate_parents=True)
+    generated = _build_m4_for_m6(
+        root, mode, seed, destination, isolate_parents=True, reuse_from=reuse_from
+    )
     result = run_travel_outbreak(
         generated,
         run_config,
@@ -690,6 +727,9 @@ def travel_run(
     observation_config: Annotated[
         Path | None, typer.Option(help="Versioned observation-model YAML.")
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[
         Path, typer.Option(help="Directory for versioned M8 travel artifacts.")
     ] = Path("outputs/travel"),
@@ -707,6 +747,7 @@ def travel_run(
                 parameter_path=parameter_set,
                 observation_path=observation_config,
                 output_dir=output_dir,
+                reuse_from=reuse_from,
             ),
             ensure_ascii=False,
             sort_keys=True,
@@ -727,6 +768,9 @@ def travel_compare(
     treated_config: Annotated[Path, typer.Option(help="Treated M8 travel YAML.")] = Path(
         "configs/travel/m8_reduced_arrivals.yaml"
     ),
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[Path, typer.Option(help="Directory for comparison outputs.")] = Path(
         "outputs/travel_comparisons"
     ),
@@ -739,7 +783,9 @@ def travel_compare(
     treated_path = treated_config if treated_config.is_absolute() else root / treated_config
     parameters = load_parameter_set(root)
     base_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
-    generated = _build_m4_for_m6(root, mode, seed, destination, isolate_parents=True)
+    generated = _build_m4_for_m6(
+        root, mode, seed, destination, isolate_parents=True, reuse_from=reuse_from
+    )
     observation = load_observation_config(root)
     baseline = run_travel_outbreak(
         generated,
@@ -774,6 +820,9 @@ def travel_ensemble(
     travel_config: Annotated[Path, typer.Option(help="Versioned M8 travel YAML.")] = Path(
         "configs/travel/m8_explicit_travel.yaml"
     ),
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[Path, typer.Option(help="Directory for ensemble outputs.")] = Path(
         "outputs/travel_ensembles"
     ),
@@ -787,7 +836,14 @@ def travel_ensemble(
     base_config = default_run_config(
         mode, replicate_seeds[0], parameters, duration_days=duration_days
     )
-    generated = _build_m4_for_m6(root, mode, replicate_seeds[0], destination, isolate_parents=True)
+    generated = _build_m4_for_m6(
+        root,
+        mode,
+        replicate_seeds[0],
+        destination,
+        isolate_parents=True,
+        reuse_from=reuse_from,
+    )
     result = run_travel_ensemble(
         generated,
         parameters,
@@ -820,6 +876,9 @@ def scenario_run(
     observation_config: Annotated[
         Path | None, typer.Option(help="Versioned observation-model YAML.")
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[Path, typer.Option(help="Directory for versioned M7 artifacts.")] = Path(
         "outputs/interventions"
     ),
@@ -836,6 +895,7 @@ def scenario_run(
                 parameter_path=parameter_set,
                 observation_path=observation_config,
                 output_dir=output_dir,
+                reuse_from=reuse_from,
             ),
             ensure_ascii=False,
             sort_keys=True,
@@ -859,6 +919,9 @@ def intervention_run(
     observation_config: Annotated[
         Path | None, typer.Option(help="Versioned observation-model YAML.")
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[Path, typer.Option(help="Directory for versioned M7 artifacts.")] = Path(
         "outputs/interventions"
     ),
@@ -875,6 +938,7 @@ def intervention_run(
                 parameter_path=parameter_set,
                 observation_path=observation_config,
                 output_dir=output_dir,
+                reuse_from=reuse_from,
             ),
             ensure_ascii=False,
             sort_keys=True,
@@ -897,6 +961,9 @@ def intervention_compare(
     ] = None,
     observation_config: Annotated[
         Path | None, typer.Option(help="Versioned observation-model YAML.")
+    ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
     ] = None,
     output_dir: Annotated[Path, typer.Option(help="Directory for comparison artifacts.")] = Path(
         "outputs/intervention_comparisons"
@@ -923,7 +990,7 @@ def intervention_compare(
         update={"seed": seed, "duration_days": duration_days}
     )
     run_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
-    generated = _build_m4_for_m6(root, mode, seed, destination)
+    generated = _build_m4_for_m6(root, mode, seed, destination, reuse_from=reuse_from)
     baseline = run_outbreak(generated, run_config, parameters, observation_config=observation)
     treated = run_outbreak(
         generated,
@@ -969,6 +1036,9 @@ def intervention_ensemble(
     observation_config: Annotated[
         Path | None, typer.Option(help="Versioned observation-model YAML.")
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[Path, typer.Option(help="Directory for ensemble artifacts.")] = Path(
         "outputs/ensembles"
     ),
@@ -995,7 +1065,7 @@ def intervention_ensemble(
     base_config = default_run_config(
         mode, replicate_seeds[0], parameters, duration_days=duration_days
     )
-    generated = _build_m4_for_m6(root, mode, replicate_seeds[0], destination)
+    generated = _build_m4_for_m6(root, mode, replicate_seeds[0], destination, reuse_from=reuse_from)
     result = run_ensemble(
         root,
         generated,
@@ -1037,6 +1107,9 @@ def calibration_synthetic(
     observation_config: Annotated[
         Path | None, typer.Option(help="Versioned observation-model YAML.")
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[
         Path, typer.Option(help="Directory for versioned M6 calibration artifacts.")
     ] = Path("outputs/calibration"),
@@ -1057,7 +1130,7 @@ def calibration_synthetic(
     )
     parameters = load_parameter_set(root, parameter_path)
     base_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
-    generated = _build_m4_for_m6(root, mode, seed, destination)
+    generated = _build_m4_for_m6(root, mode, seed, destination, reuse_from=reuse_from)
     result = run_synthetic_recovery(
         root,
         generated,
@@ -1097,6 +1170,9 @@ def calibration_beta(
     observation_config: Annotated[
         Path | None, typer.Option(help="Versioned observation-model YAML.")
     ] = None,
+    reuse_from: Annotated[
+        Path | None, typer.Option(help="Verified M2/M3 parent artifact root to reuse.")
+    ] = None,
     output_dir: Annotated[
         Path, typer.Option(help="Directory for versioned C3 calibration artifacts.")
     ] = Path("outputs/calibration"),
@@ -1117,7 +1193,7 @@ def calibration_beta(
     )
     parameters = load_parameter_set(root, parameter_path)
     base_config = default_run_config(mode, seed, parameters, duration_days=duration_days)
-    generated = _build_m4_for_m6(root, mode, seed, destination)
+    generated = _build_m4_for_m6(root, mode, seed, destination, reuse_from=reuse_from)
     config = CalibrationConfig(
         study_id="c3-beta-recovery",
         hidden_parameter="transmission_beta",
