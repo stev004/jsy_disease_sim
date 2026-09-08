@@ -542,6 +542,52 @@ def _deduplicate_edge_columns(
     )
 
 
+def _empty_edge_columns(agent_ids: Sequence[str]) -> EdgeColumns:
+    return EdgeColumns(
+        np.empty(0, dtype=np.int64),
+        np.empty(0, dtype=np.int64),
+        np.empty(0, dtype=np.float64),
+        np.empty(0, dtype=np.int64),
+        agent_ids,
+    )
+
+
+def _edge_columns_from_indices(
+    p1_indices: list[int],
+    p2_indices: list[int],
+    weights: list[float],
+    persistence_days: list[int],
+    agent_ids: Sequence[str],
+) -> EdgeColumns:
+    return EdgeColumns(
+        np.asarray(p1_indices, dtype=np.int64),
+        np.asarray(p2_indices, dtype=np.int64),
+        np.asarray(weights, dtype=np.float64),
+        np.asarray(persistence_days, dtype=np.int64),
+        agent_ids,
+    )
+
+
+def _excluded_rank_pairs(
+    excluded_pairs: set[tuple[str, str]] | None,
+    index_by_agent_id: dict[str, int],
+    string_rank: np.ndarray,
+) -> set[tuple[int, int]] | None:
+    if excluded_pairs is None:
+        return None
+    rank_pairs: set[tuple[int, int]] = set()
+    for left, right in excluded_pairs:
+        # The dict path only recognises already string-canonical excluded pairs.
+        if (left, right) != tuple(sorted((left, right))):
+            continue
+        left_index = index_by_agent_id.get(left)
+        right_index = index_by_agent_id.get(right)
+        if left_index is None or right_index is None:
+            continue
+        rank_pairs.add((int(string_rank[left_index]), int(string_rank[right_index])))
+    return rank_pairs
+
+
 def _merge_sorted_edge_columns(
     first: EdgeColumns,
     second: EdgeColumns,
@@ -607,6 +653,33 @@ def _complete_group(
     return edges
 
 
+def _complete_group_columns(
+    ids: Iterable[str],
+    weight: float,
+    persistence_days: int = 30,
+    *,
+    agent_ids: Sequence[str],
+    index_by_agent_id: dict[str, int] | None = None,
+) -> EdgeColumns:
+    ordered = sorted(set(ids))
+    if len(ordered) < 2:
+        return _empty_edge_columns(agent_ids)
+    if index_by_agent_id is None:
+        index_by_agent_id = {agent_id: index for index, agent_id in enumerate(agent_ids)}
+    p1_indices: list[int] = []
+    p2_indices: list[int] = []
+    weights: list[float] = []
+    persistence: list[int] = []
+    for left_index, left in enumerate(ordered):
+        left_endpoint = index_by_agent_id[left]
+        for right in ordered[left_index + 1 :]:
+            p1_indices.append(left_endpoint)
+            p2_indices.append(index_by_agent_id[right])
+            weights.append(float(weight))
+            persistence.append(int(persistence_days))
+    return _edge_columns_from_indices(p1_indices, p2_indices, weights, persistence, agent_ids)
+
+
 def _ring_edges(
     ids: Iterable[str],
     contacts_per_participant: int,
@@ -629,6 +702,75 @@ def _ring_edges(
             if edge is not None:
                 edges.append(edge)
     return _deduplicate_edges(edges)
+
+
+def _ring_edges_columns(
+    ids: Iterable[str],
+    contacts_per_participant: int,
+    weight: float,
+    persistence_days: int,
+    excluded_pairs: set[tuple[str, str]] | None = None,
+    *,
+    agent_ids: Sequence[str],
+    index_by_agent_id: dict[str, int] | None = None,
+    string_rank: np.ndarray | None = None,
+    excluded_rank_pairs: set[tuple[int, int]] | None = None,
+) -> EdgeColumns:
+    ordered = list(ids)
+    if len(ordered) < 2 or contacts_per_participant <= 0:
+        return _empty_edge_columns(agent_ids)
+    if index_by_agent_id is None:
+        index_by_agent_id = {agent_id: index for index, agent_id in enumerate(agent_ids)}
+    if string_rank is None:
+        string_rank = _string_ranks(agent_ids)
+    if excluded_rank_pairs is None:
+        excluded_rank_pairs = _excluded_rank_pairs(excluded_pairs, index_by_agent_id, string_rank)
+    p1_indices: list[int] = []
+    p2_indices: list[int] = []
+    weights: list[float] = []
+    persistence: list[int] = []
+    n = len(ordered)
+    for index, left in enumerate(ordered):
+        left_index = index_by_agent_id[left]
+        left_rank = int(string_rank[left_index])
+        for offset in range(1, min(contacts_per_participant, n - 1) + 1):
+            right = ordered[(index + offset) % n]
+            right_index = index_by_agent_id[right]
+            if left_index == right_index:
+                continue
+            right_rank = int(string_rank[right_index])
+            pair_rank = (min(left_rank, right_rank), max(left_rank, right_rank))
+            if excluded_rank_pairs is not None and pair_rank in excluded_rank_pairs:
+                continue
+            if left_rank < right_rank:
+                p1_indices.append(left_index)
+                p2_indices.append(right_index)
+            else:
+                p1_indices.append(right_index)
+                p2_indices.append(left_index)
+            weights.append(float(weight))
+            persistence.append(int(persistence_days))
+    return _deduplicate_edge_columns(
+        _edge_columns_from_indices(p1_indices, p2_indices, weights, persistence, agent_ids),
+        string_rank,
+    )
+
+
+def _concatenate_edge_columns(
+    columns: Iterable[EdgeColumns], agent_ids: Sequence[str]
+) -> EdgeColumns:
+    columns = list(columns)
+    if not columns:
+        return _empty_edge_columns(agent_ids)
+    if len(columns) == 1:
+        return columns[0]
+    return EdgeColumns(
+        np.concatenate(tuple(column.p1_index for column in columns)),
+        np.concatenate(tuple(column.p2_index for column in columns)),
+        np.concatenate(tuple(column.weight for column in columns)),
+        np.concatenate(tuple(column.persistence_days for column in columns)),
+        agent_ids,
+    )
 
 
 def _grouped_ring_edges(
@@ -654,6 +796,52 @@ def _grouped_ring_edges(
             )
         )
     return _deduplicate_edges(edges)
+
+
+def _grouped_ring_edges_columns(
+    groups: Iterable[Iterable[str]],
+    seed: int,
+    route_id: str,
+    snapshot_date: date,
+    contacts_per_participant: int,
+    weight: float,
+    persistence_days: int,
+    excluded_pairs: set[tuple[str, str]] | None = None,
+    *,
+    agent_ids: Sequence[str],
+    index_by_agent_id: dict[str, int] | None = None,
+    string_rank: np.ndarray | None = None,
+    excluded_rank_pairs: set[tuple[int, int]] | None = None,
+) -> EdgeColumns:
+    if index_by_agent_id is None:
+        index_by_agent_id = {agent_id: index for index, agent_id in enumerate(agent_ids)}
+    if string_rank is None:
+        string_rank = _string_ranks(agent_ids)
+    if excluded_rank_pairs is None:
+        excluded_rank_pairs = _excluded_rank_pairs(excluded_pairs, index_by_agent_id, string_rank)
+    columns: list[EdgeColumns] = []
+    for group_index, group in enumerate(groups):
+        ordered = _ordered_ids(group, seed, route_id, snapshot_date.isoformat(), group_index)
+        columns.append(
+            _ring_edges_columns(
+                ordered,
+                contacts_per_participant,
+                weight,
+                persistence_days,
+                agent_ids=agent_ids,
+                index_by_agent_id=index_by_agent_id,
+                string_rank=string_rank,
+                excluded_rank_pairs=excluded_rank_pairs,
+            )
+        )
+    if not columns:
+        return _empty_edge_columns(agent_ids)
+    if len(columns) == 1:
+        return columns[0]
+    return _deduplicate_edge_columns(
+        _concatenate_edge_columns(columns, agent_ids),
+        string_rank,
+    )
 
 
 def _school_staff_cross_edges(
@@ -701,6 +889,75 @@ def _school_staff_cross_edges(
                 ):
                     edges.append(edge)
     return _deduplicate_edges(edges)
+
+
+def _school_staff_cross_edges_columns(
+    school_year_groups: dict[tuple[str, str], list[str]],
+    school_staff_by_school_year: dict[tuple[str, str], list[str]],
+    seed: int,
+    snapshot_date: date,
+    contacts_per_staff: int,
+    weight: float,
+    persistence_days: int,
+    excluded_pairs: set[tuple[str, str]] | None = None,
+    *,
+    agent_ids: Sequence[str],
+    index_by_agent_id: dict[str, int] | None = None,
+    string_rank: np.ndarray | None = None,
+    excluded_rank_pairs: set[tuple[int, int]] | None = None,
+) -> EdgeColumns:
+    if index_by_agent_id is None:
+        index_by_agent_id = {agent_id: index for index, agent_id in enumerate(agent_ids)}
+    if string_rank is None:
+        string_rank = _string_ranks(agent_ids)
+    if excluded_rank_pairs is None:
+        excluded_rank_pairs = _excluded_rank_pairs(excluded_pairs, index_by_agent_id, string_rank)
+    p1_indices: list[int] = []
+    p2_indices: list[int] = []
+    weights: list[float] = []
+    persistence: list[int] = []
+    for school_year, pupil_group in sorted(school_year_groups.items()):
+        pupils = _ordered_ids(
+            pupil_group,
+            seed,
+            "school_cross_class-pupils",
+            snapshot_date.isoformat(),
+            school_year,
+        )
+        staff_ids = sorted(set(school_staff_by_school_year.get(school_year, [])))
+        if not pupils or not staff_ids or contacts_per_staff <= 0:
+            continue
+        contact_count = min(contacts_per_staff, len(pupils))
+        for staff_id in staff_ids:
+            start = _stable_int(
+                seed,
+                "school_cross_class-staff",
+                snapshot_date.isoformat(),
+                school_year,
+                staff_id,
+            ) % len(pupils)
+            staff_index = index_by_agent_id[staff_id]
+            staff_rank = int(string_rank[staff_index])
+            for offset in range(contact_count):
+                pupil_index = index_by_agent_id[pupils[(start + offset) % len(pupils)]]
+                if staff_index == pupil_index:
+                    continue
+                pupil_rank = int(string_rank[pupil_index])
+                pair_rank = (min(staff_rank, pupil_rank), max(staff_rank, pupil_rank))
+                if excluded_rank_pairs is not None and pair_rank in excluded_rank_pairs:
+                    continue
+                if staff_rank < pupil_rank:
+                    p1_indices.append(staff_index)
+                    p2_indices.append(pupil_index)
+                else:
+                    p1_indices.append(pupil_index)
+                    p2_indices.append(staff_index)
+                weights.append(float(weight))
+                persistence.append(int(persistence_days))
+    return _deduplicate_edge_columns(
+        _edge_columns_from_indices(p1_indices, p2_indices, weights, persistence, agent_ids),
+        string_rank,
+    )
 
 
 def _age_band(age: int) -> str:
@@ -1462,6 +1719,7 @@ def generate_networks(
             group + staffing.school_staff_by_class.get(class_id, []), 0.85, 180
         )
     }
+    school_core_rank_pairs = _excluded_rank_pairs(school_core_pairs, index_by_agent_id, string_rank)
     if "school_class" in route_specs:
         structural_edges["school_class"] = _deduplicate_edges(
             edge
@@ -1491,7 +1749,7 @@ def generate_networks(
             for agent_id in sorted(set(group))
         ]
 
-        def build_school_cross(snapshot_date: date) -> list[dict[str, Any]]:
+        def build_school_cross(snapshot_date: date) -> list[dict[str, Any]] | EdgeColumns:
             active_pupils = _activity_weighted_participants(
                 (agent_id for group in school_year_groups.values() for agent_id in group),
                 sum(len(group) for group in school_year_groups.values()),
@@ -1499,7 +1757,7 @@ def generate_networks(
                 route_id="school_cross_class",
                 token=snapshot_date.isoformat(),
             )
-            pupil_edges = _grouped_ring_edges(
+            pupil_edges = _grouped_ring_edges_columns(
                 (
                     [agent_id for agent_id in group if agent_id in active_pupils]
                     for group in school_year_groups.values()
@@ -1510,9 +1768,12 @@ def generate_networks(
                 config.school_cross_class_contacts,
                 0.5,
                 14,
-                school_core_pairs,
+                agent_ids=agent_ids,
+                index_by_agent_id=index_by_agent_id,
+                string_rank=string_rank,
+                excluded_rank_pairs=school_core_rank_pairs,
             )
-            staff_edges = _school_staff_cross_edges(
+            staff_edges = _school_staff_cross_edges_columns(
                 school_year_groups,
                 staffing.school_staff_by_school_year,
                 config.seed,
@@ -1520,9 +1781,15 @@ def generate_networks(
                 config.school_cross_class_contacts,
                 0.5,
                 14,
-                school_core_pairs,
+                agent_ids=agent_ids,
+                index_by_agent_id=index_by_agent_id,
+                string_rank=string_rank,
+                excluded_rank_pairs=school_core_rank_pairs,
             )
-            return _deduplicate_edges([*pupil_edges, *staff_edges])
+            return _deduplicate_edge_columns(
+                _concatenate_edge_columns((pupil_edges, staff_edges), agent_ids),
+                string_rank,
+            )
 
         dynamic_builders["school_cross_class"] = build_school_cross
 
@@ -1558,6 +1825,9 @@ def generate_networks(
         for team_jobs in work_route_jobs_by_team.values()
         for edge in _complete_group([job["agent_id"] for job in team_jobs], 0.7, 365)
     }
+    workplace_team_rank_pairs = _excluded_rank_pairs(
+        workplace_team_pairs, index_by_agent_id, string_rank
+    )
 
     institutional_staff_commute = _institutional_staff_commute_metadata(m3_input, staffing)
     if "workplace_team" in route_specs:
@@ -1584,7 +1854,7 @@ def generate_networks(
         )
         workplace_transient_groups_by_weekday: dict[int, list[list[str]]] = {}
 
-        def build_workplace_transient(snapshot_date: date) -> list[dict[str, Any]]:
+        def build_workplace_transient(snapshot_date: date) -> list[dict[str, Any]] | EdgeColumns:
             weekday = snapshot_date.weekday()
             groups: list[list[str]]
             if weekday >= 5:
@@ -1616,7 +1886,7 @@ def generate_networks(
                 route_id="workplace_transient",
                 token=snapshot_date.isoformat(),
             )
-            return _grouped_ring_edges(
+            return _grouped_ring_edges_columns(
                 (
                     [agent_id for agent_id in group if agent_id in active_workers]
                     for group in groups
@@ -1627,7 +1897,10 @@ def generate_networks(
                 config.workplace_transient_contacts,
                 0.3,
                 7,
-                workplace_team_pairs,
+                agent_ids=agent_ids,
+                index_by_agent_id=index_by_agent_id,
+                string_rank=string_rank,
+                excluded_rank_pairs=workplace_team_rank_pairs,
             )
 
         dynamic_builders["workplace_transient"] = build_workplace_transient
@@ -1879,10 +2152,10 @@ def generate_networks(
             for agent_id in sorted(group)
         ]
 
-        def build_bus(snapshot_date: date) -> list[dict[str, Any]]:
+        def build_bus(snapshot_date: date) -> list[dict[str, Any]] | EdgeColumns:
             if snapshot_date.weekday() >= 5:
-                return []
-            edges: list[dict[str, Any]] = []
+                return _empty_edge_columns(agent_ids)
+            columns: list[EdgeColumns] = []
             for key, group in sorted(bus_groups.items()):
                 active = [
                     agent_id
@@ -1903,14 +2176,19 @@ def generate_networks(
                     snapshot_date.isocalendar().week,
                 )
                 for index in range(0, len(ordered), config.bus_cohort_capacity):
-                    edges.extend(
-                        _complete_group(
+                    columns.append(
+                        _complete_group_columns(
                             ordered[index : index + config.bus_cohort_capacity],
                             0.45,
                             7,
+                            agent_ids=agent_ids,
+                            index_by_agent_id=index_by_agent_id,
                         )
                     )
-            return _deduplicate_edges(edges)
+            return _deduplicate_edge_columns(
+                _concatenate_edge_columns(columns, agent_ids),
+                string_rank,
+            )
 
         dynamic_builders["bus"] = build_bus
 
