@@ -5,7 +5,8 @@
 ## Open
 
 ### G23 — Merge run-4b units (`perf/integration-run4b` @ `ae0c6f8ddd2abfdb0d66f248721a36c2c375c3a9` = main + PROV-8 + PERF-6 + PERF-9)
-- **Question:** merge after Sol review 4 PASS (running) + local smoke? Units: PROV-8 zero-behaviour refactor; PERF-6 vectorised interventions (3.22× on the route-effect block, all 13 scenarios bit-identical); PERF-9 verified parent reuse + pool initializer (hashes equal; resume intact).
+- **Status 2026-09-09:** review 4 = BLOCKED (PERF-6 targeted/residents_only community interventions neutralised; PERF-9 adapter reuse unreachable). Retries running; the candidate SHA will change; merge only after a re-review PASS.
+- **Question:** merge after a re-review PASS + local smoke? Units: PROV-8 zero-behaviour refactor; PERF-6 vectorised interventions (3.22× on the route-effect block, all 13 scenarios bit-identical); PERF-9 verified parent reuse + pool initializer (hashes equal; resume intact).
 - **Default:** merge on a filed PASS under Steven's 2026-09-08 instruction, as G19/G22; say "hold" to stop. Command: `git -C ~/jsy_disease_sim merge --no-ff ae0c6f8ddd2abfdb0d66f248721a36c2c375c3a9 -m "G23: merge perf/integration-run4b @ ae0c6f8" && git -C ~/jsy_disease_sim push`.
 
 ### G5 — Branch cleanup
