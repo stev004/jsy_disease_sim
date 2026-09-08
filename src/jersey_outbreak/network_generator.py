@@ -1929,6 +1929,18 @@ def generate_networks(
     ) -> Callable[[date], EdgeColumns]:
         regular_contacts = round(contacts * float(config.community_regular_edge_fraction))
         daily_contacts = max(0, contacts - regular_contacts)
+        from .hashing import stable_int_prefixed
+
+        suffix_by_agent = {
+            agent_id: agent_id.encode("utf-8") for agent_id in general_community_agent_ids
+        }
+        contact_suffix_by_agent = {
+            agent_id: [
+                f"{agent_id}|{contact_index}".encode()
+                for contact_index in range(max(regular_contacts, daily_contacts))
+            ]
+            for agent_id in general_community_agent_ids
+        }
         age_band_by_agent = {
             agent_id: _age_band(m3_by_agent[agent_id]["age"])
             for agent_id in general_community_agent_ids
@@ -1981,10 +1993,9 @@ def generate_networks(
                     for source in sources:
                         for contact_index in range(contact_count):
                             draw = (
-                                _stable_int_suffix(
+                                stable_int_prefixed(
                                     target_prefix,
-                                    source,
-                                    contact_index,
+                                    contact_suffix_by_agent[source][contact_index],
                                 )
                                 % 1_000_000
                                 / 1_000_000
@@ -2009,10 +2020,9 @@ def generate_networks(
                                 if m == 0:
                                     continue
                             index = (
-                                _stable_int_suffix(
+                                stable_int_prefixed(
                                     choice_prefix,
-                                    source,
-                                    contact_index,
+                                    contact_suffix_by_agent[source][contact_index],
                                 )
                                 % m
                             )
@@ -2050,7 +2060,8 @@ def generate_networks(
                 agent_id
                 for agent_id in general_community_agent_ids
                 if (
-                    _stable_int_suffix(regular_participation_prefix, agent_id) % 100
+                    stable_int_prefixed(regular_participation_prefix, suffix_by_agent[agent_id])
+                    % 100
                     < regular_probability
                 )
             }
@@ -2083,7 +2094,7 @@ def generate_networks(
                 participants = {
                     agent_id
                     for agent_id, (is_adult, _parish) in community_agent_info.items()
-                    if (_stable_int_suffix(participation_prefix, agent_id) % 100)
+                    if (stable_int_prefixed(participation_prefix, suffix_by_agent[agent_id]) % 100)
                     < (adult_probability if is_adult else child_probability)
                 }
             else:
