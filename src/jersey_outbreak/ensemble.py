@@ -1132,9 +1132,6 @@ def run_ensemble(
         "resumed_replicates": resumed_count,
         "run_replicates": len(pending_seeds),
         "ignored_replicate_checkpoints": ignored_checkpoints,
-        "job_payload_bytes_before": job_payload_bytes_before,
-        "job_payload_bytes_after": job_payload_bytes_after,
-        "initializer_payload_bytes": initializer_payload_bytes,
         "quantile_method": "numpy.quantile(method='linear')",
         "quantile_configuration": {
             "lower": config.lower_quantile,
@@ -1176,6 +1173,16 @@ def run_ensemble(
     }
     if fallback_reason is not None:
         diagnostics["parallelism_fallback_reason"] = fallback_reason
+    if planned_workers > 1 and jobs:
+        # These are process-pool transfer diagnostics.  Keep them out of the
+        # sequential result so its diagnostics artifact remains unchanged.
+        diagnostics.update(
+            {
+                "job_payload_bytes_before": job_payload_bytes_before,
+                "job_payload_bytes_after": job_payload_bytes_after,
+                "initializer_payload_bytes": initializer_payload_bytes,
+            }
+        )
     logical_content_hash = m6_ensemble_logical_hash(
         config=config.model_dump(mode="json"),
         replicate_records=[record.model_dump(mode="json") for record in records],
