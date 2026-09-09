@@ -903,19 +903,28 @@ class InterventionManager(ss.Intervention):
                 target.worker_only,
             )
         )
-        if config.community_scope != "everyone_present" or restricted:
-            values = np.zeros(len(self._uid_by_agent_id), dtype=bool)
-        else:
-            values = np.fromiter(
+        resident = np.fromiter(
+            (
+                self._agent_id_by_uid[uid] in self._m2_by_agent
+                for uid in range(len(self._uid_by_agent_id))
+            ),
+            dtype=bool,
+            count=len(self._uid_by_agent_id),
+        )
+        values = np.zeros(len(self._uid_by_agent_id), dtype=bool)
+        target_adheres = self._vector_target_adheres(config)
+        values[resident] = target_adheres[resident]
+        if config.community_scope == "everyone_present" and not restricted:
+            visitor_adheres = np.fromiter(
                 (
-                    self._target_adheres(config, self._agent_id_by_uid[uid])
-                    if self._agent_id_by_uid[uid] in self._m2_by_agent
-                    else self._intervention_adheres(config, self._agent_id_by_uid[uid])
+                    self._intervention_adheres(config, self._agent_id_by_uid[uid])
                     for uid in range(len(self._uid_by_agent_id))
+                    if not resident[uid]
                 ),
                 dtype=bool,
-                count=len(self._uid_by_agent_id),
+                count=int(np.count_nonzero(~resident)),
             )
+            values[~resident] = visitor_adheres
         if not overridden:
             self._vector_community_adheres_cache[key] = values
         return values
