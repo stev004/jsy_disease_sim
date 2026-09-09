@@ -4,10 +4,10 @@
 
 ## Open
 
-### G23 — Merge run-4b units (`perf/integration-run4b` @ `ae0c6f8ddd2abfdb0d66f248721a36c2c375c3a9` = main + PROV-8 + PERF-6 + PERF-9)
+### G23 — Merge run-4b units (`perf/integration-run4b` @ `a588e22560f43e019f45fc63475b61c904c68cd5` = main + PROV-8 + PERF-6 (retry 1) + PERF-9 (retry 1); the blocked candidate was `ae0c6f8`)
 - **Status 2026-09-09:** review 4 = BLOCKED (PERF-6 targeted/residents_only community interventions neutralised; PERF-9 adapter reuse unreachable). Retries running; the candidate SHA will change; merge only after a re-review PASS.
 - **Question:** merge after a re-review PASS + local smoke? Units: PROV-8 zero-behaviour refactor; PERF-6 vectorised interventions (3.22× on the route-effect block, all 13 scenarios bit-identical); PERF-9 verified parent reuse + pool initializer (hashes equal; resume intact).
-- **Default:** merge on a filed PASS under Steven's 2026-09-08 instruction, as G19/G22; say "hold" to stop. Command: `git -C ~/jsy_disease_sim merge --no-ff ae0c6f8ddd2abfdb0d66f248721a36c2c375c3a9 -m "G23: merge perf/integration-run4b @ ae0c6f8" && git -C ~/jsy_disease_sim push`.
+- **Default:** merge on a filed PASS under Steven's 2026-09-08 instruction, as G19/G22; say "hold" to stop. Command: `git -C ~/jsy_disease_sim merge --no-ff a588e22560f43e019f45fc63475b61c904c68cd5 -m "G23: merge perf/integration-run4b @ a588e22" && git -C ~/jsy_disease_sim push`.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
