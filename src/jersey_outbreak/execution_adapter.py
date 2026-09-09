@@ -254,6 +254,9 @@ def execute_job(
     job_directory = job_directory.resolve()
     output_root = job_directory / "artifacts"
     output_root.mkdir(parents=True, exist_ok=True)
+    # The scheduler persists one job's parent artifacts below this directory;
+    # reuse that existing job-owned tree on repeated adapter invocations.
+    reuse_root = job_directory
 
     def phase(name: str, message: str) -> None:
         if progress is not None:
@@ -276,7 +279,9 @@ def execute_job(
             observation=observation,
         )
         phase("preparing", "Building the immutable M2/M3/M4 scientific parent")
-        generated = _build_parent(root, request.mode, request.seed, job_directory)
+        generated = _build_parent(
+            root, request.mode, request.seed, job_directory, reuse_from=reuse_root
+        )
         phase("running", "Executing the existing JOS scientific runner")
         result = run_outbreak(
             generated,
@@ -322,7 +327,9 @@ def execute_job(
             observation=observation,
         )
         phase("preparing", "Building the immutable M2/M3/M4 scientific parent")
-        generated = _build_parent(root, request.mode, first_seed, job_directory)
+        generated = _build_parent(
+            root, request.mode, first_seed, job_directory, reuse_from=reuse_root
+        )
         phase("running", "Executing the existing bounded ensemble runner")
         ensemble_result = run_ensemble(
             root,
@@ -376,7 +383,7 @@ def execute_job(
         observation=observation,
     )
     phase("preparing", "Building the shared immutable M2/M3/M4 comparison parent")
-    generated = _build_parent(root, request.mode, first_seed, job_directory)
+    generated = _build_parent(root, request.mode, first_seed, job_directory, reuse_from=reuse_root)
     phase("running", "Executing matched baseline and treated ensembles")
     ensemble_a = run_ensemble(
         root,

@@ -8,7 +8,9 @@ from pathlib import Path
 import pytest
 
 from jersey_outbreak import parent_build
+from jersey_outbreak.api_schemas import ScenarioRunRequest
 from jersey_outbreak.ensemble import run_ensemble
+from jersey_outbreak.execution_adapter import execute_job
 from jersey_outbreak.parent_build import build_parent
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +18,54 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _cold_parent(output: Path):
     return build_parent(ROOT, "ci", 123, output, write_m4=True)
+
+
+def test_execution_adapter_reuses_job_parent_across_invocations(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    request = ScenarioRunRequest(kind="scenario_run", seed=123, duration_days=1)
+    payload = request.model_dump(mode="json")
+    calls = {"m2": 0, "m3": 0}
+    real_population = parent_build.generate_population
+    real_structure = parent_build.generate_structure
+
+    def count_population(*args: object, **kwargs: object) -> object:
+        calls["m2"] += 1
+        return real_population(*args, **kwargs)
+
+    def count_structure(*args: object, **kwargs: object) -> object:
+        calls["m3"] += 1
+        return real_structure(*args, **kwargs)
+
+    monkeypatch.setattr(parent_build, "generate_population", count_population)
+    monkeypatch.setattr(parent_build, "generate_structure", count_structure)
+    job_directory = tmp_path / "job"
+
+    first = execute_job(payload, root=ROOT, job_directory=job_directory)
+    assert calls == {"m2": 1, "m3": 1}
+    first_manifests = {
+        path.relative_to(job_directory): path.read_bytes()
+        for path in job_directory.rglob("manifest.json")
+    }
+
+    calls["m2"] = 0
+    calls["m3"] = 0
+    second = execute_job(payload, root=ROOT, job_directory=job_directory)
+
+    assert calls == {"m2": 0, "m3": 0}
+    assert second.artifacts == first.artifacts
+    assert {
+        path.relative_to(job_directory): path.read_bytes()
+        for path in job_directory.rglob("manifest.json")
+    } == first_manifests
+
+    calls["m2"] = 0
+    calls["m3"] = 0
+    changed_seed = request.model_copy(update={"seed": 124}).model_dump(mode="json")
+    third = execute_job(changed_seed, root=ROOT, job_directory=job_directory)
+
+    assert calls == {"m2": 1, "m3": 1}
+    assert third.artifacts != first.artifacts
 
 
 def test_verified_parent_reuse_skips_generators_and_preserves_provenance(
@@ -165,6 +215,14 @@ def test_initializer_parallel_replicates_match_sequential(
         assert sequential_record.m4_logical_content_hash == parallel_record.m4_logical_content_hash
     assert parallel.diagnostics["execution_mode"] == "process_pool_spawn"
     assert parallel.diagnostics["actual_workers"] == 2
+    assert all(
+        field not in sequential.diagnostics
+        for field in (
+            "job_payload_bytes_before",
+            "job_payload_bytes_after",
+            "initializer_payload_bytes",
+        )
+    )
     assert (
         parallel.diagnostics["job_payload_bytes_after"]
         < (parallel.diagnostics["job_payload_bytes_before"])
