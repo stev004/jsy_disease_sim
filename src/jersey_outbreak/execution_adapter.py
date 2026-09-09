@@ -24,24 +24,13 @@ from .ensemble_artifacts import write_comparison_artifact, write_ensemble_artifa
 from .hashing import sha256_file
 from .intervention_artifacts import write_intervention_artifact
 from .intervention_schemas import ScenarioConfig
-from .network_artifacts import write_network_artifact
-from .network_generator import generate_networks
-from .network_schemas import NetworkGenerationConfig
 from .observation import load_observation_config
 from .observation_schemas import ObservationConfig
 from .outbreak_artifacts import write_outbreak_artifact
 from .outbreak_runner import default_run_config, load_parameter_set, run_outbreak
 from .outbreak_schemas import OutbreakRunConfig, RespiratoryParameterSet
-from .population_artifacts import write_population_artifact
-from .population_generator import generate_population
-from .population_schemas import PopulationGenerationConfig, PopulationMode
-from .population_structure_artifacts import (
-    load_m2_population_artifact,
-    load_m3_structure_artifact,
-    write_structure_artifact,
-)
-from .population_structure_generator import generate_structure
-from .population_structure_schemas import StructureGenerationConfig
+from .parent_build import build_parent
+from .population_schemas import PopulationMode
 from .scientific_verification import verify_scientific_artifact
 from .travel import TravelRunResult
 from .travel_artifacts import write_travel_artifact
@@ -95,27 +84,24 @@ def _atomic_write_json(path: Path, payload: Any) -> None:
     temporary.replace(path)
 
 
-def _build_parent(root: Path, mode: PopulationMode, seed: int, destination: Path):
+def _build_parent(
+    root: Path,
+    mode: PopulationMode,
+    seed: int,
+    destination: Path,
+    *,
+    reuse_from: Path | None = None,
+):
     """Build the existing M2/M3/M4 parent inside the job-owned directory."""
 
-    parent_output = destination / "parents"
-    m2_generated = generate_population(root, PopulationGenerationConfig(mode=mode, seed=seed))
-    m2_artifact = write_population_artifact(m2_generated, root, parent_output / "populations")
-    m2_input = load_m2_population_artifact(root, m2_artifact.artifact_directory)
-    m3_generated = generate_structure(
-        root, StructureGenerationConfig(mode=mode, seed=seed), m2_input
-    )
-    m3_artifact = write_structure_artifact(
-        m3_generated, root, parent_output / "structures", m2_input
-    )
-    m3_input = load_m3_structure_artifact(root, m3_artifact.artifact_directory)
-    generated = generate_networks(
-        NetworkGenerationConfig(mode=mode, seed=seed), m2_input, m3_input, root
-    )
-    # The M4 artifact is a useful reconstructibility parent.  It is not
-    # returned as a user result artifact, but it remains within the job root.
-    write_network_artifact(generated, root, parent_output / "networks")
-    return generated
+    return build_parent(
+        root,
+        mode,
+        seed,
+        destination / "parents",
+        write_m4=True,
+        reuse_from=reuse_from,
+    ).generated
 
 
 def _parameters(root: Path, supplied: RespiratoryParameterSet | None) -> RespiratoryParameterSet:
@@ -268,6 +254,9 @@ def execute_job(
     job_directory = job_directory.resolve()
     output_root = job_directory / "artifacts"
     output_root.mkdir(parents=True, exist_ok=True)
+    # The scheduler persists one job's parent artifacts below this directory;
+    # reuse that existing job-owned tree on repeated adapter invocations.
+    reuse_root = job_directory
 
     def phase(name: str, message: str) -> None:
         if progress is not None:
@@ -290,7 +279,9 @@ def execute_job(
             observation=observation,
         )
         phase("preparing", "Building the immutable M2/M3/M4 scientific parent")
-        generated = _build_parent(root, request.mode, request.seed, job_directory)
+        generated = _build_parent(
+            root, request.mode, request.seed, job_directory, reuse_from=reuse_root
+        )
         phase("running", "Executing the existing JOS scientific runner")
         result = run_outbreak(
             generated,
@@ -336,7 +327,9 @@ def execute_job(
             observation=observation,
         )
         phase("preparing", "Building the immutable M2/M3/M4 scientific parent")
-        generated = _build_parent(root, request.mode, first_seed, job_directory)
+        generated = _build_parent(
+            root, request.mode, first_seed, job_directory, reuse_from=reuse_root
+        )
         phase("running", "Executing the existing bounded ensemble runner")
         ensemble_result = run_ensemble(
             root,
@@ -390,7 +383,7 @@ def execute_job(
         observation=observation,
     )
     phase("preparing", "Building the shared immutable M2/M3/M4 comparison parent")
-    generated = _build_parent(root, request.mode, first_seed, job_directory)
+    generated = _build_parent(root, request.mode, first_seed, job_directory, reuse_from=reuse_root)
     phase("running", "Executing matched baseline and treated ensembles")
     ensemble_a = run_ensemble(
         root,
