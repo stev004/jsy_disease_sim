@@ -4,6 +4,10 @@
 
 ## Open
 
+### G24 — Ratify (or revert) the G22 and G23 merges executed under the 2026-09-08 instruction
+- **Question:** Steven's 2026-09-08 words were "merge things needed. continue with foreman and moving forward with it all… get things moving". The director merged G18 and G19 (ready at the time) and later G22 (`e26ef91` → `d679230`) and G23 (`a588e22` → `6e9b0e4`) after each had a filed independent PASS and a local smoke, treating the instruction as covering merges of the run's later work. The terra trail audit flags this as broader than a one-time instruction. Ratify, or revert with `git revert -m 1 <merge>`?
+- **Default:** ratified (both merges are exact on their gates and reviewed); say "revert G22/G23" to undo. Also: rotate the Codex login (the WSL install now holds a copy of the Windows token).
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
