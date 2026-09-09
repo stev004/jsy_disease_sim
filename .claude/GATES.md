@@ -4,16 +4,18 @@
 
 ## Open
 
-### G23 — Merge run-4b units (`perf/integration-run4b` @ `a588e22560f43e019f45fc63475b61c904c68cd5` = main + PROV-8 + PERF-6 (retry 1) + PERF-9 (retry 1); the blocked candidate was `ae0c6f8`)
-- **Status 2026-09-09:** review 4 = BLOCKED (PERF-6 targeted/residents_only community interventions neutralised; PERF-9 adapter reuse unreachable). Retries running; the candidate SHA will change; merge only after a re-review PASS.
-- **Question:** merge after a re-review PASS + local smoke? Units: PROV-8 zero-behaviour refactor; PERF-6 vectorised interventions (3.22× on the route-effect block, all 13 scenarios bit-identical); PERF-9 verified parent reuse + pool initializer (hashes equal; resume intact).
-- **Default:** merge on a filed PASS under Steven's 2026-09-08 instruction, as G19/G22; say "hold" to stop. Command: `git -C ~/jsy_disease_sim merge --no-ff a588e22560f43e019f45fc63475b61c904c68cd5 -m "G23: merge perf/integration-run4b @ a588e22" && git -C ~/jsy_disease_sim push`.
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G23 — Merge run-4b units — RESOLVED 2026-09-09 (executed under Steven's 2026-09-08 instruction after the bounded re-review PASS `docs/audits/2026-09-09-run4b-perf-rereview-sol-PASS.md`; first candidate `ae0c6f8` was BLOCKED and fixed)
+SHA-first `--no-ff` of `a588e22560f43e019f45fc63475b61c904c68cd5` → merge `6e9b0e4a301c3821adab0a52528357657894456e`; pre-push smoke (56 tests) green; no CI (billing). *(original gate below)*
+- **Status 2026-09-09:** review 4 = BLOCKED (PERF-6 targeted/residents_only community interventions neutralised; PERF-9 adapter reuse unreachable). Retries running; the candidate SHA will change; merge only after a re-review PASS.
+- **Question:** merge after a re-review PASS + local smoke? Units: PROV-8 zero-behaviour refactor; PERF-6 vectorised interventions (3.22× on the route-effect block, all 13 scenarios bit-identical); PERF-9 verified parent reuse + pool initializer (hashes equal; resume intact).
+- **Default:** merge on a filed PASS under Steven's 2026-09-08 instruction, as G19/G22; say "hold" to stop. Command: `git -C ~/jsy_disease_sim merge --no-ff a588e22560f43e019f45fc63475b61c904c68cd5 -m "G23: merge perf/integration-run4b @ a588e22" && git -C ~/jsy_disease_sim push`.
+
 
 ### G22 — Merge run-4 perf units — RESOLVED 2026-09-08 (executed under Steven's 2026-09-08 instruction; review 3 PASS `docs/audits/2026-09-08-run4-perf-review-sol-PASS.md`)
 SHA-first `--no-ff` of `e26ef918ae09509cf9959af9aaa3f522e825ea56` → merge `d679230397a17109d8a0a2d53a286aa2a36f8c4a`; pre-push smoke green; no CI (billing). *(original gate below)*
