@@ -1,6 +1,27 @@
-# RUN — foreman run `v121-run5`: predicates MET, closing (started 2026-09-12, director Fable; ts: trail rows `run-start` → `g25-parked`)
+# RUN — foreman run `v121-run6` IN FLIGHT (started 2026-09-12, director Fable; ts: second trail row `run-start` of 2026-09-12); run 5 CLOSED (digest delivered in chat; record below)
 
 ## START HERE (cold start, any model)
+1. Read `.claude/DIRECTOR.md` in full → `.claude/FRONTIER.md` → `.claude/GATES.md` (open: **G25** merge run-5 batch `84b9676`, default merge; G24 default ratified; G5) → `tail -12 .claude/decisions.tsv`.
+2. **Predicate (run 6):** ROUTE-8 (snapshot-cache bound truthful + build-safe), DATA-5 + DATA-4 (travel evidence de-duplication + one-shot episode partitions) and the jobkw cleanup landed on reviewed branches with byte-identical M4/M8 evidence; merge parked as a gate. **Budget:** 4 implementation runs + 1 Sol review. Used so far: 3 first attempts (r8c, trav, jobkw); jobkw KEPT.
+3. **Units:**
+
+| unit | status | worktree | branch | brief / log / report |
+|---|---|---|---|---|
+| r8c | IN FLIGHT (luna@xhigh, pid 67637) | `~/jos-r8c-wt` | `v121/route8-cache-bound` (off origin/main `c7d3876`, code 6e9b0e4) | `~/jos-r8c-brief.md` · `~/jos-r8c.log` · `~/jos-r8c.last.md` |
+| trav | IN FLIGHT (luna@xhigh, pid 68162) | `~/jos-trav-wt` | `v121/travel-exactness` (same base) | `~/jos-trav-brief.md` · `~/jos-trav.log` · `~/jos-trav.last.md` |
+| jobkw | **KEPT** @ `a17009c2bde22502677a8117316378cfac114d0c` (ts: trail row `jobkw-kept`; 78,325 tokens; `docs/runs/2026-09-12-jobkw-cleanup-luna-report.md`) | `~/jos-jobkw-wt` | `v121/jobkw-cleanup` (off the reviewed run-5 integration head `84b9676`) | filed |
+
+   Launcher note: `/tmp/launch.sh` appends `· retry 1` to every first-attempt TASK line (cosmetic); the trail rows are the retry count.
+4. **Resume recipe:** for r8c/trav: `test -f ~/jos-<unit>.last.md` → read report, full diff, scope check, re-run acceptance, keep (`bash /tmp/keep.sh <unit> <branch> <report> …` pattern: commit on the unit branch, push, file report, `fm.sh log`) or retry (`· retry N`, same worktree, ≤3 runs/unit). Then integrate: `v121/integration-run6` = **run-5 integration head `84b9676`** (not main — run 5 is not merged yet; G25) + no-ff jobkw `a17009c` + r8c + trav; run the director's full CI mirror to `PASS` and file it under `docs/runs/` **before** pushing and before launching the Sol@high review (DIRECTOR lesson 2026-09-12); park the merge as **G26** (default: merge after G25, in order). Then digest + terra trail audit + closeout.
+5. **Machine facts.** Loop home = WSL Ubuntu `~/jsy_disease_sim`; every `wsl` call needs `-d Ubuntu`; `uv` at `~/.local/bin`; scripts as files under the scratchpad, copied via `/mnt/c`, run as `wsl -d Ubuntu -- bash -c 'bash /tmp/x.sh'`; anything that must outlive a tool call runs from a detached hidden `wsl.exe` session (`Start-Process wsl.exe -ArgumentList '-d','Ubuntu','--','bash','/tmp/detached2.sh','/tmp/<script>.sh' -WindowStyle Hidden`); executors via `fm.sh exec` inside such a session; never pass shell variables inline through `wsl -- bash -c` from PowerShell/Git Bash. State ops: `~/.claude/skills/foreman/scripts/fm.sh log|sync|exec`. No CI on GitHub (billing) — the local mirror is the gate.
+6. **Still owed to Steven:** G25 (run-5 batch merge), G24, the authorised validation run (solo 180-day ≤390 s; 44-replicate ensemble ≤75 min; hashes expected identical to `jos-ensemble-m6-p4-validation-r8-1a0e9c7037ad`).
+7. **Disposable leftovers in WSL** (delete once G24/G25 are resolved): run-5 worktrees `~/jos-{p10,pver,phelp,job,integ5}-wt`, clones `~/jos-review5-wd`, `~/jos-trail5-wd`, `/tmp/jos-review5-base`, `/tmp/jos-backcompat`; older `~/jos-*-wt` from runs 3/4; `~/jos-*` briefs/logs (every report is filed under `docs/runs/`/`docs/audits/`); `~/jos-remeasure-20260912/` (raw evidence of a filed, trail-audited report).
+
+---
+*Everything below is historical ledger, kept for the trail; nothing in it is live.*
+
+## Run 5 record (2026-09-12) — CLOSED
+*(was the run-5 START HERE block; superseded by the block above)*
 1. Read `.claude/DIRECTOR.md` in full → `.claude/FRONTIER.md` → `.claude/GATES.md` (open: G24 default ratified; G5) → `tail -8 .claude/decisions.tsv`.
 2. **Predicate:** (1) quiet-window 30-day full-mode seed-101 remeasure on `main` filed — **DONE** (`docs/runs/2026-09-12-quiet-window-30d-remeasure.md`: 69.0/61.9/59.2 s, hash `bbca6028…6e8c81` identical to the PERF-1 pin; ts: trail row `remeasure-filed`); (2) the V1.2.1 no-ruling units landed on reviewed branches with exact-equivalence evidence, merges parked as a gate. **Budget:** 6 implementation runs — used: 4 first attempts (the infra-killed launch is not counted) + 3 review-driven retries (pver r2, phelp r2, job r2) = 7; the extra retry is within the per-unit 3-run budget (DIRECTOR: 3 runs/unit), 2 Sol reviews (0 used).
 3. **Units (all four KEPT; launched concurrently, relaunched as `· retry 1` after the infrastructure kill, ts: trail row `run5-relaunch`) off `origin/main` @ `0bfc3c690475f3ad80b0aa25a1c239ce8bf2bbd5` (code 6e9b0e4), disjoint file sets:**
@@ -17,9 +38,6 @@
 6. **Machine facts.** Loop home = WSL Ubuntu `~/jsy_disease_sim`; every `wsl` call needs `-d Ubuntu`; `uv` at `~/.local/bin`; run scripts as files copied via `/mnt/c` and invoked as `wsl -d Ubuntu -- bash -c 'bash /tmp/x.sh'` (a bare `/tmp/x.sh` argument gets rewritten by Git Bash into a Windows path). Anything that must outlive a tool call (executors, long measurements) is started from a detached hidden `wsl.exe` session via a script file (`Start-Process wsl.exe … bash /tmp/detached.sh`, script ends in `sleep infinity`) — DIRECTOR lesson 2026-09-12; the first launch of this run died that way and was relaunched (ts: trail row `run5-relaunch`). State ops: `~/.claude/skills/foreman/scripts/fm.sh log|sync|exec` (verified identical to the vendored copy at run start). No CI on `main` (GitHub Actions billing) — the local CI mirror in each brief's VERIFY is the gate; run `gh run list --branch main` when billing returns.
 7. **Still owed to Steven:** the validation run (solo 180-day ≤390 s; 44-replicate ensemble ≤75 min, `--workers 6 --mode full`, seeds 101–144, hashes expected identical to `jos-ensemble-m6-p4-validation-r8-1a0e9c7037ad`) — launch pattern `docs/runs/2026-09-04-p4-validation-ensemble-report.md`. G24 ratify/revert G22+G23 (default ratified).
 8. **Disposable leftovers in WSL** (delete once G24 is ratified): worktrees `~/jos-{v12-corr3,perf1,perf2,perf3,r5a,r4,integ,integ2,hk,p4,r5b,integ4,prov8,p6,p9,integ4b}-wt`; clones `/tmp/jos-*`; `~/jos-*` briefs/logs; `~/jos-remeasure-20260912/` (raw evidence of the filed report; keep until the report is trail-audited).
-
----
-*Everything below is historical ledger, kept for the trail; nothing in it is live.*
 
 ## Run 4 record — was: `perf-v12-run4` ENDED 2026-09-09; closeout 2026-09-12 (RUN.md rewritten as a cold-start pointer; the pointer text is superseded by the block above) — was: STARTED 2026-09-08 (Steven: "merge things needed. continue with foreman… get things moving… rely on codex"; GitHub Actions billing exhausted → local gate mirror is the evidence, no CI rows). G18 MERGED (`main` carries the perf tranche). Predicates: (1) exit gate PASS via corrective 6 + audit 7 (G21 released) then G19 merge; (2) next perf units — ensemble-audit #3 hash-key suffixes, ROUTE-5 phase 2 — budget 6 impl runs + 2 reviews. Director token economy: terse briefs, tail-only reads.
 
