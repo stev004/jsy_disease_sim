@@ -592,6 +592,10 @@ def verify_m7_artifact(artifact_directory: Path) -> VerifiedScientificArtifact:
     latent = verify_m5_artifact(latent_dirs[0])
     if latent.artifact_id != manifest.latent_bundle_artifact_id:
         raise ValueError("M7 latent artifact identity mismatch")
+    if manifest.diagnostics_status != latent.manifest_payload["diagnostics_status"]:
+        raise ValueError("M7 diagnostics status does not match its latent bundle")
+    if manifest.diagnostics_status != "passed":
+        raise ValueError("M7 artifact diagnostics did not pass")
     if (
         latent.latent_hash != manifest.latent_outcome_hash
         or latent.logical_content_hash != manifest.latent_logical_content_hash
@@ -669,6 +673,8 @@ def verify_m7_artifact(artifact_directory: Path) -> VerifiedScientificArtifact:
 def verify_m8_artifact(artifact_directory: Path) -> VerifiedScientificArtifact:
     artifact_directory = artifact_directory.resolve()
     manifest: TravelArtifactManifest = verify_travel_artifact(artifact_directory)
+    if not manifest.artifact_id.endswith(manifest.artifact_bundle_hash[:12]):
+        raise ValueError("M8 artifact ID does not bind its logical content hash")
     payload = manifest.model_dump(mode="json")
     return VerifiedScientificArtifact(
         "m8_travel",
