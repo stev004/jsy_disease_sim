@@ -16,11 +16,11 @@ from typing import Any, Protocol
 if os.name == "posix":
     import fcntl
 
-    msvcrt = None
+    msvcrt = None  # type: ignore[assignment]
 else:  # pragma: no cover - Windows is not the verification host
-    fcntl = None
+    fcntl = None  # type: ignore[assignment]
     try:
-        import msvcrt
+        import msvcrt  # type: ignore[assignment]
     except ImportError:
         msvcrt = None
 
@@ -80,7 +80,7 @@ class _AdoptedProcess:
             if deadline is not None:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
-                    raise subprocess.TimeoutExpired(self.pid, timeout)
+                    raise subprocess.TimeoutExpired(str(self.pid), timeout or 0.0)
                 time.sleep(min(0.05, remaining))
             else:
                 time.sleep(0.05)
@@ -108,11 +108,29 @@ def default_state_dir() -> Path:
 def _atomic_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    temporary.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    temporary.replace(path)
+    try:
+        with temporary.open("w", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(path)
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        try:
+            descriptor = os.open(path.parent, flags)
+        except OSError:
+            if os.name != "nt":
+                raise
+        else:
+            try:
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+    except BaseException:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def _atomic_text(path: Path, content: str) -> None:
@@ -144,13 +162,17 @@ class JobManager:
         project_root: Path | None = None,
         max_concurrent_jobs: int = 1,
         poll_interval: float = 0.05,
+        heartbeat_stall_timeout: float | None = None,
     ) -> None:
         if max_concurrent_jobs < 1:
             raise ValueError("max_concurrent_jobs must be at least one")
+        if heartbeat_stall_timeout is not None and heartbeat_stall_timeout <= 0:
+            raise ValueError("heartbeat_stall_timeout must be positive when configured")
         self.state_dir = (state_dir or default_state_dir()).resolve()
         self.project_root = (project_root or Path(__file__).resolve().parents[2]).resolve()
         self.max_concurrent_jobs = max_concurrent_jobs
         self.poll_interval = poll_interval
+        self.heartbeat_stall_timeout = heartbeat_stall_timeout
         self.jobs_dir = self.state_dir / "jobs"
         self.jobs_dir.mkdir(parents=True, exist_ok=True)
         self.registry = JobRegistry(self.state_dir / "jobs.sqlite")
@@ -239,7 +261,7 @@ class JobManager:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
             elif lock_kind == "msvcrt":  # pragma: no cover - Windows is not verification host
                 handle.seek(0)
-                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)  # type: ignore[attr-defined]
         finally:
             handle.close()
             if lock_kind == "exclusive":  # pragma: no cover - Windows is not verification host
@@ -348,36 +370,35 @@ class JobManager:
             raise JobSubmissionError("submission engine identity is unavailable")
         envelope = canonical_request_envelope(validated, identity)
         request_hash = sha256_bytes(canonical_json_bytes(envelope))
-        job, existed = self.registry.create_job(
-            job_kind=str(payload["kind"]),
-            canonical_request=envelope,
-            request_hash=request_hash,
-            submitted_engine_commit=str(submitted_commit),
-            submitted_dirty_worktree_flag=submitted_dirty,
-            idempotency_key=idempotency_key,
-        )
-        job_dir = self._job_dir(job["job_id"])
-        if not existed:
-            try:
-                job_dir.mkdir(parents=True, exist_ok=False)
-                _atomic_json(
-                    job_dir / "request.json",
-                    {
-                        **envelope,
-                        "request_hash": request_hash,
-                    },
-                )
-                _atomic_json(
-                    job_dir / "worker_metadata.json", {"api_schema_version": API_SCHEMA_VERSION}
-                )
-            except OSError as exc:
-                # A persisted job without its canonical request cannot safely
-                # run.  Queue cancellation is the only legal terminal move.
-                try:
-                    self.registry.request_cancel(job["job_id"])
-                except Exception:
-                    pass
-                raise JobSubmissionError("job request could not be persisted") from exc
+
+        def persist(job_id: str) -> None:
+            job_dir = self._job_dir(job_id)
+            job_dir.mkdir(parents=True, exist_ok=False)
+            _atomic_json(
+                job_dir / "request.json",
+                {
+                    **envelope,
+                    "request_hash": request_hash,
+                },
+            )
+            _atomic_json(
+                job_dir / "worker_metadata.json", {"api_schema_version": API_SCHEMA_VERSION}
+            )
+
+        try:
+            job, existed = self.registry.create_job(
+                job_kind=str(payload["kind"]),
+                canonical_request=envelope,
+                request_hash=request_hash,
+                submitted_engine_commit=str(submitted_commit),
+                submitted_dirty_worktree_flag=submitted_dirty,
+                idempotency_key=idempotency_key,
+                before_enqueue=persist,
+            )
+        except OSError as exc:
+            # The registry row is inserted only after this callback returns, so
+            # a failed write cannot leave a claimable job behind.
+            raise JobSubmissionError("job request could not be persisted") from exc
         result = self.registry.get_job(job["job_id"])
         result["_already_exists"] = existed
         return result
@@ -441,7 +462,23 @@ class JobManager:
             self._processes[job_id] = process
         self.registry.update_fields(
             job_id,
-            {"worker_pid": process.pid, "last_heartbeat": datetime.now(UTC).isoformat()},
+            {"worker_pid": process.pid},
+        )
+
+    def _fail_missing_request(self, job_id: str) -> None:
+        """Fail a claimed job whose request vanished; this is not transient by construction."""
+
+        self.registry.transition(
+            job_id,
+            "FAILED",
+            phase="failed",
+            fields={
+                "error_code": "request_not_persisted",
+                "error_message": "The persisted job request is missing",
+            },
+            event_type="job_failed",
+            event_message="Job failed because its persisted request is missing",
+            event_metadata={"error_code": "request_not_persisted"},
         )
 
     def _terminate_process(self, job_id: str) -> None:
@@ -453,14 +490,14 @@ class JobManager:
             if os.name == "posix":
                 os.killpg(process.pid, signal.SIGTERM)
             else:  # pragma: no cover - Windows is not the verification host
-                process.terminate()
+                process.terminate()  # type: ignore[attr-defined]
             try:
                 process.wait(timeout=0.75)
             except subprocess.TimeoutExpired:
                 if os.name == "posix":
                     os.killpg(process.pid, signal.SIGKILL)
                 else:
-                    process.kill()
+                    process.kill()  # type: ignore[attr-defined]
                 process.wait(timeout=2)
         except (OSError, subprocess.TimeoutExpired):
             pass
@@ -472,10 +509,21 @@ class JobManager:
             return_code = process.poll()
             if return_code is None:
                 try:
-                    self.registry.update_fields(
-                        job_id, {"last_heartbeat": datetime.now(UTC).isoformat()}
-                    )
-                except JobNotFoundError:
+                    job = self.registry.get_job(job_id)
+                    if self._heartbeat_is_stale(job):
+                        self.registry.transition(
+                            job_id,
+                            "INTERRUPTED",
+                            phase="interrupted",
+                            fields={
+                                "error_code": "worker_stalled",
+                                "error_message": "Worker stopped sending heartbeats",
+                            },
+                            event_type="job_stalled",
+                            event_message="Worker interrupted after heartbeat stall",
+                        )
+                        self._terminate_process(job_id)
+                except (JobNotFoundError, InvalidJobTransitionError):
                     pass
                 continue
             with self._process_lock:
@@ -511,6 +559,21 @@ class JobManager:
             except (JobNotFoundError, InvalidJobTransitionError):
                 pass
 
+    def _heartbeat_is_stale(self, job: dict[str, Any]) -> bool:
+        timeout = self.heartbeat_stall_timeout
+        if timeout is None or job.get("state") != "RUNNING":
+            return False
+        heartbeat = job.get("last_heartbeat") or job.get("started_at")
+        if not isinstance(heartbeat, str):
+            return False
+        try:
+            timestamp = datetime.fromisoformat(heartbeat)
+        except ValueError:
+            return False
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        return (datetime.now(UTC) - timestamp).total_seconds() >= timeout
+
     def _bound_logs(self, job_id: str, *, maximum_bytes: int = 1_048_576) -> None:
         """Keep only a bounded diagnostic tail for each completed worker."""
 
@@ -541,6 +604,10 @@ class JobManager:
                 job = self.registry.claim_next_queued()
                 if job is None:
                     break
+                job_id = str(job["job_id"])
+                if not (self._job_dir(job_id) / "request.json").is_file():
+                    self._fail_missing_request(job_id)
+                    continue
                 try:
                     self._spawn(job)
                 except Exception as exc:
