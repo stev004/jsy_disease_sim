@@ -2,13 +2,13 @@
 
 ## START HERE (cold start, any model)
 1. Read `.claude/DIRECTOR.md` in full → `.claude/FRONTIER.md` → `.claude/GATES.md` (open: **G25** merge run-5 batch `84b9676`, default merge; G24 default ratified; G5) → `tail -12 .claude/decisions.tsv`.
-2. **Predicate (run 6):** ROUTE-8 (snapshot-cache bound truthful + build-safe), DATA-5 + DATA-4 (travel evidence de-duplication + one-shot episode partitions) and the jobkw cleanup landed on reviewed branches with byte-identical M4/M8 evidence; merge parked as a gate. **Budget:** 4 implementation runs + 1 Sol review. Used so far: 3 first attempts (r8c, trav, jobkw); jobkw KEPT.
+2. **Predicate (run 6):** ROUTE-8 (snapshot-cache bound truthful + build-safe), DATA-5 + DATA-4 (travel evidence de-duplication + one-shot episode partitions) and the jobkw cleanup landed on reviewed branches with byte-identical M4/M8 evidence; merge parked as a gate. **Budget:** 4 implementation runs + 1 Sol review. Used so far: 3 first attempts (r8c, trav, jobkw); jobkw and trav KEPT; `v121/integration-run6` started in `~/jos-integ6-wt` off `84b9676` with jobkw + trav merged (ts: trail row `integ6-2units`), r8c pending.
 3. **Units:**
 
 | unit | status | worktree | branch | brief / log / report |
 |---|---|---|---|---|
 | r8c | IN FLIGHT (luna@xhigh, pid 67637) | `~/jos-r8c-wt` | `v121/route8-cache-bound` (off origin/main `c7d3876`, code 6e9b0e4) | `~/jos-r8c-brief.md` · `~/jos-r8c.log` · `~/jos-r8c.last.md` |
-| trav | IN FLIGHT (luna@xhigh, pid 68162) | `~/jos-trav-wt` | `v121/travel-exactness` (same base) | `~/jos-trav-brief.md` · `~/jos-trav.log` · `~/jos-trav.last.md` |
+| trav | **KEPT** @ `52f46d8c59b1f58e5c00161443f386413e1000c7` (ts: trail row `trav-kept`; 294,979 tokens; `docs/runs/2026-09-12-travel-exactness-luna-report.md`; route_edge_history streaming NOT done, disclosed) | `~/jos-trav-wt` | `v121/travel-exactness` (same base) | `~/jos-trav-brief.md` · `~/jos-trav.log` · `~/jos-trav.last.md` |
 | jobkw | **KEPT** @ `a17009c2bde22502677a8117316378cfac114d0c` (ts: trail row `jobkw-kept`; 78,325 tokens; `docs/runs/2026-09-12-jobkw-cleanup-luna-report.md`) | `~/jos-jobkw-wt` | `v121/jobkw-cleanup` (off the reviewed run-5 integration head `84b9676`) | filed |
 
    Launcher note: `/tmp/launch.sh` appends `· retry 1` to every first-attempt TASK line (cosmetic); the trail rows are the retry count.
