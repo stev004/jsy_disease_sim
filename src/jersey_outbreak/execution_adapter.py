@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import os
 import platform
-import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,6 +30,7 @@ from .outbreak_runner import default_run_config, load_parameter_set, run_outbrea
 from .outbreak_schemas import OutbreakRunConfig, RespiratoryParameterSet
 from .parent_build import build_parent
 from .population_schemas import PopulationMode
+from .provenance import _git_metadata
 from .scientific_verification import verify_scientific_artifact
 from .travel import TravelRunResult
 from .travel_artifacts import write_travel_artifact
@@ -45,27 +45,10 @@ class AdapterResult:
     artifacts: tuple[dict[str, Any], ...]
 
 
-def _git_identity(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=root, check=False, capture_output=True, text=True
-        )
-        status = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        return commit.stdout.strip() or None, bool(status.stdout.strip())
-    except OSError:
-        return None, True
-
-
 def observed_engine_identity(root: Path) -> dict[str, Any]:
     """Return provenance captured by the worker, rather than copied from HTTP."""
 
-    commit, dirty = _git_identity(root)
+    commit, dirty = _git_metadata(root)
     return {
         "engine_git_commit": commit,
         "dirty_worktree_flag": dirty,

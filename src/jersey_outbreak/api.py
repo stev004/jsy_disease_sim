@@ -6,7 +6,6 @@ import csv
 import json
 import math
 import os
-import subprocess
 from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
@@ -62,6 +61,7 @@ from .network_schemas import ROUTE_FAMILIES
 from .observation_schemas import M6_OBSERVATION_ARTIFACT_SCHEMA_VERSION
 from .outbreak_schemas import M5_ARTIFACT_SCHEMA_VERSION, ROUTE_IDS
 from .population_schemas import DEFAULT_MODE_TARGETS
+from .provenance import _git_metadata
 from .starsim_adapter import SUPPORTED_STARSIM_VERSION
 from .travel_artifacts import M8_ARTIFACT_SCHEMA_VERSION
 from .travel_schemas import TRAVEL_ROUTE_IDS, TravelMode
@@ -75,23 +75,6 @@ def _safe_validation_errors(exc: ValidationError | RequestValidationError) -> li
     """Make Pydantic issue context JSON-safe without exposing a traceback."""
 
     return json.loads(json.dumps(exc.errors(), default=str))
-
-
-def _git_identity(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=False
-        )
-        status_result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        return commit.stdout.strip() or None, bool(status_result.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def _public_job(manager: JobManager, job: dict[str, Any]) -> dict[str, Any]:
@@ -409,7 +392,7 @@ def create_app(
         response_model=CapabilitiesResponse,
     )
     def capabilities() -> CapabilitiesResponse:
-        commit, dirty = _git_identity(root)
+        commit, dirty = _git_metadata(root)
         return CapabilitiesResponse.model_validate(
             {
                 "api_version": API_VERSION,

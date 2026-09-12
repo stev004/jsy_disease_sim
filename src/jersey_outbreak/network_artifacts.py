@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import platform
-import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -18,33 +17,13 @@ from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .network_generator import GeneratedNetworks
 from .network_schemas import NetworkArtifactManifest
 from .population_artifacts import portable_artifact_path
+from .provenance import _git_metadata
 
 
 @dataclass(frozen=True)
 class NetworkArtifact:
     artifact_directory: Path
     manifest: NetworkArtifactManifest
-
-
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        status = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        return commit.stdout.strip() or None, bool(status.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def _write_table(path: Path, rows: list[dict[str, Any]], schema: pa.Schema) -> None:
