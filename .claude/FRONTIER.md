@@ -2,7 +2,7 @@
 
 *Snapshot, not history. Rewritten each time the frontier moves. Lives on `main` (folded from `docs/frontier` 2026-09-01; that branch is now historical). Cold-start: read this, then `docs/handoff/2026-08-31-sol-handoff.md` for deep history.*
 
-**Updated:** 2026-09-12 (foreman run v121-run5, director Fable; machine-stamped detail in `.claude/decisions.tsv` rows `run-start` (2026-09-12) → `g26-parked`) · **Updated by:** Fable
+**Updated:** 2026-09-12 (foreman runs v121-run5 and v121-run6, director Fable; machine-stamped detail in `.claude/decisions.tsv` rows from the first `run-start` of 2026-09-12 → `trail-audit-6-done`) · **Updated by:** Fable
 
 ## Where the project is
 
