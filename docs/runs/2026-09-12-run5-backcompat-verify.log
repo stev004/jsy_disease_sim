@@ -1,0 +1,28 @@
+base=archive of ef26e1350b3e0a53c436036b446ffeb819f4a1cd (code 6e9b0e4) head=84b96763d9c5d6c85839218aba9d3876b96c8f7d 2026-09-12T18:37:59Z
+== base: M5 ci seed 123 7d
+Rebuilding font cache, please be patient...
+Font cache rebuilt in folder: /home/steven/.cache/matplotlib
+
+Note: rebuilding the font cache only happens once on first import, or set the environment variable STARSIM_INSTALL_FONTS=0 to disable.
+{"artifact_directory": "/tmp/jos-backcompat/m5/jos-outbreak-m5-ci-seed-123-9c3e7f998ea8", "artifact_id": "jos-outbreak-m5-ci-seed-123-9c3e7f998ea8", "attribution_totals": {"imported": 0, "local": 43, "route:bus": 0, "route:care_resident": 0, "route:care_staff": 0, "route:community_indoor": 6, "route:community_outdoor": 1, "route:household": 19, "route:school_class": 15, "route:school_cross_class": 0, "route:shared_vehicle": 0, "route:workplace_team": 2, "route:workplace_transient": 0, "seeded": 10, "total_events": 53}, "diagnostics_status": "passed", "logical_content_hash": "9c3e7f998ea8642899419686023db79f2f6d77b32134e865937db89d7f108ab2", "m4_artifact_id": "jos-networks-m4-ci-seed-123-4768b9613c93", "mode": "ci", "runtime_seconds": 1.5724318140000832, "starsim_version": "3.5.2", "target_population": 3000}
+== base: M8 ci seed 123 7d
+{"artifact_directory": "/tmp/jos-backcompat/m8/jos-travel-m8-ci-seed-123-cd6a1c5b5c37", "artifact_id": "jos-travel-m8-ci-seed-123-cd6a1c5b5c37", "diagnostics_status": "passed", "latent_outcome_hash": "77fee21a16fb9bd9b23c582dc4ee3500b11d4caf2e0093aa24d1855ff311698f", "runtime_seconds": 2.88265165699886, "scenario_hash": "5921ad1d880d0025b309b06b590beeb503a84ee7ccec454b75b0fbff3eee5d72", "seasonality_hash": "3ff22ff0ae0b29aaa4437168b2cb92f9df4b182ac4267c3427577a8b23941255", "temporary_network_hash": "4ada33ca9d0e28799f18dda1ee02e6017832ff71219d467f92b51eafcfb27966", "travel_config_hash": "89a22951d1e2d5092a712e050c752ad0f9d7399178dd532cff4c7db4d3b13a3c", "visitor_capacity": 9, "visitor_count": 19, "visitor_episode_hash": "1e96ae682f93e7855913a82d2f57096062553e81d333ae76f604eee84ef6c32c"}
+== base: M7 via ci_relocation_check (writes outputs/interventions)
+{"artifact_directory": "/tmp/jos-review5-base/outputs/interventions/jos-intervention-m7-ci-seed-123-c0be3d419f32", "artifact_id": "jos-intervention-m7-ci-seed-123-c0be3d419f32", "diagnostics_status": "passed", "logical_content_hash": "1e9f01ed1d770bbeb592c3d0c69add44040d2e80339b93b884b24701f4ed8a99", "runtime_seconds": 3.01165646499976, "scenario_hash": "7158b33cb7eba93112b1326aacc253d19136a4a85f70c7c4245113a26478665a", "scenario_id": "m7-baseline", "travel_controls": "DEFERRED TO M8"}
+verifier success: m7_intervention jos-intervention-m7-ci-seed-123-c0be3d419f32
+== head verify bundle-selftest jos-outbreak-m5-ci-seed-123-9c3e7f998ea8
+error: artifact is not in a <bundle>/artifacts/ layout; provide --transcript-dir
+-- VERIFY FAILED rc=2 jos-outbreak-m5-ci-seed-123-9c3e7f998ea8
+== head verify bundle-selftest jos-travel-m8-ci-seed-123-cd6a1c5b5c37
+error: artifact is not in a <bundle>/artifacts/ layout; provide --transcript-dir
+-- VERIFY FAILED rc=2 jos-travel-m8-ci-seed-123-cd6a1c5b5c37
+BACKCOMPAT_DONE 2026-09-12T18:38:31Z
+== direct verify_scientific_artifact under head 84b9676 2026-09-12T18:39:46Z
+VERIFY OK   jos-outbreak-m5-ci-seed-123-9c3e7f998ea8  type=m5_outbreak id=jos-outbreak-m5-ci-seed-123-9c3e7f998ea8
+VERIFY OK   jos-travel-m8-ci-seed-123-cd6a1c5b5c37  type=m8_travel id=jos-travel-m8-ci-seed-123-cd6a1c5b5c37
+VERIFY FAIL   FileNotFoundError: [Errno 2] No such file or directory: '/home/steven/jos-integ5-wt/manifest.json'
+BACKCOMPAT_RESULT=FAIL
+== base: M7 scenario run (configs/scenarios/m7_baseline.yaml)
+{"artifact_directory": "/tmp/jos-backcompat/m7/jos-intervention-m7-ci-seed-123-7e16bcd2ede0", "artifact_id": "jos-intervention-m7-ci-seed-123-7e16bcd2ede0", "diagnostics_status": "passed", "logical_content_hash": "9c3e7f998ea8642899419686023db79f2f6d77b32134e865937db89d7f108ab2", "runtime_seconds": 2.6739086600009614, "scenario_hash": "abfe7b69de064f16f1c6e435a0edecfe261dfc9dbe14230fe6218b8c43ee1255", "scenario_id": "m7-baseline", "travel_controls": "DEFERRED TO M8"}
+VERIFY OK   jos-intervention-m7-ci-seed-123-7e16bcd2ede0  type=m7_intervention id=jos-intervention-m7-ci-seed-123-7e16bcd2ede0
+BACKCOMPAT_M7=PASS
