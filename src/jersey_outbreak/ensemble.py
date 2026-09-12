@@ -566,15 +566,20 @@ def _summary_rows(
     *,
     requested_replicates: int | None = None,
     horizon: tuple[str, ...] | None = None,
+    completed_grid: tuple[dict[str, Any], ...] | None = None,
 ) -> tuple[dict[str, Any], ...]:
     successful_replicates = len(trajectories)
     requested = requested_replicates if requested_replicates is not None else successful_replicates
     failed_replicates = max(0, requested - successful_replicates)
-    grid = _completed_grid_rows(
-        trajectories,
-        successful_seeds=tuple(sorted(trajectories)),
-        failed_seeds=(),
-        horizon=horizon,
+    grid = (
+        tuple(row for row in completed_grid if row["seed"] in trajectories)
+        if completed_grid is not None
+        else _completed_grid_rows(
+            trajectories,
+            successful_seeds=tuple(sorted(trajectories)),
+            failed_seeds=(),
+            horizon=horizon,
+        )
     )
     grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
     for row in grid:
@@ -1096,6 +1101,7 @@ def run_ensemble(
         config.lower_quantile,
         config.upper_quantile,
         requested_replicates=len(config.replicate_seeds),
+        completed_grid=replicate_grid,
     )
     successful = sum(output.status == "passed" for output in outputs)
     failed = len(outputs) - successful
