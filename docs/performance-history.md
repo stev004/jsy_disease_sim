@@ -52,6 +52,7 @@
 
 ## Context and caveats
 - 2026-09-08: the Astra tranche 2 (five rows above) merged via G18 (`main` merge of `0dec469`). The headline 180-day/ensemble figures are NOT yet remeasured on the merged tree: owed = quiet-window 30-day timing, then the authorised validation run (Astra predicate: solo 180-day ≤390 s; 44-replicate ensemble ≤75 min at six workers).
+- 2026-09-12: **quiet-window 30-day remeasure on the merged tree DONE** (`docs/runs/2026-09-12-quiet-window-30d-remeasure.md`): full mode seed 101, 30 days, cached parents, idle box, three repeats 69.0 / 61.9 / 59.2 s wall (~60 s warm; 2.4→1.5 GB max RSS cold→warm), `logical_content_hash bbca6028…6e8c81` identical to the PERF-1 pin. Previous: 73.2 s loaded, 53.9 s Astra prototype. The 180-day solo and 44-replicate ensemble figures remain owed to the authorised validation run.
 - Baseline numbers exclude interventions/travel. Stage B (2026-09-04) measured the intervention tax at +1.4 (empty manager) to +4.7 s/day (`m7_combined`); R8 D-1 memoization recovered only −6.5% of it — the numpy vectorization (DISEASE-1 step 3, roadmap) remains the open M7 prize. M7-scenario replicates therefore run ~1.5–2.5× the baseline time today.
 - Every optimization above shipped behind the same regime: measured hotspot first, byte-identical outputs (edge fingerprints / logical hashes / bit-level hazards) or it dies, full suite + CI, immutable evidence filed in `docs/runs/`.
 - The complete decision trail is `.claude/decisions.tsv`; the forward plan is `docs/roadmap.md`.
