@@ -109,14 +109,32 @@ class TravelPlan:
     visitor_hash: str
     reconciliation: dict[str, Any] = field(default_factory=dict)
     departure_reconciliation: dict[str, int] = field(default_factory=dict)
+    _visitor_episode_partition: tuple[TravelEpisode, ...] = field(
+        init=False, repr=False, compare=False
+    )
+    _returning_resident_episode_partition: tuple[TravelEpisode, ...] = field(
+        init=False, repr=False, compare=False
+    )
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "_visitor_episode_partition",
+            tuple(item for item in self.episodes if item.visitor_uid is not None),
+        )
+        object.__setattr__(
+            self,
+            "_returning_resident_episode_partition",
+            tuple(item for item in self.episodes if item.resident_agent_id is not None),
+        )
 
     @property
     def visitor_episodes(self) -> tuple[TravelEpisode, ...]:
-        return tuple(item for item in self.episodes if item.visitor_uid is not None)
+        return self._visitor_episode_partition
 
     @property
     def returning_resident_episodes(self) -> tuple[TravelEpisode, ...]:
-        return tuple(item for item in self.episodes if item.resident_agent_id is not None)
+        return self._returning_resident_episode_partition
 
 
 @dataclass(frozen=True, order=True)
@@ -955,10 +973,14 @@ class TravelManager:
         self._all_resident_uids = set(range(len(base_generated.agent_ids)))
         self.event_log: list[dict[str, Any]] = []
         self.intervention_state: list[dict[str, Any]] = []
-        self.route_edge_history: dict[tuple[int, str], list[dict[str, Any]]] = {}
+        # Compatibility placeholder: flat artifact rows are derived from the
+        # retained route evidence at output time, never stored a second time.
         self.temporary_edge_history: list[dict[str, Any]] = []
         self._active_episode_by_uid: dict[int, TravelEpisode] = {}
-        self._identity_by_uid_ti: dict[tuple[int, int], dict[str, Any]] = {}
+        self._identity_intervals_by_uid: dict[int, list[tuple[int, int, dict[str, Any]]]] = (
+            defaultdict(list)
+        )
+        self.route_edge_history: dict[tuple[int, str], list[dict[str, Any]]] = {}
         self._traveller_vaccine_effective_from: dict[str, int] = {}
         self._traveller_vaccine_until: dict[str, int | None] = {}
         self._processed_arrival_episodes: set[tuple[str, str]] = set()
@@ -989,9 +1011,12 @@ class TravelManager:
                 self._household_members[str(row["household_id"])].append(str(row["agent_id"]))
         self._visitor_by_id = {row["visitor_uid"]: row for row in plan.visitor_records}
         initial_away = {
-            agent_id
-            for agent_id in self.base_generated.agent_ids
-            if not self._resident_present_on(agent_id, self.start_date)
+            str(episode.resident_agent_id)
+            for episode in self.plan.returning_resident_episodes
+            if episode.resident_agent_id is not None
+            and episode.absence_start_date is not None
+            and episode.return_date is not None
+            and episode.absence_start_date <= self.start_date < episode.return_date
         }
         self.present_resident_ids.difference_update(initial_away)
         self.away_resident_ids.update(initial_away)
@@ -1069,7 +1094,14 @@ class TravelManager:
     def event_identity(self, uid: int, ti: int, prefix: str) -> dict[str, Any]:
         """Resolve an actor at event time; never consult the slot's later occupant."""
 
-        identity = self._identity_by_uid_ti.get((uid, ti))
+        identity = next(
+            (
+                identity
+                for start_ti, end_ti, identity in self._identity_intervals_by_uid.get(uid, ())
+                if start_ti <= ti < end_ti
+            ),
+            None,
+        )
         if identity is None and uid < len(self.base_generated.agent_ids):
             agent_id = self.base_generated.agent_ids[uid]
             identity = {
@@ -1116,15 +1148,6 @@ class TravelManager:
             episode.arrival_date == when
             if episode.traveller_type == "DAY_VISITOR"
             else episode.arrival_date <= when < episode.departure_date
-        )
-
-    def _resident_present_on(self, agent_id: str, when: date) -> bool:
-        return not any(
-            item.resident_agent_id == agent_id
-            and item.absence_start_date is not None
-            and item.return_date is not None
-            and item.absence_start_date <= when < item.return_date
-            for item in self.plan.returning_resident_episodes
         )
 
     def _append_event(self, action: str, episode: TravelEpisode, **extra: Any) -> None:
@@ -1392,7 +1415,11 @@ class TravelManager:
         self.active_visitor_ids.add(episode.visitor_uid)
         identity = self._episode_identity(episode, uid)
         self._active_episode_by_uid[uid] = episode
-        self._identity_by_uid_ti[(uid, self.current_ti)] = identity
+        start_ti = (episode.arrival_date - self.start_date).days
+        end_ti = (episode.departure_date - self.start_date).days
+        if episode.traveller_type == "DAY_VISITOR":
+            end_ti = start_ti + 1
+        self._identity_intervals_by_uid[uid].append((start_ti, end_ti, identity))
         self.sim.people.alive[uid] = True
         visitor = self._visitor_by_id[episode.visitor_uid]
         self.sim.people.age[uid] = float(visitor["age"])
@@ -1583,11 +1610,6 @@ class TravelManager:
         # this declared pre-network/pre-transmission arrival phase.
         self._process_test_results()
         self._process_quarantines()
-        for visitor_id in self.active_visitor_ids:
-            uid = self.visitor_slot_by_id[visitor_id]
-            self._identity_by_uid_ti[(uid, self.current_ti)] = self._episode_identity(
-                self._episode_by_person[visitor_id], uid
-            )
         self._sync_traveller_modifiers()
         planned_away = int(self.plan.daily_stream[self.current_ti]["resident_away"])
         if len(self.away_resident_ids) != planned_away:
@@ -1925,35 +1947,7 @@ class TravelManager:
 
         rows: list[dict[str, Any]] = []
         for (ti, route_id), edges in sorted(self.route_edge_history.items()):
-            when = self.start_date + timedelta(days=ti)
-            for edge in edges:
-                p1_uid = self.uid_by_id[str(edge["p1"])]
-                p2_uid = self.uid_by_id[str(edge["p2"])]
-                p1 = self.event_identity(p1_uid, ti, "p1")
-                p2 = self.event_identity(p2_uid, ti, "p2")
-                visitor_ids = [
-                    item
-                    for item in (p1.get("p1_visitor_id"), p2.get("p2_visitor_id"))
-                    if item is not None
-                ]
-                visitor = self._visitor_by_id.get(str(visitor_ids[0])) if visitor_ids else None
-                rows.append(
-                    {
-                        "date": when.isoformat(),
-                        "time_index": ti,
-                        "route_id": route_id,
-                        **p1,
-                        **p2,
-                        "edge_weight": float(edge["weight"]),
-                        "duration_days": int(edge.get("persistence_days", 1)),
-                        "travel_party_id": visitor.get("travel_party_id") if visitor else None,
-                        "accommodation_id": visitor.get("accommodation_id") if visitor else None,
-                        "transport_type": (
-                            visitor.get("local_transport_type") if visitor else None
-                        ),
-                        "transport_unit_id": edge.get("transport_unit_id"),
-                    }
-                )
+            rows.extend(self._temporary_edge_row(ti, route_id, edge) for edge in edges)
         return sorted(
             rows,
             key=lambda row: (
@@ -1963,6 +1957,35 @@ class TravelManager:
                 row["p2_runtime_slot_uid"],
             ),
         )
+
+    def _temporary_edge_row(self, ti: int, route_id: str, edge: dict[str, Any]) -> dict[str, Any]:
+        when = self.start_date + timedelta(days=ti)
+        p1_uid = self.uid_by_id[str(edge["p1"])]
+        p2_uid = self.uid_by_id[str(edge["p2"])]
+        p1 = self.event_identity(p1_uid, ti, "p1")
+        p2 = self.event_identity(p2_uid, ti, "p2")
+        visitor_ids = [
+            item
+            for item in (
+                p1.get("p1_visitor_id"),
+                p2.get("p2_visitor_id"),
+            )
+            if item is not None
+        ]
+        visitor = self._visitor_by_id.get(str(visitor_ids[0])) if visitor_ids else None
+        return {
+            "date": when.isoformat(),
+            "time_index": ti,
+            "route_id": route_id,
+            **p1,
+            **p2,
+            "edge_weight": float(edge["weight"]),
+            "duration_days": int(edge.get("persistence_days", 1)),
+            "travel_party_id": visitor.get("travel_party_id") if visitor else None,
+            "accommodation_id": visitor.get("accommodation_id") if visitor else None,
+            "transport_type": visitor.get("local_transport_type") if visitor else None,
+            "transport_unit_id": edge.get("transport_unit_id"),
+        }
 
     def route_view(self) -> GeneratedNetworks:
         """Create a shallow route view while retaining the immutable M4 hash."""
@@ -2486,9 +2509,9 @@ def run_travel_outbreak(
     )
     for index, when in enumerate(_dates(config.start_date, config.duration_days)):
         for route_id in TRAVEL_ROUTE_IDS:
-            edges = manager.route_edge_history.get(
-                (index, route_id), manager.route_edges(route_id, when)
-            )
+            edges = manager.route_edge_history.get((index, route_id))
+            if edges is None:
+                edges = manager.route_edges(route_id, when)
             route_events = event_by_route[(_iso(when), route_id)]
             direction_counts = Counter(event["transmission_direction"] for event in route_events)
             resident_endpoints = sum(
@@ -2705,7 +2728,14 @@ def run_travel_outbreak(
             "visitor_namespace": "visitor-<seed>-<counter>",
             "slot_reuse_count": len(plan.visitor_records)
             - len({slot for _visitor, slot in plan.visitor_slot_indices}),
-            "event_time_identity_rows": len(manager._identity_by_uid_ti),
+            "event_time_identity_rows": sum(
+                max(
+                    0,
+                    min(manager.duration_days, end_ti) - max(0, start_ti),
+                )
+                for intervals in manager._identity_intervals_by_uid.values()
+                for start_ti, end_ti, _identity in intervals
+            ),
             "final_uid_to_visitor_mapping_forbidden": True,
             "inactive_slot_audit": inactive_slot_audit,
         },

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -106,6 +107,52 @@ def test_departure_stops_active_visitor_routes(m6_network, m6_base_config, m6_pa
     assert any(event["action"] == "visitor_departed" for event in result.visitor_events)
     jan7 = [row for row in result.daily_travel_route if row["date"] == "2025-01-07"]
     assert all(row["active_edges"] == 0 for row in jan7)
+
+
+def test_identity_intervals_match_base_event_time_mapping(
+    monkeypatch, m6_network, m6_base_config, m6_parameters
+) -> None:
+    """The fixture is the base-tree mapping for this two-episode CI run."""
+
+    expected = json.loads(
+        (Path(__file__).parent / "fixtures" / "base_travel_identity_ci.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    created: list[TravelManager] = []
+    base_manager = travel_module.TravelManager
+
+    class RecordingTravelManager(base_manager):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            created.append(self)
+
+    monkeypatch.setattr(travel_module, "TravelManager", RecordingTravelManager)
+    result = run_travel_outbreak(
+        m6_network,
+        m6_base_config.model_copy(update={"duration_days": 5}),
+        m6_parameters,
+        _small_travel_config(
+            daily_arrivals={"2025-01-06:AIRPORT": 2},
+            stay_duration_days=3,
+            stay_duration_jitter_days=0,
+        ),
+    )
+    manager = created[-1]
+    assert len(result.travel_plan.visitor_episodes) == expected["episode_count"]
+    assert result.travel_plan.visitor_episodes is result.travel_plan.visitor_episodes
+    assert (
+        sum(len(intervals) for intervals in manager._identity_intervals_by_uid.values())
+        == (expected["episode_count"])
+    )
+    for key, identity in expected["identity"].items():
+        uid, ti = (int(value) for value in key.split(":"))
+        resolved = manager.event_identity(uid, ti, "event")
+        assert {
+            name.removeprefix("event_"): value
+            for name, value in resolved.items()
+            if name.removeprefix("event_") in identity
+        } == identity
 
 
 def test_infectious_arrival_testing_and_quarantine_are_prospective(
@@ -261,6 +308,26 @@ def test_returning_resident_absence_is_separate_from_visitor_presence(m6_network
     assert plan.returning_resident_episodes[0].absence_start_date == date(2025, 1, 5)
     assert [row["resident_away"] for row in plan.daily_stream] == [1, 1, 0, 0]
     assert plan.returning_resident_episodes[0].home_household_id is not None
+    manager = TravelManager(
+        m6_network,
+        plan,
+        config,
+        seed=123,
+        start_date=date(2025, 1, 6),
+        duration_days=4,
+    )
+    base_initial_present = {
+        agent_id
+        for agent_id in m6_network.agent_ids
+        if not any(
+            episode.resident_agent_id == agent_id
+            and episode.absence_start_date is not None
+            and episode.return_date is not None
+            and episode.absence_start_date <= date(2025, 1, 6) < episode.return_date
+            for episode in plan.returning_resident_episodes
+        )
+    }
+    assert manager.away_resident_ids == set(m6_network.agent_ids) - base_initial_present
 
 
 def test_returning_resident_is_absent_from_routes_until_return(
