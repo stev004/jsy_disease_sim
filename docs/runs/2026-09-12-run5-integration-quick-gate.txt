@@ -1,0 +1,9 @@
+Director quick gate on v121/integration-run5 @ 34eb08f2e5831503801ad15dc3232fc524de0664 (three units, before job r2), 2026-09-12, run from ~/jos-integ5-wt via /tmp/resolve.sh.
+Provenance: this is the director's tool-call output captured in the session transcript, filed after the terra trail audit (Attention 8) noted no saved transcript existed; it is not a machine log.
+  integration head 34eb08f2e5831503801ad15dc3232fc524de0664
+  compileall-ok
+  All checks passed!            (uv run ruff check .)
+  230 files already formatted   (uv run ruff format --check .)
+  uv run pytest -q tests/test_perf10_grid_once.py tests/test_v121_prov_verifier_fixes.py tests/test_prov_helpers.py tests/test_b01_portable_artifacts.py tests/test_m9_api.py
+  39 passed, 2 warnings in 21.50s
+Superseded as merge evidence by the full mirror on 84b9676 (docs/runs/2026-09-12-run5-integration-ci-mirror.log) and the Sol review (docs/audits/2026-09-12-run5-v121-review-sol-PASS.md).
