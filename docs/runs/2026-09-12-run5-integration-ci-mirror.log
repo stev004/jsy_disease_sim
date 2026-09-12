@@ -1,0 +1,67 @@
+head=84b96763d9c5d6c85839218aba9d3876b96c8f7d 2026-09-12T18:06:56Z
+== uv sync --frozen
+Checked 75 packages in 0.88ms
+-- ok
+== uv lock --check
+Resolved 77 packages in 0.75ms
+-- ok
+== compileall
+-- ok
+== pytest
+........................................................................ [ 18%]
+........................................................................ [ 36%]
+........................................................................ [ 55%]
+........................................................................ [ 73%]
+........................................................................ [ 92%]
+..............................                                           [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-integ5-wt/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py::test_c1_starsim_identity_is_exact
+tests/test_m8_1_travel_integrity.py::test_travel_diagnostics_detect_resident_id_mutation
+tests/test_m9_1_job_integrity.py::test_restart_accepts_only_complete_valid_comparison
+tests/test_m9_1_job_integrity.py::test_restart_accepts_only_complete_valid_comparison
+tests/test_perf9_parent_reuse.py::test_execution_adapter_reuses_job_parent_across_invocations
+tests/test_perf9_parent_reuse.py::test_execution_adapter_reuses_job_parent_across_invocations
+tests/test_perf9_parent_reuse.py::test_execution_adapter_reuses_job_parent_across_invocations
+tests/test_v121_prov_verifier_fixes.py::test_m7_diagnostics_status_is_derived
+  /home/steven/jos-integ5-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+390 passed, 9 warnings in 861.89s (0:14:21)
+-- ok
+== ruff check
+All checks passed!
+-- ok
+== ruff format --check
+231 files already formatted
+-- ok
+== mypy
+src/jersey_outbreak/intervention_artifacts.py: error: Duplicate module named "jersey_outbreak.intervention_artifacts" (also at "src/jersey_outbreak/intervention_artifacts.py")
+src/jersey_outbreak/intervention_artifacts.py: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules for more info
+src/jersey_outbreak/intervention_artifacts.py: note: Common resolutions include:
+src/jersey_outbreak/intervention_artifacts.py: note:     a) using `--exclude` to avoid checking one of them,
+src/jersey_outbreak/intervention_artifacts.py: note:     b) adding `__init__.py` somewhere,
+src/jersey_outbreak/intervention_artifacts.py: note:     c) using `--explicit-package-bases` or adjusting `MYPYPATH`
+Found 1 error in 1 file (errors prevented further checking)
+-- FAIL rc=2
+== git diff --check
+-- ok
+== relocation check
+{"artifact_directory": "/home/steven/jos-integ5-wt/outputs/interventions/jos-intervention-m7-ci-seed-123-c0be3d419f32", "artifact_id": "jos-intervention-m7-ci-seed-123-c0be3d419f32", "diagnostics_status": "passed", "logical_content_hash": "1e9f01ed1d770bbeb592c3d0c69add44040d2e80339b93b884b24701f4ed8a99", "runtime_seconds": 2.9736399000003075, "scenario_hash": "7158b33cb7eba93112b1326aacc253d19136a4a85f70c7c4245113a26478665a", "scenario_id": "m7-baseline", "travel_controls": "DEFERRED TO M8"}
+verifier success: m7_intervention jos-intervention-m7-ci-seed-123-c0be3d419f32
+-- ok
+== jos demo
+{"declared_deterministic_outputs": ["seed", "starsim_version", "time_series", "final"], "final": {"cumulative_infections": 37, "n_infected": 0, "n_recovered": 47, "n_susceptible": 53}, "model": "starsim_official_sir_demo", "network": {"n_contacts": 10, "official_starsim_network": true, "type": "RandomNet"}, "population_size": 100, "run_id": "jos-demo-55bc2313fab1", "schema_version": "1.0", "seed": 123, "simulation": {"dt": 1.0, "start": 2000.0, "stop": 2030.0, "unit": "year"}, "starsim_version": "3.5.2", "time_series": {"cumulative_infections": [36, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37], "n_infected": [46, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "n_recovered": [0, 45, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47], "n_susceptible": [54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53], "time_index": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]}, "validation_level": "compatibility_spike"}
+-- ok
+== porcelain
+-- ok
+MIRROR_RESULT=FAIL 2026-09-12T18:21:31Z
+== mypy rerun (deduplicated, 36 modules) 2026-09-12T18:28:57Z
+Success: no issues found in 36 source files
+-- ok
+MIRROR_RESULT=PASS (mypy step re-run with a deduplicated module list; the earlier FAIL was a duplicate-module invocation error in the director script, not a type error) 2026-09-12T18:29:03Z
