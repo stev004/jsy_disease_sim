@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -13,6 +12,7 @@ from pydantic import field_validator
 
 from .contracts import ArtifactRecord, NonEmptyString, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
+from .provenance import _git_metadata
 
 
 class VerificationManifest(StrictModel):
@@ -56,27 +56,6 @@ class VerificationArchive:
 
     archive_directory: Path
     manifest: VerificationManifest
-
-
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        status = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        return commit.stdout.strip() or None, bool(status.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def _artifact_records(directory: Path, paths: tuple[Path, ...]) -> list[ArtifactRecord]:

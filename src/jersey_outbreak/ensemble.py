@@ -8,7 +8,6 @@ import os
 import pickle
 import platform
 import resource
-import subprocess
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -29,6 +28,7 @@ from .observation_schemas import ObservationConfig
 from .outbreak_runner import OutbreakRunResult, run_outbreak
 from .outbreak_schemas import RespiratoryParameterSet
 from .parent_build import build_network, generate_networks
+from .provenance import _git_metadata
 from .scientific_hashes import (
     m6_comparison_logical_hash,
     m6_ensemble_config_hash,
@@ -36,6 +36,7 @@ from .scientific_hashes import (
 )
 
 MetricSemantic = Literal["incidence", "cumulative", "state"]
+MetricType = Literal["int", "float", "bool"]
 CellSemantic = Literal[
     "observed",
     "structural_zero",
@@ -70,6 +71,33 @@ METRIC_SEMANTICS: dict[str, MetricSemantic] = {
     "intervention_vaccine_doses": "incidence",
     "intervention_protection_effective": "incidence",
     "intervention_protection_waned": "incidence",
+}
+
+METRIC_TYPES: dict[str, MetricType] = {
+    "latent_new_infections": "int",
+    "latent_local_infections": "int",
+    "observed_detected_infections": "int",
+    "observed_reported_cases": "int",
+    "latent_cumulative_infections": "int",
+    "latent_attack_rate": "float",
+    "latent_cumulative_incidence_per_capita": "float",
+    "latent_ever_infected_fraction": "float",
+    "latent_prevalence": "float",
+    "intervention_active_agents": "int",
+    "intervention_active_households": "int",
+    "intervention_active_settings": "int",
+    "intervention_route_active": "bool",
+    "intervention_affected_routes": "int",
+    "intervention_affected_residents": "int",
+    "intervention_affected_staff": "int",
+    "intervention_currently_protected": "int",
+    "intervention_new_activations": "int",
+    "intervention_new_releases": "int",
+    "intervention_wfh_entries": "int",
+    "intervention_wfh_exits": "int",
+    "intervention_vaccine_doses": "int",
+    "intervention_protection_effective": "int",
+    "intervention_protection_waned": "int",
 }
 
 DEFAULT_PARENT_RESERVE_BYTES = 3 * 1024**3
@@ -395,22 +423,12 @@ def _run_replicate_job(job: dict[str, Any]) -> ReplicateOutput:
         )
 
 
-def _git_commit_identity(root: Path) -> str | None:
-    """Return the code commit used for checkpoint provenance, when available."""
+def _code_identity(root: Path) -> str | None:
+    """Return commit identity, then the source hash fallback, when available."""
 
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-    except OSError:
-        result = None
-    commit = result.stdout.strip() if result is not None else ""
-    if commit:
-        return commit
+    code_identity, _ = _git_metadata(root)
+    if code_identity:
+        return code_identity
     try:
         return f"source:{sha256_file(Path(__file__))}"
     except OSError:
@@ -886,7 +904,7 @@ def run_ensemble(
     base_config_hash = m6_ensemble_config_hash(config.model_dump(mode="json"))
     m2_hash = generated.m2_input.manifest.logical_content_hash
     m3_hash = generated.m3_input.manifest.logical_content_hash
-    code_identity = _git_commit_identity(source_root)
+    code_identity = _code_identity(source_root)
     expected_provenance = {
         seed: _replicate_provenance(
             seed=seed,
