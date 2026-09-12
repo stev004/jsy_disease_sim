@@ -6,7 +6,7 @@ import json
 import sqlite3
 import threading
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -81,6 +81,7 @@ class JobRegistry:
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys=ON")
         connection.execute("PRAGMA busy_timeout=30000")
+        connection.execute("PRAGMA synchronous=FULL")
         try:
             yield connection
         finally:
@@ -96,7 +97,7 @@ class JobRegistry:
                 )
             if version == 0:
                 connection.execute("PRAGMA journal_mode=WAL")
-                connection.execute("PRAGMA synchronous=NORMAL")
+                connection.execute("PRAGMA synchronous=FULL")
                 connection.executescript(
                     """
                     CREATE TABLE jobs (
@@ -186,6 +187,7 @@ class JobRegistry:
         submitted_engine_commit: str,
         submitted_dirty_worktree_flag: bool,
         idempotency_key: str | None = None,
+        before_enqueue: Callable[[str], None] | None = None,
     ) -> tuple[dict[str, Any], bool]:
         """Create a queued job, returning ``(job, already_existed)``."""
 
@@ -223,6 +225,8 @@ class JobRegistry:
                     if row is None:  # pragma: no cover - protected by foreign keys
                         raise RegistryError("idempotency key points to a missing job")
                     return _decode(row), True
+            if before_enqueue is not None:
+                before_enqueue(job_id)
             connection.execute(
                 """
                 INSERT INTO jobs (
@@ -388,7 +392,6 @@ class JobRegistry:
             "error_code",
             "error_message",
             "error_details",
-            "last_heartbeat",
         }
         forbidden = sorted(set(fields) - allowed_fields)
         if forbidden:
@@ -495,7 +498,9 @@ class JobRegistry:
             raise JobNotFoundError(job_id)
         return _decode(result)
 
-    def claim_next_queued(self) -> dict[str, Any] | None:
+    def claim_next_queued(
+        self, *, precondition: Callable[[dict[str, Any]], bool] | None = None
+    ) -> dict[str, Any] | None:
         """Claim exactly one FIFO job under a write transaction."""
 
         with self._lock, self._connection() as connection:
@@ -507,14 +512,17 @@ class JobRegistry:
             if row is None:
                 connection.commit()
                 return None
+            if precondition is not None and not precondition(_decode(row)):
+                connection.commit()
+                return None
             job_id = row["job_id"]
             started_at = utc_now()
             connection.execute(
                 """
-                UPDATE jobs SET state='RUNNING', phase='preparing', started_at=?,
-                    last_heartbeat=? WHERE job_id=? AND state='QUEUED'
+                UPDATE jobs SET state='RUNNING', phase='preparing', started_at=?
+                    WHERE job_id=? AND state='QUEUED'
                 """,
-                (started_at, started_at, job_id),
+                (started_at, job_id),
             )
             if connection.execute("SELECT changes()").fetchone()[0] != 1:
                 connection.rollback()
@@ -593,7 +601,6 @@ class JobRegistry:
             "scenario_hash",
             "latent_hash",
             "bundle_hash",
-            "last_heartbeat",
         }
         missing = sorted(required - fields.keys())
         forbidden = sorted(set(fields) - allowed)
