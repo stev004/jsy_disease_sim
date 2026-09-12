@@ -18,6 +18,7 @@ from .hashing import canonical_json_bytes, sha256_bytes
 from .intervention_schemas import ScenarioConfig
 from .interventions import InterventionManager
 from .network_generator import GeneratedNetworks
+from .network_schemas import validate_school_calendar_horizon
 from .observation_scheduler import (
     DetectionConsumer,
     ObservationScheduler,
@@ -191,6 +192,11 @@ def run_outbreak(
 
     if travel_config is not None and travel is not None:
         raise ValueError("pass either travel_config or travel, not both")
+    validate_school_calendar_horizon(
+        generated.config,
+        start_date=config.start_date,
+        duration_days=config.duration_days,
+    )
     requested_travel = travel_config if travel_config is not None else travel
     if requested_travel is None and scenario is not None and scenario.travel is not None:
         requested_travel = scenario.travel

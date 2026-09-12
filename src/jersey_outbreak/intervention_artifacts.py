@@ -7,7 +7,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -57,7 +57,7 @@ class InterventionArtifactManifest(StrictModel):
     logical_content_hash: str
     latent_bundle_artifact_id: str
     latent_bundle_manifest_sha256: str
-    diagnostics_status: str
+    diagnostics_status: Literal["passed", "failed"]
     created_at: str
     git_commit: str | None
     dirty_worktree_flag: bool
@@ -278,7 +278,7 @@ def write_intervention_artifact(
         logical_content_hash=result.artifact_bundle_hash,
         latent_bundle_artifact_id=latent_artifact.manifest.artifact_id,
         latent_bundle_manifest_sha256=sha256_file(latent_manifest_path),
-        diagnostics_status="passed",
+        diagnostics_status=result.diagnostics["status"],
         created_at=datetime.now(UTC).isoformat(),
         git_commit=git_commit,
         dirty_worktree_flag=dirty,

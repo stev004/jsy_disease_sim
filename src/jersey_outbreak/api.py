@@ -246,16 +246,16 @@ def _dataset_path(
     if "/" in dataset_name or "\\" in dataset_name or Path(dataset_name).is_absolute():
         raise ValueError("dataset names must be logical allow-listed names")
     artifacts = manager.artifacts(job_id)
-    matches: list[tuple[str, dict[str, Any]]] = []
+    matches: list[tuple[str, str, dict[str, Any]]] = []
     for artifact in artifacts:
         names = artifact.get("datasets", [])
         for name in names:
             logical = f"{artifact['role']}:{name}" if len(artifacts) > 1 else name
             if dataset_name == logical:
-                matches.append((name, artifact))
+                matches.append((name, logical, artifact))
     if not matches:
         raise KeyError(dataset_name)
-    name, artifact = matches[0]
+    name, logical, artifact = matches[0]
     job_dir = manager._job_dir(job_id)
     manifest_path = _path_inside(job_dir / artifact["manifest_path"], job_dir)
     artifact_dir = manifest_path.parent

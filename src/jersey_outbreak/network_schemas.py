@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
 from .contracts import ArtifactRecord, NonEmptyString, StrictModel
@@ -47,6 +47,43 @@ ROUTE_FAMILIES: tuple[RouteFamily, ...] = (
 )
 
 
+def validate_school_calendar_horizon(
+    config: NetworkGenerationConfig,
+    *,
+    start_date: date | None = None,
+    duration_days: int | None = None,
+) -> None:
+    """Reject school-route dates outside the network's reference calendar year."""
+
+    if "school" not in config.enabled_route_families:
+        return
+    run_start = config.start_date if start_date is None else start_date
+    run_duration = config.duration_days if duration_days is None else duration_days
+    horizon_end = run_start + timedelta(days=(run_duration or 1) - 1)
+    calendar_year_error = f"is outside school calendar year {config.school_calendar_year}"
+    if run_start.year != config.school_calendar_year or horizon_end.year != (
+        config.school_calendar_year
+    ):
+        raise ValueError(
+            "school route date range "
+            f"{run_start.isoformat()} to {horizon_end.isoformat()} "
+            f"{calendar_year_error}"
+        )
+    invalid_snapshots = [
+        snapshot_date
+        for snapshot_date in config.snapshot_dates
+        if snapshot_date.year != config.school_calendar_year
+    ]
+    if invalid_snapshots:
+        snapshot_start = min(invalid_snapshots)
+        snapshot_end = max(invalid_snapshots)
+        raise ValueError(
+            "school route snapshot date range "
+            f"{snapshot_start.isoformat()} to {snapshot_end.isoformat()} "
+            f"{calendar_year_error}"
+        )
+
+
 class NetworkGenerationConfig(StrictModel):
     """Stable configuration for seeded route and network construction."""
 
@@ -55,6 +92,10 @@ class NetworkGenerationConfig(StrictModel):
     mode: PopulationMode
     seed: StrictInt
     start_date: date = date(2025, 1, 6)
+    # The network itself remains horizon-independent.  Callers that know the
+    # simulation horizon may provide it here for early calendar validation;
+    # it is operational metadata and must not enter the M4 identity.
+    duration_days: StrictInt | None = Field(default=None, ge=1, le=366, exclude=True)
     snapshot_dates: tuple[date, ...] = (
         date(2025, 1, 6),
         date(2025, 1, 11),
@@ -140,6 +181,11 @@ class NetworkGenerationConfig(StrictModel):
         if len(years) != 1:
             raise ValueError("school calendar periods must use one reference year")
         return value
+
+    @model_validator(mode="after")
+    def validate_school_calendar_horizon(self) -> NetworkGenerationConfig:
+        validate_school_calendar_horizon(self)
+        return self
 
     @field_validator("community_age_mixing")
     @classmethod

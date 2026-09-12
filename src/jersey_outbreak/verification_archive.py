@@ -9,10 +9,32 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 
 from .contracts import ArtifactRecord, NonEmptyString, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
+from .population_artifacts import portable_artifact_path, resolve_portable_artifact_path
+
+
+def _command_result_passed(value: Any) -> bool:
+    if isinstance(value, str):
+        return value == "passed"
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, dict):
+        if "status" in value:
+            return value["status"] == "passed"
+        if "returncode" in value:
+            return value["returncode"] == 0
+    return True
+
+
+def _verification_status(command_results: dict[str, Any]) -> Literal["passed", "failed"]:
+    return (
+        "passed"
+        if all(_command_result_passed(value) for value in command_results.values())
+        else "failed"
+    )
 
 
 class VerificationManifest(StrictModel):
@@ -49,6 +71,12 @@ class VerificationManifest(StrictModel):
             raise ValueError("verification logical_content_hash must be a 64-character hex digest")
         return value
 
+    @model_validator(mode="after")
+    def validate_derived_status(self) -> VerificationManifest:
+        if self.status != _verification_status(self.command_results):
+            raise ValueError("verification manifest status must be derived from command results")
+        return self
+
 
 @dataclass(frozen=True)
 class VerificationArchive:
@@ -82,7 +110,7 @@ def _git_metadata(root: Path) -> tuple[str | None, bool]:
 def _artifact_records(directory: Path, paths: tuple[Path, ...]) -> list[ArtifactRecord]:
     return [
         ArtifactRecord(
-            path=str(path.relative_to(directory)),
+            path=portable_artifact_path(path, directory),
             sha256=sha256_file(path),
             size_bytes=path.stat().st_size,
         )
@@ -162,7 +190,7 @@ def write_verification_archive(
     manifest = VerificationManifest(
         verification_id=verification_id,
         milestone=milestone,
-        status="passed",
+        status=_verification_status(command_results),
         git_commit=git_commit,
         dirty_worktree_flag=dirty_worktree,
         parent_hashes=parent_hashes,
@@ -211,7 +239,10 @@ def verify_verification_archive(
         raise ValueError("verification archive Git commit does not match expected commit")
     checked = []
     for artifact in manifest.output_artifacts:
-        artifact_path = manifest_path.parent / artifact.path
+        try:
+            artifact_path = resolve_portable_artifact_path(artifact.path, manifest_path.parent)
+        except ValueError as exc:
+            raise ValueError(f"invalid verification artifact path {artifact.path}: {exc}") from exc
         if not artifact_path.exists():
             raise FileNotFoundError(f"retained verification artifact is missing: {artifact.path}")
         observed_hash = sha256_file(artifact_path)
@@ -219,7 +250,7 @@ def verify_verification_archive(
             raise ValueError(f"retained verification artifact hash mismatch: {artifact.path}")
         checked.append(artifact.path)
     return {
-        "status": "passed",
+        "status": manifest.status,
         "verification_id": manifest.verification_id,
         "git_commit": manifest.git_commit,
         "dirty_worktree_flag": manifest.dirty_worktree_flag,
