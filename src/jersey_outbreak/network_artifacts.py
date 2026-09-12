@@ -264,16 +264,35 @@ def write_network_artifact(
         encoding="utf-8",
     )
 
-    snapshots = [
-        {
-            "route_id": route_id,
-            "snapshot_date": snapshot_date.isoformat(),
-            **edge,
+    with generated._build_phase_snapshot_cache():
+        snapshots = [
+            {
+                "route_id": route_id,
+                "snapshot_date": snapshot_date.isoformat(),
+                **edge,
+            }
+            for snapshot_date in generated.config.snapshot_dates
+            for route_id in sorted(generated.route_specs)
+            for edge in generated.route_snapshot(route_id, snapshot_date).edges
+        ]
+        route_hashes = {
+            route_id: sha256_bytes(
+                canonical_json_bytes(
+                    {
+                        "spec": generated.route_specs[route_id],
+                        "structural": generated.structural_edges[route_id],
+                        "snapshots": [
+                            {
+                                "date": when.isoformat(),
+                                "edges": list(generated.route_snapshot(route_id, when).edges),
+                            }
+                            for when in generated.config.snapshot_dates
+                        ],
+                    }
+                )
+            )
+            for route_id in sorted(generated.route_specs)
         }
-        for snapshot_date in generated.config.snapshot_dates
-        for route_id in sorted(generated.route_specs)
-        for edge in generated.route_snapshot(route_id, snapshot_date).edges
-    ]
     snapshots_path = artifact_directory / "snapshot_edges.parquet"
     snapshot_schema = pa.schema(
         [
@@ -313,24 +332,6 @@ def write_network_artifact(
         json.dumps(benchmark, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
 
-    route_hashes = {
-        route_id: sha256_bytes(
-            canonical_json_bytes(
-                {
-                    "spec": generated.route_specs[route_id],
-                    "structural": generated.structural_edges[route_id],
-                    "snapshots": [
-                        {
-                            "date": when.isoformat(),
-                            "edges": list(generated.route_snapshot(route_id, when).edges),
-                        }
-                        for when in generated.config.snapshot_dates
-                    ],
-                }
-            )
-        )
-        for route_id in sorted(generated.route_specs)
-    }
     git_commit, dirty_worktree = _git_metadata(root)
     output_paths = (
         route_specs_path,

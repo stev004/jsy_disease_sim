@@ -12,7 +12,8 @@ import random
 import resource
 import time
 from collections import Counter, OrderedDict, defaultdict
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -78,7 +79,17 @@ CONTACT_ACTIVITY_ROUTES = (
     "school_cross_class",
 )
 # 2026-09-02 memory measurement: 257 entries weighed 366.7 MB pickled after 30 days.
-SNAPSHOT_CACHE_PER_ROUTE = 3
+# Runtime bound for the single global LRU: three entries per configured route.
+SNAPSHOT_CACHE_RUNTIME_ENTRIES_PER_ROUTE = 3
+
+
+def _build_snapshot_cache_capacity(snapshot_count: int, route_count: int) -> int:
+    routes = max(1, route_count)
+    required = snapshot_count * routes
+    capacity = max(SNAPSHOT_CACHE_RUNTIME_ENTRIES_PER_ROUTE, snapshot_count) * routes
+    if capacity < required:
+        raise ValueError("M4 snapshot cache capacity is smaller than its configured working set")
+    return capacity
 
 
 @dataclass(frozen=True)
@@ -281,6 +292,37 @@ class GeneratedNetworks:
     _snapshot_cache: OrderedDict[tuple[str, date], RouteSnapshot] = field(
         repr=False, default_factory=OrderedDict
     )
+    _snapshot_cache_capacity: int | None = field(repr=False, default=None)
+
+    @property
+    def runtime_snapshot_cache_capacity(self) -> int:
+        return SNAPSHOT_CACHE_RUNTIME_ENTRIES_PER_ROUTE * max(1, len(self.route_specs))
+
+    @property
+    def build_snapshot_cache_capacity(self) -> int:
+        return _build_snapshot_cache_capacity(
+            len(self.config.snapshot_dates), len(self.route_specs)
+        )
+
+    @property
+    def snapshot_cache_capacity(self) -> int:
+        if self._snapshot_cache_capacity is not None:
+            return self._snapshot_cache_capacity
+        return self.runtime_snapshot_cache_capacity
+
+    def _trim_snapshot_cache(self) -> None:
+        while len(self._snapshot_cache) > self.snapshot_cache_capacity:
+            self._snapshot_cache.popitem(last=False)
+
+    @contextmanager
+    def _build_phase_snapshot_cache(self) -> Iterator[None]:
+        previous_capacity = self._snapshot_cache_capacity
+        self._snapshot_cache_capacity = self.build_snapshot_cache_capacity
+        try:
+            yield
+        finally:
+            self._snapshot_cache_capacity = previous_capacity
+            self._trim_snapshot_cache()
 
     def snapshot(self, snapshot_date: date) -> dict[str, RouteSnapshot]:
         """Return every configured route's edges for one calendar date."""
@@ -347,9 +389,7 @@ class GeneratedNetworks:
             )
         self._snapshot_cache[key] = snapshot
         self._snapshot_cache.move_to_end(key)
-        cache_limit = SNAPSHOT_CACHE_PER_ROUTE * max(1, len(self.route_specs))
-        while len(self._snapshot_cache) > cache_limit:
-            self._snapshot_cache.popitem(last=False)
+        self._trim_snapshot_cache()
         return snapshot
 
 
@@ -2441,6 +2481,9 @@ def generate_networks(
         _dynamic_builders=dynamic_builders,
         _index_by_agent_id=index_by_agent_id,
         _indexed_agent_ids=agent_ids,
+        _snapshot_cache_capacity=_build_snapshot_cache_capacity(
+            len(config.snapshot_dates), len(route_specs)
+        ),
     )
     baseline_date = config.snapshot_dates[0]
     baseline_snapshot = generated.snapshot(baseline_date)
@@ -2788,4 +2831,6 @@ def generate_networks(
         "agent_count": len(agent_ids),
         "snapshot_dates": [when.isoformat() for when in config.snapshot_dates],
     }
+    generated._snapshot_cache_capacity = None
+    generated._trim_snapshot_cache()
     return generated
