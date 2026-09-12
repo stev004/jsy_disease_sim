@@ -12,7 +12,7 @@ Release provenance, in order (`docs/audits/`): independent RC audit BLOCKED (O2)
 
 ## The one next action
 
-**Roadmap authority has moved: `docs/roadmap.md` is the living backlog (created 2026-09-03); this section is a pointer.**
+**Roadmap authority has moved: `docs/roadmap.md` is the living backlog (created 2026-09-03); this section is a pointer.** **The one next action (2026-09-12): the owed measurements on `main` @ `6e9b0e4` — quiet-window 30-day timing, then Steven authorises the validation run (solo 180-day ≤390 s; 44-replicate ensemble ≤75 min, replicate hashes expected identical to the frozen validation records). Then V1.2.1 per the roadmap. Open gates: G24 (ratify/revert G22+G23, default ratified), G5.**
 
 **State after foreman run `perf-v12-run3` (2026-09-05/06, RUN.md has the full ledger):**
 - **V1.2 exit gate — PASSED 2026-09-08** (`docs/audits/2026-09-08-v12-exit-gate-audit-7-sol-PASS.md`, merged G19 → `0f7a0f8`). History: `fix/v12-exit-gate-corrective-3` @ `79cbf41eef9d2f0323da908fe57fea9b8860b503` (CI green) carries correctives 3, 3b, 4, 5 (+retry): dictionary keyed by (table, measure, source_id), every census/labour/population/serosurvey cell transcribed from cited pages, omitted blank cells disclosed as quality warnings, vaccination proportion encoding stated, `week_ending`→`date`. Audits 4, 5, 6 (`docs/audits/…audit-{4,5,6}-sol-FAIL.md`) each narrowed the gap; audit 6 fails on a single row (`overcrowded_households` universe/denominator from the overcrowding CSV title). Corrective 6 closed the last cell; audit 7 PASS; G19/G21 resolved.
