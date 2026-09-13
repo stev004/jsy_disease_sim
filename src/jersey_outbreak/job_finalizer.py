@@ -38,11 +38,33 @@ def _now() -> str:
 
 def _atomic_json(path: Path, payload: Any) -> None:
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    temporary.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    temporary.replace(path)
+    try:
+        with temporary.open("w", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(path)
+        _fsync_directory(path.parent)
+    except BaseException:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def _fsync_directory(directory: Path) -> None:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    try:
+        descriptor = os.open(directory, flags)
+    except OSError:
+        if os.name == "nt":  # pragma: no cover - Windows does not fsync directories
+            return
+        raise
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def _inside(path: Path, root: Path) -> Path:
@@ -475,28 +497,39 @@ class JobFinalizer:
         result_payload = result.model_dump(mode="json")
         result_hash = sha256_bytes(canonical_json_bytes(result_payload))
         result_path = job_directory / "result_manifest.json"
-        _atomic_json(result_path, result_payload)
-        reread = APIResultManifest.model_validate_json(result_path.read_bytes())
-        if (
-            reread != result
-            or sha256_bytes(canonical_json_bytes(reread.model_dump(mode="json"))) != result_hash
-        ):
-            raise FinalizationError(
-                "result_manifest_verification_failed",
-                "result manifest did not verify after writing",
+        staged_path = result_path.with_name(f".{result_path.name}.{os.getpid()}.staged")
+        published = False
+        try:
+            _atomic_json(staged_path, result_payload)
+            reread = APIResultManifest.model_validate_json(staged_path.read_bytes())
+            if (
+                reread != result
+                or sha256_bytes(canonical_json_bytes(reread.model_dump(mode="json"))) != result_hash
+            ):
+                raise FinalizationError(
+                    "result_manifest_verification_failed",
+                    "result manifest did not verify after writing",
+                )
+            self.registry.finalize_success(
+                job_id,
+                fields={
+                    "finished_at": finished_at,
+                    "result_manifest_path": "result_manifest.json",
+                    "result_manifest_hash": result_hash,
+                    "verification_status": "passed",
+                    "scenario_hash": scientific_hashes["scenario_hash"],
+                    "latent_hash": scientific_hashes["latent_hash"],
+                    "bundle_hash": scientific_hashes["bundle_hash"],
+                },
+                artifacts=[artifact.model_dump(mode="json") for artifact in references],
             )
-        self.registry.finalize_success(
-            job_id,
-            fields={
-                "finished_at": finished_at,
-                "result_manifest_path": "result_manifest.json",
-                "result_manifest_hash": result_hash,
-                "verification_status": "passed",
-                "scenario_hash": scientific_hashes["scenario_hash"],
-                "latent_hash": scientific_hashes["latent_hash"],
-                "bundle_hash": scientific_hashes["bundle_hash"],
-                "last_heartbeat": finished_at,
-            },
-            artifacts=[artifact.model_dump(mode="json") for artifact in references],
-        )
+            os.replace(staged_path, result_path)
+            published = True
+            _fsync_directory(job_directory)
+        finally:
+            if not published:
+                try:
+                    staged_path.unlink()
+                except FileNotFoundError:
+                    pass
         return result

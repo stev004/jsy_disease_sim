@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import shutil
-import subprocess
 import tempfile
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -17,6 +16,7 @@ from pydantic import ConfigDict, Field, field_validator, model_validator
 from . import __version__
 from .contracts import NonEmptyString, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes
+from .provenance import _git_metadata
 from .scientific_verification import VerifiedScientificArtifact, verify_scientific_artifact
 
 
@@ -96,27 +96,6 @@ class BundleSelftestResult:
 
     transcript_path: Path
     status: Literal["passed", "failed"]
-
-
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        status = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        return commit.stdout.strip() or None, bool(status.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def _code_root() -> Path:
@@ -208,14 +187,28 @@ def _make_transcript(
         "passed" if all(step.status == "passed" for step in steps) else "failed"
     )
     payload: dict[str, Any] = {
-        "schema_version": "1.0",
-        "git_commit": git_commit,
-        "dirty_worktree_flag": dirty_worktree_flag,
-        "jos_version": __version__,
-        "source_artifact": str(source_artifact),
-        "copied_to": str(copied_to),
-        "steps": [step.model_dump(mode="json") for step in steps],
-        "identities": identities.model_dump(mode="json", by_alias=True),
+        "artifact_type": identities.artifact_type,
+        "artifact_id": identities.artifact_id,
+        "source": (
+            {
+                "artifact_type": identities.source.artifact_type,
+                "artifact_id": identities.source.artifact_id,
+                "hashes": identities.source.hashes,
+            }
+            if identities.source is not None
+            else None
+        ),
+        "copy": (
+            {
+                "artifact_type": identities.copy_identity.artifact_type,
+                "artifact_id": identities.copy_identity.artifact_id,
+                "hashes": identities.copy_identity.hashes,
+            }
+            if identities.copy_identity is not None
+            else None
+        ),
+        "agreement": identities.agreement,
+        "step_statuses": [{"step": step.step, "status": step.status} for step in steps],
         "status": status,
     }
     logical_content_hash = sha256_bytes(canonical_json_bytes(payload))
@@ -334,9 +327,11 @@ def run_bundle_selftest(
                 == copy_identity.hashes.get("artifact_bundle_hash")
                 and source_identity.hashes.get("artifact_bundle_hash") is not None
             )
+            hashes_agree = source_identity.hashes == copy_identity.hashes
             agreement = {
                 "artifact_id": artifact_id_agrees,
                 "artifact_bundle_hash": bundle_hash_agrees,
+                "hashes": hashes_agree,
             }
             identities = BundleIdentities(
                 artifact_type=source_identity.artifact_type,
@@ -350,7 +345,8 @@ def run_bundle_selftest(
             )
             compare_detail = (
                 f"artifact_id_agrees={artifact_id_agrees}; "
-                f"artifact_bundle_hash_agrees={bundle_hash_agrees}"
+                f"artifact_bundle_hash_agrees={bundle_hash_agrees}; "
+                f"hashes_agree={hashes_agree}"
             )
         else:
             available_identity = source_identity or copy_identity

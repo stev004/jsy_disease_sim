@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import platform
 import resource
-import subprocess
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -18,6 +17,7 @@ from .hashing import canonical_json_bytes, sha256_bytes
 from .intervention_schemas import ScenarioConfig
 from .interventions import InterventionManager
 from .network_generator import GeneratedNetworks
+from .network_schemas import validate_school_calendar_horizon
 from .observation_scheduler import (
     DetectionConsumer,
     ObservationScheduler,
@@ -116,27 +116,6 @@ def default_run_config(
     )
 
 
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        status = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        return commit.stdout.strip() or None, bool(status.stdout.strip())
-    except OSError:
-        return None, True
-
-
 def network_artifact_id(generated: GeneratedNetworks) -> str:
     """Return the same deterministic M4 artifact ID used by its writer."""
 
@@ -191,6 +170,11 @@ def run_outbreak(
 
     if travel_config is not None and travel is not None:
         raise ValueError("pass either travel_config or travel, not both")
+    validate_school_calendar_horizon(
+        generated.config,
+        start_date=config.start_date,
+        duration_days=config.duration_days,
+    )
     requested_travel = travel_config if travel_config is not None else travel
     if requested_travel is None and scenario is not None and scenario.travel is not None:
         requested_travel = scenario.travel

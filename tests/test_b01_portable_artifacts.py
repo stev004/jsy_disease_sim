@@ -29,6 +29,10 @@ from jersey_outbreak.scientific_verification import (
     verify_m5_artifact,
     verify_scientific_artifact,
 )
+from jersey_outbreak.verification_archive import (
+    verify_verification_archive,
+    write_verification_archive,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -146,6 +150,45 @@ def test_relocated_calibration_copy_verifies(
     shutil.copytree(artifact.artifact_directory, copied)
     shutil.rmtree(artifact.artifact_directory)
     assert verify_calibration_artifact(copied).artifact_id == artifact.manifest.artifact_id
+
+
+def test_relocated_verification_archive_copy_verifies(tmp_path: Path) -> None:
+    archive = write_verification_archive(
+        ROOT,
+        tmp_path / "archive",
+        verification_id="b01-relocated-verification-archive",
+        parent_hashes={"m4": "a" * 64},
+        layer_hashes={"m2": "b" * 64, "m3": "c" * 64},
+        command_results={"pytest": "passed"},
+        require_clean=False,
+    )
+    manifest = json.loads((archive.archive_directory / "manifest.json").read_text())
+    assert all("\\" not in record["path"] for record in manifest["output_artifacts"])
+    copied = tmp_path / "relocated-verification-archive"
+    shutil.copytree(archive.archive_directory, copied)
+    assert verify_verification_archive(copied / "manifest.json")["status"] == "passed"
+
+
+@pytest.mark.parametrize("bad_path", ["/absolute/file.json", "../outside/file.json"])
+def test_verification_archive_rejects_absolute_and_parent_paths(
+    tmp_path: Path, bad_path: str
+) -> None:
+    archive = write_verification_archive(
+        ROOT,
+        tmp_path / "archive",
+        verification_id="b01-reject-verification-archive",
+        parent_hashes={"m4": "a" * 64},
+        layer_hashes={"m2": "b" * 64, "m3": "c" * 64},
+        require_clean=False,
+    )
+    manifest_path = archive.archive_directory / "manifest.json"
+    payload = json.loads(manifest_path.read_text())
+    payload["output_artifacts"][0]["path"] = bad_path
+    manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    with pytest.raises(
+        ValueError, match="portable artifact paths? (must be relative|must not contain)"
+    ):
+        verify_verification_archive(manifest_path)
 
 
 @pytest.mark.parametrize("bad_path", ["/absolute/file.parquet", "../outside/file.parquet"])

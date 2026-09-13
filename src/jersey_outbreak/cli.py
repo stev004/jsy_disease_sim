@@ -128,11 +128,11 @@ def demo(
 
 
 def _repo_root() -> Path:
-    current = Path.cwd().resolve()
-    for candidate in (current, *current.parents):
+    module_path = Path(__file__).resolve()
+    for candidate in (module_path.parent, *module_path.parents):
         if (candidate / "pyproject.toml").exists():
             return candidate
-    return current
+    return module_path.parents[2]
 
 
 def _display_path(path: Path, root: Path) -> str:

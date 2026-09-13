@@ -239,6 +239,15 @@ def _fake_completed_job(manager: JobManager) -> str:
         ),
         data_path,
     )
+    daily_parish_path = artifact_dir / "daily_parish.parquet"
+    pq.write_table(
+        pa.Table.from_pylist(
+            [
+                {"date": "2025-01-06", "parish": "St Helier", "value": 1.0},
+            ]
+        ),
+        daily_parish_path,
+    )
     outside_path = job_dir / "outside.parquet"
     pq.write_table(pa.Table.from_pylist([{"secret": "not-an-artifact"}]), outside_path)
     (artifact_dir / "escape.parquet").symlink_to(outside_path)
@@ -253,6 +262,7 @@ def _fake_completed_job(manager: JobManager) -> str:
                 "module": "generic_respiratory_seirs",
                 "output_artifacts": [
                     {"path": "daily_epidemic.parquet"},
+                    {"path": "daily_parish.parquet"},
                     {"path": "escape.parquet"},
                 ],
             }
@@ -266,7 +276,7 @@ def _fake_completed_job(manager: JobManager) -> str:
         "manifest_path": "artifacts/fake/manifest.json",
         "verification_status": "passed",
         "size_bytes": data_path.stat().st_size,
-        "datasets": ["daily_epidemic", "escape"],
+        "datasets": ["daily_epidemic", "daily_parish", "escape"],
     }
     manager.registry.finalize_success(
         job_id,
@@ -290,9 +300,15 @@ def test_bounded_dataset_read_and_path_safety(tmp_path: Path) -> None:
             params={"start_date": "2025-01-06", "limit": 1},
         )
         assert response.status_code == 200
+        assert response.json()["dataset"] == "daily_epidemic"
         assert response.json()["rows"] == [
             {"date": "2025-01-06", "parish": "St Helier", "value": None}
         ]
+        second_dataset = client.get(
+            f"/api/v1/jobs/{job_id}/datasets/daily_parish", params={"limit": 1}
+        )
+        assert second_dataset.status_code == 200
+        assert second_dataset.json()["dataset"] == "daily_parish"
         filtered = client.get(
             f"/api/v1/jobs/{job_id}/datasets/daily_epidemic",
             params={"parish": "St Helier", "limit": 10},

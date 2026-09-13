@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import platform
-import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -34,6 +33,7 @@ from .population_structure_schemas import (
     WorkplaceRecord,
     WorkplaceTeamRecord,
 )
+from .provenance import _git_metadata
 
 if TYPE_CHECKING:
     from .population_structure_generator import GeneratedStructure
@@ -235,27 +235,6 @@ def _write_parquet(path: Path, rows: list[dict[str, Any]]) -> None:
     columns = list(rows[0])
     table = pa.Table.from_pylist([{column: row.get(column) for column in columns} for row in rows])
     pq.write_table(table, path, compression="zstd", use_dictionary=True, write_statistics=True)
-
-
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        status = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        return commit.stdout.strip() or None, bool(status.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def _markdown_report(diagnostics: dict[str, Any], benchmark: dict[str, Any]) -> str:

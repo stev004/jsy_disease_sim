@@ -58,6 +58,26 @@ M6_EXECUTION_RESOURCE_FIELDS = frozenset(
 )
 
 
+def normalize_m6_metric_value(metric: object, value: Any, *, for_difference: bool = False) -> Any:
+    """Canonicalize one M6 metric value using the ensemble metric registry."""
+
+    # The registry lives beside the metric semantics used to construct M6
+    # trajectories.  Keep this import local because ensemble imports these
+    # hash functions during its module initialisation.
+    from .ensemble import METRIC_TYPES
+
+    if not isinstance(metric, str) or metric not in METRIC_TYPES:
+        raise ValueError(f"metric is missing type registration: {metric!r}")
+    if value is None:
+        return None
+    metric_type = METRIC_TYPES[metric]
+    if metric_type == "float":
+        return float(value)
+    if metric_type == "bool" and not for_difference:
+        return bool(value)
+    return int(value)
+
+
 def m6_ensemble_config_payload(
     config: Mapping[str, Any], *, schema_version: str = "1.5"
 ) -> dict[str, Any]:
@@ -179,18 +199,9 @@ def m6_ensemble_logical_hash(
             normalized = dict(row)
             value = normalized.get("value")
             metric = normalized.get("metric")
+            canonical_value = normalize_m6_metric_value(metric, value)
             if value is not None:
-                if metric in {
-                    "latent_prevalence",
-                    "latent_attack_rate",
-                    "latent_cumulative_incidence_per_capita",
-                    "latent_ever_infected_fraction",
-                }:
-                    normalized["value"] = float(value)
-                elif metric == "intervention_route_active":
-                    normalized["value"] = bool(value)
-                else:
-                    normalized["value"] = int(value)
+                normalized["value"] = canonical_value
             normalized_rows.append(normalized)
         canonical_trajectories[seed] = normalized_rows
     return sha256_bytes(
@@ -221,33 +232,20 @@ def m6_comparison_logical_hash(
     for row in rows:
         normalized = dict(row)
         metric = normalized.get("metric")
+        if metric == "pair_status":
+            # This is the comparison's categorical pairing marker, not an M6
+            # trajectory metric and therefore has no numeric type registration.
+            canonical_rows.append(normalized)
+            continue
         for key in ("value_a", "value_b"):
             value = normalized.get(key)
-            if value is None:
-                continue
-            if metric in {
-                "latent_prevalence",
-                "latent_attack_rate",
-                "latent_cumulative_incidence_per_capita",
-                "latent_ever_infected_fraction",
-            }:
-                normalized[key] = float(value)
-            elif metric == "intervention_route_active":
-                normalized[key] = bool(value)
-            else:
-                normalized[key] = int(value)
+            canonical_value = normalize_m6_metric_value(metric, value)
+            if value is not None:
+                normalized[key] = canonical_value
         difference = normalized.get("difference")
         if difference is not None:
-            normalized["difference"] = (
-                float(difference)
-                if metric
-                in {
-                    "latent_prevalence",
-                    "latent_attack_rate",
-                    "latent_cumulative_incidence_per_capita",
-                    "latent_ever_infected_fraction",
-                }
-                else int(difference)
+            normalized["difference"] = normalize_m6_metric_value(
+                metric, difference, for_difference=True
             )
         canonical_rows.append(normalized)
     payload = {

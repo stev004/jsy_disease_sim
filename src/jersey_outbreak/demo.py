@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import platform
-import subprocess
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -13,12 +12,16 @@ from typing import Any
 
 from .contracts import (
     ArtifactRecord,
+    DiseaseConfig,
     DiseaseParameterProvenance,
+    PopulationConfig,
     ProjectConfig,
     RunConfig,
     RunManifest,
+    RunSettings,
 )
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
+from .provenance import _git_metadata
 from .starsim_compat import SUPPORTED_STARSIM_VERSION, run_official_sir_demo
 
 
@@ -36,7 +39,7 @@ def build_demo_config(seed: int) -> RunConfig:
     """Build the explicit, versioned configuration for the official spike."""
 
     return RunConfig(
-        run=dict(
+        run=RunSettings(
             label="starsim-official-sir-randomnet",
             start=2000.0,
             stop=2030.0,
@@ -45,8 +48,8 @@ def build_demo_config(seed: int) -> RunConfig:
             seed=seed,
             n_replicates=1,
         ),
-        population=dict(artifact_id="starsim-internal-people-demo", mode="demo"),
-        disease=dict(module="starsim_sir_demo", parameter_set="starsim-sir-demo-v0.1"),
+        population=PopulationConfig(artifact_id="starsim-internal-people-demo", mode="demo"),
+        disease=DiseaseConfig(module="starsim_sir_demo", parameter_set="starsim-sir-demo-v0.1"),
     )
 
 
@@ -56,28 +59,6 @@ def _repo_root() -> Path:
         if (candidate / "pyproject.toml").exists():
             return candidate
     return current
-
-
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit_result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        commit = commit_result.stdout.strip() if commit_result.returncode == 0 else None
-        status_result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        return commit, bool(status_result.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def _json_bytes(value: Any) -> bytes:

@@ -10,7 +10,6 @@ from __future__ import annotations
 import copy
 import platform
 import resource
-import subprocess
 import time
 from collections import Counter, OrderedDict, defaultdict
 from collections.abc import Iterable
@@ -2156,19 +2155,6 @@ class TravelRunResult:
     observation_events: list[dict[str, Any]] = field(default_factory=list)
     detection_events: tuple[DetectionEvent, ...] = ()
     delivered_detection_events: tuple[DetectionEvent, ...] = ()
-
-
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=root, check=False, capture_output=True, text=True
-        )
-        status = subprocess.run(
-            ["git", "status", "--porcelain"], cwd=root, check=False, capture_output=True, text=True
-        )
-        return commit.stdout.strip() or None, bool(status.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def _daily_metrics(

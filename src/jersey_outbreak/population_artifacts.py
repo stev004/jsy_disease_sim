@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import platform
-import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,6 +16,7 @@ from .contracts import ArtifactRecord
 from .hashing import canonical_json_bytes, sha256_bytes, sha256_file
 from .population_generator import GeneratedPopulation
 from .population_schemas import PopulationArtifactManifest
+from .provenance import _git_metadata
 
 
 @dataclass(frozen=True)
@@ -46,28 +46,6 @@ def _write_parquet(path: Path, rows: list[dict[str, Any]]) -> None:
     columns = list(rows[0])
     table = pa.Table.from_pylist([{column: row.get(column) for column in columns} for row in rows])
     pq.write_table(table, path, compression="zstd", use_dictionary=True, write_statistics=True)
-
-
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit_result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        status_result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        commit = commit_result.stdout.strip() if commit_result.returncode == 0 else None
-        return commit, bool(status_result.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def portable_artifact_path(path: Path, artifact_directory: Path) -> str:

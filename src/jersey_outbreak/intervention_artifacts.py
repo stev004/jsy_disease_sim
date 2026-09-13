@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -18,6 +17,7 @@ from .intervention_analysis import InterventionComparison
 from .outbreak_artifacts import write_outbreak_artifact
 from .outbreak_runner import OutbreakRunResult, network_artifact_id
 from .population_artifacts import portable_artifact_path, resolve_portable_artifact_path
+from .provenance import _git_metadata
 
 M7_ARTIFACT_SCHEMA_VERSION = "2.1"
 
@@ -57,7 +57,7 @@ class InterventionArtifactManifest(StrictModel):
     logical_content_hash: str
     latent_bundle_artifact_id: str
     latent_bundle_manifest_sha256: str
-    diagnostics_status: str
+    diagnostics_status: Literal["passed", "failed"]
     created_at: str
     git_commit: str | None
     dirty_worktree_flag: bool
@@ -72,19 +72,6 @@ class InterventionArtifact:
 
     artifact_directory: Path
     manifest: InterventionArtifactManifest
-
-
-def _git_metadata(root: Path) -> tuple[str | None, bool]:
-    try:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=root, check=False, capture_output=True, text=True
-        )
-        status = subprocess.run(
-            ["git", "status", "--porcelain"], cwd=root, check=False, capture_output=True, text=True
-        )
-        return commit.stdout.strip() or None, bool(status.stdout.strip())
-    except OSError:
-        return None, True
 
 
 def _write_table(path: Path, rows: list[dict[str, Any]], schema: pa.Schema) -> None:
@@ -278,7 +265,7 @@ def write_intervention_artifact(
         logical_content_hash=result.artifact_bundle_hash,
         latent_bundle_artifact_id=latent_artifact.manifest.artifact_id,
         latent_bundle_manifest_sha256=sha256_file(latent_manifest_path),
-        diagnostics_status="passed",
+        diagnostics_status=result.diagnostics["status"],
         created_at=datetime.now(UTC).isoformat(),
         git_commit=git_commit,
         dirty_worktree_flag=dirty,
