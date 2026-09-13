@@ -12,6 +12,7 @@ import jersey_outbreak.network_generator as network_generator
 from jersey_outbreak.network_artifacts import write_network_artifact
 from jersey_outbreak.network_generator import (
     CONTACT_ACTIVITY_ROUTES,
+    SNAPSHOT_CACHE_RUNTIME_ENTRIES_PER_ROUTE,
     _activity_participation_probabilities,
     _activity_weighted_participants,
     _community_agent_index,
@@ -346,6 +347,39 @@ def test_network_is_deterministic_and_seed_sensitive(network_inputs) -> None:
     )
 
 
+@pytest.mark.parametrize("snapshot_count", (2, 3, 4, 5))
+def test_m4_build_cache_holds_the_configured_snapshot_working_set(
+    network_inputs, monkeypatch: pytest.MonkeyPatch, snapshot_count: int
+) -> None:
+    m2_input, m3_input = network_inputs
+    dates = (
+        date(2025, 1, 6),
+        date(2025, 1, 11),
+        date(2025, 8, 11),
+        date(2025, 9, 3),
+        date(2025, 10, 27),
+    )[:snapshot_count]
+    constructions = 0
+    original = network_generator.GeneratedNetworks.route_snapshot
+
+    def counting_route_snapshot(self, route_id, snapshot_date):
+        nonlocal constructions
+        if (route_id, snapshot_date) not in self._snapshot_cache:
+            constructions += 1
+        return original(self, route_id, snapshot_date)
+
+    monkeypatch.setattr(
+        network_generator.GeneratedNetworks, "route_snapshot", counting_route_snapshot
+    )
+    generated = generate_networks(
+        NetworkGenerationConfig(mode="ci", seed=123, snapshot_dates=dates),
+        m2_input,
+        m3_input,
+    )
+
+    assert constructions == snapshot_count * len(generated.route_specs)
+
+
 def test_route_snapshot_cache_is_bounded(generated) -> None:
     route_id = sorted(generated.route_specs)[0]
     dates = [date(2025, 1, 1) + timedelta(days=index) for index in range(40)]
@@ -354,7 +388,58 @@ def test_route_snapshot_cache_is_bounded(generated) -> None:
     for when in dates:
         generated.route_snapshot(route_id, when)
 
-    assert len(generated._snapshot_cache) <= 3 * len(generated.route_specs)
+    assert len(generated._snapshot_cache) <= generated.snapshot_cache_capacity
+    assert generated.snapshot_cache_capacity == 33
+
+
+def test_runtime_snapshot_cache_bound_is_unchanged_during_seven_day_date_major_run(
+    generated,
+) -> None:
+    runtime_capacity = SNAPSHOT_CACHE_RUNTIME_ENTRIES_PER_ROUTE * len(generated.route_specs)
+    generated._snapshot_cache.clear()
+    peak_entries = 0
+    for day_offset in range(7):
+        generated.snapshot(date(2025, 1, 6) + timedelta(days=day_offset))
+        peak_entries = max(peak_entries, len(generated._snapshot_cache))
+
+    assert runtime_capacity == 33
+    assert generated.snapshot_cache_capacity == runtime_capacity
+    assert peak_entries == runtime_capacity
+
+
+def test_network_artifact_build_cache_holds_all_configured_snapshots(
+    network_inputs, tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    m2_input, m3_input = network_inputs
+    dates = (
+        date(2025, 1, 6),
+        date(2025, 1, 11),
+        date(2025, 8, 11),
+        date(2025, 9, 3),
+        date(2025, 10, 27),
+    )
+    generated = generate_networks(
+        NetworkGenerationConfig(mode="ci", seed=123, snapshot_dates=dates),
+        m2_input,
+        m3_input,
+    )
+    generated._snapshot_cache.clear()
+    constructions = 0
+    original = network_generator.GeneratedNetworks.route_snapshot
+
+    def counting_route_snapshot(self, route_id, snapshot_date):
+        nonlocal constructions
+        if (route_id, snapshot_date) not in self._snapshot_cache:
+            constructions += 1
+        return original(self, route_id, snapshot_date)
+
+    monkeypatch.setattr(
+        network_generator.GeneratedNetworks, "route_snapshot", counting_route_snapshot
+    )
+    write_network_artifact(generated, ROOT, tmp_path / "networks")
+
+    assert constructions == len(dates) * len(generated.route_specs)
+    assert generated.snapshot_cache_capacity == 33
 
 
 def test_route_snapshot_recomputation_preserves_complete_ordered_edges(generated) -> None:
@@ -370,9 +455,9 @@ def test_route_snapshot_recomputation_preserves_complete_ordered_edges(generated
         assert generated.route_snapshot(route_id, when).edges == edges
 
 
-def test_route_snapshot_lru_hits_and_recomputes_content_identically(generated) -> None:
+def test_global_route_snapshot_lru_bound_can_be_filled_by_one_route(generated) -> None:
     route_id = sorted(generated.route_specs)[0]
-    capacity = 3 * max(1, len(generated.route_specs))
+    capacity = generated.snapshot_cache_capacity
     dates = [date(2025, 1, 1) + timedelta(days=index) for index in range(capacity + 5)]
 
     generated._snapshot_cache.clear()
@@ -385,6 +470,7 @@ def test_route_snapshot_lru_hits_and_recomputes_content_identically(generated) -
         assert initial[when].edges == expected[when]
         assert len(generated._snapshot_cache) <= capacity
 
+    assert len(generated._snapshot_cache) == capacity
     assert generated.route_snapshot(route_id, dates[0]) is initial[dates[0]]
     generated.route_snapshot(route_id, dates[capacity])
     assert (route_id, dates[0]) in generated._snapshot_cache

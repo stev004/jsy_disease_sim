@@ -498,9 +498,7 @@ class JobRegistry:
             raise JobNotFoundError(job_id)
         return _decode(result)
 
-    def claim_next_queued(
-        self, *, precondition: Callable[[dict[str, Any]], bool] | None = None
-    ) -> dict[str, Any] | None:
+    def claim_next_queued(self) -> dict[str, Any] | None:
         """Claim exactly one FIFO job under a write transaction."""
 
         with self._lock, self._connection() as connection:
@@ -510,9 +508,6 @@ class JobRegistry:
                 "LIMIT 1"
             ).fetchone()
             if row is None:
-                connection.commit()
-                return None
-            if precondition is not None and not precondition(_decode(row)):
                 connection.commit()
                 return None
             job_id = row["job_id"]
