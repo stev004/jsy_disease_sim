@@ -3,6 +3,12 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
+## 2026-09-13 — G25 and G26 merged (Steven: "merge G25 and G26 then /closeout")
+
+- `main` code baseline now `08960b895ba5dfeaa547ee61c2842955d54ea825` = `6e9b0e4` + run-5 batch (`84b9676` → merge `d61c657`) + run-6 batch (`7439b9d` → merge `08960b8`); SHA-first no-ff merges executed by the director on the explicit chat instruction (trail rows `g25-merge`, `g26-merge`, push receipt in the evidence cells). Post-merge smoke: compileall, ruff check+format, 80 targeted tests incl. all goldens green. No GitHub CI (billing).
+- State reconciled: GATES G25/G26 resolved; FRONTIER next action = Steven authorises the validation run on this baseline, then the V1.2.1 rulings; RUN.md = nothing in flight; roadmap ◐→☑ for the ten landed items; performance-history rows for PERF-10, ROUTE-8, DATA-4/5.
+- Remaining for Steven: validation run authorisation; G24 (default ratified); G5; scientific-corrections rulings (DISEASE-4, ROUTE-6, ROUTE-7); iteration-3 subgroup cuts.
+
 ## 2026-09-12 — foreman runs v121-run5 and v121-run6 (director Fable; executors gpt-5.6-luna@xhigh; reviews gpt-5.6-sol@high; trail audits gpt-5.6-terra@high)
 
 - **Run 5 (predicates MET):** quiet-window 30-day full-mode remeasure filed (69.0/61.9/59.2 s; hash identical to the PERF-1 pin). Four V1.2.1 units kept after review-driven retries — PERF-10 grid-once; ROUTE-12 + PROV-6/12/3/13 verifier fixes; PROV-5/11 provenance helper + metric type registry; PROV-7/9/10-heartbeat job ordering — integrated as `v121/integration-run5` @ `84b96763d9c5d6c85839218aba9d3876b96c8f7d`, Sol review PASS (no findings), base-tree M5/M7/M8 artifacts verified under the head. Merge = **G25** (Steven). Terra audit: 8 Attention items reconciled (run budget overrun by one, push-before-mirror sequencing → DIRECTOR lessons).

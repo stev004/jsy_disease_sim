@@ -1,4 +1,11 @@
-# RUN — foreman run `v121-run6`: predicate MET, closing (2026-09-12, director Fable; ts: second `run-start` of 2026-09-12 → `g26-parked`); run 5 CLOSED (record below)
+# RUN — nothing in flight (runs v121-run5/6 CLOSED 2026-09-12; G25/G26 MERGED 2026-09-13 → `main` 08960b8; closeout 2026-09-13)
+
+**Cold start:** read `.claude/DIRECTOR.md` → `.claude/FRONTIER.md` (next action = Steven authorises the validation run on `08960b8`) → `.claude/GATES.md` (open: G24 default ratified, G5) → `tail -6 .claude/decisions.tsv`. Machine facts and the resume patterns are in the run-6 block below (still accurate). **Disposable WSL leftovers** (safe to delete now that G24/G25/G26 are resolved or defaulted): every `~/jos-*-wt` worktree, `~/jos-review*-wd`, `~/jos-trail*-wd`, `/tmp/jos-*`, `~/jos-*` briefs/logs (all reports filed), `~/jos-remeasure-20260912/`, the `sleep infinity` keepalive sessions.
+
+---
+*Everything below is historical ledger, kept for the trail; nothing in it is live.*
+
+## Run 6 record (2026-09-12) — CLOSED; was:
 
 ## START HERE (cold start, any model)
 1. Read `.claude/DIRECTOR.md` in full → `.claude/FRONTIER.md` → `.claude/GATES.md` (open: **G25** merge run-5 batch `84b9676`, default merge; G24 default ratified; G5) → `tail -12 .claude/decisions.tsv`.
