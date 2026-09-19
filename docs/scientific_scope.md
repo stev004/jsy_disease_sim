@@ -107,10 +107,12 @@ separable household, school class/cross-class, workplace team/transient, care,
 shared-vehicle, synthetic transit, indoor-community and outdoor-community
 routes from M2/M3 memberships. Household, class, team and bounded care cohorts
 are repeated structures; sampled routes refresh on their declared daily or
-periodic schedule. Calendar rules distinguish weekdays, weekends, school term
-and physical work from WFH-only days. All edges are canonical undirected pairs
-with finite relative contact-opportunity weights, not pathogen-specific beta
-values.
+periodic schedule. In particular, workplace-transient active edge sets and
+bounded rings are regenerated on every weekday snapshot, with daily edge
+metadata (`persistence_days=1`); no weekly workplace persistence is modelled.
+Calendar rules distinguish weekdays, weekends, school term and physical work
+from WFH-only days. All edges are canonical undirected pairs with finite
+relative contact-opportunity weights, not pathogen-specific beta values.
 
 C2 makes nested route semantics explicit. The school cross-class and workplace
 transient candidate pools exclude pairs already represented by their respective
@@ -218,8 +220,10 @@ Observation draws use a stream derived from latent replicate seed, observation
 seed and configuration identity, with stable event keys. Different latent
 replicate seeds therefore do not silently reuse the same observation random
 sequence. Ensemble summaries use explicit date grids: missing incidence is a
-structural zero, cumulative values carry forward, and state/prevalence is not
-fabricated beyond the latent horizon. Failed replicates are non-contributors.
+structural zero within a metric's horizon, dates outside that horizon are
+explicitly non-contributing `outside_metric_horizon` cells, cumulative values
+carry forward, and state/prevalence is not fabricated beyond the latent
+horizon. Failed replicates are non-contributors.
 Requested, planned and actual process workers are recorded separately.
 
 ## Milestone 7 intervention experiments

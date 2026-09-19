@@ -205,8 +205,9 @@ only for notification scheduling and delivery.
 
 Offline observation artifacts call the same schedule implementation and fail
 if an attached online schedule differs. The ensemble grid registry treats
-incidence gaps as structural zeroes, carries cumulative values forward and
-marks state/prevalence after actual evolution as outside the metric horizon.
+incidence gaps within each metric horizon as structural zeroes, marks dates
+outside that horizon as non-contributing, carries cumulative values forward
+and marks state/prevalence after actual evolution as outside the metric horizon.
 Per-cell semantics and requested/successful/failed/contributing replicate
 counts are retained; failed replicates never become zero observations.
 

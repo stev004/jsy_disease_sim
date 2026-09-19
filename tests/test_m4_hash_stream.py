@@ -22,6 +22,7 @@ from jersey_outbreak.population_structure_artifacts import (
 )
 from jersey_outbreak.population_structure_generator import generate_structure
 from jersey_outbreak.population_structure_schemas import StructureGenerationConfig
+from jersey_outbreak.scientific_hashes import m4_identity_edge
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -53,7 +54,10 @@ def test_m4_stream_hash_matches_golden_and_eager_payload() -> None:
             route_id: [
                 {
                     "date": when.isoformat(),
-                    "edges": list(generated.route_snapshot(route_id, when).edges),
+                    "edges": [
+                        m4_identity_edge(route_id, edge)
+                        for edge in generated.route_snapshot(route_id, when).edges
+                    ],
                 }
                 for when in generated.config.snapshot_dates
             ]

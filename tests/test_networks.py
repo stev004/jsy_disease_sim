@@ -499,6 +499,10 @@ def test_zero_activity_cv_is_exact_m11b_projection(network_inputs) -> None:
     diagnostic = explicit.diagnostics["contact_activity"]
     assert diagnostic["zero_cv_exact_bypass"] is True
     assert diagnostic["approved_routes"] == list(CONTACT_ACTIVITY_ROUTES)
+    assert set(diagnostic["approved_routes"]) == {
+        "community_indoor",
+        "community_outdoor",
+    }
     assert diagnostic["realised_mean"] == 1.0
     assert diagnostic["realised_cv"] == 0.0
 
@@ -536,6 +540,10 @@ def test_synthetic_contact_activity_moments_and_route_scope(network_inputs, gene
     school_staff = {row["agent_id"] for row in generated.school_staff_assignments}
     for when in generated.config.snapshot_dates:
         assert sensitivity.route_snapshot("bus", when) == generated.route_snapshot("bus", when)
+        for route_id in ("school_cross_class", "workplace_transient"):
+            assert sensitivity.route_snapshot(route_id, when) == generated.route_snapshot(
+                route_id, when
+            )
         baseline_staff_edges = {
             (edge["p1"], edge["p2"])
             for edge in generated.route_snapshot("school_cross_class", when).edges
@@ -557,6 +565,14 @@ def test_synthetic_contact_activity_moments_and_route_scope(network_inputs, gene
     assert activity_provenance["status"] == "scenario_assumption"
     assert activity_provenance["role"] == "structural_assumption"
     assert activity_provenance["sensitivity_required"] is True
+
+
+def test_workplace_transient_metadata_declares_daily_refresh(generated) -> None:
+    for when in generated.config.snapshot_dates:
+        assert all(
+            edge["persistence_days"] == 1
+            for edge in generated.route_snapshot("workplace_transient", when).edges
+        )
 
 
 def test_full_mode_contract_excludes_only_care_and_medical_from_community(
