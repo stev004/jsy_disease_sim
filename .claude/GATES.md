@@ -4,15 +4,17 @@
 
 ## Open
 
-### G24 — Ratify (or revert) the G22 and G23 merges executed under the 2026-09-08 instruction
-- **Question:** Steven's 2026-09-08 words were "merge things needed. continue with foreman and moving forward with it all… get things moving". The director merged G18 and G19 (ready at the time) and later G22 (`e26ef91` → `d679230`) and G23 (`a588e22` → `6e9b0e4`) after each had a filed independent PASS and a local smoke, treating the instruction as covering merges of the run's later work. The terra trail audit flags this as broader than a one-time instruction. Ratify, or revert with `git revert -m 1 <merge>`?
-- **Default:** ratified (both merges are exact on their gates and reviewed); say "revert G22/G23" to undo. Also: rotate the Codex login (the WSL install now holds a copy of the Windows token).
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G24 — Ratify the G22/G23 merges — RESOLVED 2026-09-19 (Steven, chat: "sort g24"; default taken = ratified)
+Both merges (G22 `e26ef91` → `d679230`, G23 `a588e22` → `6e9b0e4`) stand ratified — each was exact on its gates with a filed independent PASS. **Still owed to Steven personally:** rotate the Codex login (the WSL install holds a copy of the Windows token) — an agent cannot re-authenticate Codex for him; until rotated, do not run the Windows and WSL codex concurrently.
+
+### Scientific-corrections rulings — RESOLVED 2026-09-19 (Steven, chat: "make decisions for me on model-owner science rulings"; ruled by Fable under that delegation)
+DISEASE-4 fix (no fabricated zeros; explicit not-computed + schema bump), ROUTE-6 truthful declaration only (no mechanism extension; V1.3 question), ROUTE-7 daily refresh is the shipped behaviour (inert `persistence_days` removed), iteration-3 subgroup cuts = age-band × dose only. Full synthesis + rationale: `docs/research/v1_2/2026-09-19-model-owner-rulings-fable.md`. Implementation delegated as one unit; the corrections branch merge stays Steven-gated and waits for the validation-run verdict.
 
 ### G26 — Merge the V1.2.1 run-6 batch — RESOLVED 2026-09-13 (same instruction; merge commit `08960b895ba5dfeaa547ee61c2842955d54ea825`, ts: trail row `g26-merge`) (`v121/integration-run6` @ `7439b9dbde3120c4601cd903d21e408fa7999432`), after G25
 - **Question:** merge to `main` after G25? The branch is based on the run-5 integration head `84b9676` (G25), so it must follow it. Contents (three no-ff units): jobkw cleanup — unused `precondition` kwarg removed from `JobRegistry.claim_next_queued` (`a17009c2bde22502677a8117316378cfac114d0c`); DATA-4 + DATA-5 travel exactness — episode partitions cached once, `initial_away` one pass, per-uid identity intervals replacing per-timestep identity dicts, temporary-edge rows derived at output (`52f46d8c59b1f58e5c00161443f386413e1000c7`; `route_edge_history` deliberately left as the single evidence store); ROUTE-8 — truthful global snapshot-cache bound with a config-bounded build-phase capacity, runtime bound still 33 (`30371216cb32ad99f9c6083982b9d215f3132251`). Independent Sol@high review PASS (`docs/audits/2026-09-12-run6-v121-review-sol-PASS.md`): full mirror green (397 passed, mypy 17 modules), 26/26 logical hashes identical across 12 manifests base vs head, all M8 parquet datasets byte-identical at 7 and 30 days, route fingerprints identical, `event_time_identity_rows` identical. Director mirror PASS in one pass, filed before the push (`docs/runs/2026-09-12-run6-integration-ci-mirror.log`). No CI on GitHub (billing).
