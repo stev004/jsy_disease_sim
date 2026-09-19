@@ -10,6 +10,7 @@ from jersey_outbreak.hashing import (
     iter_canonical_json_chunks,
     sha256_bytes,
 )
+from jersey_outbreak.network_artifacts import write_network_artifact
 from jersey_outbreak.network_generator import generate_networks
 from jersey_outbreak.network_schemas import NetworkGenerationConfig
 from jersey_outbreak.population_artifacts import write_population_artifact
@@ -22,6 +23,7 @@ from jersey_outbreak.population_structure_artifacts import (
 )
 from jersey_outbreak.population_structure_generator import generate_structure
 from jersey_outbreak.population_structure_schemas import StructureGenerationConfig
+from jersey_outbreak.scientific_hashes import m4_identity_edge
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -53,7 +55,10 @@ def test_m4_stream_hash_matches_golden_and_eager_payload() -> None:
             route_id: [
                 {
                     "date": when.isoformat(),
-                    "edges": list(generated.route_snapshot(route_id, when).edges),
+                    "edges": [
+                        m4_identity_edge(route_id, edge)
+                        for edge in generated.route_snapshot(route_id, when).edges
+                    ],
                 }
                 for when in generated.config.snapshot_dates
             ]
@@ -71,3 +76,47 @@ def test_m4_stream_hash_matches_golden_and_eager_payload() -> None:
         generated.logical_content_hash
         == fixture["generations"]["ci-seed-123"]["m4_logical_content_hash"]
     )
+
+
+def test_m4_artifact_route_hash_uses_identity_projected_snapshots() -> None:
+    with TemporaryDirectory() as directory:
+        output = Path(directory)
+        population = generate_population(ROOT, PopulationGenerationConfig(mode="ci", seed=123))
+        population_artifact = write_population_artifact(population, ROOT, output / "m2")
+        m2_input = load_m2_population_artifact(ROOT, population_artifact.artifact_directory)
+        structure = generate_structure(
+            ROOT, StructureGenerationConfig(mode="ci", seed=123), m2_input
+        )
+        structure_artifact = write_structure_artifact(structure, ROOT, output / "m3", m2_input)
+        m3_input = load_m3_structure_artifact(ROOT, structure_artifact.artifact_directory)
+        generated = generate_networks(
+            NetworkGenerationConfig(mode="ci", seed=123), m2_input, m3_input, ROOT
+        )
+        artifact = write_network_artifact(generated, ROOT, output / "m4")
+
+    route_id = "workplace_transient"
+    emitted_edges = [
+        edge
+        for when in generated.config.snapshot_dates
+        for edge in generated.route_snapshot(route_id, when).edges
+    ]
+    projected_edges = [m4_identity_edge(route_id, edge) for edge in emitted_edges]
+    assert emitted_edges
+    assert all(edge["persistence_days"] == 1 for edge in emitted_edges)
+    assert all(edge["persistence_days"] == 7 for edge in projected_edges)
+    expected_payload: dict[str, Any] = {
+        "spec": generated.route_specs[route_id],
+        "structural": generated.structural_edges[route_id],
+        "snapshots": [
+            {
+                "date": when.isoformat(),
+                "edges": [
+                    m4_identity_edge(route_id, edge)
+                    for edge in generated.route_snapshot(route_id, when).edges
+                ],
+            }
+            for when in generated.config.snapshot_dates
+        ],
+    }
+    expected_hash = sha256_bytes(canonical_json_bytes(expected_payload))
+    assert artifact.manifest.route_logical_hashes[route_id] == expected_hash

@@ -329,7 +329,13 @@ def test_metric_registry_carries_cumulative_tail_and_bounds_state_horizon() -> N
     attack = [row for row in rows if row["metric"] == "latent_attack_rate"]
     assert [row["median"] for row in attack] == [0.275, 0.275, 0.275]
     incidence = [row for row in rows if row["metric"] == "latent_new_infections"]
-    assert [row["median"] for row in incidence] == [3.0, 0.0, 0.0]
+    assert [row["median"] for row in incidence] == [3.0, None, None]
+    assert [row["cell_semantic"] for row in incidence] == [
+        "observed",
+        "outside_metric_horizon",
+        "outside_metric_horizon",
+    ]
+    assert [row["contributing_replicates"] for row in incidence] == [2, 0, 0]
     prevalence = [row for row in rows if row["metric"] == "latent_prevalence"]
     assert prevalence[0]["median"] == pytest.approx(0.15)
     assert [row["median"] for row in prevalence[1:]] == [None, None]

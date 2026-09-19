@@ -57,6 +57,22 @@ M6_EXECUTION_RESOURCE_FIELDS = frozenset(
     }
 )
 
+_LEGACY_WORKPLACE_TRANSIENT_IDENTITY_PERSISTENCE_DAYS = 7
+
+
+def m4_identity_edge(route_id: str, edge: dict[str, Any]) -> dict[str, Any]:
+    """Project emitted edges onto the frozen M4 identity representation."""
+
+    if route_id != "workplace_transient":
+        return edge
+    # M4 replicate identity predates the truthful workplace metadata correction
+    # and encoded the inert value 7. Keep that legacy token only at the identity
+    # boundary; emitted route metadata is the truthful daily value 1.
+    return {
+        **edge,
+        "persistence_days": _LEGACY_WORKPLACE_TRANSIENT_IDENTITY_PERSISTENCE_DAYS,
+    }
+
 
 def normalize_m6_metric_value(metric: object, value: Any, *, for_difference: bool = False) -> Any:
     """Canonicalize one M6 metric value using the ensemble metric registry."""
@@ -79,18 +95,18 @@ def normalize_m6_metric_value(metric: object, value: Any, *, for_difference: boo
 
 
 def m6_ensemble_config_payload(
-    config: Mapping[str, Any], *, schema_version: str = "1.5"
+    config: Mapping[str, Any], *, schema_version: str = "1.6"
 ) -> dict[str, Any]:
     """Return the versioned M6 configuration identity payload."""
 
     payload = dict(config)
-    if schema_version == "1.5":
+    if schema_version in {"1.5", "1.6"}:
         for field in M6_EXECUTION_RESOURCE_FIELDS:
             payload.pop(field, None)
     return payload
 
 
-def m6_ensemble_config_hash(config: Mapping[str, Any], *, schema_version: str = "1.5") -> str:
+def m6_ensemble_config_hash(config: Mapping[str, Any], *, schema_version: str = "1.6") -> str:
     return sha256_bytes(
         canonical_json_bytes(m6_ensemble_config_payload(config, schema_version=schema_version))
     )
@@ -190,7 +206,7 @@ def m6_ensemble_logical_hash(
     summary: list[dict[str, Any]],
     trajectories: Mapping[int, Sequence[dict[str, Any]]],
     replicate_grid: list[dict[str, Any]],
-    schema_version: str = "1.5",
+    schema_version: str = "1.6",
 ) -> str:
     canonical_trajectories: dict[int, list[dict[str, Any]]] = {}
     for seed, rows in trajectories.items():

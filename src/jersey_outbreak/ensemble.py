@@ -731,9 +731,12 @@ def _completed_grid_rows(
                 elif not observations:
                     cell_semantic = "non_contributor"
                 elif semantic == "incidence":
-                    value = 0.0
-                    cell_semantic = "structural_zero"
-                    contributes = True
+                    if observations[0][0] <= when <= observations[-1][0]:
+                        value = 0.0
+                        cell_semantic = "structural_zero"
+                        contributes = True
+                    else:
+                        cell_semantic = "outside_metric_horizon"
                 elif semantic == "cumulative":
                     previous = [item for item in observations if item[0] < when]
                     if previous:
@@ -1175,7 +1178,10 @@ def run_ensemble(
         "date_grid": {
             "complete": True,
             "metric_semantics": dict(sorted(METRIC_SEMANTICS.items())),
-            "incidence": "missing valid cells are structural zeroes",
+            "incidence": (
+                "missing cells within each metric horizon are structural zeroes; "
+                "cells outside it are outside_metric_horizon"
+            ),
             "cumulative": "missing later cells carry the most recent value forward",
             "state": "cells beyond actual state evolution are outside_metric_horizon",
             "failures": "failed replicate cells are non-contributing, never zero",

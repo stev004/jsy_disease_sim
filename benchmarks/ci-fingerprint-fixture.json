@@ -253,7 +253,7 @@
         {
           "array_fingerprint": "4ea0af5cc1929747750fbb19de04a13dab6d17d4b068bb9c0edf8ca7a551a779",
           "date": "2025-01-06",
-          "fingerprint": "3365797b03d5551e43685adfd62f34ac9cb005a1f484110f8841dfc6d2650649",
+          "fingerprint": "9e2609ca0fec820ccfac8c62786acca3b5204fdd4a87e0b08aa84c42797e8227",
           "n_edges": 2829,
           "stable_int_calls": 2780,
           "wall_s": 0.008370099999979175
@@ -261,7 +261,7 @@
         {
           "array_fingerprint": "f639bc14e5fd3e4520a6fec30d919338911f90ecdcc4a801d1e2762e9131dbf3",
           "date": "2025-01-07",
-          "fingerprint": "89b9e1ef47b19b09815c3046e6a8c2b934c7299938cd1f6e19e0475b6e4eb27b",
+          "fingerprint": "ed9045a2a01c1e0ea9e801736f9be7702fad8d0037a586e7cfa90ab4b53cfceb",
           "n_edges": 2794,
           "stable_int_calls": 2766,
           "wall_s": 0.0080408000000034

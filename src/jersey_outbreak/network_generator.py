@@ -36,6 +36,7 @@ from .network_schemas import (
     RouteSpec,
 )
 from .population_structure_artifacts import M2PopulationInput, M3StructureInput
+from .scientific_hashes import m4_identity_edge
 from .staffing_generator import StaffingAllocation, build_staffing_allocation
 
 PRIVATE_ROUTE_FAMILIES = {
@@ -75,8 +76,6 @@ ROUTE_OVERLAP_POLICIES = {
 CONTACT_ACTIVITY_ROUTES = (
     "community_indoor",
     "community_outdoor",
-    "workplace_transient",
-    "school_cross_class",
 )
 # 2026-09-02 memory measurement: 257 entries weighed 366.7 MB pickled after 30 days.
 # Runtime bound for the single global LRU: three entries per configured route.
@@ -1794,13 +1793,11 @@ def generate_networks(
         ]
 
         def build_school_cross(snapshot_date: date) -> list[dict[str, Any]] | EdgeColumns:
-            active_pupils = _activity_weighted_participants(
-                (agent_id for group in school_year_groups.values() for agent_id in group),
-                sum(len(group) for group in school_year_groups.values()),
-                config=config,
-                route_id="school_cross_class",
-                token=snapshot_date.isoformat(),
-            )
+            # The activity mechanism is not active here: expected participants
+            # equal the eligible school/year pool, so every pupil participates.
+            active_pupils = {
+                agent_id for group in school_year_groups.values() for agent_id in group
+            }
             pupil_edges = _grouped_ring_edges_columns(
                 (
                     [agent_id for agent_id in group if agent_id in active_pupils]
@@ -1923,13 +1920,9 @@ def generate_networks(
                     workplace_transient_groups_by_weekday[weekday] = groups
                 else:
                     groups = cached_groups
-            active_workers = _activity_weighted_participants(
-                (agent_id for group in groups for agent_id in group),
-                len({agent_id for group in groups for agent_id in group}),
-                config=config,
-                route_id="workplace_transient",
-                token=snapshot_date.isoformat(),
-            )
+            # The activity mechanism is not active here: expected participants
+            # equal the distinct active workplace pool, so every worker participates.
+            active_workers = {agent_id for group in groups for agent_id in group}
             return _grouped_ring_edges_columns(
                 (
                     [agent_id for agent_id in group if agent_id in active_workers]
@@ -1940,7 +1933,8 @@ def generate_networks(
                 snapshot_date,
                 config.workplace_transient_contacts,
                 0.3,
-                7,
+                # Workplace transient edges are regenerated daily; Starsim receives dur=1.
+                1,
                 agent_ids=agent_ids,
                 index_by_agent_id=index_by_agent_id,
                 string_rank=string_rank,
@@ -2800,9 +2794,12 @@ def generate_networks(
 
     def snapshot_payloads(route_id: str) -> Iterable[dict[str, Any]]:
         for when in config.snapshot_dates:
+            edges = []
+            for edge in generated.route_snapshot(route_id, when).edges:
+                edges.append(m4_identity_edge(route_id, edge))
             yield {
                 "date": when.isoformat(),
-                "edges": list(generated.route_snapshot(route_id, when).edges),
+                "edges": edges,
             }
 
     generated.logical_content_hash = sha256_of_canonical_stream(

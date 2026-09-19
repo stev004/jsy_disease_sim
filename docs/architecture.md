@@ -270,7 +270,8 @@ The separable route IDs are `household`, `school_class`,
 and `community_outdoor`. Household, class core, team core and care resident
 edges preserve repeated membership. Cross-class, broader workplace, transport
 and community edges are bounded deterministic samples, with daily or periodic
-refreshes declared in each route specification.
+refreshes declared in each route specification. `workplace_transient` is
+regenerated daily on weekdays; its edge metadata uses `persistence_days=1`.
 
 M4.1 adds a separate staffing-evidence and allocation layer before route
 construction. Frozen Government of Jersey education FOI snapshots provide
@@ -377,9 +378,11 @@ configuration ID and stable event identity. Offline artifacts use the same
 sampler as the online queue.
 
 Ensemble summaries are complete over the declared date grid using an explicit
-metric registry. Missing incidence is a structural zero, cumulative values
-carry forward, and state/prevalence cells beyond actual evolution are marked
-outside the metric horizon and excluded from quantiles. Failed replicates remain
+metric registry. Missing incidence within its metric horizon is a structural
+zero; dates outside that horizon are marked `outside_metric_horizon` and
+excluded from quantiles. Cumulative values carry forward, and state/prevalence
+cells beyond actual evolution are marked outside the metric horizon and
+excluded from quantiles. Failed replicates remain
 non-contributors rather than zeroes. Process-pool worker counts distinguish
 requested, planned and actual execution and are bounded by a configurable
 memory estimate, physical-memory safety fraction and CPU count. Beta recovery is a

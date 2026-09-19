@@ -187,8 +187,22 @@ def test_ensemble_summary_structurally_fills_incidence_and_reports_contributors(
                 "date": "2025-01-01",
                 "value": 1,
             },
+            {
+                "scope": "epidemic",
+                "key": "all",
+                "metric": "latent_new_infections",
+                "date": "2025-01-02",
+                "value": 0,
+            },
         ),
         2: (
+            {
+                "scope": "epidemic",
+                "key": "all",
+                "metric": "latent_new_infections",
+                "date": "2025-01-01",
+                "value": 2,
+            },
             {
                 "scope": "epidemic",
                 "key": "all",
@@ -206,10 +220,15 @@ def test_ensemble_summary_structurally_fills_incidence_and_reports_contributors(
         horizon=("2025-01-01", "2025-01-02", "2025-01-03"),
     )
     assert len(rows) == 3
-    assert [row["median"] for row in rows] == [0.5, 1.5, 0.0]
+    assert [row["median"] for row in rows] == [1.5, 1.5, None]
+    assert [row["cell_semantic"] for row in rows] == [
+        "observed",
+        "observed",
+        "outside_metric_horizon",
+    ]
     assert all(row["requested_replicates"] == 3 for row in rows)
     assert all(row["successful_replicates"] == 2 for row in rows)
-    assert all(row["contributing_replicates"] == 2 for row in rows)
+    assert [row["contributing_replicates"] for row in rows] == [2, 2, 0]
     assert all(row["failed_replicates"] == 1 for row in rows)
 
 

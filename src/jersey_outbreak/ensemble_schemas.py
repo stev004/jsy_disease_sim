@@ -12,7 +12,7 @@ from .intervention_schemas import ScenarioConfig
 from .observation_schemas import ObservationConfig
 from .outbreak_schemas import OutbreakRunConfig
 
-M6_ENSEMBLE_ARTIFACT_SCHEMA_VERSION: Literal["1.5"] = "1.5"
+M6_ENSEMBLE_ARTIFACT_SCHEMA_VERSION: Literal["1.6"] = "1.6"
 
 
 class EnsembleConfig(StrictModel):
@@ -85,7 +85,7 @@ class EnsembleReplicateRecord(StrictModel):
 class EnsembleArtifactManifest(StrictModel):
     """Manifest for a complete or explicitly partial ensemble."""
 
-    manifest_schema_version: Literal["1.2", "1.3", "1.4", "1.5"] = (
+    manifest_schema_version: Literal["1.2", "1.3", "1.4", "1.5", "1.6"] = (
         M6_ENSEMBLE_ARTIFACT_SCHEMA_VERSION
     )
     artifact_id: NonEmptyString

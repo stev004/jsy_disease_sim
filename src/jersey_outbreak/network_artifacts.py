@@ -18,6 +18,7 @@ from .network_generator import GeneratedNetworks
 from .network_schemas import NetworkArtifactManifest
 from .population_artifacts import portable_artifact_path
 from .provenance import _git_metadata
+from .scientific_hashes import m4_identity_edge
 
 
 @dataclass(frozen=True)
@@ -284,7 +285,10 @@ def write_network_artifact(
                         "snapshots": [
                             {
                                 "date": when.isoformat(),
-                                "edges": list(generated.route_snapshot(route_id, when).edges),
+                                "edges": [
+                                    m4_identity_edge(route_id, edge)
+                                    for edge in generated.route_snapshot(route_id, when).edges
+                                ],
                             }
                             for when in generated.config.snapshot_dates
                         ],
