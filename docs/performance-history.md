@@ -19,6 +19,7 @@
 | 2026-09-02 | five failed launches (12→8→5→3→2 workers): OOM kills, silent sequential fallback, WSL VM crash, thrash | DNF | trail rows `p4-launch`…`p4-relaunch-4` |
 | 2026-09-02→03 | attempt 6 on R6 code, 4 workers | **10.6 h** (44/44 passed) | `2026-09-03-p4-full-scale-ensemble-report.md` |
 | 2026-09-04 | **validation rerun on R6+R7+R8 code, 6 workers** | **81 min (44/44; ALL 132 replicate-level hashes byte-identical to the frozen artifact) — 7.83× measured** | `2026-09-04-p4-validation-ensemble-report.md` |
+| 2026-09-19 | **authorised validation run on `08960b8` (full perf tranche + V1.2.1 batches), 6 workers** | **solo 180d 197.65 s (target ≤390); ensemble 38.2 min (target ≤75; 44/44, 132/132 hashes identical to frozen) — 2.1× over the 09-04 run** | `2026-09-19-validation-run-v121.md` |
 
 ## What each landed change was (all proven byte-identical output before merge)
 
