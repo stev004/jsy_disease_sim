@@ -4,15 +4,14 @@
 
 ## Open
 
-### G27 — Merge the scientific-corrections branch (`v121/scientific-corrections` @ `f1b2b6c1085e82bf7d59ac9df8c76b7c6fce0847`)
-- **Question:** merge to `main`? Implements the 2026-09-19 model-owner rulings (DISEASE-4 / ROUTE-6 / ROUTE-7 — `docs/research/v1_2/2026-09-19-model-owner-rulings-fable.md`). A DECLARED hash migration: M6 schema 1.5→1.6, summary/manifest hash changes by design; replicate-level latent/M4/observation hashes and all 11 per-route M4 hashes proven identical to base in two independent ci A/Bs. Review lineage: Sol review 1 BLOCKED on one MAJOR (per-route hash identity boundary, `docs/audits/2026-09-19-scicorr-review-sol-BLOCKED.md`) → corrective 1 (`f1b2b6c`) → bounded Sol re-review **PASS, no findings** (`docs/audits/2026-09-19-scicorr-rereview-sol-PASS.md`). Validation run PASSED on the base beforehand (`docs/runs/2026-09-19-validation-run-v121.md`), so the exact lineage is sealed. Known context: the M4 identity boundary intentionally pins the legacy workplace_transient persistence token 7 (emitted metadata is the truthful 1) — a future declared M4 migration (V1.3) can retire the shim. No CI on GitHub (billing); gates ran locally on both review clones.
-- **Default:** merge, SHA-first: `git -C ~/jsy_disease_sim merge --no-ff f1b2b6c1085e82bf7d59ac9df8c76b7c6fce0847 -m "G27: merge v121/scientific-corrections @ f1b2b6c" && git -C ~/jsy_disease_sim push`. The first post-merge ensemble's M6 summary hash will differ from frozen artifacts by design — its run report must say so. Say "merge G27" to have the agent execute it.
-
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G27 — Merge the scientific-corrections branch — RESOLVED 2026-09-19 (Steven, chat: "merge G27"; executed by the agent)
+SHA-first `--no-ff` of `f1b2b6c1085e82bf7d59ac9df8c76b7c6fce0847` (`v121/scientific-corrections`) → merge `6eb05c2dfa88ff1818ec210f76be93c2fd5c7e9f`; pre-push smoke (31 targeted tests incl. the new horizon + boundary regressions, ruff) green; pushed (ls-remote receipt in trail row `g27-merge`). No CI on GitHub (billing); gates ran locally on both review clones. *(original gate)* Implements the 2026-09-19 model-owner rulings (DISEASE-4 / ROUTE-6 / ROUTE-7 — `docs/research/v1_2/2026-09-19-model-owner-rulings-fable.md`). A DECLARED hash migration: M6 schema 1.5→1.6, summary/manifest hash changes by design; replicate-level latent/M4/observation hashes and all 11 per-route M4 hashes proven identical to base in two independent ci A/Bs. Review lineage: Sol review 1 BLOCKED on one MAJOR (per-route hash identity boundary, `docs/audits/2026-09-19-scicorr-review-sol-BLOCKED.md`) → corrective 1 (`f1b2b6c`) → bounded Sol re-review **PASS, no findings** (`docs/audits/2026-09-19-scicorr-rereview-sol-PASS.md`). Validation run PASSED on the base beforehand. The M4 identity boundary intentionally pins the legacy workplace_transient persistence token 7 (emitted metadata is the truthful 1) — a future declared M4 migration (V1.3) can retire the shim. **The first post-merge ensemble's M6 summary hash will differ from frozen artifacts by design — its run report must say so.**
 
 ### G24 — Ratify the G22/G23 merges — RESOLVED 2026-09-19 (Steven, chat: "sort g24"; default taken = ratified)
 Both merges (G22 `e26ef91` → `d679230`, G23 `a588e22` → `6e9b0e4`) stand ratified — each was exact on its gates with a filed independent PASS. **Still owed to Steven personally:** rotate the Codex login (the WSL install holds a copy of the Windows token) — an agent cannot re-authenticate Codex for him; until rotated, do not run the Windows and WSL codex concurrently.
