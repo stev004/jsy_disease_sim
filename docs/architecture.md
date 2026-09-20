@@ -387,8 +387,11 @@ non-contributors rather than zeroes. Process-pool worker counts distinguish
 requested, planned and actual execution and are bounded by a configurable
 memory estimate, physical-memory safety fraction and CPU count. Beta recovery is a
 synthetic train/held-out profile over generic M5 beta values, with explicit
-ascertainment and route-weight sensitivity checks. It is not Jersey surveillance
-calibration and does not identify beta separately from contact intensity.
+ascertainment and route-weight sensitivity checks. The sensitivity diagnostics
+are two-dimensional beta-by-nuisance profiles that re-minimize over the
+nuisance multiplier at each beta and report argmin shifts; they are not Jersey
+surveillance calibration and do not identify beta separately from contact
+intensity.
 
 `verification_archive.py` writes an immutable, hash-checked index tying C3
 results to the Git commit, parent M2/M3/M4 logical hashes, source manifests,
@@ -403,7 +406,10 @@ stack for an explicit unique seed list, preserves failed replicates as failed,
 and summarizes successful results only. `compare_ensembles()` pairs seed
 identities before calculating differences. The recovery harness uses a hidden
 synthetic reporting delay or generic beta and a fresh synthetic held-out seed;
-it is not a Jersey-data calibration or a model-validation claim. Ensemble,
+the delay case is explicitly a noiseless beta=0 delay-operator check with
+fully detecting observation parameters, while the beta case uses a unique
+held-out-argmin gate. It is not a Jersey-data calibration or a model-validation
+claim. Ensemble,
 observation and calibration tables have immutable content-addressed directories
 and manifests.
 
