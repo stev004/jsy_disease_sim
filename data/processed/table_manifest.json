@@ -343,6 +343,27 @@
         "observation_status",
         "source_locator",
         "transformation_id",
+        "age_band",
+        "dose",
+        "value",
+        "unit",
+        "reporting_status",
+        "upper_bound"
+      ],
+      "path": "data/processed/covid_vaccination_subgroups.csv",
+      "rows": 22,
+      "sha256": "7a36bc5650f4e4c3fdf64373fa06a9f97b4c772b19a7a17348aa349f67d5cacd"
+    },
+    {
+      "columns": [
+        "schema_version",
+        "source_id",
+        "source_sha256",
+        "evidence_source_id",
+        "reference_period",
+        "observation_status",
+        "source_locator",
+        "transformation_id",
         "measure",
         "value",
         "unit",
@@ -464,8 +485,8 @@
         "cited_source_version"
       ],
       "path": "data/processed/measure_dictionary.csv",
-      "rows": 92,
-      "sha256": "5cf3e99087d79cde5837f7c08daf86c1936d459cc11c7eb4227b505a825f02c3"
+      "rows": 94,
+      "sha256": "9fd44f8cca5f36f00a9e0475128c51f41d38a30006ee5bfb6ddf3ea23011226d"
     }
   ]
 }

@@ -28,7 +28,7 @@ def test_canonical_build_reconciles_controls_and_is_repeatable(tmp_path: Path) -
 
     assert first["build_status"] == second["build_status"] == "passed"
     assert first_bytes == second_bytes
-    assert len(first["tables"]) == 23
+    assert len(first["tables"]) == 24
     assert {check["status"] for check in first["checks"]} >= {"passed", "warning"}
 
     with (output_dir / "household_types.csv").open(newline="", encoding="utf-8") as handle:
@@ -232,6 +232,80 @@ def test_covid_weekly_pair_set_and_quality_warnings(tmp_path: Path) -> None:
     )
 
 
+def test_pdf_vaccination_subgroups_are_denominator_backed_and_cited(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    report = build_canonical(ROOT, output_dir)
+    with (output_dir / "covid_vaccination_subgroups.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        rows = list(csv.DictReader(handle))
+    assert len(rows) == 22
+    assert {row["dose"] for row in rows} == {"dose_1", "dose_1_and_2"}
+    assert all(row["source_id"] == "covid19_vaccination_pcr_insights_pdf" for row in rows)
+    assert all(row["source_locator"].startswith("pdf_page_") for row in rows)
+    assert all(row["reporting_status"] == "reported" and row["value"] for row in rows)
+
+    with (output_dir / "population_denominators_by_age_band.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        denominator_rows = list(csv.DictReader(handle))
+    denominator_bands = {
+        row["age_band"] for row in denominator_rows if row["year"] == "2021" and row["sex"] == "all"
+    }
+    mapped_bands = {row["age_band"] for row in rows}
+    assert mapped_bands <= denominator_bands
+    assert len(mapped_bands) == 14
+
+    non_total_bands = mapped_bands - {"all"}
+    ranges = {
+        name: (lower, upper)
+        for name, lower, upper in data_pipeline._POPULATION_DENOMINATOR_AGE_RANGES
+        if name in non_total_bands
+    }
+    for name, (lower, upper) in ranges.items():
+        for other, (other_lower, other_upper) in ranges.items():
+            if name >= other:
+                continue
+            assert (
+                upper is None
+                or other_lower > upper
+                or other_upper is not None
+                and other_upper < lower
+            )
+
+    expected = {
+        ("5_to_11", "dose_1"): "12",
+        ("50_to_54", "dose_1_and_2"): "92",
+        ("all", "dose_1_and_2"): "78",
+    }
+    actual = {(row["age_band"], row["dose"]): row["value"] for row in rows}
+    assert all(actual[key] == value for key, value in expected.items())
+    assert any(
+        "0-4" in warning and "no value is inferred" in warning for warning in report["warnings"]
+    )
+    assert any(
+        "occupational" in warning and "excluded" in warning for warning in report["warnings"]
+    )
+
+
+def test_pdf_subgroup_dictionary_rows_and_negative_test_exclusion(tmp_path: Path) -> None:
+    output_dir = tmp_path / "processed"
+    build_canonical(ROOT, output_dir)
+    with (output_dir / "measure_dictionary.csv").open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    subgroup_rows = [row for row in rows if row["table"] == "covid_vaccination_subgroups"]
+    assert {(row["measure"], row["cited_source_id"]) for row in subgroup_rows} == {
+        ("dose_1:percent", "covid19_vaccination_pcr_insights_pdf"),
+        ("dose_1_and_2:percent", "covid19_vaccination_pcr_insights_pdf"),
+    }
+    assert all("pdf_page_" in row["source_locator"] for row in subgroup_rows)
+    assert all("TestsTotalNegativeTests" in row["known_exclusions"] for row in subgroup_rows)
+    daily_rows = [row for row in rows if row["table"] == "covid_daily_surveillance"]
+    assert daily_rows and all(
+        "TestsTotalNegativeTests" in row["known_exclusions"] for row in daily_rows
+    )
+
+
 def test_covid_serosurvey_table_is_transcribed_fixture(tmp_path: Path) -> None:
     output_dir = tmp_path / "processed"
     build_canonical(ROOT, output_dir)
@@ -378,7 +452,7 @@ def test_population_denominator_16_plus_matches_annual_estimates(tmp_path: Path)
 def test_measure_dictionary_pairs_and_cells_are_complete(tmp_path: Path) -> None:
     output_dir = tmp_path / "processed"
     build_canonical(ROOT, output_dir)
-    assert len(data_pipeline._DICTIONARY_TABLES) == 22
+    assert len(data_pipeline._DICTIONARY_TABLES) == 23
     value_columns = {
         "age_sex": ("count",),
         "parish_population": ("population", "density_person_km2"),
@@ -397,6 +471,8 @@ def test_measure_dictionary_pairs_and_cells_are_complete(tmp_path: Path) -> None
             rows = list(csv.DictReader(handle))
         if table_name == "covid_weekly_vaccination":
             built_pairs.update((table_name, f"{row['dose']}:{row['metric']}") for row in rows)
+        elif table_name == "covid_vaccination_subgroups":
+            built_pairs.update((table_name, f"{row['dose']}:{row['unit']}") for row in rows)
         elif table_name == "covid_weekly_eligible_population":
             built_pairs.add((table_name, "eligible_population"))
         elif "measure" in rows[0]:
