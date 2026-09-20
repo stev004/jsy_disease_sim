@@ -19,7 +19,7 @@ from .scientific_hashes import V1_1_NATURAL_HISTORY_EVENT_FIELDS
 from .travel import TravelRunResult
 from .travel_schemas import TravelConfig
 
-M8_ARTIFACT_SCHEMA_VERSION = "2.2"
+M8_ARTIFACT_SCHEMA_VERSION = "2.3"
 
 
 class TravelArtifactManifest(StrictModel):
