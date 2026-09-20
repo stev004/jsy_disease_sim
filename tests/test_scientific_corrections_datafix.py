@@ -8,11 +8,18 @@ from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
+import pyarrow.parquet as pq
 import pytest
 
+import jersey_outbreak.travel as travel_module
 from jersey_outbreak.observation import observe_latent_run
 from jersey_outbreak.observation_scheduler import ObservationScheduleSnapshot
-from jersey_outbreak.travel import _high_risk_epidemic_rows, load_travel_config
+from jersey_outbreak.travel import (
+    _high_risk_epidemic_rows,
+    load_travel_config,
+    run_travel_outbreak,
+)
+from jersey_outbreak.travel_artifacts import verify_travel_artifact, write_travel_artifact
 from jersey_outbreak.travel_schemas import TravelConfig
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,6 +111,53 @@ def test_data10_unknown_detection_subject_fails_instead_of_disappearing() -> Non
             date(2025, 1, 6),
             1,
         )
+
+
+def test_data10_high_risk_table_is_part_of_immutable_m8_identity(
+    monkeypatch, tmp_path: Path, m6_network, m6_base_config, m6_parameters
+) -> None:
+    original_rows = travel_module._high_risk_epidemic_rows
+    corrected = False
+
+    def high_risk_rows(*args, **kwargs):
+        rows = original_rows(*args, **kwargs)
+        if corrected:
+            rows[0] = rows[0] | {"detections": rows[0]["detections"] + 1}
+        return rows
+
+    monkeypatch.setattr(travel_module, "_high_risk_epidemic_rows", high_risk_rows)
+    config = TravelConfig(
+        mode="explicit_travel",
+        daily_arrivals={"2025-01-06:AIRPORT": 1},
+        visitor_fraction=1.0,
+        returning_resident_fraction=0.0,
+        day_visitor_fraction=0.0,
+        stay_duration_days=1,
+        stay_duration_jitter_days=0,
+        party_sizes=[1],
+        party_probabilities=[1.0],
+    )
+    run_config = m6_base_config.model_copy(update={"duration_days": 2})
+    base = run_travel_outbreak(m6_network, run_config, m6_parameters, config)
+    base_artifact = write_travel_artifact(base, tmp_path, tmp_path / "artifacts")
+
+    corrected = True
+    head = run_travel_outbreak(m6_network, run_config, m6_parameters, config)
+    head_artifact = write_travel_artifact(head, tmp_path, tmp_path / "artifacts")
+
+    assert head_artifact.artifact_directory != base_artifact.artifact_directory
+    assert (
+        head_artifact.manifest.artifact_bundle_hash != base_artifact.manifest.artifact_bundle_hash
+    )
+    persisted = pq.read_table(
+        head_artifact.artifact_directory / "daily_high_risk.parquet"
+    ).to_pylist()
+    assert sum(row["detections"] for row in persisted) == sum(
+        row["detections"] for row in head.high_risk_epidemic
+    )
+    assert verify_travel_artifact(head_artifact.artifact_directory).artifact_id == (
+        head_artifact.manifest.artifact_id
+    )
 
 
 def test_disease10_no_online_schedule_is_explicitly_not_compared(

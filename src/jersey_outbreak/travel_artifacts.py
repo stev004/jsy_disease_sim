@@ -466,6 +466,7 @@ def verify_travel_artifact(artifact_directory: Path) -> TravelArtifactManifest:
         "daily_travel_route.parquet",
         "temporary_edges.parquet",
         "seasonality_schedule.parquet",
+        "daily_high_risk.parquet",
         "daily_epidemic.parquet",
         "transmission_events.parquet",
         "observation_events.parquet",
@@ -555,6 +556,7 @@ def verify_travel_artifact(artifact_directory: Path) -> TravelArtifactManifest:
     )
     if sha256_bytes(canonical_json_bytes(resolved_latent_payload)) != manifest.latent_outcome_hash:
         raise ValueError("M8 latent outcome logical hash mismatch")
+    high_risk_epidemic_hash = sha256_bytes(canonical_json_bytes(rows("daily_high_risk.parquet")))
 
     scenario_config = json.loads(
         (artifact_directory / "scenario_config.json").read_text(encoding="utf-8")
@@ -590,11 +592,14 @@ def verify_travel_artifact(artifact_directory: Path) -> TravelArtifactManifest:
         "scenario_hash": manifest.scenario_hash,
         "latent_hash": manifest.latent_outcome_hash,
         "episode_hash": manifest.visitor_episode_hash,
+        "high_risk_epidemic_hash": high_risk_epidemic_hash,
     }
     if sha256_bytes(canonical_json_bytes(artifact_payload)) != manifest.artifact_bundle_hash:
         raise ValueError("M8 artifact bundle logical hash mismatch")
     diagnostics = json.loads((artifact_directory / "diagnostics.json").read_text(encoding="utf-8"))
     diagnostic_hashes = diagnostics.get("hashes", {})
+    if diagnostic_hashes.get("high_risk_epidemic") != high_risk_epidemic_hash:
+        raise ValueError("M8 manifest hash mismatch for high_risk_epidemic")
     for manifest_name, diagnostic_name in (
         ("scenario_hash", "scenario"),
         ("travel_config_hash", "travel_config"),
