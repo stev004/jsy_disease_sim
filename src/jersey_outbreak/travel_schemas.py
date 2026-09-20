@@ -10,9 +10,10 @@ from __future__ import annotations
 from calendar import monthrange
 from datetime import date
 from math import isfinite
+from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from .contracts import NonEmptyString, StrictModel
 from .hashing import canonical_json_bytes, sha256_bytes
@@ -56,6 +57,57 @@ PARAMETER_STATUSES = Literal[
     "calibrated",
     "scenario_assumption",
 ]
+
+M8_DIAGNOSTICS_SCHEMA_VERSION = "1.1"
+
+
+def _repository_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def canonical_passenger_arrival_totals(root: Path | None = None) -> dict[str, int | str]:
+    """Read the hash-validated M1 passenger-arrival totals."""
+
+    from .data_pipeline import DataBuildError, parse_int, read_csv_rows
+    from .population_controls import _validate_canonical_inputs
+
+    resolved_root = (root or _repository_root()).resolve()
+    canonical_hashes = _validate_canonical_inputs(resolved_root)
+    table_key = "data/processed/passenger_arrivals.csv"
+    table_path = resolved_root / table_key
+    if table_key not in canonical_hashes:
+        raise DataBuildError("canonical passenger-arrivals table is not in the M1 manifest")
+    rows = read_csv_rows(table_path, {"source_id", "year", "mode", "passengers"})
+    values: dict[str, int] = {}
+    for mode in ("air", "sea"):
+        matches = [
+            row
+            for row in rows
+            if row.get("source_id") == "passenger_arrivals_total_csv"
+            and row.get("year") == "2025"
+            and row.get("mode") == mode
+        ]
+        if len(matches) != 1:
+            raise DataBuildError(
+                f"canonical passenger-arrivals table must contain one 2025 {mode} row"
+            )
+        value = parse_int(matches[0]["passengers"], path=table_path, field="passengers")
+        if value is None:
+            raise DataBuildError(f"canonical passenger-arrivals {mode} value is blank")
+        values[mode] = value
+    return {
+        "air": values["air"],
+        "ferry": values["sea"],
+        "source_hash": canonical_hashes[table_key],
+    }
+
+
+def _default_annual_air_arrivals() -> int:
+    return int(canonical_passenger_arrival_totals()["air"])
+
+
+def _default_annual_ferry_arrivals() -> int:
+    return int(canonical_passenger_arrival_totals()["ferry"])
 
 
 def _default_transport_probabilities() -> dict[LocalTransportType, float]:
@@ -207,8 +259,8 @@ class TravelConfig(StrictModel):
     daily_arrivals: dict[str, int] = Field(default_factory=dict)
     daily_departures: dict[str, int] = Field(default_factory=dict)
     departure_reconciliation_tolerance: int = Field(default=0, ge=0)
-    annual_air_arrivals: int = Field(default=720_842, ge=0)
-    annual_ferry_arrivals: int = Field(default=196_623, ge=0)
+    annual_air_arrivals: int = Field(default_factory=_default_annual_air_arrivals, ge=0)
+    annual_ferry_arrivals: int = Field(default_factory=_default_annual_ferry_arrivals, ge=0)
     stream_scale: float = Field(default=0.001, ge=0.0, le=1.0)
     arrival_volume_multiplier: float = Field(default=1.0, ge=0.0, le=10.0)
     visitor_fraction: float = Field(default=0.9, ge=0.0, le=1.0)
@@ -267,6 +319,7 @@ class TravelConfig(StrictModel):
         "Daily stream values are derived or scenario-defined and do not represent manifests.",
         "All unobserved visitor composition and contact values are synthetic assumptions.",
     )
+    _canonical_root: Path | None = PrivateAttr(default=None)
 
     @field_validator("daily_arrivals", "daily_departures")
     @classmethod
@@ -359,7 +412,7 @@ class TravelConfig(StrictModel):
     def intervention_hash(self) -> str:
         return self.interventions.config_hash
 
-    def resolved_parameter_provenance(self) -> dict[str, dict[str, Any]]:
+    def resolved_parameter_provenance(self, root: Path | None = None) -> dict[str, dict[str, Any]]:
         """Return explicit provenance for every scalar control used by M8."""
 
         result = {
@@ -382,16 +435,36 @@ class TravelConfig(StrictModel):
                         "notes": "Synthetic M8 control; not a Jersey estimate.",
                     },
                 )
-        for key in ("annual_air_arrivals", "annual_ferry_arrivals"):
+        canonical = canonical_passenger_arrival_totals(root or self._canonical_root)
+        for key, canonical_key, label in (
+            ("annual_air_arrivals", "air", "air"),
+            ("annual_ferry_arrivals", "ferry", "sea/ferry"),
+        ):
+            configured = int(payload[key])
+            canonical_value = int(canonical[canonical_key])
+            is_canonical = configured == canonical_value
+            derivation = (
+                f"Canonical M1 passenger_arrivals.csv 2025 {label} total; "
+                "the source notes values are rounded to the nearest thousand where applicable."
+                if is_canonical
+                else (
+                    f"Scenario override {configured} departs from the canonical M1 "
+                    f"2025 {label} total {canonical_value}; the source notes values are "
+                    "rounded to the nearest thousand where applicable."
+                )
+            )
             result[key] = {
-                "value": payload[key],
+                "value": configured,
                 "distribution": "fixed",
                 "units": "passenger movements/year",
-                "status": "observed",
+                "status": "observed" if is_canonical else "scenario_assumption",
                 "source_ids": ["passenger_arrivals_total_csv"],
-                "derivation": "Frozen Ports of Jersey 2025 passenger-arrival total.",
+                "derivation": derivation,
                 "sensitivity_required": True,
-                "notes": "Passenger movements, not unique tourists.",
+                "notes": (
+                    "Passenger movements, not unique tourists; canonical table hash "
+                    f"{canonical['source_hash']}."
+                ),
             }
         return result
 

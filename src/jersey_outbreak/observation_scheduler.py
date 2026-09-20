@@ -16,6 +16,18 @@ from .hashing import canonical_json_bytes, sha256_bytes
 from .observation_schemas import ObservationConfig
 from .starsim_adapter import PlainMetadataBoundary
 
+EVENT_STREAM_KEY_INPUTS: tuple[str, ...] = (
+    "infection-event",
+    "infected_uid",
+    "infected_agent_id",
+    "date",
+    "source_kind",
+    "route_id",
+    "infector_uid",
+    "infected_episode_identity_hash",
+    "infector_episode_identity_hash",
+)
+
 
 def _stable_seed(seed: int, *parts: object) -> int:
     digest = hashlib.sha256("|".join(str(part) for part in (seed, *parts)).encode()).digest()
@@ -60,8 +72,7 @@ def observation_stream_seed(latent_seed: int, config: ObservationConfig) -> int:
 def event_stream_seed(stream_seed: int, event: Mapping[str, Any]) -> int:
     """Derive an insertion-order-independent stream for one infection event."""
 
-    return _stable_seed(
-        stream_seed,
+    key_parts = (
         "infection-event",
         event.get("infected_uid", event.get("infected_agent_id")),
         event.get("infected_agent_id", ""),
@@ -71,6 +82,10 @@ def event_stream_seed(stream_seed: int, event: Mapping[str, Any]) -> int:
         event.get("infector_uid", ""),
         event.get("infected_episode_identity_hash", ""),
         event.get("infector_episode_identity_hash", ""),
+    )
+    return _stable_seed(
+        stream_seed,
+        *key_parts,
     )
 
 

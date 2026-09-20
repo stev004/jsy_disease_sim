@@ -154,7 +154,11 @@ def test_causal_interface_exercises_runtime_delivery_and_preserves_m5(
         "next_timestep"
     )
     offline = observe_latent_run(online, observation_config)
-    assert offline.diagnostics["detection_event_interface"]["offline_online_agreement"] is True
+    assert (
+        offline.diagnostics["detection_event_interface"]["offline_online_comparison"]
+        == "compared_and_equal"
+    )
+    assert offline.diagnostics["detection_event_interface"]["offline_rebuild_executed"] is True
 
 
 def test_detection_queue_never_leaks_future_and_delivers_on_declared_day(
