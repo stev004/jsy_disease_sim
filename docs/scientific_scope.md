@@ -196,11 +196,25 @@ identities across A/B configurations. A process-pool request may be recorded as
 an execution-environment diagnostic, not a claim of parallel execution.
 
 The calibration harness is a synthetic recovery test, not parameter estimation
-for Jersey. It can hide a reporting delay or generic transmission beta,
-generates fully detected truth from the generic M5 model, retains every grid
-trial, and checks recovery on fresh synthetic seeds. Beta recovery also emits
-profiles under altered ascertainment and route-weight assumptions to expose
-confounding. Its truth, candidate and held-out results are separate from
+for Jersey. Beta recovery retains every grid trial, selects on training seeds,
+and uses fresh held-out seeds as a falsifiable selection check: the recovered
+beta must be the unique held-out minimum over the declared beta grid (within the
+predeclared recovery tolerance). The held-out check is not an exact-zero
+reproduction assertion and is not a validation of Jersey data.
+
+The beta identifiability diagnostic records two-dimensional surfaces over beta
+and an explicit nuisance multiplier grid. At every beta it re-minimizes over
+the nuisance multiplier for altered ascertainment and altered route weights,
+then reports any argmin shift. These are synthetic sensitivity measurements;
+they do not identify beta, ascertainment or route weights in Jersey data.
+
+The reporting-delay recovery is narrower: it is a delay-operator invertibility
+check. Its synthetic truth deliberately uses beta = 0.0, ten initial seed
+cases, fully detecting symptomatic and asymptomatic infections, and all-one
+day-of-week effects. The resulting noiseless exact recovery is a unit test of
+the delay transformation, not evidence that reporting delay is identifiable
+from a realistic epidemic curve. Its diagnostics record these assumptions
+explicitly. The truth, candidate and held-out results remain separate from
 official Jersey evidence and cannot establish model validity.
 
 ### Milestone 6 / C3 observation semantics
