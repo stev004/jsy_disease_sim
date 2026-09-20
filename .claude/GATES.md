@@ -4,6 +4,10 @@
 
 ## Open
 
+### G28 — Merge the V1.2.1 tail (`v121/integration-tail` @ `a4a44e3c25a81ac8ff30d733e9cd0d8065f16151`)
+- **Question:** merge to `main`? Contents (five no-ff units on code baseline `6eb05c2`): subgrp `dbb0710` (canonical `covid_vaccination_subgroups`, age-band × dose per Ruling 4, dictionary rows, documented exclusions) · datafix `dccdae9` + corrective `c0e9a74` (DATA-7 fail-closed `observed` stamp, DATA-10 high-risk strata fix with the table hash now inside the M8 bundle identity + stale-reuse regression, DISEASE-10 tri-state agreement + corrected RNG key declarations, CROSS-3 erratum appended to the P4 report) · calib `99e6e62` + corrective `f117227` (DATA-8 falsifiable held-out gate, DATA-9 real 2-D profile with per-factor argmin shifts; calibration config 1.3 / manifest 1.4). Declared migrations: M8 schema 2.3 (bundle identity now covers `daily_high_risk`), calibration schemas; replicate-level latent/M4 hashes proven identical in reviewer A/Bs. Review lineage: Sol review BLOCKED (2 code MAJORs + 1 ancestry note — `docs/audits/2026-09-20-tail-review-sol-BLOCKED.md`; attempt 1 died on an OpenAI bio-risk filter false positive) → two correctives → bounded Sol re-review **PASS** (`docs/audits/2026-09-20-tail-rereview-sol-PASS.md`). Disclosure per the review's M3: the integration's ancestry includes state-layer trail commits and the sanctioned checkpoint-deletion housekeeping commit `7b22d00` — the designed state-on-main behaviour, no code impact. No CI on GitHub (billing); gates ran locally on both review clones.
+- **Default:** merge, SHA-first: `git -C ~/jsy_disease_sim merge --no-ff a4a44e3c25a81ac8ff30d733e9cd0d8065f16151 -m "G28: merge v121/integration-tail @ a4a44e3 (V1.2.1 tail)" && git -C ~/jsy_disease_sim push`. Say "merge G28" to have the agent execute it. This closes the V1.2.1 backlog; next frontier = V1.3 planning.
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
