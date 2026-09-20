@@ -2642,12 +2642,14 @@ def run_travel_outbreak(
     latent_hash = canonical_zero_latent_hash or sha256_bytes(
         canonical_json_bytes(_without_null_fields(latent_payload))
     )
+    high_risk_epidemic_hash = sha256_bytes(canonical_json_bytes(high_risk_epidemic))
     artifact_hash = sha256_bytes(
         canonical_json_bytes(
             {
                 "scenario_hash": resolved_scenario_hash,
                 "latent_hash": latent_hash,
                 "episode_hash": plan.episode_hash,
+                "high_risk_epidemic_hash": high_risk_epidemic_hash,
             }
         )
     )
@@ -2729,7 +2731,7 @@ def run_travel_outbreak(
             "scenario": resolved_scenario_hash,
             "latent_outcome": latent_hash,
             "artifact_bundle": artifact_hash,
-            "high_risk_epidemic": sha256_bytes(canonical_json_bytes(high_risk_epidemic)),
+            "high_risk_epidemic": high_risk_epidemic_hash,
         },
         "identity": {
             "resident_count": len(generated.agent_ids),
