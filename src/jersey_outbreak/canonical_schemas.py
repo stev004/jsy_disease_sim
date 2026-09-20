@@ -268,6 +268,42 @@ class CovidWeeklyVaccinationRow(CanonicalProvenance):
     upper_bound: StrictInt | None = None
 
 
+class CovidVaccinationSubgroupRow(CanonicalProvenance):
+    """PDF vaccination percentages retained only for denominator-backed age bands."""
+
+    age_band: Literal[
+        "5_to_11",
+        "12_to_15",
+        "16_to_17",
+        "17_and_under",
+        "18_to_29",
+        "30_to_39",
+        "40_to_49",
+        "50_to_54",
+        "55_to_59",
+        "60_to_64",
+        "65_to_69",
+        "70_to_74",
+        "75_to_79",
+        "80_plus",
+        "50_plus",
+        "16_plus",
+        "all",
+    ]
+    dose: Literal["dose_1", "dose_1_and_2"]
+    value: Number | None = None
+    unit: Literal["percent"]
+    reporting_status: Literal["reported", "not_reported", "positive_less_than"]
+    upper_bound: StrictInt | None = None
+
+    @field_validator("value")
+    @classmethod
+    def validate_percent(cls, value: int | float | None) -> int | float | None:
+        if value is not None and not 0 <= value <= 100:
+            raise ValueError("vaccination subgroup percentage must be between 0 and 100")
+        return value
+
+
 class CovidSerosurveyRow(CanonicalProvenance):
     measure: NonEmptyString
     value: Number

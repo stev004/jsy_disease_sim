@@ -20,6 +20,8 @@ def test_measure_dictionary_has_one_row_per_canonical_source(tmp_path: Path) -> 
         for row in rows:
             if table_name == "covid_weekly_vaccination":
                 measure = f"{row['dose']}:{row['metric']}"
+            elif table_name == "covid_vaccination_subgroups":
+                measure = f"{row['dose']}:{row['unit']}"
             elif table_name == "covid_weekly_eligible_population":
                 measure = "eligible_population"
             elif table_name in {
