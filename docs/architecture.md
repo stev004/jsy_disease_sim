@@ -389,9 +389,11 @@ memory estimate, physical-memory safety fraction and CPU count. Beta recovery is
 synthetic train/held-out profile over generic M5 beta values, with explicit
 ascertainment and route-weight sensitivity checks. The sensitivity diagnostics
 are two-dimensional beta-by-nuisance profiles that re-minimize over the
-nuisance multiplier at each beta and report argmin shifts; they are not Jersey
-surveillance calibration and do not identify beta separately from contact
-intensity.
+nuisance multiplier at each beta. Each surface reports `argmin_by_factor` and
+`argmin_shift_by_factor`; the top-level headline has one maximum-absolute
+shift scalar per surface over non-baseline factors, not the baseline-dominated
+global profiled argmin. They are not Jersey surveillance calibration and do not
+identify beta separately from contact intensity.
 
 `verification_archive.py` writes an immutable, hash-checked index tying C3
 results to the Git commit, parent M2/M3/M4 logical hashes, source manifests,

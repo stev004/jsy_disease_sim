@@ -42,6 +42,7 @@ class CalibrationResult:
 # one declared perturbation, rather than smuggling a fixed nuisance value into
 # a purported profile.
 IDENTIFIABILITY_NUISANCE_FACTORS: tuple[float, ...] = (0.5, 1.0)
+BASELINE_NUISANCE_FACTOR = 1.0
 DETECTION_PARAMETER_NAMES: tuple[str, ...] = (
     "symptomatic_detection_probability",
     "asymptomatic_detection_probability",
@@ -85,6 +86,16 @@ def _profile_beta_nuisance(
         rows,
         key=lambda row: (row["profiled_objective"], row["transmission_beta"]),
     )
+    factors = sorted({factor for beta_values in objective_grid.values() for factor in beta_values})
+    argmin_by_factor = {
+        float(factor): float(
+            min(
+                objective_grid,
+                key=lambda beta: (objective_grid[beta][factor], beta),
+            )
+        )
+        for factor in factors
+    }
     return {
         "rows": rows,
         "argmin": {
@@ -92,7 +103,25 @@ def _profile_beta_nuisance(
             "nuisance_factor": minimum["argmin_nuisance_factor"],
             "objective": minimum["profiled_objective"],
         },
+        "argmin_by_factor": argmin_by_factor,
     }
+
+
+def _record_argmin_shifts(profile: dict[str, Any], training_beta: float) -> float:
+    """Record per-factor beta shifts and return the non-baseline headline shift."""
+
+    shifts = {
+        float(factor): float(beta - training_beta)
+        for factor, beta in profile["argmin_by_factor"].items()
+    }
+    non_baseline_shifts = [
+        abs(shift) for factor, shift in shifts.items() if factor != BASELINE_NUISANCE_FACTOR
+    ]
+    maximum_absolute_shift = max(non_baseline_shifts, default=0.0)
+    profile["argmin_shift_reference_beta"] = float(training_beta)
+    profile["argmin_shift_by_factor"] = shifts
+    profile["max_abs_argmin_shift"] = float(maximum_absolute_shift)
+    return float(maximum_absolute_shift)
 
 
 def _delay_config(config: ObservationConfig, days: int) -> ObservationConfig:
@@ -586,6 +615,8 @@ def run_beta_recovery(
     ascertainment_profile = _profile_beta_nuisance(objective_grids["ascertainment"])
     route_profile = _profile_beta_nuisance(objective_grids["route_weights"])
     recovered_factor = IDENTIFIABILITY_NUISANCE_FACTORS[0]
+    ascertainment_max_abs_shift = _record_argmin_shifts(ascertainment_profile, recovered)
+    route_max_abs_shift = _record_argmin_shifts(route_profile, recovered)
     identifiability_profile: dict[str, Any] = {
         "dimensions": {
             "primary": "transmission_beta",
@@ -602,20 +633,17 @@ def run_beta_recovery(
             recovered_factor
         ],
         "argmin_shift": {
-            "ascertainment_beta": float(ascertainment_profile["argmin"]["transmission_beta"]),
-            "ascertainment_beta_delta_from_training": float(
-                ascertainment_profile["argmin"]["transmission_beta"] - recovered
-            ),
-            "route_weights_beta": float(route_profile["argmin"]["transmission_beta"]),
-            "route_weights_beta_delta_from_training": float(
-                route_profile["argmin"]["transmission_beta"] - recovered
-            ),
+            "ascertainment": ascertainment_max_abs_shift,
+            "route_weights": route_max_abs_shift,
         },
         "interpretation": (
             "Each surface evaluates every declared beta at every declared nuisance "
-            "factor and minimizes over the nuisance factor at each beta. The reported "
-            "argmin shifts are synthetic sensitivity measurements only; they do not "
-            "identify beta, ascertainment or route weights in Jersey data."
+            "factor and minimizes over the nuisance factor at each beta. Each surface "
+            "also reports the beta argmin and signed shift for every factor relative "
+            "to the training argmin. Headline argmin shifts are maximum absolute "
+            "shifts over non-baseline factors; these are synthetic sensitivity "
+            "measurements only and do not identify beta, ascertainment or route "
+            "weights in Jersey data."
         ),
     }
     recovery_error = abs(recovered - truth_beta)

@@ -272,7 +272,18 @@ def test_beta_recovery_has_train_heldout_and_confounding_profile(
                 item["objective"] for item in row["nuisance_profile"]
             )
             assert row["argmin_nuisance_factor"] in [0.5, 1.0]
-    assert "argmin_shift" in profile
+        assert profile[surface_name].get("argmin_by_factor") == {0.5: 0.12, 1.0: 0.08}
+        assert profile[surface_name].get("argmin_shift_by_factor") == pytest.approx(
+            {0.5: 0.04, 1.0: 0.0}
+        )
+        assert profile[surface_name]["argmin_shift_reference_beta"] == 0.08
+        assert profile[surface_name]["max_abs_argmin_shift"] == pytest.approx(0.04)
+    assert profile["argmin_shift"] == pytest.approx(
+        {
+            "ascertainment": 0.04,
+            "route_weights": 0.04,
+        }
+    )
 
 
 def test_verification_archive_rejects_stale_parent_hashes(tmp_path: Path) -> None:

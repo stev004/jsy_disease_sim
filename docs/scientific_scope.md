@@ -205,8 +205,15 @@ reproduction assertion and is not a validation of Jersey data.
 The beta identifiability diagnostic records two-dimensional surfaces over beta
 and an explicit nuisance multiplier grid. At every beta it re-minimizes over
 the nuisance multiplier for altered ascertainment and altered route weights,
-then reports any argmin shift. These are synthetic sensitivity measurements;
-they do not identify beta, ascertainment or route weights in Jersey data.
+then records `argmin_by_factor` and the signed
+`argmin_shift_by_factor` relative to the training argmin for every nuisance
+factor. The headline `argmin_shift` is the maximum absolute shift over
+non-baseline factors for each surface; it is not the baseline-dominated global
+profiled argmin.
+These are synthetic sensitivity measurements; they do not identify beta,
+ascertainment or route weights in Jersey data. This reporting correction is
+represented by calibration config schema 1.3 and calibration manifest schema
+1.4.
 
 The reporting-delay recovery is narrower: it is a delay-operator invertibility
 check. Its synthetic truth deliberately uses beta = 0.0, ten initial seed
