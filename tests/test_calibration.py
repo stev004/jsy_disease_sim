@@ -141,7 +141,7 @@ def test_calibration_artifact_retains_trials_and_manifest(
     artifact = write_calibration_artifact(result, ROOT, tmp_path)
     manifest = json.loads((artifact.artifact_directory / "manifest.json").read_text())
     assert manifest["status"] == "passed"
-    assert manifest["manifest_schema_version"] == "1.3"
+    assert manifest["manifest_schema_version"] == "1.4"
     assert manifest["trial_count"] == 3
     assert (artifact.artifact_directory / "calibration_trials.parquet").exists()
     assert (artifact.artifact_directory / "calibration_results.json").exists()

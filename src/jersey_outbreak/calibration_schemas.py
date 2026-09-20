@@ -13,7 +13,7 @@ from .contracts import ArtifactRecord, NonEmptyString, StrictModel
 class CalibrationConfig(StrictModel):
     """Predeclared bounds for delay and transmission-beta recovery experiments."""
 
-    schema_version: Literal["1.1", "1.2"] = "1.2"
+    schema_version: Literal["1.1", "1.2", "1.3"] = "1.3"
     study_id: NonEmptyString
     hidden_parameter: Literal["reporting_delay_days", "transmission_beta"] = "reporting_delay_days"
     candidate_min_days: StrictInt = Field(default=0, ge=0)
@@ -72,7 +72,7 @@ class CalibrationConfig(StrictModel):
 class CalibrationArtifactManifest(StrictModel):
     """Manifest for a synthetic calibration experiment, including all trials."""
 
-    manifest_schema_version: Literal["1.1", "1.2", "1.3"] = "1.3"
+    manifest_schema_version: Literal["1.1", "1.2", "1.3", "1.4"] = "1.4"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString = "6.1.0"
     study_id: NonEmptyString
