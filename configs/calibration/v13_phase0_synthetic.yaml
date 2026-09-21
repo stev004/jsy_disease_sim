@@ -1,0 +1,129 @@
+schema_version: "1.0"
+campaign_id: v13-phase0-synthetic-recovery
+mode: ci
+start_date: "2025-01-06"
+duration_days: 30
+observation_horizon_tail_days: 4
+predeclaration_sha256: ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104
+
+dimensions:
+  beta:
+    truth: 0.08
+    candidates: [0.04, 0.08, 0.12]
+    tolerance: 0.04
+    bias_limit: 0.02
+  inoculation_day_offset:
+    truth: 2
+    candidates: [0, 2, 4]
+    tolerance: 2
+    bias_limit: 1
+  symptomatic_detection_probability:
+    truth: 0.75
+    candidates: [0.50, 0.75, 1.00]
+    tolerance: 0.25
+    bias_limit: 0.125
+  asymptomatic_detection_probability:
+    truth: 0.25
+    candidates: [0.10, 0.25, 0.40]
+    tolerance: 0.15
+    bias_limit: 0.075
+
+fixed_scenario:
+  population_mode: ci
+  population_size: 3000
+  initial_seed_count: 0
+  inoculation_attempts: 10
+  inoculation_schedule: start_date_plus_offset
+  background_import_rate_per_day: 0.0
+  import_schedule: empty_except_inoculation
+  route_multipliers:
+    household: 1.0
+    school_class: 1.0
+    school_cross_class: 1.0
+    workplace_team: 1.0
+    workplace_transient: 1.0
+    care_resident: 1.0
+    care_staff: 1.0
+    shared_vehicle: 1.0
+    bus: 1.0
+    community_indoor: 1.0
+    community_outdoor: 1.0
+  symptomatic_probability: 0.6
+  latent_duration_days: 2
+  infectious_duration_days: 5
+  waning_enabled: false
+  seasonality: absent
+  interventions: absent
+  detection_delay_days: 0
+  reporting_delay_days: 2
+  weekday_effect: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+observation:
+  target_detection_probabilities:
+    symptomatic: 0.75
+    asymptomatic: 0.25
+  candidate_detection_probabilities_are_fitted: true
+  channels: [symptomatic, asymptomatic]
+  source: observation_events_only
+  no_real_jersey_data: true
+
+seeds:
+  target_process_seeds: [42001, 42002, 42003, 42004, 42005]
+  target_observation_seeds: [52001, 52002, 52003, 52004, 52005]
+  target_observation_config_id: v13-phase0-target
+  candidate_process_seeds: [43001, 43002, 43003]
+  candidate_observation_seeds: [53001, 53002, 53003]
+  candidate_observation_config_id: v13-phase0-fit
+  optimizer_seed: null
+  replacement_seeds: false
+
+objective:
+  name: square_root_minimum_distance
+  poisson_variance_stabilizer: 0.375
+  candidate_replicate_mean: arithmetic_mean_of_three
+  channel_weight: equal
+  date_weight: equal
+  all_cells_scored_before_selection: true
+  likelihood: false
+
+identifiability:
+  tie_scale: 1.0e-12
+  profile_gap: 0.05
+  profile_denominator_floor: 1.0e-12
+  exact_global_tie: fail
+  lexicographic_tie_break: forbidden
+
+acceptance:
+  descriptive_coverage_minimum: 0.8
+  joint_coverage_minimum: 0.6
+  boundary_fraction_maximum: 0.2
+  truth_inoculation_acquisitions: 10
+  truth_minimum_local_secondary_infections: 1
+  truth_minimum_reports_per_channel: 1
+  truth_minimum_nonzero_combined_report_dates: 3
+  real_data_used: false
+  nominal_coverage_claim: false
+  calibration_claim: false
+
+budget_caps:
+  p0_1_grid_cells: 81
+  p0_2_wrong_delay_cells: 81
+  p0_2_wrong_regime_cells: 27
+  p0_3_cells: 9
+  total_cells: 198
+  truth_latent_outbreak_calls: 5
+  p0_1_p0_2_candidate_latent_outbreak_calls: 27
+  p0_3_latent_outbreak_calls: 27
+  total_latent_outbreak_calls: 59
+  p0_1_observation_transforms: 248
+  total_observation_transforms: 599
+  distinct_population_network_seed_builds: 8
+  duration_days: 30
+  mode: ci
+
+implementation:
+  implemented_arms: [p0_1]
+  required_arms: [p0_1, p0_2a, p0_2b, p0_3]
+  retries: 0
+  adaptive_grid: false
+  replacement_seeds: false
