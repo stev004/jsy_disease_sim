@@ -5,6 +5,7 @@ from __future__ import annotations
 import platform
 import resource
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,93 @@ class CalibrationResult:
     logical_content_hash: str
     runtime_seconds: float
     peak_memory_bytes: int | None
+
+
+# The existing sensitivity experiment uses a halved nuisance multiplier.  The
+# unaltered value is included so that each surface has an explicit baseline and
+# one declared perturbation, rather than smuggling a fixed nuisance value into
+# a purported profile.
+IDENTIFIABILITY_NUISANCE_FACTORS: tuple[float, ...] = (0.5, 1.0)
+BASELINE_NUISANCE_FACTOR = 1.0
+DETECTION_PARAMETER_NAMES: tuple[str, ...] = (
+    "symptomatic_detection_probability",
+    "asymptomatic_detection_probability",
+)
+
+
+def _profile_beta_nuisance(
+    objective_grid: Mapping[float, Mapping[float, float]],
+) -> dict[str, Any]:
+    """Profile the nuisance dimension at every beta grid point.
+
+    The returned rows retain the complete two-dimensional surface.  The
+    ``profiled_objective`` is the minimum over nuisance values for that beta;
+    it is intentionally not the objective at the recovered beta only.
+    """
+
+    rows: list[dict[str, Any]] = []
+    for beta in sorted(objective_grid):
+        nuisance_profile = [
+            {
+                "nuisance_factor": float(factor),
+                "objective": float(objective_grid[beta][factor]),
+            }
+            for factor in sorted(objective_grid[beta])
+        ]
+        nuisance_minimum = min(
+            nuisance_profile,
+            key=lambda row: (row["objective"], row["nuisance_factor"]),
+        )
+        rows.append(
+            {
+                "transmission_beta": float(beta),
+                "nuisance_profile": nuisance_profile,
+                "profiled_objective": nuisance_minimum["objective"],
+                "argmin_nuisance_factor": nuisance_minimum["nuisance_factor"],
+            }
+        )
+    if not rows:
+        raise ValueError("identifiability profile requires at least one beta value")
+    minimum = min(
+        rows,
+        key=lambda row: (row["profiled_objective"], row["transmission_beta"]),
+    )
+    factors = sorted({factor for beta_values in objective_grid.values() for factor in beta_values})
+    argmin_by_factor = {
+        float(factor): float(
+            min(
+                objective_grid,
+                key=lambda beta: (objective_grid[beta][factor], beta),
+            )
+        )
+        for factor in factors
+    }
+    return {
+        "rows": rows,
+        "argmin": {
+            "transmission_beta": minimum["transmission_beta"],
+            "nuisance_factor": minimum["argmin_nuisance_factor"],
+            "objective": minimum["profiled_objective"],
+        },
+        "argmin_by_factor": argmin_by_factor,
+    }
+
+
+def _record_argmin_shifts(profile: dict[str, Any], training_beta: float) -> float:
+    """Record per-factor beta shifts and return the non-baseline headline shift."""
+
+    shifts = {
+        float(factor): float(beta - training_beta)
+        for factor, beta in profile["argmin_by_factor"].items()
+    }
+    non_baseline_shifts = [
+        abs(shift) for factor, shift in shifts.items() if factor != BASELINE_NUISANCE_FACTOR
+    ]
+    maximum_absolute_shift = max(non_baseline_shifts, default=0.0)
+    profile["argmin_shift_reference_beta"] = float(training_beta)
+    profile["argmin_shift_by_factor"] = shifts
+    profile["max_abs_argmin_shift"] = float(maximum_absolute_shift)
+    return float(maximum_absolute_shift)
 
 
 def _delay_config(config: ObservationConfig, days: int) -> ObservationConfig:
@@ -95,10 +183,12 @@ def _beta_objective_components(
 
 
 def _fully_detecting_observation(base: ObservationConfig) -> ObservationConfig:
-    parameters = {
-        key: parameter.model_copy(update={"value": 1.0})
-        for key, parameter in base.parameters.items()
-    }
+    parameters = dict(base.parameters)
+    for key in DETECTION_PARAMETER_NAMES:
+        parameter = parameters.get(key)
+        if parameter is None:
+            raise ValueError(f"fully detecting target requires observation parameter {key!r}")
+        parameters[key] = parameter.model_copy(update={"value": 1.0})
     return base.model_copy(
         update={
             "observation_config_id": "m6-calibration-target-observation",
@@ -228,8 +318,23 @@ def run_synthetic_recovery(
         ],
         "objective_units": "daily reported-case count squared for the optimized component",
         "synthetic_truth": {
+            "experiment": "delay_operator_invertibility_check",
             "parameter": config.hidden_parameter,
             "value": config.synthetic_truth_delay_days,
+            "transmission_beta": float(target_run_config.beta),
+            "initial_seed_count": target_run_config.initial_seed_count,
+            "latent_event_count": len(target_latent.transmission_events),
+            "secondary_transmission_event_count": sum(
+                event.get("source_kind") == "local" for event in target_latent.transmission_events
+            ),
+            "target_observation": {
+                "detection_parameters": {
+                    key: float(target_observation_config.parameters[key].value or 0.0)
+                    for key in DETECTION_PARAMETER_NAMES
+                },
+                "day_of_week_effect": list(target_observation_config.day_of_week_effect),
+                "fully_detecting": True,
+            },
             "observation_seed": target_observation_config.observation_seed,
             "latent_seed": target_run_config.seed,
         },
@@ -333,10 +438,10 @@ def run_beta_recovery(
     *,
     calibration_config: CalibrationConfig,
 ) -> CalibrationResult:
-    """Recover beta on synthetic truth with train/held-out and confounding profiles.
+    """Recover beta on synthetic truth with a falsifiable held-out gate.
 
-    The experiment is deliberately a profile over the declared beta grid. It is
-    not calibration to Jersey surveillance data: truth is generated by this
+    The experiment is deliberately a profile over the declared beta grid. It
+    is not calibration to Jersey surveillance data: truth is generated by this
     same generic disease module, observed under an explicit fully-observed
     synthetic ascertainment configuration, and scored on complete date grids.
     """
@@ -348,6 +453,23 @@ def run_beta_recovery(
     config = calibration_config
     truth_beta = float(config.synthetic_truth_beta)
     target_observation_config = _beta_observation_config(observation_config)
+    latent_cache: dict[tuple[int, float, tuple[tuple[str, float], ...]], OutbreakRunResult] = {}
+
+    def cached_latent(
+        network: GeneratedNetworks, run_controls: OutbreakRunConfig
+    ) -> OutbreakRunResult:
+        key = (
+            int(run_controls.seed),
+            float(run_controls.beta),
+            tuple(
+                (route_id, float(multiplier))
+                for route_id, multiplier in sorted(run_controls.route_multipliers.items())
+            ),
+        )
+        if key not in latent_cache:
+            latent_cache[key] = run_outbreak(network, run_controls, parameters)
+        return latent_cache[key]
+
     trial_components: dict[float, list[dict[str, float]]] = {
         float(beta): [] for beta in config.candidate_beta_values
     }
@@ -362,14 +484,14 @@ def run_beta_recovery(
                 "initial_seed_count": max(10, base_run_config.initial_seed_count),
             }
         )
-        truth_latent = run_outbreak(network, run_controls, parameters)
+        truth_latent = cached_latent(network, run_controls)
         truth_observation = observe_latent_run(truth_latent, target_observation_config)
         if target_latent is None:
             target_latent = truth_latent
             target_observation = truth_observation
         for beta in config.candidate_beta_values:
             candidate_controls = run_controls.model_copy(update={"beta": float(beta)})
-            candidate_latent = run_outbreak(network, candidate_controls, parameters)
+            candidate_latent = cached_latent(network, candidate_controls)
             candidate_observation = observe_latent_run(candidate_latent, target_observation_config)
             trial_components[float(beta)].append(
                 _beta_objective_components(candidate_observation, truth_observation)
@@ -399,9 +521,16 @@ def run_beta_recovery(
     heldout_truth: ObservationRunResult | None = None
     heldout_candidate: ObservationRunResult | None = None
     heldout_components: list[dict[str, float]] = []
-    ascertainment_components: list[dict[str, float]] = []
-    route_components: list[dict[str, float]] = []
-    altered_observation_config = _scale_detection_probability(target_observation_config, 0.5)
+    heldout_grid_components: dict[float, list[dict[str, float]]] = {
+        float(beta): [] for beta in config.candidate_beta_values
+    }
+    profile_components: dict[str, dict[float, dict[float, list[dict[str, float]]]]] = {
+        profile_name: {
+            float(beta): {factor: [] for factor in IDENTIFIABILITY_NUISANCE_FACTORS}
+            for beta in config.candidate_beta_values
+        }
+        for profile_name in ("ascertainment", "route_weights")
+    }
     for seed in config.heldout_replicate_seeds:
         network = _network_for_seed(root, generated, int(seed))
         truth_controls = base_run_config.model_copy(
@@ -411,36 +540,46 @@ def run_beta_recovery(
                 "initial_seed_count": max(10, base_run_config.initial_seed_count),
             }
         )
-        truth_latent = run_outbreak(network, truth_controls, parameters)
-        candidate_latent = run_outbreak(
-            network, truth_controls.model_copy(update={"beta": recovered}), parameters
-        )
+        truth_latent = cached_latent(network, truth_controls)
         truth_observation = observe_latent_run(truth_latent, target_observation_config)
-        candidate_observation = observe_latent_run(candidate_latent, target_observation_config)
-        heldout_components.append(
-            _beta_objective_components(candidate_observation, truth_observation)
-        )
-        ascertainment_components.append(
-            _beta_objective_components(
-                observe_latent_run(candidate_latent, altered_observation_config), truth_observation
+        for beta in config.candidate_beta_values:
+            beta_value = float(beta)
+            candidate_controls = truth_controls.model_copy(update={"beta": beta_value})
+            candidate_latent = cached_latent(network, candidate_controls)
+            candidate_observation = observe_latent_run(candidate_latent, target_observation_config)
+            heldout_components_for_beta = _beta_objective_components(
+                candidate_observation, truth_observation
             )
-        )
-        scaled_controls = truth_controls.model_copy(
-            update={
-                "beta": recovered,
-                "route_multipliers": _scale_route_multipliers(truth_controls, 0.5),
-            }
-        )
-        scaled_latent = run_outbreak(network, scaled_controls, parameters)
-        route_components.append(
-            _beta_objective_components(
-                observe_latent_run(scaled_latent, target_observation_config), truth_observation
-            )
-        )
-        if heldout_latent is None:
-            heldout_latent = candidate_latent
-            heldout_truth = truth_observation
-            heldout_candidate = candidate_observation
+            heldout_grid_components[beta_value].append(heldout_components_for_beta)
+            if beta_value == recovered:
+                heldout_components.append(heldout_components_for_beta)
+                if heldout_latent is None:
+                    heldout_latent = candidate_latent
+                    heldout_truth = truth_observation
+                    heldout_candidate = candidate_observation
+
+            for factor in IDENTIFIABILITY_NUISANCE_FACTORS:
+                altered_observation_config = _scale_detection_probability(
+                    target_observation_config, factor
+                )
+                profile_components["ascertainment"][beta_value][factor].append(
+                    _beta_objective_components(
+                        observe_latent_run(candidate_latent, altered_observation_config),
+                        truth_observation,
+                    )
+                )
+                scaled_controls = candidate_controls.model_copy(
+                    update={
+                        "route_multipliers": _scale_route_multipliers(candidate_controls, factor)
+                    }
+                )
+                scaled_latent = cached_latent(network, scaled_controls)
+                profile_components["route_weights"][beta_value][factor].append(
+                    _beta_objective_components(
+                        observe_latent_run(scaled_latent, target_observation_config),
+                        truth_observation,
+                    )
+                )
 
     if target_latent is None or target_observation is None:
         raise RuntimeError("beta calibration produced no training replicates")
@@ -449,11 +588,68 @@ def run_beta_recovery(
     aggregate_heldout = {
         key: float(sum(row[key] for row in heldout_components)) for key in heldout_components[0]
     }
+    heldout_grid = {
+        beta: {key: float(sum(row[key] for row in rows)) for key in rows[0]}
+        for beta, rows in heldout_grid_components.items()
+    }
+    heldout_argmin_beta = min(
+        heldout_grid, key=lambda beta: (heldout_grid[beta]["objective"], beta)
+    )
+    heldout_minimum = heldout_grid[heldout_argmin_beta]["objective"]
+    heldout_tied_minimizers = [
+        beta
+        for beta, components in heldout_grid.items()
+        if components["objective"] == heldout_minimum
+    ]
+    heldout_gate_passed = recovered == heldout_argmin_beta and len(heldout_tied_minimizers) == 1
+
+    objective_grids: dict[str, dict[float, dict[float, float]]] = {}
+    for profile_name, beta_grid in profile_components.items():
+        objective_grids[profile_name] = {
+            beta: {
+                factor: float(sum(row["objective"] for row in factor_rows))
+                for factor, factor_rows in nuisance_grid.items()
+            }
+            for beta, nuisance_grid in beta_grid.items()
+        }
+    ascertainment_profile = _profile_beta_nuisance(objective_grids["ascertainment"])
+    route_profile = _profile_beta_nuisance(objective_grids["route_weights"])
+    recovered_factor = IDENTIFIABILITY_NUISANCE_FACTORS[0]
+    ascertainment_max_abs_shift = _record_argmin_shifts(ascertainment_profile, recovered)
+    route_max_abs_shift = _record_argmin_shifts(route_profile, recovered)
+    identifiability_profile: dict[str, Any] = {
+        "dimensions": {
+            "primary": "transmission_beta",
+            "nuisance": "multiplier",
+            "beta_values": [float(beta) for beta in config.candidate_beta_values],
+            "nuisance_factors": list(IDENTIFIABILITY_NUISANCE_FACTORS),
+        },
+        "ascertainment": ascertainment_profile,
+        "route_weights": route_profile,
+        "altered_ascertainment_objective": objective_grids["ascertainment"][recovered][
+            recovered_factor
+        ],
+        "altered_route_weight_objective": objective_grids["route_weights"][recovered][
+            recovered_factor
+        ],
+        "argmin_shift": {
+            "ascertainment": ascertainment_max_abs_shift,
+            "route_weights": route_max_abs_shift,
+        },
+        "interpretation": (
+            "Each surface evaluates every declared beta at every declared nuisance "
+            "factor and minimizes over the nuisance factor at each beta. Each surface "
+            "also reports the beta argmin and signed shift for every factor relative "
+            "to the training argmin. Headline argmin shifts are maximum absolute "
+            "shifts over non-baseline factors; these are synthetic sensitivity "
+            "measurements only and do not identify beta, ascertainment or route "
+            "weights in Jersey data."
+        ),
+    }
     recovery_error = abs(recovered - truth_beta)
     status = (
         "passed"
-        if recovery_error <= float(config.recovery_tolerance_beta)
-        and aggregate_heldout["objective"] == 0
+        if recovery_error <= float(config.recovery_tolerance_beta) and heldout_gate_passed
         else "failed"
     )
     diagnostics: dict[str, Any] = {
@@ -476,23 +672,21 @@ def run_beta_recovery(
             "seeds": list(config.heldout_replicate_seeds),
             "objective_components": aggregate_heldout,
             "recovery_error": recovery_error,
-            "passed": aggregate_heldout["objective"] == 0,
+            "criterion": "recovered beta is the unique held-out argmin over the declared beta grid",
+            "validating": True,
+            "passed": heldout_gate_passed,
+            "argmin_beta": heldout_argmin_beta,
+            "minimum_objective": heldout_minimum,
+            "tied_minimizers": heldout_tied_minimizers,
+            "grid": [
+                {
+                    "transmission_beta": beta,
+                    "objective_components": components,
+                }
+                for beta, components in sorted(heldout_grid.items())
+            ],
         },
-        "identifiability_profile": {
-            "ascertainment_factor": 0.5,
-            "altered_ascertainment_objective": float(
-                sum(row["objective"] for row in ascertainment_components)
-            ),
-            "route_multiplier_factor": 0.5,
-            "altered_route_weight_objective": float(
-                sum(row["objective"] for row in route_components)
-            ),
-            "interpretation": (
-                "Sensitivity profiles expose confounding between beta, ascertainment "
-                "and route weights; "
-                "they are not additional Jersey evidence or a claim of separate identification."
-            ),
-        },
+        "identifiability_profile": identifiability_profile,
         "all_trials_retained": True,
         "real_jersey_data_used": False,
         "benchmark": {
@@ -512,7 +706,8 @@ def run_beta_recovery(
                 "trial_rows": profile_rows,
                 "best_parameters": {"transmission_beta": recovered},
                 "heldout_components": aggregate_heldout,
-                "identifiability_profile": diagnostics["identifiability_profile"],
+                "heldout_grid": heldout_grid,
+                "identifiability_profile": identifiability_profile,
             }
         )
     )

@@ -65,12 +65,13 @@ Build status: **passed**
 | data/processed/covid_daily_surveillance.csv | 10087 | 68fba14314dcce40c5c97eb59f51b5c539e93bef3188fdce59650996965c5858 |
 | data/processed/covid_current_summary.csv | 5176 | 96d1a10d64e5182304637b74af19a7cd2929478f6dde963fb5d0f41d9bb68c00 |
 | data/processed/covid_weekly_vaccination.csv | 19008 | b5acedbefff67c2725f36eadffb7dd6da6d55f0d4fed1a3e80b77ab6a694077b |
+| data/processed/covid_vaccination_subgroups.csv | 22 | 7a36bc5650f4e4c3fdf64373fa06a9f97b4c772b19a7a17348aa349f67d5cacd |
 | data/processed/covid_serosurvey_2020.csv | 13 | 717e08c68e0313ea6e771af13565bdc61a0ac13a6f1c3421a556f31b624568bd |
 | data/processed/covid_weekly_eligible_population.csv | 132 | ede59462a9850fb6be0d7ba9838d21ccaadeb58841c1c79841ecae9c31355e8a |
 | data/processed/covid_jhu_daily.csv | 3429 | 205cf2366c05c6a543eb66bbbb3806181574828f7bc1a3b9b448083ec5e87289 |
 | data/processed/population_estimates_annual.csv | 4242 | ee7dc6302193ea1abeeacb0e06063d9de05bedf30af8ec5a5533ecf181fc85ff |
 | data/processed/population_denominators_by_age_band.csv | 714 | 156d060bb758e71aefd1adef1cfeead8335f33cafc1b075bf115923d41b38428 |
-| data/processed/measure_dictionary.csv | 92 | 5cf3e99087d79cde5837f7c08daf86c1936d459cc11c7eb4227b505a825f02c3 |
+| data/processed/measure_dictionary.csv | 94 | 9fd44f8cca5f36f00a9e0475128c51f41d38a30006ee5bfb6ddf3ea23011226d |
 
 ## Validation and reconciliation
 
@@ -99,6 +100,9 @@ Build status: **passed**
 - **warning** `covid_final_cumulative_cases_daily_vs_current`: actual=66391, expected=66391, difference=0.
 - **passed** `covid_weekly_columns_mapped_or_excluded`: actual=155, expected=155, difference=0.
 - **passed** `covid_weekly_rows`: actual=132, expected=132, difference=0.
+- **passed** `covid_pdf_subgroup_rows`: actual=22, expected=22, difference=0.
+- **passed** `covid_pdf_subgroup_denominator_bands`: actual=14, expected=14, difference=0.
+- **passed** `covid_pdf_subgroup_denominator_cells`: actual=22, expected=22, difference=0.
 - **passed** `covid_serosurvey_measures`: actual=13, expected=13, difference=0.
 - **passed** `covid_jhu_dates`: actual=1143, expected=1143, difference=0.
 - **passed** `covid_jhu_first_nonzero_confirmed`: actual=12, expected=12, difference=0. first_date=2020-03-22; expected_date=2020-03-22; status=passed
@@ -131,6 +135,9 @@ Build status: **passed**
 - covid daily surveillance anomaly: TestsTotalNegativeTests is excluded because 917 of 917 cells use SharePoint calculated-field rendering, including 418 cells rendered as float;#0 and 1 cell rendered as float;#1073672.00000000.
 - covid current summary undated row raw values: ,1165877,67397,0,
 - vaccination percentages are publisher-computed against an unstated denominator per band; not recomputed here
+- known gap: covid19_vaccination_pcr_insights_pdf Table 5 age group 0-4 is excluded from covid_vaccination_subgroups because no matching population_denominators_by_age_band band exists; no value is inferred
+- known gap: covid19_vaccination_pcr_insights_pdf Table 2 age groups 50-59, 65-79 and all age groups (aged 5+) are excluded from covid_vaccination_subgroups because no exact matching population_denominators_by_age_band bands exist; no value is inferred
+- known gap: covid19_vaccination_pcr_insights_pdf occupational, parish, ethnicity, tenure, household-type, marital-status, overcrowding, sexual-orientation, education, employment-type and industry cuts are excluded because frozen matching denominators do not exist; no subgroup rate is inferred
 - JHU cumulative confirmed first differences contain 0 negative days; published corrections are preserved without clipping.
 - known gap: no intervention/NPI timeline source is frozen or tabulated; V1.3 must treat NPIs as declared scenario assumptions until a dated, cited fixture exists
 - known gap: no parish-level case series is frozen; every frozen case source is island-level

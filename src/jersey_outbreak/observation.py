@@ -14,7 +14,11 @@ from typing import Any
 import yaml  # type: ignore[import-untyped]
 
 from .hashing import canonical_json_bytes, sha256_bytes
-from .observation_scheduler import DetectionEvent, build_offline_schedule
+from .observation_scheduler import (
+    EVENT_STREAM_KEY_INPUTS,
+    DetectionEvent,
+    build_offline_schedule,
+)
 from .observation_schemas import ObservationConfig
 from .outbreak_runner import OutbreakRunResult
 
@@ -64,6 +68,14 @@ class ObservationRunResult:
         return iter(self.detection_events)
 
 
+class OfflineOnlineAgreementError(RuntimeError):
+    """Agreement failure carrying the partial comparison diagnostic."""
+
+    def __init__(self, message: str, diagnostics: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.diagnostics = diagnostics
+
+
 def _date_range(start: date, end: date) -> list[date]:
     return [start + timedelta(days=offset) for offset in range((end - start).days + 1)]
 
@@ -101,7 +113,8 @@ def observe_latent_run(
         {**event.__dict__, "provenance": dict(event.provenance)} for event in detection_events
     ]
     online_schedule = latent_run.observation_schedule
-    online_agreement = None
+    offline_rebuild_executed = True
+    offline_online_comparison = "not_compared"
     if online_schedule is not None:
         online_payloads = [
             {**event.__dict__, "provenance": dict(event.provenance)}
@@ -112,8 +125,19 @@ def observe_latent_run(
             and online_payloads == detection_payloads
             and online_schedule.stream_fingerprint == offline_schedule.stream_fingerprint
         )
+        offline_online_comparison = (
+            "compared_and_equal" if online_agreement else "compared_and_unequal"
+        )
         if not online_agreement:
-            raise RuntimeError("offline observation schedule disagrees with runtime schedule")
+            raise OfflineOnlineAgreementError(
+                "offline observation schedule disagrees with runtime schedule",
+                {
+                    "detection_event_interface": {
+                        "offline_online_comparison": offline_online_comparison,
+                        "offline_rebuild_executed": offline_rebuild_executed,
+                    }
+                },
+            )
 
     latent_start = date.fromisoformat(latent_run.daily_epidemic[0]["date"])
     latent_end = date.fromisoformat(latent_run.daily_epidemic[-1]["date"])
@@ -344,7 +368,8 @@ def observe_latent_run(
             "consumer": "runtime consumer hook; none attached for offline aggregation",
             "mutates_latent_or_routes": False,
             "runtime_delivery": online_schedule is not None,
-            "offline_online_agreement": online_agreement,
+            "offline_online_comparison": offline_online_comparison,
+            "offline_rebuild_executed": offline_rebuild_executed,
             "fields": [
                 "agent_uid",
                 "detection_date",
@@ -362,14 +387,7 @@ def observe_latent_run(
                 "observation_seed",
                 "observation_config_id",
             ],
-            "event_key_inputs": [
-                "infected_uid",
-                "infected_agent_id",
-                "infection_date",
-                "source_kind",
-                "route_id",
-                "infector_uid",
-            ],
+            "event_key_inputs": list(EVENT_STREAM_KEY_INPUTS),
             "stream_fingerprint": offline_schedule.stream_fingerprint,
             "natural_history_resampled": False,
         },

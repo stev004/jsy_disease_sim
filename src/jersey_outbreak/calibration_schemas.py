@@ -13,7 +13,7 @@ from .contracts import ArtifactRecord, NonEmptyString, StrictModel
 class CalibrationConfig(StrictModel):
     """Predeclared bounds for delay and transmission-beta recovery experiments."""
 
-    schema_version: Literal["1.1"] = "1.1"
+    schema_version: Literal["1.1", "1.2", "1.3"] = "1.3"
     study_id: NonEmptyString
     hidden_parameter: Literal["reporting_delay_days", "transmission_beta"] = "reporting_delay_days"
     candidate_min_days: StrictInt = Field(default=0, ge=0)
@@ -60,8 +60,6 @@ class CalibrationConfig(StrictModel):
         if self.hidden_parameter == "transmission_beta":
             if self.trial_count != len(self.candidate_beta_values):
                 raise ValueError("beta recovery requires one trial per candidate beta")
-            if self.synthetic_truth_beta not in self.candidate_beta_values:
-                raise ValueError("synthetic truth beta must be one of the candidate values")
             return self
         if self.candidate_min_days > self.candidate_max_days:
             raise ValueError("candidate delay lower bound exceeds upper bound")
@@ -74,7 +72,7 @@ class CalibrationConfig(StrictModel):
 class CalibrationArtifactManifest(StrictModel):
     """Manifest for a synthetic calibration experiment, including all trials."""
 
-    manifest_schema_version: Literal["1.1", "1.2"] = "1.2"
+    manifest_schema_version: Literal["1.1", "1.2", "1.3", "1.4"] = "1.4"
     artifact_id: NonEmptyString
     generator_version: NonEmptyString = "6.1.0"
     study_id: NonEmptyString

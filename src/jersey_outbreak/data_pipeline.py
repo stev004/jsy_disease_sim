@@ -27,6 +27,7 @@ from .canonical_schemas import (
     CovidDailySurveillanceRow,
     CovidJhuDailyRow,
     CovidSerosurveyRow,
+    CovidVaccinationSubgroupRow,
     CovidWeeklyEligiblePopulationRow,
     CovidWeeklyVaccinationRow,
     DerivedControlRow,
@@ -528,6 +529,38 @@ _POPULATION_DENOMINATOR_PARTITION_BANDS = (
     "80_plus",
 )
 _POPULATION_DENOMINATOR_ROW_COUNT = 714
+
+# The PDF has no machine-readable table companion.  These are a narrow manual
+# transcription of the published percentage cells, kept in source order.  The
+# source snapshot is still hash-validated before this transcription is used.
+_PDF_VACCINATION_SUBGROUP_SOURCE = "covid19_vaccination_pcr_insights_pdf"
+_PDF_VACCINATION_SUBGROUP_TABLE = "covid_vaccination_subgroups"
+_PDF_TABLE_2_FIRST_DOSE = (
+    ("80+", "80_plus", "97"),
+    ("60-64", "60_to_64", "96"),
+    ("40-49", "40_to_49", "89"),
+    ("30-39", "30_to_39", "83"),
+    ("18-29", "18_to_29", "81"),
+    ("16-17", "16_to_17", "78"),
+    ("12-15", "12_to_15", "65"),
+    ("5-11", "5_to_11", "12"),
+)
+_PDF_TABLE_5_FIRST_AND_SECOND_DOSE = (
+    ("80+", "80_plus", "97"),
+    ("75-79", "75_to_79", "97"),
+    ("70-74", "70_to_74", "96"),
+    ("65-69", "65_to_69", "96"),
+    ("60-64", "60_to_64", "95"),
+    ("55-59", "55_to_59", "93"),
+    ("50-54", "50_to_54", "92"),
+    ("40-49", "40_to_49", "88"),
+    ("30-39", "30_to_39", "82"),
+    ("18-29", "18_to_29", "79"),
+    ("16-17", "16_to_17", "70"),
+    ("12-15", "12_to_15", "52"),
+    ("5-11", "5_to_11", "10"),
+    ("Total", "all", "78"),
+)
 _DICTIONARY_TABLES = (
     "population_totals",
     "age_sex",
@@ -548,6 +581,7 @@ _DICTIONARY_TABLES = (
     "covid_jhu_daily",
     "covid_serosurvey_2020",
     "covid_weekly_vaccination",
+    "covid_vaccination_subgroups",
     "covid_weekly_eligible_population",
     "population_estimates_annual",
     "population_denominators_by_age_band",
@@ -578,6 +612,86 @@ _MEASURE_DICTIONARY_COLUMNS = (
     "source_locator",
     "reference_period",
     "source_id",
+)
+
+_PDF_SUBGROUP_DICTIONARY_ROWS = (
+    {
+        "table": _PDF_VACCINATION_SUBGROUP_TABLE,
+        "measure": "dose_1:percent",
+        "event_date_definition": (
+            "cumulative through end 2022 (PDF page 2 states that vaccinations included "
+            "in the analysis run through the end of 2022)"
+        ),
+        "geography": (
+            'Jersey (registry title: "Insights from Jersey data on COVID-19 vaccinations '
+            'and positive PCR tests")'
+        ),
+        "population_universe": (
+            "people aged 5 and over who were resident in Jersey throughout 2020 and 2021; "
+            "Table 2 age is at the vaccine eligibility date"
+        ),
+        "unit": "percent",
+        "denominator": (
+            "PDF Table 2 source age-group population; structural canonical mapping requires "
+            "a 2021 all-sex population_denominators_by_age_band row; rates are not recomputed"
+        ),
+        "suppression_semantics": (
+            "blank or -1 -> not_reported; '<N' -> positive_less_than with upper_bound N; "
+            "no suppression marker observed in the cited PDF cells"
+        ),
+        "reporting_regime": "published integer percentage; cumulative vaccination coverage",
+        "known_exclusions": (
+            "Table 2 age groups 50-59, 65-79 and all age groups (the latter is aged 5+) "
+            "excluded because no exact frozen denominator band exists; occupational, parish "
+            "and other non-age cuts excluded; "
+            "TestsTotalNegativeTests excluded from the daily CSV because all 917 cells are "
+            "SharePoint float;# render corruption and no decode rule is applied"
+        ),
+        "source_locator": (
+            "covid19_vaccination_pcr_insights_pdf:pdf_page_2_coverage_through_end_2022; "
+            "pdf_page_8_table_2_first_dose_percent_by_age_group"
+        ),
+        "reference_period": "2020-02-01/2022-12-31",
+        "source_id": _PDF_VACCINATION_SUBGROUP_SOURCE,
+    },
+    {
+        "table": _PDF_VACCINATION_SUBGROUP_TABLE,
+        "measure": "dose_1_and_2:percent",
+        "event_date_definition": (
+            "cumulative through end 2022 (PDF page 2 states that vaccinations included "
+            "in the analysis run through the end of 2022)"
+        ),
+        "geography": (
+            'Jersey (registry title: "Insights from Jersey data on COVID-19 vaccinations '
+            'and positive PCR tests")'
+        ),
+        "population_universe": (
+            "people of all ages who were resident in Jersey throughout 2020 and 2021; "
+            "Table 5 age is at the 2021 Census"
+        ),
+        "unit": "percent",
+        "denominator": (
+            "PDF Table 5 source age-group population; structural canonical mapping requires "
+            "a 2021 all-sex population_denominators_by_age_band row; rates are not recomputed"
+        ),
+        "suppression_semantics": (
+            "blank or -1 -> not_reported; '<N' -> positive_less_than with upper_bound N; "
+            "no suppression marker observed in the cited PDF cells"
+        ),
+        "reporting_regime": "published integer percentage; cumulative vaccination coverage",
+        "known_exclusions": (
+            "Table 5 age group 0-4 excluded because no matching frozen denominator band "
+            "exists; occupational, parish and other non-age cuts excluded; "
+            "TestsTotalNegativeTests excluded from the daily CSV because all 917 cells are "
+            "SharePoint float;# render corruption and no decode rule is applied"
+        ),
+        "source_locator": (
+            "covid19_vaccination_pcr_insights_pdf:pdf_page_24_table_5_first_and_second_"
+            "dose_percent_by_age_group; pdf_page_7_figure_2"
+        ),
+        "reference_period": "2020-02-01/2022-12-31",
+        "source_id": _PDF_VACCINATION_SUBGROUP_SOURCE,
+    },
 )
 
 
@@ -992,8 +1106,103 @@ def _population_denominator_table(
     return denominators
 
 
+def _covid_vaccination_subgroup_table(
+    context: SourceContext,
+    checks: list[dict[str, Any]],
+    denominator_rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Transcribe only PDF vaccination rates with a canonical age denominator."""
+
+    source_id = _PDF_VACCINATION_SUBGROUP_SOURCE
+    path = context.artifact_path(source_id)
+    denominator_bands = {
+        row["age_band"] for row in denominator_rows if row["year"] == 2021 and row["sex"] == "all"
+    }
+    denominator_by_band = {
+        row["age_band"]: row
+        for row in denominator_rows
+        if row["year"] == 2021 and row["sex"] == "all"
+    }
+    mapped_ranges = [
+        (name, lower, upper)
+        for name, lower, upper in _POPULATION_DENOMINATOR_AGE_RANGES
+        if name in denominator_bands and name not in {"all", "17_and_under", "50_plus", "16_plus"}
+    ]
+    for index, (_, _, upper) in enumerate(mapped_ranges):
+        for _, other_lower, _ in mapped_ranges[index + 1 :]:
+            if upper is not None and other_lower <= upper:
+                raise DataBuildError("population denominator age bands overlap")
+    source_rows = (
+        ("dose_1", "pdf_page_8_table_2", _PDF_TABLE_2_FIRST_DOSE),
+        ("dose_1_and_2", "pdf_page_24_table_5", _PDF_TABLE_5_FIRST_AND_SECOND_DOSE),
+    )
+    subgroup_rows: list[dict[str, Any]] = []
+    mapped_bands: set[str] = set()
+    for dose, page_locator, source_values in source_rows:
+        for source_age_band, age_band, raw_value in source_values:
+            denominator = denominator_by_band.get(age_band)
+            if denominator is None or denominator["count"] is None:
+                raise DataBuildError(
+                    f"{path}: PDF subgroup age band {source_age_band!r} maps to missing or "
+                    f"unreported 2021 all-sex denominator band {age_band!r}"
+                )
+            value, reporting_status, upper_bound = parse_published_value(
+                raw_value,
+                path=path,
+                field=f"{page_locator}_row_{source_age_band}_vaccination_percent",
+            )
+            mapped_bands.add(age_band)
+            subgroup_rows.append(
+                {
+                    **context.provenance(
+                        source_id,
+                        locator=(
+                            f"{page_locator}_row_{source_age_band}_col_"
+                            f"{'first_dose' if dose == 'dose_1' else 'first_and_second_dose'}"
+                            "_percent"
+                        ),
+                        transformation_id="manual_pdf_vaccination_subgroups_v1",
+                    ),
+                    "age_band": age_band,
+                    "dose": dose,
+                    "value": value,
+                    "unit": "percent",
+                    "reporting_status": reporting_status,
+                    "upper_bound": upper_bound,
+                }
+            )
+
+    _add_check(checks, "covid_pdf_subgroup_rows", len(subgroup_rows), 22)
+    _add_check(checks, "covid_pdf_subgroup_denominator_bands", len(mapped_bands), 14)
+    _add_check(
+        checks,
+        "covid_pdf_subgroup_denominator_cells",
+        sum(
+            row["age_band"] in denominator_bands and row["dose"] in {"dose_1", "dose_1_and_2"}
+            for row in subgroup_rows
+        ),
+        len(subgroup_rows),
+    )
+    warnings = [
+        "known gap: covid19_vaccination_pcr_insights_pdf Table 5 age group 0-4 is "
+        "excluded from covid_vaccination_subgroups because no matching "
+        "population_denominators_by_age_band band exists; no value is inferred",
+        "known gap: covid19_vaccination_pcr_insights_pdf Table 2 age groups 50-59, 65-79 "
+        "and all age groups (aged 5+) are excluded from covid_vaccination_subgroups because "
+        "no exact matching population_denominators_by_age_band bands exist; no value is "
+        "inferred",
+        "known gap: covid19_vaccination_pcr_insights_pdf occupational, parish, ethnicity, "
+        "tenure, household-type, marital-status, overcrowding, sexual-orientation, "
+        "education, employment-type and industry cuts are excluded because frozen matching "
+        "denominators do not exist; no subgroup rate is inferred",
+    ]
+    return subgroup_rows, warnings
+
+
 def _covid_tables(
-    context: SourceContext, checks: list[dict[str, Any]]
+    context: SourceContext,
+    checks: list[dict[str, Any]],
+    denominator_rows: list[dict[str, Any]],
 ) -> dict[str, list[dict[str, Any]] | str]:
     warnings: list[str] = []
 
@@ -1186,6 +1395,10 @@ def _covid_tables(
         "vaccination percentages are publisher-computed against an unstated denominator "
         "per band; not recomputed here"
     )
+    subgroup_tables, subgroup_warnings = _covid_vaccination_subgroup_table(
+        context, checks, denominator_rows
+    )
+    warnings.extend(subgroup_warnings)
 
     serosurvey_source = "sars_cov2_serosurvey_2020_manual_fixture"
     serosurvey_path = context.artifact_path(serosurvey_source)
@@ -1232,6 +1445,7 @@ def _covid_tables(
         "covid_daily_surveillance": daily_tables,
         "covid_current_summary": current_tables,
         "covid_weekly_vaccination": weekly_tables,
+        "covid_vaccination_subgroups": subgroup_tables,
         "covid_serosurvey_2020": serosurvey_tables,
         "covid_weekly_eligible_population": eligible_tables,
         "covid_jhu_daily": jhu_tables,
@@ -1251,6 +1465,8 @@ def _dictionary_pairs(
             raise DataBuildError(f"canonical epidemiology table is empty: {table_name}")
         if table_name == "covid_weekly_vaccination":
             pairs.update((table_name, f"{row['dose']}:{row['metric']}") for row in table_rows)
+        elif table_name == "covid_vaccination_subgroups":
+            pairs.update((table_name, f"{row['dose']}:{row['unit']}") for row in table_rows)
         elif table_name == "covid_weekly_eligible_population":
             pairs.add((table_name, "eligible_population"))
         elif table_name in {"population_estimates_annual", "population_denominators_by_age_band"}:
@@ -1283,6 +1499,8 @@ def _dictionary_source_pairs(
         for row in table_rows:
             if table_name == "covid_weekly_vaccination":
                 measure = f"{row['dose']}:{row['metric']}"
+            elif table_name == "covid_vaccination_subgroups":
+                measure = f"{row['dose']}:{row['unit']}"
             elif table_name == "covid_weekly_eligible_population":
                 measure = "eligible_population"
             elif table_name in {
@@ -1315,6 +1533,10 @@ def _measure_dictionary_table(
     if set(raw_rows[0]) != required_columns:
         extra = sorted(set(raw_rows[0]) - required_columns)
         raise DataBuildError(f"{path}: unexpected measure dictionary columns: {extra}")
+    # The source PDF is already frozen and must not be amended in data/raw.  Its
+    # two canonical measure rows are therefore supplemental build metadata here;
+    # the same pair/source drift checks below apply to them.
+    raw_rows.extend(dict(row) for row in _PDF_SUBGROUP_DICTIONARY_ROWS)
 
     fixture_pairs: set[tuple[str, str]] = set()
     fixture_source_pairs: set[tuple[str, str, str]] = set()
@@ -2171,7 +2393,11 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
         checks,
         tables["population_estimates_annual"],
     )
-    covid_tables = _covid_tables(context, checks)
+    covid_tables = _covid_tables(
+        context,
+        checks,
+        tables["population_denominators_by_age_band"],
+    )
     covid_warnings = covid_tables.pop("covid_warnings")
     tables.update(covid_tables)
     tables.pop("commute_rounding_status", None)
@@ -2196,6 +2422,10 @@ def build_canonical(root: Path, output_dir: Path | None = None) -> dict[str, Any
         "covid_daily_surveillance": ("covid_daily_surveillance.csv", CovidDailySurveillanceRow),
         "covid_current_summary": ("covid_current_summary.csv", CovidCurrentSummaryRow),
         "covid_weekly_vaccination": ("covid_weekly_vaccination.csv", CovidWeeklyVaccinationRow),
+        "covid_vaccination_subgroups": (
+            "covid_vaccination_subgroups.csv",
+            CovidVaccinationSubgroupRow,
+        ),
         "covid_serosurvey_2020": ("covid_serosurvey_2020.csv", CovidSerosurveyRow),
         "covid_weekly_eligible_population": (
             "covid_weekly_eligible_population.csv",

@@ -36,6 +36,7 @@ from .outbreak_schemas import OutbreakRunConfig, RespiratoryParameterSet
 from .respiratory import RespiratorySEIRS
 from .starsim_adapter import build_starsim_travel_sim
 from .travel_schemas import (
+    M8_DIAGNOSTICS_SCHEMA_VERSION,
     TRAVEL_ROUTE_IDS,
     AccommodationType,
     ArrivalDiseaseState,
@@ -46,6 +47,7 @@ from .travel_schemas import (
     TravelConfig,
     TravelEpisode,
     TravellerType,
+    canonical_passenger_arrival_totals,
 )
 
 TRAVEL_GENERATOR_VERSION = "8.1.0"
@@ -59,7 +61,14 @@ def load_travel_config(root: Path, path: Path | None = None) -> TravelConfig:
         payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise ValueError("travel YAML must contain a mapping")
-        return TravelConfig.model_validate(payload)
+        # Validate the M1 evidence chain before applying schema defaults, then
+        # source omitted annual totals from that same canonical root.
+        canonical = canonical_passenger_arrival_totals(root)
+        payload.setdefault("annual_air_arrivals", canonical["air"])
+        payload.setdefault("annual_ferry_arrivals", canonical["ferry"])
+        config = TravelConfig.model_validate(payload)
+        config._canonical_root = root.resolve()
+        return config
     except (OSError, TypeError, ValueError, yaml.YAMLError) as exc:
         raise ValueError(f"invalid travel configuration {config_path}: {exc}") from exc
 
@@ -2312,6 +2321,14 @@ def _high_risk_epidemic_rows(
             and event["action"] == "arrival_test_result"
             and event.get("detected")
         ]
+        detection_strata: list[str] = []
+        for event in detection_events:
+            subject_id = _detection_subject_id(event)
+            if subject_id not in stratum_by_id:
+                raise AssertionError(
+                    f"detected arrival-test event subject is not in high-risk strata: {subject_id}"
+                )
+            detection_strata.append(stratum_by_id[subject_id])
         for stratum in sorted(set(stratum_by_id.values())):
             selected = [
                 event
@@ -2331,14 +2348,24 @@ def _high_risk_epidemic_rows(
                         event["source_kind"] == "travel_imported" for event in selected
                     ),
                     "detections": sum(
-                        stratum_by_id.get(str(event.get("visitor_uid"))) == stratum
-                        for event in detection_events
+                        detection_stratum == stratum for detection_stratum in detection_strata
                     ),
                     "targeting_only": True,
                     "severity_model_implemented": False,
                 }
             )
     return rows
+
+
+def _detection_subject_id(event: dict[str, Any]) -> str:
+    """Resolve an arrival-test result to its person-level risk-stratum key."""
+
+    subject = event.get("visitor_uid")
+    if subject is None:
+        subject = event.get("resident_agent_id") or event.get("infected_agent_id")
+    if subject is None:
+        raise AssertionError("detected arrival-test event has no subject identity")
+    return str(subject)
 
 
 def run_travel_outbreak(
@@ -2615,12 +2642,14 @@ def run_travel_outbreak(
     latent_hash = canonical_zero_latent_hash or sha256_bytes(
         canonical_json_bytes(_without_null_fields(latent_payload))
     )
+    high_risk_epidemic_hash = sha256_bytes(canonical_json_bytes(high_risk_epidemic))
     artifact_hash = sha256_bytes(
         canonical_json_bytes(
             {
                 "scenario_hash": resolved_scenario_hash,
                 "latent_hash": latent_hash,
                 "episode_hash": plan.episode_hash,
+                "high_risk_epidemic_hash": high_risk_epidemic_hash,
             }
         )
     )
@@ -2702,6 +2731,7 @@ def run_travel_outbreak(
             "scenario": resolved_scenario_hash,
             "latent_outcome": latent_hash,
             "artifact_bundle": artifact_hash,
+            "high_risk_epidemic": high_risk_epidemic_hash,
         },
         "identity": {
             "resident_count": len(generated.agent_ids),
@@ -2779,9 +2809,15 @@ def run_travel_outbreak(
             "schedule_persisted": True,
         },
         "high_risk": {
+            "diagnostics_schema_version": M8_DIAGNOSTICS_SCHEMA_VERSION,
             "targeting_only": True,
             "severity_model_implemented": False,
             "config_hash": travel_config.high_risk.config_hash,
+            "detection_subject_resolution": {
+                "precedence": ["visitor_uid", "resident_agent_id", "infected_agent_id"],
+                "resident_arrival_test_detections_included": True,
+                "unattributed_detected_arrival_test_events": 0,
+            },
         },
         "observation_config": (
             observation_config.model_dump(mode="json") if observation_config is not None else None
@@ -3196,26 +3232,27 @@ def run_travel_sensitivity(
     return payload | {"logical_content_hash": sha256_bytes(canonical_json_bytes(payload))}
 
 
-def provenance_table(config: TravelConfig) -> list[dict[str, Any]]:
+def provenance_table(config: TravelConfig, root: Path | None = None) -> list[dict[str, Any]]:
     """Compact audit table for the major M8 quantities."""
 
+    resolved = config.resolved_parameter_provenance(root)
     return [
         {
             "parameter": "annual_air_arrivals",
             "value_or_distribution": config.annual_air_arrivals,
             "units": "passenger arrivals/year",
-            "provenance_status": "observed",
-            "source_id": "passenger_arrivals_total_csv",
-            "derivation": "Ports of Jersey 2025 total passenger-arrival movements.",
+            "provenance_status": resolved["annual_air_arrivals"]["status"],
+            "source_id": ",".join(resolved["annual_air_arrivals"]["source_ids"]) or None,
+            "derivation": resolved["annual_air_arrivals"]["derivation"],
             "sensitivity_required": True,
         },
         {
             "parameter": "annual_ferry_arrivals",
             "value_or_distribution": config.annual_ferry_arrivals,
             "units": "passenger arrivals/year",
-            "provenance_status": "observed",
-            "source_id": "passenger_arrivals_total_csv",
-            "derivation": "Ports of Jersey 2025 total passenger-arrival movements.",
+            "provenance_status": resolved["annual_ferry_arrivals"]["status"],
+            "source_id": ",".join(resolved["annual_ferry_arrivals"]["source_ids"]) or None,
+            "derivation": resolved["annual_ferry_arrivals"]["derivation"],
             "sensitivity_required": True,
         },
         {

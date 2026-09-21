@@ -264,6 +264,26 @@ def test_beta_recovery_has_train_heldout_and_confounding_profile(
     assert result.diagnostics["heldout"]["passed"] is True
     assert result.diagnostics["identifiability_profile"]["altered_ascertainment_objective"] >= 0
     assert result.diagnostics["identifiability_profile"]["altered_route_weight_objective"] >= 0
+    profile = result.diagnostics["identifiability_profile"]
+    assert profile["dimensions"]["nuisance_factors"] == [0.5, 1.0]
+    for surface_name in ("ascertainment", "route_weights"):
+        for row in profile[surface_name]["rows"]:
+            assert row["profiled_objective"] == min(
+                item["objective"] for item in row["nuisance_profile"]
+            )
+            assert row["argmin_nuisance_factor"] in [0.5, 1.0]
+        assert profile[surface_name].get("argmin_by_factor") == {0.5: 0.12, 1.0: 0.08}
+        assert profile[surface_name].get("argmin_shift_by_factor") == pytest.approx(
+            {0.5: 0.04, 1.0: 0.0}
+        )
+        assert profile[surface_name]["argmin_shift_reference_beta"] == 0.08
+        assert profile[surface_name]["max_abs_argmin_shift"] == pytest.approx(0.04)
+    assert profile["argmin_shift"] == pytest.approx(
+        {
+            "ascertainment": 0.04,
+            "route_weights": 0.04,
+        }
+    )
 
 
 def test_verification_archive_rejects_stale_parent_hashes(tmp_path: Path) -> None:
