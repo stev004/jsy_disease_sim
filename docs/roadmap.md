@@ -8,7 +8,7 @@
 
 ## NOW — V1.3 (plan: `docs/research/v1_3/2026-09-21-v13-plan.md`; Phase 0 synthetic-recovery gate first)
 
-- ◐ **Phase 0 active** — Astra foreman frame and budget filed in `docs/runs/2026-09-21-phase0-run-frame.md`; Sol predeclaration frozen; P0-1 Luna implementation active. RUN.md owns live status and resume paths. Merge stays Steven-gated; real-data fitting remains closed.
+- ◐ **Phase 0 active** — Astra foreman frame and budget filed in `docs/runs/2026-09-21-phase0-run-frame.md`; Sol predeclaration frozen; P0-1 Luna corrective active after director acceptance FAIL; no unit kept yet. RUN.md owns live status and resume paths. Merge stays Steven-gated; real-data fitting remains closed.
 
 *The R8/perf/corrections programme below is COMPLETE as of G28 (2026-09-21); kept as the item-level record.*
 
