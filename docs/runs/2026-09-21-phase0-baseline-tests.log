@@ -1,0 +1,33 @@
+Cloning into '/home/steven/jos-p0-base-verify'...
+done.
+HEAD is now at 94f7f91 closeout 2026-09-21: session log 09-19→21; FRONTIER tier/baseline/branch-index to 3ff3734; roadmap NOW → V1.3 plan
+94f7f9116f27be0b7604906c774a1e03663c768e
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+   Building jersey-outbreak-simulator @ file:///home/steven/jos-p0-base-verify
+      Built jersey-outbreak-simulator @ file:///home/steven/jos-p0-base-verify
+Installed 75 packages in 185ms
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-base-verify
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 12 items
+
+tests/test_calibration.py .....                                          [ 41%]
+tests/test_c3_contracts.py .......                                       [100%]
+
+=============================== warnings summary ===============================
+tests/test_calibration.py::test_beta_heldout_gate_rejects_non_identifiable_exact_reproduction
+tests/test_calibration.py::test_beta_heldout_gate_rejects_non_identifiable_exact_reproduction
+tests/test_calibration.py::test_beta_heldout_gate_rejects_non_identifiable_exact_reproduction
+tests/test_calibration.py::test_beta_heldout_gate_rejects_non_identifiable_exact_reproduction
+tests/test_calibration.py::test_beta_heldout_gate_rejects_non_identifiable_exact_reproduction
+tests/test_calibration.py::test_beta_heldout_gate_rejects_non_identifiable_exact_reproduction
+  /home/steven/jos-p0-base-verify/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 12 passed, 6 warnings in 11.40s ========================
+BASELINE_RESULT=PASS
