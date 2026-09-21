@@ -1,6 +1,10 @@
-# RUN — nothing in flight (scicorr unit DONE + re-reviewed PASS 2026-09-19; merge parked as G27)
+# RUN — nothing in flight (G27+G28 merged; V1.2.1 CLOSED 2026-09-21; next = V1.3 plan Phase 0; director hand-over to Astra)
 
-**Cold start:** read `.claude/DIRECTOR.md` → `.claude/FRONTIER.md` (validation PASS; scicorr done) → `.claude/GATES.md` (open: **G27** merge `v121/scientific-corrections` @ `f1b2b6c`, default merge; G5) → `tail -10 .claude/decisions.tsv`.
+**Cold start (Astra or any director):** read `.claude/DIRECTOR.md` → `.claude/FRONTIER.md` → `.claude/GATES.md` (open: G5 only) → `docs/research/v1_3/2026-09-21-v13-plan.md` (the working plan; its "Operational notes" section is the machine/handoff brief) → `tail -12 .claude/decisions.tsv`. First action = frame the Phase-0 foreman run (synthetic recovery + misspecification + negative controls; exit gate Sol-audited) — no real-data fitting before that gate passes.
+**Disposable WSL leftovers** (safe to delete; all branches merged, all reports filed): `~/jos-{scicorr,subgrp,datafix,calib,integtail}-wt` worktrees, `/tmp/jos-*` clones, `~/jos-*` briefs/logs, keepalive `sleep infinity` sessions. Deleted 2026-09-21 where the closeout says so.
+
+---
+*Historical: the 2026-09-19 scicorr record below.*
 **Scicorr record:** DISEASE-4/ROUTE-6/ROUTE-7 per `docs/research/v1_2/2026-09-19-model-owner-rulings-fable.md`; luna@xhigh in `~/jos-scicorr-wt`, attempt 1 limit-killed (282k tokens) → retry KEPT `aabb2be` (526k total, report `docs/runs/2026-09-19-scicorr-luna-report.md`) → Sol review BLOCKED one MAJOR (per-route hash boundary, 177k) → corrective 1 KEPT `f1b2b6c` (84k) → bounded re-review **PASS** (`docs/audits/2026-09-19-scicorr-rereview-sol-PASS.md`). Disposable once G27 resolves: `~/jos-scicorr-wt`, `/tmp/jos-scicorr-*`, `~/jos-scicorr*` briefs/logs (reports filed). WSL codex token re-copied from Windows 2026-09-19 (backup `~/.codex/auth.json.bak-20260919`); rotation still owed to Steven. Known flake: `test_prov_job_ordering::test_missing_head_request_fails_alone…` (timing race on clean main; fix task chip spawned 2026-09-19).
 **Housekeeping state:** disposable worktrees/clones/briefs from runs ≤6 deleted 2026-09-19 (~22 GB); guest / usage 8.2 G; host C: 2.1 GB free — VHD compaction owed (elevated diskpart, command in the 2026-09-19 session log); a C:-space watchdog pattern exists in `/tmp/validation.sh` if anything full-scale runs before compaction. Validation raw evidence `~/jos-validation-20260919/` — keep until the run report is trail-audited.
 
