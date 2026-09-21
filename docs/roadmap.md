@@ -6,7 +6,11 @@
 
 ---
 
-## NOW — R8 cycle: Claude Science audit, Stages A→E (Steven, 2026-09-03: "foreman a to e")
+## NOW — V1.3 (plan: `docs/research/v1_3/2026-09-21-v13-plan.md`; Phase 0 synthetic-recovery gate first)
+
+*The R8/perf/corrections programme below is COMPLETE as of G28 (2026-09-21); kept as the item-level record.*
+
+## DONE PROGRAMME — R8 cycle: Claude Science audit, Stages A→E (Steven, 2026-09-03: "foreman a to e")
 
 ### Stage A — restore the gates (nothing else merges first)
 - ☑ **PROV-1** (2026-09-03/04, codex/r8-stageA @ a9c76f0) Excise `workers`/memory fields from the M6 ensemble logical hash (schema 1.4→1.5); unit test: hash invariant under execution fields.
