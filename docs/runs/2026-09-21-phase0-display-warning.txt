@@ -1,0 +1,5 @@
+2026-09-21T23:52:34+01:00
+Steven reported Codex blocked displaying content under a biological filter. No executor rejection found; task scope and running attempt retained unchanged. Display safeguard not bypassed.
+    PID ELAPSED COMMAND
+     21     600 node
+2026-09-21 23:50:10.621636173 +0100 325464
