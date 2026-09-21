@@ -3,6 +3,7 @@
 Synthetic-population, multi-route contact-network, agent-based epidemic simulator for Jersey (Starsim 3.5.2; Python backend + React frontend). **Research software: synthetic and scenario-based, never a validated forecast of Jersey.** Current release: `jos-v1.1.0`.
 
 ## Start here, every session
+0. `.claude/REPO-MAP.md` — orientation: what lives where (repo layout, module groups, pipeline naming). New here? Read it before searching.
 1. **`.claude/FRONTIER.md`** — where the project is, the one next action, branch index, doc authority. Read it first; it supersedes every status claim in older docs.
 2. `.claude/RUN.md` — is an autonomous run in flight? If yes, its resume recipe is authoritative.
 3. `.claude/GATES.md` — decisions waiting on Steven, each with a default.
