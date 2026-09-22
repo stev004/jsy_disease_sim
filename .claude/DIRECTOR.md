@@ -60,3 +60,5 @@ Reaches Steven, batched in the run digest: irreversible actions, product/taste c
 - 2026-09-22 (Phase 0, director acceptance review): a no-campaign-execution brief yielded pure scoring utilities without the simulator adapter needed by later units -> implementation and execution authorization were conflated -> RULE: campaign briefs explicitly require implementing and mock-testing the generation/orchestration path while separately keeping real execution gated.
 
 - 2026-09-22 (Phase 0 P0-1 correction, director review): defaulting missing result metadata to requested configs let namespace evidence pass -> test fakes omitted the real result fields -> RULE: evidence checks require returned metadata and reject absence; adapter tests use real config constructors and faithful result metadata, mocking only expensive execution.
+
+- 2026-09-22 (Phase 0 numerical review): binary subtraction excluded a declared inclusive decimal endpoint despite green tests -> endpoints were not exercised -> RULE: declared finite-decimal recovery predicates need exact arithmetic and endpoint/cancellation regressions; never repair by inventing epsilon or retuning thresholds.

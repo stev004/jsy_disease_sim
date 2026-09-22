@@ -3,6 +3,14 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
+## 2026-09-21→22 — Phase 0 framed; P0-1 held; G29/G30 pending (Astra director)
+
+- Predicate unmet. Frozen predeclaration and unit briefs filed; P0-1 three Luna xhigh attempts produced held candidate b5ef032e29c577bce634ce0933b2d7d316ac562e. No feature push, campaign, real-data fit or main code merge.
+- Director CI command mirror: 432 passed/4 skipped; local uv0.12.9 versus CI setup0.11.30 disclosed. Earlier director acceptance withdrawn after decimal endpoint defect; Sol high confirmed BLOCKED and a correction beyond the one-line allowance. G30 default HOLD pending one implementation/review extension.
+- P0-2 Sol clarification requires model-owner unknown/tie reporting rule; G29 default HOLD. P0-2/P0-3 unimplemented. P0-1 budgets 3/3 implementations, 2/2 consults; P0-2 consult 1/2. All branches preserved, G5 unchanged.
+- Biological display warnings reported by Steven; worker logs did not establish their cause. No filter bypass or filter-driven retry. Implementation retries addressed reproduced code defects.
+- End-of-run Terra audit pending; RUN.md owns pickup paths and GATES.md owns concrete pending decisions. Frozen evidence and predeclaration unchanged.
+
 ## 2026-09-19→21 — validation PASS · rulings · scicorr (G27) · V1.2.1 tail (G28) · V1.3 plan · hand-over to Astra (director Fable; executors luna@xhigh; reviews sol@high)
 
 - **Validation run PASS 2026-09-19 on `08960b8`** (Steven: "start validation run"): solo 180-day **197.65 s** (≤390), 44-replicate full-scale ensemble **2292.81 s = 38.2 min** (≤75 min, 6 workers), 44/44, **132/132 replicate hashes byte-identical** to frozen `jos-ensemble-m6-p4-validation-r8-1a0e9c7037ad`; new artifact `jos-ensemble-m6-p4-validation-v121-09fcb68de443`. Report `docs/runs/2026-09-19-validation-run-v121.md`; performance-history row added. Raw evidence WSL `~/jos-validation-20260919/` (keep until trail-audited).
