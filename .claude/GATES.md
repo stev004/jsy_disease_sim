@@ -4,14 +4,7 @@
 
 ## Open
 
-**2026-09-22 closeout:** Steven requested updated documentation and a stop. G29/G30 are unanswered, not approved; defaults remain HOLD. G5 remains preserve all branches.
-
-### G30 — One bounded P0-1 numerical correction and independent re-review
-- **Question:** extend the exhausted P0-1 budget by exactly one Luna xhigh implementation attempt (25-minute cap) and one Sol high bounded independent numerical review? The ready nine-field brief is `docs/runs/2026-09-22-phase0-p01-numeric-correction-brief-PENDING-G30.md`, base b5ef032e29c577bce634ce0933b2d7d316ac562e.
-- **Scope:** exact declared-decimal recovery/error/bias arithmetic plus focused regressions in two files; no change to tolerances, grids, objectives, blind fitting, schemas, seeds or frozen declaration. Director CI mirror must pass before review/push. A new SHA replaces the held candidate only after review.
-- **Reason:** Sol confirmed the inclusive endpoint defect and that a genuine one-line director fix is insufficient. DIRECTOR.md limits each unit to three implementations/two consults unless Steven extends; both are spent.
-- **Default on no answer:** HOLD correction, feature push and campaigns; preserve all branches. Approval does not authorize a merge or a full-scale run. G29 remains a separate model-owner ruling.
-- **Evidence:** `docs/audits/2026-09-22-phase0-p01-numeric-sol-BLOCKED.md`; `docs/runs/2026-09-22-phase0-p01-numeric-attestation.txt`; session 01a0c6b1-fcc3-70f3-b487-18bf5c7e95fa; ts: trail row `phase0-p01-G30`.
+**2026-09-22 resume:** Steven instructed continued work; G30 bounded correction/review extension released. G29 remains unanswered and HOLD; G5 preserves branches.
 
 ### G29 — P0-2 indeterminate detection status (Phase 0)
 - **Question:** approve the exact reporting rule in `docs/research/v1_3/2026-09-22-p02-tie-ruling-proposal.md` before P0-2 implementation? Sol found tied wrong-model minima can make selected-candidate diagnostics undefined; the frozen spec does not define the indeterminate aggregate status.
@@ -25,6 +18,14 @@
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G30 — RESOLVED: one bounded P0-1 numerical correction and review authorized (2026-09-22)
+- **Question:** extend the exhausted P0-1 budget by exactly one Luna xhigh implementation attempt (25-minute cap) and one Sol high bounded independent numerical review? The ready nine-field brief is `docs/runs/2026-09-22-phase0-p01-numeric-correction-brief-PENDING-G30.md`, base b5ef032e29c577bce634ce0933b2d7d316ac562e.
+- **Scope:** exact declared-decimal recovery/error/bias arithmetic plus focused regressions in two files; no change to tolerances, grids, objectives, blind fitting, schemas, seeds or frozen declaration. Director CI mirror must pass before review/push. A new SHA replaces the held candidate only after review.
+- **Reason:** Sol confirmed the inclusive endpoint defect and that a genuine one-line director fix is insufficient. DIRECTOR.md limits each unit to three implementations/two consults unless Steven extends; both are spent.
+- **Ruling:** Steven: "alright keep iterating and working away", after the explicit stop and gate digest. Director proceeds with the concrete proposed one-attempt/one-review extension, not an unlimited budget. No merge or full-scale authorization; G29 remains separate. ts: trail row `phase0-resume-G30`.
+- **Evidence:** `docs/audits/2026-09-22-phase0-p01-numeric-sol-BLOCKED.md`; `docs/runs/2026-09-22-phase0-p01-numeric-attestation.txt`; session 01a0c6b1-fcc3-70f3-b487-18bf5c7e95fa; ts: trail row `phase0-p01-G30`.
+
 
 ### G28 — Merge the V1.2.1 tail — RESOLVED 2026-09-21 (Steven, chat: "merge G28"; executed by the agent)
 SHA-first `--no-ff` of `a4a44e3c25a81ac8ff30d733e9cd0d8065f16151` (`v121/integration-tail` = subgrp `dbb0710` + datafix `dccdae9`+corr `c0e9a74` + calib `99e6e62`+corr `f117227`) → merge `3ff37348f88750470be9f1ccda193b3ff31fb9c3`; smoke (60 targeted tests + ruff) green; pushed (trail row `g28-merge`). Closes DATA-7/8/9/10, DISEASE-10, CROSS-3, and the Ruling-4 subgroup tables. Declared migrations: M8 schema 2.3 (bundle identity now covers `daily_high_risk`), calibration config 1.3 / manifest 1.4; replicate-level latent/M4 hashes proven identical in reviewer A/Bs. Review lineage: Sol BLOCKED (2 MAJORs + ancestry note, `docs/audits/2026-09-20-tail-review-sol-BLOCKED.md`) → two correctives → bounded re-review PASS (`docs/audits/2026-09-20-tail-rereview-sol-PASS.md`). Ancestry disclosure: state-layer trail commits + sanctioned housekeeping `7b22d00` (state-on-main design, no code impact). No CI on GitHub (billing). **V1.2.1 backlog closed; frontier = V1.3 plan (`docs/research/v1_3/2026-09-21-v13-plan.md`).**

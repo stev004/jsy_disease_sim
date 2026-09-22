@@ -13,9 +13,9 @@ is `3ff37348f88750470be9f1ccda193b3ff31fb9c3`.
 
 V1.3 Phase 0 remains incomplete. The P0-1 candidate is held after an independent
 numerical review; P0-2 and P0-3 are not implemented. No Phase-0 campaign or
-real-data fit has run. Work stopped on Steven's instruction on 2026-09-22,
-with G29 (unknown-result reporting) and G30 (one corrective attempt and review)
-awaiting decisions. See the [handoff](docs/handoff/2026-09-22-phase0-stop.md),
+real-data fit has run. Steven resumed work on 2026-09-22, authorizing G30
+(one corrective attempt and review). G29 (unknown-result reporting) remains
+awaiting a ruling. See the [handoff](docs/handoff/2026-09-22-phase0-stop.md),
 [live plan](docs/research/v1_3/2026-09-21-v13-plan.md), and
 [current state](.claude/FRONTIER.md). The living backlog is
 [docs/roadmap.md](docs/roadmap.md); agents start at `CLAUDE.md`.

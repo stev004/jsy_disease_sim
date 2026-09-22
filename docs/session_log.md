@@ -3,6 +3,10 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
+## 2026-09-22 — Phase 0 resumed; G30 bounded extension released
+
+Steven instructed "alright keep iterating and working away" after the documented stop. Director proceeds with one prepared Luna xhigh numerical corrective and one Sol high review, preserving the original predicate and merge/campaign gates. G29 remains a scientific decision awaiting a ruling. Exact brief: `docs/runs/2026-09-22-phase0-p01-numeric-correction-brief-G30.md`; RUN.md owns live status. No additional retries are inferred.
+
 ## 2026-09-21→22 — Phase 0 framed; P0-1 held; G29/G30 pending (Astra director)
 
 - **Explicit stop:** Steven requested all relevant Markdown updates and then stopping. README, live plan, orientation map, RUN/FRONTIER/GATES/roadmap and this log reconciled; handoff `docs/handoff/2026-09-22-phase0-stop.md`. This instruction does not approve G29/G30. No worker or campaign is in flight; resume only on a new instruction.

@@ -2,7 +2,7 @@
 
 *A navigation map, not documentation. Module contracts live in `docs/architecture.md`; scientific scope in `docs/scientific_scope.md`. Written 2026-09-21 (code baseline `3ff3734`).*
 
-**Current pickup:** work stopped by Steven on 2026-09-22; see `docs/handoff/2026-09-22-phase0-stop.md`, then RUN/GATES. Phase-0 source exists only on the held local feature branch, not main.
+**Current pickup:** work resumed by Steven under the G30 bounded correction extension; RUN/GATES own live status. The prior stop is recorded in `docs/handoff/2026-09-22-phase0-stop.md`, then RUN/GATES. Phase-0 source exists only on the held local feature branch, not main.
 
 ## Top level
 
