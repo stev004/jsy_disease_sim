@@ -3,7 +3,9 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
-## 2026-09-22 — Phase 0 resumed; G30 bounded extension released
+## 2026-09-22 — G30 correction reviewed/pushed; Phase 0 awaiting G29
+
+- **Resumed-run closeout:** Terra high trail audit ATTENTION corroborated source/verification/push evidence and found two stale phrases implying G30 was still preparing/available; both corrected. Reports `docs/audits/2026-09-22-phase0-g30-trail-terra.md` and `...-g30-trail-disposition.md`. G30 allowances spent, no workers active. G29 explicit UNKNOWN reporting proposal still awaits Steven; no further dependent implementation. Current handoff `docs/handoff/2026-09-22-phase0-g30-complete.md`.
 
 - **G30 correction reviewed and pushed:** 367f0324685437c4d2ed4aa0ae4878229da09839; Sol PASS, no findings; 34 focused tests independently passed. Director five base failures/twelve corrected-case passes; final local gate 443 passed/4 skipped/1 predeclared timing failure reproduced on base, remaining steps PASS with uv0.11.30. Luna timebox-stopped without final report/token tally; interrupted transcript retained, final acceptance established by director and Sol. No campaign/scientific PASS or code merge.
 

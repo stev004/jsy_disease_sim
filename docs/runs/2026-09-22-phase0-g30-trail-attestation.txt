@@ -1,0 +1,12 @@
+2026-09-22T17:10:35.915360+01:00
+HEAD 8db15366d0ad5d0342f17a2a00cbe8bd16fbd564
+STATUS <empty>
+session 01a0c9de-34a0-7011-b6cc-9e7ac7a791e8
+tokens used
+66008
+Launch helper receipt:
+Launching: jos-g30-trail-readonly · Audit the resumed Phase-0 G30 tranche and its final handoff against ret | Independent resumed-run trail auditor, gpt-5.6-terra @ high. Read-only; director Astra, implementer Luna, code reviewer Sol. No implementation or subagents. | gpt-5.6-terra@high | /home/steven/jos-g30-trail-readonly | log=/home/steven/jos-g30-trail.log
+launched task=jos-g30-trail-readonly · Audit the resumed Phase-0 G30 tranche and its final handoff against ret pid=48687 log=/home/steven/jos-g30-trail.log
+
+Director observed live ps output before completion: PID 48687, ELAPSED 109, COMMAND node.
+Launch writeback then encountered exited PID; final report was already complete. No duplicate worker launched.

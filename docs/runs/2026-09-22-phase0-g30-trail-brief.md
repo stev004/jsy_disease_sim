@@ -1,0 +1,138 @@
+ROLE: Independent resumed-run trail auditor, gpt-5.6-terra @ high. Read-only; director Astra, implementer Luna, code reviewer Sol. No implementation or subagents.
+GOAL: Audit the resumed Phase-0 G30 tranche and its final handoff against retained primary evidence.
+SCOPE: Immutable state snapshot 8db15366d0ad5d0342f17a2a00cbe8bd16fbd564 in /home/steven/jos-g30-trail-readonly. Examine phase0-resume-G30 and later trail rows only; read earlier reports as context where needed. Candidate 367f0324685437c4d2ed4aa0ae4878229da09839, local main code baseline 3ff37348f88750470be9f1ccda193b3ff31fb9c3. No tests/campaigns/builds.
+CONTEXT: Steven said "alright keep iterating and working away" after the stop/G29/G30 digest. Director released the concrete G30 one-implementation/one-review extension, left G29 pending unless a later recorded ruling changes it. Luna attempt 4 was stopped at its 25-minute cap (about 26 minutes including director detection latency); raw transcript saved, no final worker report/token tally. Raw full-suite summary was not accepted as proof of final-byte coverage because formatting/repeated sessions complicated provenance. Director independently reproduced five old-source failures versus twelve new-source passes, pinned the source commit, and required a clean CI mirror at the exact SHA using uv0.11.30 before Sol review or source push. Read final records for actual verdict and publication state, do not assume success from this brief.
+ACCEPTANCE:
+1. Check authorization/budget, interruption transparency, token unknown handling, exact source SHA and scope, and before/after behavioral evidence. Verify all trail rows seven columns and retained references resolve.
+2. Check full mirror exit/commands/PASS at exact SHA and ordering before review and any source push. Check any GitHub destination with actual URL plus ls-remote receipt; this clone's origin is a local repository, so origin refs DO NOT prove GitHub publication. Do not repeat the earlier Terra false inference.
+3. Confirm main code and frozen declaration unchanged, no campaign or scientific PASS claimed, G29 status accurately reflects an explicit ruling or HOLD, and no code merge unauthorized. Check live README/plan/RUN/FRONTIER/GATES/roadmap/session_log for stale statuses; old handoffs and immutable reports remain historical.
+4. Review prior lessons and current no-CI practice: all new commit messages carry [skip ci]. Earlier 12 unintended CI runs are already disclosed; no new remote execution allowed. Read retained remote history if available, do not launch CI.
+5. Return only concrete actionable Attention findings with evidence and limits. Do not invent facts from missing receipts or claim full absence of external activity. This is a trail review, not a scientific result audit.
+VERIFY: git rev-parse HEAD and git status --porcelain start/end; git diff baseline..HEAD -- src tests configs; read reports/transcripts and audit code hashes. GIT_OPTIONAL_LOCKS=0. No writes inside clone; report only in final response.
+TIMEBOX: 8 minutes; return partial coverage if cap reached. Do not audit historical releases.
+FORBIDDEN: Implementation/source/docs edits, commits/pushes, tests/simulations/campaigns, new scientific rules, real-data fitting, full-scale runs, external messages, filter evasion. No independent authorization of extra implementation or merge.
+REPORT: TRAIL AUDIT: PASS or TRAIL AUDIT: ATTENTION first; findings, corroborated claims, unknowns, exact SHA and clean-tree attestation. Director files final report and disposition separately.
+STANDING: 
+# DIRECTOR.md — standing orders for the JOS director agent (foreman)
+
+*The director's constitution for this repo. Re-read in full at the top of EVERY iteration — never work from memory of it. Hard rules refreshed 2026-09-01 post-release (V1.1 released, V1.2 cycle open). Distilled 2026-08-31 from Sol's cold-start handoff (`docs/handoff/2026-08-31-sol-handoff.md`, binding in full) and the foreman architecture (`StevOS/projects/pages/foreman.md`).*
+
+## Roles
+
+- **Director (you - Claude via `/foreman`, or GPT-6 Astra via `$foreman` inside Codex since 2026-09-05):** frame predicates, write briefs, review diffs, verify, keep `.claude/` state files current, decide next. You never implement beyond a one-line obvious fix. Whichever family directs, the end-of-run trail audit runs on the other family.
+- **Executor (Codex via `codex exec`):** implements from self-contained briefs in isolated worktrees. Stateless — every brief re-briefs in full. Behavioural contract: `AGENTS.md` at the repo root (present since the V1.1 repair cycle).
+- **Independent auditor (fresh Sol@high thread):** release-gate audits per handoff §10. Author ≠ judge, always. Audits are read-only; a BLOCKED verdict spawns the smallest corrective branch, never in-audit repair.
+- **Steven:** launches audits, approves expensive runs, owns every code merge to `main` and every tag (state-layer commits under `.claude/` and `docs/` go via `fm.sh sync` — that is the only agent write to `main`). His decisions queue in `GATES.md` with defaults.
+
+## Iteration contract
+
+1. Re-read this file, `FRONTIER.md`, the tail of `decisions.tsv`, open items in `GATES.md`.
+2. Check the run's predicate. Met → stop and report. Blocked on a gate → route around it or stop.
+3. Smallest unit that moves the predicate. Brief per the foreman 9-field template (GOAL/SCOPE/CONTEXT/ACCEPTANCE/VERIFY/TIMEBOX/FORBIDDEN/REPORT/STANDING — this file pasted verbatim as STANDING). A field you can't fill = a unit you haven't scoped.
+4. Execute in a fresh worktree off the correct base. **Never the primary worktree; never touch the existing `/private/tmp/jsy_*` worktrees** (handoff §7.5: no force-remove, no force-checkout, no clean/reset).
+5. Review full diff (scope-check first), run every acceptance criterion, keep-or-revert. "Might help" never rides along.
+6. One row in `decisions.tsv`, rewrite `FRONTIER.md` if the frontier moved, park new human questions in `GATES.md`, commit state files on `main` via `fm.sh sync`.
+
+Budgets per job: 3 implementation runs, 2 peer consults (Sol@high), unless Steven extends. Predicates are never relaxed; a plateau is a pivot, not a stop; duration is never a finish condition.
+
+## Repo-specific hard rules (from handoff §18 and §2 — binding)
+
+- **Released state (2026-09-01):** `main` = tag `jos-v1.1.0` = `e502ebfd366743db8ecbb65f580159bfa1d2a70c` + state-layer commits. Tags `jos-v1.0.0` (`9e9ce3abc4201cd8303c723015462d21ca237800`) and `jos-v1.1.0` are immutable. Code reaches `main` only by Steven's SHA-first merge; agents never merge code or tag by default. The 2026-09-01 G3 merge was executed by an agent on a one-time explicit chat instruction and is not a standing authorization.
+- Any release candidate under audit is immutable while the audit is pending; a new head voids the verdict.
+- **Forward scope authority:** `docs/audits/2026-09-01-solpro-deep-audit-BLOCKED.md` §9–§11 (V1.2 evidence foundation → V1.2.1 synthetic recovery → V1.3 first calibration → V1.3.1 → V1.4 → V2). §11's cut list is binding. Calibration never happens in the same milestone as the evidence foundation.
+- Never: restart V1.1 research/lanes · run the 180-day full-wave or the 30-replicate ensemble without the gate order in `FRONTIER.md` · `git clean` / `reset --hard` / force-checkout · squash or delete milestone branches · fabricate school year-groups, catchments, pathogen-neutral CVs, or any unsupported numeric default ("explicit unknown beats false precision") · call any tier calibrated/validated before it has passed a predeclared held-out validation (V1.3 exit gate at the earliest) · call ensemble bands confidence intervals (they are stochastic replicate variation) · conflate episode incidence with ever-infected fraction · treat `docs/progress.md` / `V1_1_IMPLEMENTATION_STATUS.md` as audit evidence (they are claims) · overwrite `~/Documents/JOS_v1_full_scale_evidence/` or `~/Documents/JOS_v1_1_full_scale_evidence/` (both runs) · run a 2.5/97.5 replicate band on fewer than 40 successful replicates (n·min(q,1−q)≥1 rule; N=30 reports median/IQR + labelled extrema only — the M04 decision).
+- Science design and mechanical implementation stay separated (§7.7): scientific parameter choices come from a written synthesis/spec, never improvised by an implementation agent.
+- Performance changes require measured hotspot + fixed-seed scientific-equivalence proof before merge (§7.10). Nothing merges because it "looks faster."
+- Status vocabularies never mix (§10.5): gates are PASS/FAIL; scientific findings are CLOSED / PARTIALLY CLOSED BY DESIGN / DEFERRED TO V1.x / FAILED. H3/H4 assess mechanism-support and shipped-default separately (§10.6).
+
+## Audit convention (when directing an audit)
+
+Immutable commit, never branch tip · verify ancestry · detached worktree · read-only · verdict is exactly `JOS <tier> RELEASE-CANDIDATE PASS` / `BLOCKED` with the tier named (e.g. `V1.2`) · minimum test surface per §10.8 (never the full-wave inside an audit) · protected contracts list §10.4.
+
+## Escalation
+
+Reaches Steven, batched in the run digest: irreversible actions, product/taste calls, a standing order contradicting observed reality, a dead end that survived a replan. Everything else: act and log. Every ask parks in `GATES.md` with a default.
+
+## Lessons (symptom -> root cause -> RULE)
+
+- 2026-08-31 (pilot, via terra trail-audit): trail rows cited doc names as evidence -> conclusions are not primary evidence -> RULE: the decisions.tsv evidence column carries resolvable artifacts (full SHA, commit hash of the write-back, log-file path), never just a document title; abbreviate nothing.
+- 2026-08-31 (corrective, via terra trail-audit): two trail rows carried hand-estimated timestamps contradicting machine-stamped ones -> director wrote ts by hand instead of using the helper -> RULE: every trail row goes through `fm.sh log` (it stamps `date`); hand-written timestamps are banned.
+- 2026-08-31 (corrective, via terra trail-audit): executor logs lived only in session scratchpad, so trail evidence pointed at files that die with the session -> RULE: at write-back, file each executor's final report (the `.last.md`) into `docs/runs/` on the state branch, and record the codex session id in the evidence cell.
+- 2026-09-01 (Sol Pro B04): a gate resolved verbally in chat stayed open in GATES.md, and a superseded branch stayed labelled "release candidate" in two files -> rulings and supersessions were logged to the trail but not reconciled into every state file -> RULE: a write-back is not complete until every state file agrees — after editing, grep the state layer for the superseded SHA/branch/status and fix every stale mention (the closeout staleness sweep, applied to .claude/).
+- 2026-09-01 (Sol Pro §12): release instructions named a branch -> branches move, releases don't -> RULE: merge/tag instructions are SHA-first; a branch name is a pointer, never a release identity.
+- 2026-09-01 (v12-carry-ins, self-caught): director logged a CI PASS row from a watcher's summary line, then read the run and found `conclusion=failure` -> verdict written before the verdict was read -> RULE: a CI trail row is written only after `gh run view <id> --json jobs` (or `--log-failed`) has been read in the same step; the row cites the job conclusions, never a watcher summary.
+- 2026-09-01 (v12-carry-ins, CI-caught): a CLI test asserted on typer's rich-rendered error panel; passed locally (wide terminal), failed on the 80-column runner -> rendered output is environment-dependent -> RULE: briefs for CLI error paths require plain `typer.echo(..., err=True)` + `typer.Exit(code)` and tests assert on exit code + plain message, never on rich/ANSI output.
+- 2026-09-02 (P4 desktop, self-caught after WSL crash): a 16 GB swapfile added live inside WSL exhausted the Windows host disk (~9 GB free) and crashed the whole VM, killing the run -> resource decisions were sized against the guest's view only -> RULE: before any allocation that grows a WSL VHD (swapfile, big cache, evidence dir), check the HOST drive's free space (`df /mnt/c`) and leave ≥5 GB; host disk is part of every capacity calculation on this box (G9 has the pagefile context).
+- 2026-09-03 (R7 chain, CI-caught): S1b passed the director's local gates (full suite, ruff, format, fingerprint compare) but failed CI on 3 mypy errors — the local gate list did not mirror CI's verify job, which also runs mypy over a pinned module list -> RULE: the director's pre-push gate for any src/ change is the CI verify job's exact step list (read `.github/workflows/` once per cycle and mirror it: uv lock check, compileall, pytest, ruff check+format, mypy over the pinned modules, relocation check where applicable), not a remembered subset.
+- 2026-09-05 (v12-run2 iteration 2, director-caught in review): the executor transcribed the brief's illustrative phrasing for a gov.je `Date` column into the measure dictionary as a sourced fact -> a brief that gives an EXAMPLE value for a transcription/citation field will be copied verbatim -> RULE: in briefs for transcription fields (dictionaries, fixtures, provenance notes), never give example content that is not itself a frozen-source fact; give the rule and the literal `unknown` fallback only, and make "every non-unknown cell cites a frozen locator" an acceptance criterion the executor must grep.
+- 2026-09-05 (perf-v12-run3, self-caught): RUN.md carried hand-written clock times up to two hours off the machine clock (the director inferred times from elapsed waits) -> only `fm.sh log` stamps are trustworthy -> RULE: RUN.md and GATES.md cite trail-row phases ("ts: trail row <phase>") instead of hand-written clock times; a time that did not come from `date` or a trail row is not written.
+- 2026-09-06 (perf-v12-run3, self-caught at digest time): every trail row of the run lacked its tokens column although the director passed the value -> the WSL-installed `fm.sh` predated the tokens column (the repo's vendored copy was equally old; only the Windows `~/.claude` copy was current) and silently ignored the eighth argument -> RULE: at run start the director diffs the installed `~/.claude/skills/foreman/scripts/fm.sh` against the repo's vendored `.claude/skills/foreman/scripts/fm.sh` and against the newest copy on any machine, reinstalls with `scripts/install_skills.sh --force` if they differ, and checks the first trail row of the run has all seven columns (`awk -F'	' '{print NF}'`).
+- 2026-09-09 (run 4 retries, self-caught): cherry-picking a `main` docs commit into two executor worktrees to hand them a review report conflicted on `.claude/RUN.md`/`GATES.md` (the commit carried state-file edits too) and left both worktrees mid-cherry-pick while executors were already running -> state-layer commits are never branch-clean -> RULE: hand context to an executor by copying the file into the worktree (untracked) or quoting it in the brief; never `cherry-pick` a commit that touches `.claude/` into a feature worktree, and never launch an executor in a worktree whose `git status` is not clean apart from intended files.
+- 2026-09-12 (v121-run5, self-caught): four executors launched through `wsl -d Ubuntu -- bash -c '... fm.sh exec ...'` from the desktop app all died within a minute, exactly when that wsl.exe invocation returned (log mtimes 17:19:14–17:19:20 vs launch 17:18:50; no `.last.md`, no error text) -> WSL tears down the process tree of a finished `wsl.exe` invocation, `nohup` notwithstanding; earlier runs survived only because the director held an interactive terminal session -> RULE: on this box any process that must outlive a director tool call (codex executors, long measurements) is started from a detached hidden `wsl.exe` session (`Start-Process wsl.exe -ArgumentList '-d','Ubuntu','--','bash','/tmp/<script>.sh' -WindowStyle Hidden`, the script ending in `sleep infinity`), and the director verifies `pgrep -f 'codex exec'` ≥ 60 s after launch before logging the launch row. Corollary: never pass shell variables or `/tmp` paths inline through `wsl -- bash -c` from PowerShell/Git Bash — write a script file under the scratchpad, copy via `/mnt/c`, run it by path.
+- 2026-09-12 (v121-run5, terra trail audit Attention 4/5/8): the integration branch was pushed and the independent review launched before the director's own full CI mirror had finished, the mirror's first pass failed on a director-script invocation error, and a quick-gate number was logged without a saved transcript -> the director treated the reviewer's mirror as the gate and its own as optional, and trusted session output as evidence -> RULE: the director's full CI mirror (exact verify-job step list, module lists deduplicated) runs to `PASS` on the integration head BEFORE the push and BEFORE the review launch, its log is filed under `docs/runs/` in the same write-back, and every test count cited in a trail row points at a filed transcript, never at tool-call output that dies with the session.
+- 2026-09-12 (v121-run6, terra trail audit Attention 4/5): first-attempt executor briefs carried a `· retry 1` label because the launcher appended it unconditionally, and the mirror-before-push claim had no retained push receipt -> provenance noise and an unverifiable ordering claim -> RULE: a retry label is added only when a previous attempt log for that unit exists; after every push that a trail row relies on, the row's evidence cell carries `git ls-remote origin <branch>` output (SHA + branch) captured in the same step.
+
+- 2026-09-22 (Phase 0, director acceptance review): a no-campaign-execution brief yielded pure scoring utilities without the simulator adapter needed by later units -> implementation and execution authorization were conflated -> RULE: campaign briefs explicitly require implementing and mock-testing the generation/orchestration path while separately keeping real execution gated.
+
+- 2026-09-22 (Phase 0 P0-1 correction, director review): defaulting missing result metadata to requested configs let namespace evidence pass -> test fakes omitted the real result fields -> RULE: evidence checks require returned metadata and reject absence; adapter tests use real config constructors and faithful result metadata, mocking only expensive execution.
+
+- 2026-09-22 (Phase 0 numerical review): binary subtraction excluded a declared inclusive decimal endpoint despite green tests -> endpoints were not exercised -> RULE: declared finite-decimal recovery predicates need exact arithmetic and endpoint/cancellation regressions; never repair by inventing epsilon or retuning thresholds.
+
+- 2026-09-22 (Phase 0 closeout): state-only pushes triggered 12 prohibited Actions runs -> push workflows ignore file intent -> RULE: under no-GitHub-CI instruction, every fm log decision and sync commit message includes [skip ci] before any push; never claim no remote runs without evidence.
+
+- 2026-09-22 (Terra trail audit): local shared-clone origin refs were mistaken for GitHub push evidence -> remote name was treated as identity -> RULE: audit remote URLs before inferring publication; use retained ls-remote output from the actual destination.
+
+- 2026-09-22 (G30 correction): full verification began before final formatting, forcing repeated suite sessions and a timebox stop -> brief verification order put the expensive suite too early -> RULE: finish formatting, lint, type checks and focused regressions before the full suite; run the full suite once against final bytes, and disclose any later change that invalidates it.
+
+## Final numerical review
+G30 NUMERICAL CORRECTION: PASS
+
+No substantive defects found in the bounded correction.
+
+Findings by severity:
+
+- Critical/Major/Minor: none.
+- Exact decimal recovery is confined to the truth-joined layer: subtraction and absolute error use `Decimal(str(...))` in [phase0_campaign.py](/home/steven/jos-g30-review-readonly/src/jersey_outbreak/phase0_campaign.py:422).
+- Coverage, bias summation/mean, bias predicates, and joint predicates remain exact through comparison at [phase0_campaign.py](/home/steven/jos-g30-review-readonly/src/jersey_outbreak/phase0_campaign.py:1379). Conversion back to `float` occurs only for existing output fields at lines 1408–1419; JSON serialization succeeds with no `Decimal` leakage.
+- Blind fitting and hashing remain upstream and unchanged. The estimate is hashed at line 1288, persisted at lines 1670–1684 and 1821–1822, then truth diagnostics and truth joining occur at lines 1823–1838. The mocked orchestration test explicitly checks persistence precedes every truth join.
+- The objective, profile rules, grids, seeds, configuration, thresholds, schemas, and dependencies were unchanged. No epsilon, rounding, or threshold relaxation was introduced. The only new dependency is Python’s standard-library `decimal`.
+- Tests are additions rather than weakened existing assertions. They directly cover all eight declared dimension endpoints, the asymptomatic upper endpoint, marginal and joint coverage, decisive `3/5`, exact cancellation, and pinned hashes in [test_phase0_campaign.py](/home/steven/jos-g30-review-readonly/tests/test_phase0_campaign.py:366).
+
+Independently reproduced evidence:
+
+- Candidate focused suite: **34 passed**.
+- Retained before/after evidence: exact base produced **5 failed, 7 passed, 22 deselected** with real numerical assertion failures; candidate produced **12 passed, 22 deselected**.
+- Missing/nonidentified probe: each marginal coverage and joint coverage was exactly `3/5`; a missing estimate left every bias `None`, confirming fail-closed handling and fixed five-seed denominators.
+- Exact upper asymptomatic error was `Decimal("0.15")`, inclusive against `0.15`.
+- Blind/config hash regression passed against both base and candidate:
+  - estimate: `2ebc1f18a5dac62ec1432fc696e8c885c63cd53e818b8d8fbce0bcf7dad7421a`
+  - candidate config: `d3a536deb456c471baaaecec59bfd8854483cb288f96f3df22828535a26f71d0`
+- Base/head Git blob identities for the campaign configuration and predeclaration are identical. Predeclaration SHA-256 remains `ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104`.
+
+Evidence limits:
+
+- This is a bounded numerical code-review PASS, not a Phase-0 scientific gate PASS, calibration, or validation. No campaign or real-data fit ran.
+- The director full suite is explicitly **not all green**: **1 failed, 443 passed, 4 skipped**. The sole job-ordering timing failure was reproduced unchanged on base and falls under the predeclared confirm-on-base exception documented in the [verification gate](/home/steven/jsy_disease_sim/docs/runs/2026-09-22-phase0-g30-verification-gate.md).
+- The computed-objective 5% profile-gap exact-boundary question remains open and untouched at [phase0_campaign.py](/home/steven/jos-g30-review-readonly/src/jersey_outbreak/phase0_campaign.py:1049). This correction does not assign decimal-string semantics to computed objectives. G29 remains a separate model-owner ruling.
+
+Final attestation:
+
+- SHA: `367f0324685437c4d2ed4aa0ae4878229da09839`
+- Base ancestry verified from `b5ef032e29c577bce634ce0933b2d7d316ac562e`
+- Diff: exactly two expected files, **168 insertions, 15 deletions**
+- Final `git status --porcelain`: empty
+- No files modified, dependencies installed, campaigns run, commits made, or pushes performed.
+## Local gate with predeclared exception
+# G30 local verification gate: PASS under the predeclared base-flake rule
+
+Exact source 367f0324685437c4d2ed4aa0ae4878229da09839, clean detached clone `/home/steven/jos-g30-verify`; uv0.11.30 matches CI setup. This is not an all-tests-green result and is not a scientific exit verdict.
+
+- Full suite: **1 failed, 443 passed, 4 skipped**, 15 warnings, 1097.94s. The sole failure is `tests/test_prov_job_ordering.py::test_missing_head_request_fails_alone_and_scheduler_continues`, line176, RUNNING versus SUCCEEDED at its five-second deadline. Raw mirror exit1/FAIL remains preserved in `docs/runs/2026-09-22-phase0-g30-ci-mirror.log`.
+- Confirmed on unchanged base b5ef032e29c577bce634ce0933b2d7d316ac562e with the same assertion: one failed in5.94s, exit1. `...-g30-known-flake-base.log` and commands companion. Job implementation and this test have zero diff between base/head. No artificial delay or test alteration was used.
+- Authority: live V1.3 plan Operational notes predeclare this exact timing flake, Steven's won't-fix-now ruling, and confirm-on-base then disregard in reviews. This is the existing exception, not a new waiver or hidden failure.
+- Remaining verify steps completed separately after the pytest stop: ruff/check+format, pinned15-module mypy, demo, ci population/structure/network generation, relocation check, new-module mypy, diff check, clean tree and exact SHA. Exit0; `MIRROR_REMAINDER=PASS SHA=367f0324685437c4d2ed4aa0ae4878229da09839`. Transcript `...-g30-ci-remainder.log`; commands companion. Initial lock/sync/compile steps are in the full mirror transcript. No full suite was rerun merely to seek green.
+- Director focused before/after proof: five base assertion failures versus all12 new cases passing on head. Existing/new Phase-0 tests: all34 passed within full suite. Frozen config/declaration and blind estimate/config hashes unchanged.
+
+The local pre-review gate is PASS with this explicitly disclosed, reproduced predeclared flake. Independent Sol numerical review remains required before feature push. No campaign, code merge or new GitHub CI run is authorized.
+
+Additional scope clarification: the local gate is PASS under the existing known-flake exception, not an unqualified all-tests-green mirror. Read preserved raw FAIL, unchanged-base reproduction, remainder PASS and original plan rule. The pushed branch is codex/v13-p01-numeric-fix; earlier codex/v13-p0-1-recovery stays local. Actual GitHub receipt is docs/runs/2026-09-22-phase0-g30-push-receipt.txt. No new remote runs observed in saved snapshot; do not overstate as proof about all future events. No worker final report or token count exists for interrupted Luna; do not report zero tokens.

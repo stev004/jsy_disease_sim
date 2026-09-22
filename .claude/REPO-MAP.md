@@ -2,7 +2,7 @@
 
 *A navigation map, not documentation. Module contracts live in `docs/architecture.md`; scientific scope in `docs/scientific_scope.md`. Written 2026-09-21 (code baseline `3ff3734`).*
 
-**Current pickup:** work resumed by Steven under the G30 bounded correction extension; RUN/GATES own live status. The prior stop is recorded in `docs/handoff/2026-09-22-phase0-stop.md`, then RUN/GATES. The G30 correction is on the reviewed feature branch `codex/v13-p01-numeric-fix`, not main.
+**Current pickup:** G30 correction/review is complete and pushed; G29 remains HOLD; nothing in flight. RUN/GATES own live status; current handoff `docs/handoff/2026-09-22-phase0-g30-complete.md`. The prior stop is recorded in `docs/handoff/2026-09-22-phase0-stop.md`, then RUN/GATES. The G30 correction is on the reviewed feature branch `codex/v13-p01-numeric-fix`, not main.
 
 ## Top level
 
