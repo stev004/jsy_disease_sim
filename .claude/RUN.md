@@ -1,4 +1,6 @@
-# RUN — Phase 0 stopped at G29/G30; nothing in flight
+# RUN — stopped by Steven, 2026-09-22; nothing in flight
+
+**Stop instruction:** Steven requested documentation reconciliation and then stopping. This is not approval of G29/G30. Resume only on a new instruction; gate defaults remain HOLD. Handoff: `docs/handoff/2026-09-22-phase0-stop.md`.
 
 **Director:** Astra. **Predicate:** P0-1 recovery, P0-2 misspecification, P0-3 negative controls on reviewed branches; fresh Sol exit verdict; merge parked SHA-first for Steven. No real-data fitting before Phase-0 PASS.
 **Budget:** five logical iterations framed; iteration 1 reached a held candidate, iteration 2 preparation reached G29; iterations 3–5 not entered. Run stopped at owner gates, not at time budget. Implementation attempts P0-1 3/3, P0-2 0/3, P0-3 0/3. Consults P0-1 2/2, P0-2 1/2, P0-3 0/2. Independent code review before campaign, separate fresh Sol exit audit, bounded corrective/re-review iteration, final terra trail audit. No fourth P0-1 implementation without Steven.

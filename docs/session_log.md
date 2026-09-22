@@ -5,6 +5,8 @@ Newest first. History only — current truth lives in the docs named by
 
 ## 2026-09-21→22 — Phase 0 framed; P0-1 held; G29/G30 pending (Astra director)
 
+- **Explicit stop:** Steven requested all relevant Markdown updates and then stopping. README, live plan, orientation map, RUN/FRONTIER/GATES/roadmap and this log reconciled; handoff `docs/handoff/2026-09-22-phase0-stop.md`. This instruction does not approve G29/G30. No worker or campaign is in flight; resume only on a new instruction.
+
 - Predicate unmet. Frozen predeclaration and unit briefs filed; P0-1 three Luna xhigh attempts produced held candidate b5ef032e29c577bce634ce0933b2d7d316ac562e. No feature push, campaign, real-data fit or main code merge.
 - Director CI command mirror: 432 passed/4 skipped; local uv0.12.9 versus CI setup0.11.30 disclosed. Earlier director acceptance withdrawn after decimal endpoint defect; Sol high confirmed BLOCKED and a correction beyond the one-line allowance. G30 default HOLD pending one implementation/review extension.
 - P0-2 Sol clarification requires model-owner unknown/tie reporting rule; G29 default HOLD. P0-2/P0-3 unimplemented. P0-1 budgets 3/3 implementations, 2/2 consults; P0-2 consult 1/2. All branches preserved, G5 unchanged.

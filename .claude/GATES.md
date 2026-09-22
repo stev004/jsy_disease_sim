@@ -4,6 +4,8 @@
 
 ## Open
 
+**2026-09-22 closeout:** Steven requested updated documentation and a stop. G29/G30 are unanswered, not approved; defaults remain HOLD. G5 remains preserve all branches.
+
 ### G30 — One bounded P0-1 numerical correction and independent re-review
 - **Question:** extend the exhausted P0-1 budget by exactly one Luna xhigh implementation attempt (25-minute cap) and one Sol high bounded independent numerical review? The ready nine-field brief is `docs/runs/2026-09-22-phase0-p01-numeric-correction-brief-PENDING-G30.md`, base b5ef032e29c577bce634ce0933b2d7d316ac562e.
 - **Scope:** exact declared-decimal recovery/error/bias arithmetic plus focused regressions in two files; no change to tolerances, grids, objectives, blind fitting, schemas, seeds or frozen declaration. Director CI mirror must pass before review/push. A new SHA replaces the held candidate only after review.

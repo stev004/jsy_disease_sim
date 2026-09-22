@@ -7,14 +7,18 @@ disease biology, interventions, observations and provenance separate.
 
 ## Current status
 
-V1.0 (tag `jos-v1.0.0`) and V1.1 (tag `jos-v1.1.0`, scientific-hardening
-release, 2026-09-01) are released and frozen. The V1.2 cycle is open; `main`
-additionally carries the V1.2 carry-ins, frozen Jersey COVID-era source
-snapshots, and the 2026-09-02/04 audit-driven optimization cycles (R6/R7/R8:
-~10x faster runs with byte-identical scientific outputs — see
-[`docs/performance-history.md`](docs/performance-history.md)). The living
-backlog is [`docs/roadmap.md`](docs/roadmap.md); the current-state authority
-is [`.claude/FRONTIER.md`](.claude/FRONTIER.md); agents start at `CLAUDE.md`.
+V1.0 and V1.1 are released and frozen. The V1.2 evidence exit gate passed,
+and the V1.2.1 engineering backlog closed on 2026-09-21. Main's code baseline
+is `3ff37348f88750470be9f1ccda193b3ff31fb9c3`.
+
+V1.3 Phase 0 remains incomplete. The P0-1 candidate is held after an independent
+numerical review; P0-2 and P0-3 are not implemented. No Phase-0 campaign or
+real-data fit has run. Work stopped on Steven's instruction on 2026-09-22,
+with G29 (unknown-result reporting) and G30 (one corrective attempt and review)
+awaiting decisions. See the [handoff](docs/handoff/2026-09-22-phase0-stop.md),
+[live plan](docs/research/v1_3/2026-09-21-v13-plan.md), and
+[current state](.claude/FRONTIER.md). The living backlog is
+[docs/roadmap.md](docs/roadmap.md); agents start at `CLAUDE.md`.
 
 ## Quick start
 

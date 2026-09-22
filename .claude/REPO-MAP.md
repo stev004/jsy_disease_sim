@@ -2,6 +2,8 @@
 
 *A navigation map, not documentation. Module contracts live in `docs/architecture.md`; scientific scope in `docs/scientific_scope.md`. Written 2026-09-21 (code baseline `3ff3734`).*
 
+**Current pickup:** work stopped by Steven on 2026-09-22; see `docs/handoff/2026-09-22-phase0-stop.md`, then RUN/GATES. Phase-0 source exists only on the held local feature branch, not main.
+
 ## Top level
 
 | path | what it is |
@@ -45,4 +47,4 @@ M1 evidence (frozen tables) → **M2** population (`population_*`) → **M3** da
 
 ## Where things run
 
-Loop home = WSL Ubuntu `~/jsy_disease_sim` (executors, runs, `fm.sh`); Windows checkout `C:\Users\StevBeast\Documents\jsy_disease_sim` (same clone, used by desktop sessions; both push to origin — pull before writing). Evidence dirs: WSL `~/Documents/JOS_v1_2_full_scale_evidence/` (+ immutable V1/V1.1 dirs per hard rules) and kept measurement dirs `~/jos-astra-perf-*`, `~/jos-validation-20260919/`. No GitHub CI (billing) — the local mirror of the verify job is the gate.
+Loop home = WSL Ubuntu `~/jsy_disease_sim` (executors, runs, `fm.sh`); Windows checkout `C:\Users\StevBeast\Documents\jsy_disease_sim` (separate clone of the same repository, used by desktop sessions; both share GitHub origin — pull before writing). Evidence dirs: WSL `~/Documents/JOS_v1_2_full_scale_evidence/` (+ immutable V1/V1.1 dirs per hard rules) and kept measurement dirs `~/jos-astra-perf-*`, `~/jos-validation-20260919/`. No GitHub CI (billing) — the local mirror of the verify job is the gate.
