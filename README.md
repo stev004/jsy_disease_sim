@@ -11,10 +11,10 @@ V1.0 and V1.1 are released and frozen. The V1.2 evidence exit gate passed,
 and the V1.2.1 engineering backlog closed on 2026-09-21. Main's code baseline
 is `3ff37348f88750470be9f1ccda193b3ff31fb9c3`.
 
-V1.3 Phase 0 remains incomplete. The P0-1 candidate is held after an independent
-numerical review; P0-2 and P0-3 are not implemented. No Phase-0 campaign or
-real-data fit has run. Steven resumed work on 2026-09-22, authorizing G30
-(one corrective attempt and review). G29 (unknown-result reporting) remains
+V1.3 Phase 0 remains incomplete. The P0-1 numerical correction passed its bounded independent
+review; P0-2 and P0-3 are not implemented. No Phase-0 campaign or
+real-data fit has run. Steven resumed work on 2026-09-22, and the G30
+correction/review extension is complete. G29 (unknown-result reporting) remains
 awaiting a ruling. See the [handoff](docs/handoff/2026-09-22-phase0-stop.md),
 [live plan](docs/research/v1_3/2026-09-21-v13-plan.md), and
 [current state](.claude/FRONTIER.md). The living backlog is

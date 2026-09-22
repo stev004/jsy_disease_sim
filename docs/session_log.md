@@ -5,6 +5,8 @@ Newest first. History only — current truth lives in the docs named by
 
 ## 2026-09-22 — Phase 0 resumed; G30 bounded extension released
 
+- **G30 correction reviewed:** 367f0324685437c4d2ed4aa0ae4878229da09839; Sol PASS, no findings; 34 focused tests independently passed. Director five base failures/twelve corrected-case passes; final local gate 443 passed/4 skipped/1 predeclared timing failure reproduced on base, remaining steps PASS with uv0.11.30. Luna timebox-stopped without final report/token tally; interrupted transcript retained, final acceptance established by director and Sol. No campaign/scientific PASS or code merge.
+
 Steven instructed "alright keep iterating and working away" after the documented stop. Director proceeds with one prepared Luna xhigh numerical corrective and one Sol high review, preserving the original predicate and merge/campaign gates. G29 remains a scientific decision awaiting a ruling. Exact brief: `docs/runs/2026-09-22-phase0-p01-numeric-correction-brief-G30.md`; RUN.md owns live status. No additional retries are inferred.
 
 ## 2026-09-21→22 — Phase 0 framed; P0-1 held; G29/G30 pending (Astra director)

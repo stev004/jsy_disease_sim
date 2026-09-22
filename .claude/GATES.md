@@ -10,7 +10,7 @@
 - **Question:** approve the exact reporting rule in `docs/research/v1_3/2026-09-22-p02-tie-ruling-proposal.md` before P0-2 implementation? Sol found tied wrong-model minima can make selected-candidate diagnostics undefined; the frozen spec does not define the indeterminate aggregate status.
 - **Recommended:** preserve target UNKNOWNs and fixed denominator; record D/U/[D,D+U]; use arm detection null with an explicit indeterminate reason when the fixed threshold is unresolved. Overall exit gate remains FAIL/not established unless every arm is proven PASS. No threshold, grid, seed or dimension changes.
 - **Alternative:** hold for a different owner-declared pre-execution specification. No tie-breaking or unknown-as-false rule is inferred.
-- **Default on no answer:** HOLD P0-2 implementation and all campaign execution. P0-1 mirror is complete, but its push is separately held for a numerical defect; preserve branches. P0-3 depends on P0-2 under the frozen unit order.
+- **Default on no answer:** HOLD P0-2 implementation and all campaign execution. P0-1 G30 correction passed bounded numerical review and may be published as a reviewed feature branch; preserve branches. P0-3 depends on P0-2 under the frozen unit order.
 - **Evidence:** `docs/audits/2026-09-22-phase0-p02-clarification-sol-NEEDS-OWNER.md`; source clone 29d44485c0871b57524a4a26ce38262e57f4ec04; session 01a0c69e-9418-7b01-9b4f-689a7eb75895; ts: trail row `phase0-p02-G29`.
 
 ### G5 — Branch cleanup
@@ -20,6 +20,7 @@
 ## Resolved
 
 ### G30 — RESOLVED: one bounded P0-1 numerical correction and review authorized (2026-09-22)
+- **Outcome:** correction 367f0324685437c4d2ed4aa0ae4878229da09839 passed Sol bounded numerical review (`docs/audits/2026-09-22-phase0-g30-review-sol-PASS.md`). Implementation was timebox-stopped without final report; director before/after checks and final clean verification gate established acceptance, using the predeclared base-confirmed timing-flake exception. No campaign or scientific PASS; extension spent.
 - **Question:** extend the exhausted P0-1 budget by exactly one Luna xhigh implementation attempt (25-minute cap) and one Sol high bounded independent numerical review? The ready nine-field brief is `docs/runs/2026-09-22-phase0-p01-numeric-correction-brief-PENDING-G30.md`, base b5ef032e29c577bce634ce0933b2d7d316ac562e.
 - **Scope:** exact declared-decimal recovery/error/bias arithmetic plus focused regressions in two files; no change to tolerances, grids, objectives, blind fitting, schemas, seeds or frozen declaration. Director CI mirror must pass before review/push. A new SHA replaces the held candidate only after review.
 - **Reason:** Sol confirmed the inclusive endpoint defect and that a genuine one-line director fix is insufficient. DIRECTOR.md limits each unit to three implementations/two consults unless Steven extends; both are spent.

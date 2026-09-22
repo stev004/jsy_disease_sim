@@ -66,3 +66,5 @@ Reaches Steven, batched in the run digest: irreversible actions, product/taste c
 - 2026-09-22 (Phase 0 closeout): state-only pushes triggered 12 prohibited Actions runs -> push workflows ignore file intent -> RULE: under no-GitHub-CI instruction, every fm log decision and sync commit message includes [skip ci] before any push; never claim no remote runs without evidence.
 
 - 2026-09-22 (Terra trail audit): local shared-clone origin refs were mistaken for GitHub push evidence -> remote name was treated as identity -> RULE: audit remote URLs before inferring publication; use retained ls-remote output from the actual destination.
+
+- 2026-09-22 (G30 correction): full verification began before final formatting, forcing repeated suite sessions and a timebox stop -> brief verification order put the expensive suite too early -> RULE: finish formatting, lint, type checks and focused regressions before the full suite; run the full suite once against final bytes, and disclose any later change that invalidates it.
