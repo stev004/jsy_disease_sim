@@ -1,0 +1,2678 @@
+[
+  {
+    "conclusion": "success",
+    "databaseId": 35665995373,
+    "headSha": "b78b5bc7071edb3542525c0863dabc661c957ba6",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T23:26:42Z",
+        "conclusion": "success",
+        "databaseId": 106551757678,
+        "name": "verify",
+        "startedAt": "2026-09-21T23:06:26Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665995373/job/106551757678"
+      },
+      {
+        "completedAt": "2026-09-21T23:06:53Z",
+        "conclusion": "success",
+        "databaseId": 106551757934,
+        "name": "frontend",
+        "startedAt": "2026-09-21T23:06:27Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665995373/job/106551757934"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665995373"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35665993405,
+    "headSha": "c52617b8a9bf0043281468ebeaa2949836ae7612",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T23:06:49Z",
+        "conclusion": "success",
+        "databaseId": 106551751278,
+        "name": "frontend",
+        "startedAt": "2026-09-21T23:06:25Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665993405/job/106551751278"
+      },
+      {
+        "completedAt": "2026-09-21T23:26:10Z",
+        "conclusion": "success",
+        "databaseId": 106551751508,
+        "name": "verify",
+        "startedAt": "2026-09-21T23:07:00Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665993405/job/106551751508"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665993405"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35665991371,
+    "headSha": "21395a61c5c635565279e7a784bef13f43da7cec",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T23:06:45Z",
+        "conclusion": "success",
+        "databaseId": 106551744741,
+        "name": "frontend",
+        "startedAt": "2026-09-21T23:06:23Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665991371/job/106551744741"
+      },
+      {
+        "completedAt": "2026-09-21T23:23:17Z",
+        "conclusion": "success",
+        "databaseId": 106551745092,
+        "name": "verify",
+        "startedAt": "2026-09-21T23:06:23Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665991371/job/106551745092"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665991371"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35665749386,
+    "headSha": "a4b3200967f34e449bd7ffd4f589a8d30e841e95",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T23:03:53Z",
+        "conclusion": "success",
+        "databaseId": 106551001965,
+        "name": "frontend",
+        "startedAt": "2026-09-21T23:03:27Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665749386/job/106551001965"
+      },
+      {
+        "completedAt": "2026-09-21T23:22:54Z",
+        "conclusion": "success",
+        "databaseId": 106551002399,
+        "name": "verify",
+        "startedAt": "2026-09-21T23:03:27Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665749386/job/106551002399"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665749386"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35665508416,
+    "headSha": "7834c2e832b93e0db38f18d8d33d439f69a9b474",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T23:00:56Z",
+        "conclusion": "success",
+        "databaseId": 106550256987,
+        "name": "frontend",
+        "startedAt": "2026-09-21T23:00:34Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665508416/job/106550256987"
+      },
+      {
+        "completedAt": "2026-09-21T23:22:08Z",
+        "conclusion": "success",
+        "databaseId": 106550257058,
+        "name": "verify",
+        "startedAt": "2026-09-21T23:00:34Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665508416/job/106550257058"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665508416"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35665505943,
+    "headSha": "6e56879a423e6518244df12297052b56b495574b",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T23:00:54Z",
+        "conclusion": "success",
+        "databaseId": 106550249247,
+        "name": "frontend",
+        "startedAt": "2026-09-21T23:00:33Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665505943/job/106550249247"
+      },
+      {
+        "completedAt": "2026-09-21T23:19:29Z",
+        "conclusion": "success",
+        "databaseId": 106550249492,
+        "name": "verify",
+        "startedAt": "2026-09-21T23:00:34Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665505943/job/106550249492"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665505943"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35665149067,
+    "headSha": "2ab6b10216b46e9599d9cc42c0b00aa9178c0436",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T23:15:48Z",
+        "conclusion": "success",
+        "databaseId": 106549114095,
+        "name": "verify",
+        "startedAt": "2026-09-21T22:56:02Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665149067/job/106549114095"
+      },
+      {
+        "completedAt": "2026-09-21T22:56:28Z",
+        "conclusion": "success",
+        "databaseId": 106549114387,
+        "name": "frontend",
+        "startedAt": "2026-09-21T22:56:04Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665149067/job/106549114387"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665149067"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35665146388,
+    "headSha": "f429ec25e90e47f8748cfae77dbc35f9b2b3c516",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T23:11:32Z",
+        "conclusion": "success",
+        "databaseId": 106549108485,
+        "name": "verify",
+        "startedAt": "2026-09-21T22:56:00Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665146388/job/106549108485"
+      },
+      {
+        "completedAt": "2026-09-21T22:56:28Z",
+        "conclusion": "success",
+        "databaseId": 106549108661,
+        "name": "frontend",
+        "startedAt": "2026-09-21T22:56:01Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665146388/job/106549108661"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35665146388"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35664898471,
+    "headSha": "535d963869c7ebd9d4c9c42e5cae2ff1d52392df",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T23:13:03Z",
+        "conclusion": "success",
+        "databaseId": 106548332327,
+        "name": "verify",
+        "startedAt": "2026-09-21T22:53:29Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664898471/job/106548332327"
+      },
+      {
+        "completedAt": "2026-09-21T22:53:15Z",
+        "conclusion": "success",
+        "databaseId": 106548332461,
+        "name": "frontend",
+        "startedAt": "2026-09-21T22:52:53Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664898471/job/106548332461"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664898471"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35664881591,
+    "headSha": "a77955c749950fe1387cdd4efbf05a76bc296700",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T22:53:03Z",
+        "conclusion": "success",
+        "databaseId": 106548279631,
+        "name": "frontend",
+        "startedAt": "2026-09-21T22:52:40Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664881591/job/106548279631"
+      },
+      {
+        "completedAt": "2026-09-21T23:03:22Z",
+        "conclusion": "success",
+        "databaseId": 106548279913,
+        "name": "verify",
+        "startedAt": "2026-09-21T22:52:40Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664881591/job/106548279913"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664881591"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35664192718,
+    "headSha": "d86669ad758d2d4dcf80faf9eb6fd2f5af1af6df",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T22:55:21Z",
+        "conclusion": "success",
+        "databaseId": 106546138681,
+        "name": "verify",
+        "startedAt": "2026-09-21T22:44:18Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664192718/job/106546138681"
+      },
+      {
+        "completedAt": "2026-09-21T22:44:51Z",
+        "conclusion": "success",
+        "databaseId": 106546138922,
+        "name": "frontend",
+        "startedAt": "2026-09-21T22:44:18Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664192718/job/106546138922"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664192718"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 35664191205,
+    "headSha": "45a0c4cfa4a7707cbae3265dc9ac429997292cf0",
+    "jobs": [
+      {
+        "completedAt": "2026-09-21T22:44:38Z",
+        "conclusion": "success",
+        "databaseId": 106546133769,
+        "name": "frontend",
+        "startedAt": "2026-09-21T22:44:16Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm ci",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run test",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run typecheck",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run npm run build",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664191205/job/106546133769"
+      },
+      {
+        "completedAt": "2026-09-21T23:03:23Z",
+        "conclusion": "success",
+        "databaseId": 106546133982,
+        "name": "verify",
+        "startedAt": "2026-09-21T22:44:17Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run astral-sh/setup-uv@v6",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv sync --locked",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv lock --check",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python -m compileall -q src",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run pytest",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff check .",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run ruff format --check .",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos demo --seed 123",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-population-ci",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-structure-ci",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-network-ci",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run uv run python scripts/ci_relocation_check.py",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run git diff --check",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run test -z \"$(git status --porcelain)\"",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 34,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run astral-sh/setup-uv@v6",
+            "number": 35,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664191205/job/106546133982"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/stev004/jsy_disease_sim/actions/runs/35664191205"
+  }
+]

@@ -62,3 +62,5 @@ Reaches Steven, batched in the run digest: irreversible actions, product/taste c
 - 2026-09-22 (Phase 0 P0-1 correction, director review): defaulting missing result metadata to requested configs let namespace evidence pass -> test fakes omitted the real result fields -> RULE: evidence checks require returned metadata and reject absence; adapter tests use real config constructors and faithful result metadata, mocking only expensive execution.
 
 - 2026-09-22 (Phase 0 numerical review): binary subtraction excluded a declared inclusive decimal endpoint despite green tests -> endpoints were not exercised -> RULE: declared finite-decimal recovery predicates need exact arithmetic and endpoint/cancellation regressions; never repair by inventing epsilon or retuning thresholds.
+
+- 2026-09-22 (Phase 0 closeout): state-only pushes triggered 12 prohibited Actions runs -> push workflows ignore file intent -> RULE: under no-GitHub-CI instruction, every fm log decision and sync commit message includes [skip ci] before any push; never claim no remote runs without evidence.
