@@ -15,7 +15,7 @@ V1.3 Phase 0 remains incomplete. The P0-1 numerical correction passed its bounde
 review; P0-2 and P0-3 are not implemented. No Phase-0 campaign or
 real-data fit has run. Steven resumed work on 2026-09-22, and the G30
 correction/review extension is complete. G29 (unknown-result reporting) remains
-awaiting a ruling. See the [handoff](docs/handoff/2026-09-22-phase0-stop.md),
+awaiting a ruling. See the [current run](.claude/RUN.md),
 [live plan](docs/research/v1_3/2026-09-21-v13-plan.md), and
 [current state](.claude/FRONTIER.md). The living backlog is
 [docs/roadmap.md](docs/roadmap.md); agents start at `CLAUDE.md`.
