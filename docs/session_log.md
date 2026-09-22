@@ -10,7 +10,7 @@ Newest first. History only — current truth lives in the docs named by
 - P0-2 Sol clarification requires model-owner unknown/tie reporting rule; G29 default HOLD. P0-2/P0-3 unimplemented. P0-1 budgets 3/3 implementations, 2/2 consults; P0-2 consult 1/2. All branches preserved, G5 unchanged.
 - Biological display warnings reported by Steven; worker logs did not establish their cause. No filter bypass or filter-driven retry. Implementation retries addressed reproduced code defects.
 - Operational deviation: 12 early state pushes triggered GitHub Actions because skip markers were omitted; read-only per-run evidence and correction filed in docs/runs/2026-09-22-phase0-unintended-ci-*. Later commits use [skip ci]; costs unknown.
-- End-of-run Terra audit pending; RUN.md owns pickup paths and GATES.md owns concrete pending decisions. Frozen evidence and predeclaration unchanged.
+- End-of-run Terra high audit ATTENTION filed; director disposition rejects inference of a GitHub push from a local-clone origin ref and supplies exact worker-token receipts. Separate CI violation disclosed. Nothing in flight; RUN.md owns pickup paths and GATES.md owns concrete pending decisions. Frozen evidence and predeclaration unchanged.
 
 ## 2026-09-19→21 — validation PASS · rulings · scicorr (G27) · V1.2.1 tail (G28) · V1.3 plan · hand-over to Astra (director Fable; executors luna@xhigh; reviews sol@high)
 

@@ -1,0 +1,49 @@
+2026-09-22T02:35:05.778167+01:00
+/home/steven/jos-p0-design.log
+sha256 07b6f9fc6e6ee3229beaf9241da7faa4340651d00da6f9315db1d053e36ce31b
+session id: 01a0c622-a67c-7012-ae61-29beb6017c71
+model: gpt-5.6-sol
+tokens used
+143,088
+
+/home/steven/jos-p0-1.log
+sha256 1fc810031fdedeecbcb9ac80ab059ec7d44f080b4402d489017a0803143815ed
+session id: 01a0c636-e67d-7553-b0d0-2ee7d26dbcca
+model: gpt-5.6-luna
+tokens used
+337,617
+
+/home/steven/jos-p0-1-r1.log
+sha256 86a5ea807fdd5180d8eb63ece3e1acdabcd3e2f572f554587b7694e8ad926c42
+session id: 01a0c660-467d-7612-b485-c73a57eed9bc
+model: gpt-5.6-luna
+tokens used
+505,682
+
+/home/steven/jos-p0-1-r2.log
+sha256 d29de8495066674a85dd4dfd4c712aed6bd8ab578d0f69f6f9ccff3b0f350c72
+session id: 01a0c68b-15cd-7942-bc3d-c4417d608296
+model: gpt-5.6-luna
+tokens used
+168,855
+
+/home/steven/jos-p02-clarify.log
+sha256 053a01adc8dc39fd7b062af36343b6d5d6d8ab9fdfc5f2136578889c29f7e4ce
+session id: 01a0c69e-9418-7b01-9b4f-689a7eb75895
+model: gpt-5.6-sol
+tokens used
+30,431
+
+/home/steven/jos-p01-numeric.log
+sha256 f3162ec8bd5eeb0f147c3a9154b783ccb8a667b2f338eb3b12bb6d2d79bc3230
+session id: 01a0c6b1-fcc3-70f3-b487-18bf5c7e95fa
+model: gpt-5.6-sol
+tokens used
+65,384
+
+/home/steven/jos-phase0-trail.log
+sha256 98dd7081bb2577ecea7a5f1b017bce0ed1be3430f5f3543c70fb1b9df0709551
+session id: 01a0c6bc-1850-77d3-a443-42c09f98ecf1
+model: gpt-5.6-terra
+tokens used
+112,815

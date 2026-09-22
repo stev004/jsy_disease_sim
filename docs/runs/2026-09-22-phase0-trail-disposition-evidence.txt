@@ -1,0 +1,14 @@
+$ git -C /home/steven/jos-phase0-trail-readonly remote -v
+origin	/home/steven/jsy_disease_sim (fetch)
+origin	/home/steven/jsy_disease_sim (push)
+
+$ git -C /home/steven/jsy_disease_sim remote -v
+origin	https://github.com/stev004/jsy_disease_sim.git (fetch)
+origin	https://github.com/stev004/jsy_disease_sim.git (push)
+
+$ git -C /home/steven/jsy_disease_sim ls-remote origin refs/heads/codex/v13-p0-1-recovery
+
+$ git -C /home/steven/jos-phase0-trail-readonly status --porcelain
+
+$ git -C /home/steven/jos-phase0-trail-readonly rev-parse HEAD
+2f7345312b3c4594986f36b4cf7619f9dcfca120
