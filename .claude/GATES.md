@@ -4,6 +4,13 @@
 
 ## Open
 
+### G29 — P0-2 indeterminate detection status (Phase 0)
+- **Question:** approve the exact reporting rule in `docs/research/v1_3/2026-09-22-p02-tie-ruling-proposal.md` before P0-2 implementation? Sol found tied wrong-model minima can make selected-candidate diagnostics undefined; the frozen spec does not define the indeterminate aggregate status.
+- **Recommended:** preserve target UNKNOWNs and fixed denominator; record D/U/[D,D+U]; use arm detection null with an explicit indeterminate reason when the fixed threshold is unresolved. Overall exit gate remains FAIL/not established unless every arm is proven PASS. No threshold, grid, seed or dimension changes.
+- **Alternative:** hold for a different owner-declared pre-execution specification. No tie-breaking or unknown-as-false rule is inferred.
+- **Default on no answer:** HOLD P0-2 implementation and all campaign execution. Finish the already-authorized P0-1 mirror/push; preserve branches. P0-3 depends on P0-2 under the frozen unit order.
+- **Evidence:** `docs/audits/2026-09-22-phase0-p02-clarification-sol-NEEDS-OWNER.md`; source clone 29d44485c0871b57524a4a26ce38262e57f4ec04; session 01a0c69e-9418-7b01-9b4f-689a7eb75895; ts: trail row `phase0-p02-G29`.
+
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
