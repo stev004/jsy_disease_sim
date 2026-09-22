@@ -21,6 +21,7 @@ import sys
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date, timedelta
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -418,14 +419,24 @@ class RecoveryRow:
     namespace_passed: bool = False
     scored_cell_count: int = P01_GRID_CELLS
 
-    def signed_error(self, dimension: str) -> float | None:
+    def _signed_error_decimal(self, dimension: str) -> Decimal | None:
         if self.selected is None:
             return None
-        return float(getattr(self.selected, dimension) - getattr(self.truth, dimension))
+        estimate = _declared_decimal(getattr(self.selected, dimension))
+        truth = _declared_decimal(getattr(self.truth, dimension))
+        return estimate - truth
+
+    def _absolute_error_decimal(self, dimension: str) -> Decimal | None:
+        value = self._signed_error_decimal(dimension)
+        return None if value is None else abs(value)
+
+    def signed_error(self, dimension: str) -> float | None:
+        value = self._signed_error_decimal(dimension)
+        return None if value is None else float(value)
 
     def absolute_error(self, dimension: str) -> float | None:
-        value = self.signed_error(dimension)
-        return None if value is None else abs(value)
+        value = self._absolute_error_decimal(dimension)
+        return None if value is None else float(value)
 
 
 @dataclass(frozen=True)
@@ -1317,6 +1328,12 @@ def _boundary_value(value: float, dimension: DimensionSpec) -> bool:
     return value in {dimension.candidates[0], dimension.candidates[-1]}
 
 
+def _declared_decimal(value: float | int) -> Decimal:
+    """Recover exact arithmetic for values declared on the finite decimal grid."""
+
+    return Decimal(str(value))
+
+
 def evaluate_p01(
     rows: Sequence[RecoveryRow],
     *,
@@ -1359,18 +1376,20 @@ def evaluate_p01(
     descriptive_predicates: dict[str, bool] = {}
     serial_rows: list[dict[str, Any]] = []
     for dimension in dimensions:
-        values: list[float] = []
+        tolerance = _declared_decimal(dimension.tolerance)
+        bias_limit = _declared_decimal(dimension.bias_limit)
+        values: list[Decimal] = []
         covered = 0
         boundary_count = 0
         for row in rows:
-            error = row.absolute_error(dimension.name)
+            error = row._absolute_error_decimal(dimension.name)
             profile = next(
                 (item for item in row.profiles if item.dimension == dimension.name), None
             )
             identified = profile is not None and profile.identified and not row.numerical_tie
-            if identified and error is not None and error <= dimension.tolerance:
+            if identified and error is not None and error <= tolerance:
                 covered += 1
-            signed = row.signed_error(dimension.name)
+            signed = row._signed_error_decimal(dimension.name)
             if signed is not None:
                 values.append(signed)
             if row.selected is not None and _boundary_value(
@@ -1386,21 +1405,25 @@ def evaluate_p01(
                     if row.selected is None
                     else getattr(row.selected, dimension.name),
                     "truth": getattr(row.truth, dimension.name),
-                    "signed_error": signed,
-                    "absolute_error": error,
+                    "signed_error": None if signed is None else float(signed),
+                    "absolute_error": None if error is None else float(error),
                     "identified": identified,
                 }
             )
         coverage[dimension.name] = covered / expected_count if complete else None
-        bias[dimension.name] = sum(values) / len(values) if len(values) == expected_count else None
+        bias_decimal = (
+            sum(values, Decimal("0")) / Decimal(len(values))
+            if len(values) == expected_count
+            else None
+        )
+        bias[dimension.name] = None if bias_decimal is None else float(bias_decimal)
         boundary_counts[dimension.name] = boundary_count
         coverage_value = coverage[dimension.name]
-        bias_value = bias[dimension.name]
         descriptive_predicates[f"coverage_{dimension.name}"] = bool(
             complete and coverage_value is not None and coverage_value >= 4 / 5
         )
         descriptive_predicates[f"bias_{dimension.name}"] = bool(
-            complete and bias_value is not None and abs(bias_value) <= dimension.bias_limit
+            complete and bias_decimal is not None and abs(bias_decimal) <= bias_limit
         )
         descriptive_predicates[f"boundary_{dimension.name}"] = boundary_count <= 1
     joint_hits = 0
@@ -1409,12 +1432,12 @@ def evaluate_p01(
             continue
         joint_row = True
         for dimension in dimensions:
-            error = row.absolute_error(dimension.name)
+            error = row._absolute_error_decimal(dimension.name)
             identified = any(
                 profile.dimension == dimension.name and profile.identified
                 for profile in row.profiles
             )
-            if not identified or error is None or error > dimension.tolerance:
+            if not identified or error is None or error > _declared_decimal(dimension.tolerance):
                 joint_row = False
                 break
         if joint_row:

@@ -363,6 +363,136 @@ def test_coverage_bias_boundary_and_joint_predicates_are_descriptive() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("dimension", "endpoint", "tolerance"),
+    (
+        ("beta", 0.04, 0.04),
+        ("beta", 0.12, 0.04),
+        ("inoculation_day_offset", 0, 2.0),
+        ("inoculation_day_offset", 4, 2.0),
+        ("symptomatic_detection_probability", 0.50, 0.25),
+        ("symptomatic_detection_probability", 1.00, 0.25),
+        ("asymptomatic_detection_probability", 0.10, 0.15),
+        ("asymptomatic_detection_probability", 0.40, 0.15),
+    ),
+)
+def test_recovery_tolerance_is_inclusive_at_both_frozen_grid_endpoints(
+    dimension: str, endpoint: float | int, tolerance: float
+) -> None:
+    truth = CandidateCell(0.08, 2, 0.75, 0.25)
+    endpoint_selection = replace(truth, **{dimension: endpoint})
+    rows = tuple(
+        RecoveryRow(
+            target_seed=42001 + index,
+            estimate_hash=f"{index + 1:064x}",
+            selected=endpoint_selection if index == 0 else truth,
+            profiles=_identified_profiles(),
+            numerical_tie=False,
+            truth=truth,
+            truth_diagnostics=_diagnostics(),
+        )
+        for index in range(5)
+    )
+
+    evaluation = evaluate_p01(rows)
+    endpoint_row = next(
+        row
+        for row in evaluation.rows
+        if row["target_seed"] == 42001 and row["dimension"] == dimension
+    )
+    assert endpoint_row["absolute_error"] == tolerance
+    assert evaluation.coverage[dimension] == 1.0
+    assert evaluation.joint_coverage == 1.0
+
+
+def test_asymptomatic_upper_endpoint_preserves_marginal_and_joint_coverage() -> None:
+    truth = CandidateCell(0.08, 2, 0.75, 0.25)
+    rows = tuple(
+        RecoveryRow(
+            target_seed=42001 + index,
+            estimate_hash=f"{index + 1:064x}",
+            selected=replace(
+                truth,
+                asymptomatic_detection_probability=0.40 if index == 0 else 0.25,
+            ),
+            profiles=_identified_profiles(),
+            numerical_tie=False,
+            truth=truth,
+            truth_diagnostics=_diagnostics(),
+        )
+        for index in range(5)
+    )
+
+    evaluation = evaluate_p01(rows)
+    assert evaluation.coverage["asymptomatic_detection_probability"] == 1.0
+    assert evaluation.joint_coverage == 1.0
+
+
+def test_three_of_five_joint_hit_boundary_counts_inclusive_upper_endpoint() -> None:
+    truth = CandidateCell(0.08, 2, 0.75, 0.25)
+    not_identified = tuple(replace(profile, identified=False) for profile in _identified_profiles())
+    rows = tuple(
+        RecoveryRow(
+            target_seed=42001 + index,
+            estimate_hash=f"{index + 1:064x}",
+            selected=replace(
+                truth,
+                asymptomatic_detection_probability=0.40 if index == 0 else 0.25,
+            ),
+            profiles=_identified_profiles() if index < 3 else not_identified,
+            numerical_tie=False,
+            truth=truth,
+            truth_diagnostics=_diagnostics(),
+        )
+        for index in range(5)
+    )
+
+    evaluation = evaluate_p01(rows)
+    assert evaluation.joint_coverage == 3 / 5
+    assert evaluation.predicates["joint_coverage_at_least_3_of_5"] is True
+
+
+def test_declared_decimal_asymptomatic_bias_cancellation_is_exact() -> None:
+    truth = CandidateCell(0.08, 2, 0.75, 0.25)
+    asymptomatic_values = (0.40, 0.10, 0.25, 0.25, 0.25)
+    rows = tuple(
+        RecoveryRow(
+            target_seed=42001 + index,
+            estimate_hash=f"{index + 1:064x}",
+            selected=replace(
+                truth,
+                asymptomatic_detection_probability=asymptomatic_values[index],
+            ),
+            profiles=_identified_profiles(),
+            numerical_tie=False,
+            truth=truth,
+            truth_diagnostics=_diagnostics(),
+        )
+        for index in range(5)
+    )
+
+    evaluation = evaluate_p01(rows)
+    asymptomatic_rows = [
+        row for row in evaluation.rows if row["dimension"] == "asymptomatic_detection_probability"
+    ]
+    assert [row["signed_error"] for row in asymptomatic_rows] == [0.15, -0.15, 0.0, 0.0, 0.0]
+    assert evaluation.bias["asymptomatic_detection_probability"] == 0.0
+    assert evaluation.predicates["bias_asymptomatic_detection_probability"] is True
+
+
+def test_recovery_arithmetic_preserves_blind_and_declaration_hashes() -> None:
+    config = _config()
+    cell = config.candidate_grid[0]
+    target, library = _prediction_library()
+    fit = fit_blind(target, config.candidate_grid, library)
+
+    assert config.expected_predeclaration_sha256 == PREDECLARATION_SHA256
+    assert candidate_config_hash(cell, config=config) == (
+        "d3a536deb456c471baaaecec59bfd8854483cb288f96f3df22828535a26f71d0"
+    )
+    assert fit.estimate_hash == "2ebc1f18a5dac62ec1432fc696e8c885c63cd53e818b8d8fbce0bcf7dad7421a"
+
+
 def test_truth_is_joined_only_after_hashed_blind_estimate() -> None:
     target, library = _prediction_library()
     fit = fit_blind(target, _config().candidate_grid, library)
