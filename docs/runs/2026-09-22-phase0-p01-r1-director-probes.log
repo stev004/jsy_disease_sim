@@ -1,0 +1,26 @@
+2026-09-22T01:34:35+01:00
+1fe0b970ba834bd0e5ae69d5ee244e609a41445a
+a02d188b22776e25c40b81ceee83e4b8b0b16dc227fd18d67a285891b2ce4c8a  src/jersey_outbreak/phase0_campaign.py
+df1fcba97493aa79f801565e7dd0b2e04ab5c4ae58bbd48c444abb165bc924f0  tests/test_phase0_campaign.py
+ACTUAL_CONFIG_CONSTRUCTORS_COMPLETE OutbreakRunConfig ObservationConfig
+BLIND_FITTER_ACCEPTS_FULL_CONFIG False
+CONFIG_CONTAINS_TRUTH True
+CONFIG_CONTAINS_TARGET_SEEDS True
+P01_RESULT_RETAINS_LATENT_CACHE False
+NO_SIMULATION_OR_OBSERVATION_TRANSFORM_EXECUTED
+MISSING_RESULT_NAMESPACE_METADATA_ACCEPTED True
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 21 items
+
+tests/test_phase0_campaign.py .....................                      [100%]
+
+============================== 21 passed in 0.41s ==============================
+ src/jersey_outbreak/phase0_campaign.py | 815 +++++++++++++++++++++++++++++++--
+ tests/test_phase0_campaign.py          | 341 +++++++++++++-
+ 2 files changed, 1120 insertions(+), 36 deletions(-)
+ M src/jersey_outbreak/phase0_campaign.py
+ M tests/test_phase0_campaign.py

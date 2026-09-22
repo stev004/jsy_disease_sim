@@ -1,0 +1,1250 @@
+=== BEFORE IMPLEMENTATION: focused regression collection ===
+error: Could not acquire lock
+  Caused by: Could not create temporary file
+  Caused by: Read-only file system (os error 30) at path "/home/steven/.cache/uv/.tmpGZAErL"
+=== BEFORE IMPLEMENTATION: focused regression collection (UV_CACHE_DIR=/tmp/uv-cache) ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+________________ ERROR collecting tests/test_phase0_campaign.py ________________
+ImportError while importing test module '/home/steven/jos-p0-1-wt/tests/test_phase0_campaign.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_phase0_campaign.py:12: in <module>
+    from jersey_outbreak.phase0_campaign import (
+E   ImportError: cannot import name 'ExecutionEvidence' from 'jersey_outbreak.phase0_campaign' (/home/steven/jos-p0-1-wt/src/jersey_outbreak/phase0_campaign.py)
+------------------------------- Captured stderr --------------------------------
+/home/steven/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-o16h9bzp because there was an issue with the default path ({configdir}); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+=========================== short test summary info ============================
+ERROR tests/test_phase0_campaign.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 0.25s ===============================
+=== AFTER INITIAL FIXES: compile and focused collection ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 20 items
+
+<Dir jos-p0-1-wt>
+  <Dir tests>
+    <Module test_phase0_campaign.py>
+      <Function test_p0_1_config_and_workload_are_exact>
+      <Function test_p0_1_dry_run_does_not_call_simulation_or_observation>
+      <Function test_objective_matches_hand_computation>
+      <Function test_blind_fit_has_no_truth_interface_and_scores_all_cells>
+      <Function test_complete_grid_enforcement_rejects_missing_cell>
+      <Function test_tie_is_explicitly_failed_and_near_flat_profile_is_not_identified>
+      <Function test_channel_date_completeness_and_event_conversion>
+      <Function test_truth_diagnostics_and_chronology_failure_propagate>
+      <Function test_coverage_bias_boundary_and_joint_predicates_are_descriptive>
+      <Function test_truth_is_joined_only_after_hashed_blind_estimate>
+      <Function test_budget_guard_rejects_mode_duration_overlap_and_retry>
+      <Function test_execute_is_fail_closed_before_p0_2_and_p0_3>
+      <Function test_research_bundle_is_standalone_and_file_hashed>
+      <Function test_predeclaration_fixture_is_repository_relative_and_portable>
+      <Function test_changed_frozen_declaration_fields_are_rejected[identifiability-profile_gap-0.1]>
+      <Function test_changed_frozen_declaration_fields_are_rejected[acceptance-descriptive_coverage_minimum-1.0]>
+      <Function test_missing_workload_and_undeclared_target_seeds_cannot_pass>
+      <Function test_candidate_provenance_hash_includes_constructed_declaration>
+      <Function test_research_bundle_rejects_nonempty_destination_without_mutation>
+      <Function test_mocked_p01_path_persists_estimates_before_truth_join>
+
+========================= 20 tests collected in 0.02s ==========================
+=== AFTER INITIAL FIXES: focused phase0 tests ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 20 items
+
+tests/test_phase0_campaign.py .................F.F                       [100%]
+
+=================================== FAILURES ===================================
+_______ test_candidate_provenance_hash_includes_constructed_declaration ________
+
+    def test_candidate_provenance_hash_includes_constructed_declaration() -> None:
+        cell = _config().candidate_grid[0]
+>       baseline = candidate_config_hash(cell, config=_config())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_phase0_campaign.py:424: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/jersey_outbreak/phase0_campaign.py:1171: in candidate_config_hash
+    json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/json/__init__.py:238: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.encoder.JSONEncoder object at 0x741a5360bbc0>
+o = datetime.date(2025, 1, 6)
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       TypeError: Object of type date is not JSON serializable
+
+../.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/json/encoder.py:180: TypeError
+__________ test_mocked_p01_path_persists_estimates_before_truth_join ___________
+
+config_path = PosixPath('/home/steven/jos-p0-1-wt/configs/calibration/v13_phase0_synthetic.yaml')
+predeclaration_path = PosixPath('/home/steven/jos-p0-1-wt/docs/research/v1_3/2026-09-21-phase0-predeclaration.md')
+work_dir = PosixPath('/tmp/pytest-of-steven/pytest-529/test_mocked_p01_path_persists_0/campaign-work')
+
+    def run_p01_campaign(
+        config_path: Path,
+        predeclaration_path: Path,
+        work_dir: Path,
+        *,
+        root: Path | None = None,
+    ) -> P01CampaignResult:
+        """Run the callable P0-1 adapter against existing JOS API boundaries.
+    
+        This function is intentionally separate from the public CLI.  The CLI
+        remains blocked until P0-2/P0-3 and independent review are complete.
+        """
+    
+        config = CampaignConfig.from_yaml(config_path)
+        validate_predeclaration(predeclaration_path, config.expected_predeclaration_sha256)
+        workload = guard_workload(config)
+        project_root = (root or config_path.resolve().parents[2]).resolve()
+        parameters = load_parameter_set(project_root)
+        target_truth = _truth_cell(config)
+        process_seeds = (*config.target_process_seeds, *config.candidate_process_seeds)
+        parents: dict[int, Any] = {}
+        try:
+            for process_seed in process_seeds:
+                parents[process_seed] = build_parent(
+                    project_root,
+                    config.mode,
+                    process_seed,
+                    work_dir / "parents" / str(process_seed),
+                    write_m4=True,
+                ).generated
+    
+            target_tables: dict[int, ObservedTables] = {}
+            target_outputs: dict[int, tuple[Any, Any, bool]] = {}
+            measured_latent_calls = 0
+            measured_observation_transforms = 0
+            for process_seed, observation_seed in zip(
+                config.target_process_seeds, config.target_observation_seeds, strict=True
+            ):
+>               run_config = _run_config_for_cell(config, parameters, process_seed, target_truth)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+src/jersey_outbreak/phase0_campaign.py:1679: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+config = CampaignConfig(campaign_id='v13-phase0-synthetic-recovery', mode='ci', start_date=datetime.date(2025, 1, 6), duration_...s=('p0_1',), required_arms=('p0_1', 'p0_2a', 'p0_2b', 'p0_3'), retries=0, adaptive_grid=False, replacement_seeds=False)
+parameters = <object object at 0x741a5323ba90>, process_seed = 42001
+cell = CandidateCell(beta=0.08, inoculation_day_offset=2, symptomatic_detection_probability=0.75, asymptomatic_detection_probability=0.25)
+
+    def _run_config_for_cell(
+        config: CampaignConfig,
+        parameters: RespiratoryParameterSet,
+        process_seed: int,
+        cell: CandidateCell,
+    ) -> OutbreakRunConfig:
+        """Construct one real JOS run config from the frozen cell controls."""
+    
+        base = default_run_config(
+            config.mode,
+            process_seed,
+            parameters,
+            start_date=config.start_date,
+            duration_days=config.duration_days,
+        )
+        import_date = config.start_date + timedelta(days=cell.inoculation_day_offset)
+        run_config = base.model_copy(
+            update={
+                "initial_seed_count": config.initial_seed_count,
+                "import_schedule": {import_date.isoformat(): config.inoculation_attempts},
+                "import_rate_per_day": config.import_rate_per_day,
+                "beta": cell.beta,
+                "symptomatic_probability": config.symptomatic_probability,
+                "waning_enabled": config.waning_enabled,
+                "route_multipliers": dict(config.route_multipliers),
+            }
+        )
+        if (
+>           run_config.mode != config.mode
+            ^^^^^^^^^^^^^^^
+            or run_config.seed != process_seed
+            or run_config.start_date != config.start_date
+            or run_config.duration_days != config.duration_days
+            or run_config.initial_seed_count != 0
+            or run_config.import_schedule != {import_date.isoformat(): 10}
+            or run_config.import_rate_per_day != 0.0
+            or run_config.beta != cell.beta
+            or run_config.symptomatic_probability != 0.6
+            or run_config.waning_enabled
+            or dict(run_config.route_multipliers) != dict(config.route_multipliers)
+        ):
+E       AttributeError: 'FakeConfig' object has no attribute 'mode'
+
+src/jersey_outbreak/phase0_campaign.py:1519: AttributeError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/tmp/pytest-of-steven/pytest-529/test_mocked_p01_path_persists_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x741a536b3980>
+
+    def test_mocked_p01_path_persists_estimates_before_truth_join(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The generation path is callable under fakes but never runs in this test suite."""
+        import jersey_outbreak.phase0_campaign as campaign
+    
+        calls: list[tuple[str, int, int | None]] = []
+    
+        class FakeConfig:
+            def __init__(self, **values: object) -> None:
+                self.__dict__.update(values)
+    
+            def model_copy(self, *, update: dict[str, object]) -> "FakeConfig":
+                values = dict(self.__dict__)
+                values.update(update)
+                return FakeConfig(**values)
+    
+            def model_dump(self, mode: str = "json") -> dict[str, object]:
+                del mode
+                return dict(self.__dict__)
+    
+        class FakeParent:
+            generated = object()
+    
+        class FakeLatent:
+            logical_content_hash = "latent-hash"
+            diagnostics = {
+                "natural_history": {"chronology_passed": True},
+                "states": {"conserved": True},
+            }
+            transmission_events = tuple(
+                [{"imported": True}] * 10 + [{"source_kind": "local"}]
+            )
+    
+        class FakeObserved:
+            diagnostics = {
+                "no_report_before_infection": True,
+                "latent_incidence_conservation": True,
+            }
+    
+            def __init__(self, observation_config: FakeConfig) -> None:
+                self.observation_events = [
+                    {"report_date": "2025-01-06", "symptomatic": True},
+                    {"report_date": "2025-01-07", "symptomatic": False},
+                    {"report_date": "2025-01-08", "symptomatic": True},
+                ]
+                self.config = observation_config
+    
+        def fake_load_parameter_set(root: Path) -> object:
+            calls.append(("load_parameters", 0, None))
+            return object()
+    
+        def fake_load_observation_config(root: Path) -> FakeConfig:
+            return FakeConfig(
+                observation_config_id="observation-demo",
+                observation_seed=0,
+                parameters={
+                    "symptomatic_detection_probability": 0.75,
+                    "asymptomatic_detection_probability": 0.25,
+                },
+                model_marker="observation",
+            )
+    
+        def fake_default_run_config(mode: str, seed: int, parameters: object, **kwargs: object) -> FakeConfig:
+            del mode, parameters
+            return FakeConfig(seed=seed, **kwargs)
+    
+        def fake_build_parent(root: Path, mode: str, seed: int, destination: Path, **kwargs: object) -> FakeParent:
+            del root, mode, destination, kwargs
+            calls.append(("build_parent", seed, None))
+            return FakeParent()
+    
+        def fake_run_outbreak(parent: object, run_config: FakeConfig, parameters: object) -> FakeLatent:
+            del parent, parameters
+            calls.append(("run_outbreak", run_config.seed, None))
+            return FakeLatent()
+    
+        def fake_observe(latent: FakeLatent, observation_config: FakeConfig) -> FakeObserved:
+            del latent
+            calls.append(("observe", observation_config.observation_seed, observation_config.observation_config_id))
+            return FakeObserved(observation_config)
+    
+        original_persist = campaign.persist_blind_estimate
+    
+        def recording_persist(path: Path, fit: object) -> str:
+            calls.append(("persist", int(path.stem), None))
+            return original_persist(path, fit)  # type: ignore[arg-type]
+    
+        original_join = campaign.join_truth_evaluation
+    
+        def recording_join(*args: object, **kwargs: object) -> RecoveryRow:
+            calls.append(("join", int(kwargs["target_seed"]), None))
+            return original_join(*args, **kwargs)  # type: ignore[arg-type]
+    
+        monkeypatch.setattr(campaign, "load_parameter_set", fake_load_parameter_set)
+        monkeypatch.setattr(campaign, "load_observation_config", fake_load_observation_config)
+        monkeypatch.setattr(campaign, "default_run_config", fake_default_run_config)
+        monkeypatch.setattr(campaign, "build_parent", fake_build_parent)
+        monkeypatch.setattr(campaign, "run_outbreak", fake_run_outbreak)
+        monkeypatch.setattr(campaign, "observe_latent_run", fake_observe)
+        monkeypatch.setattr(campaign, "persist_blind_estimate", recording_persist)
+        monkeypatch.setattr(campaign, "join_truth_evaluation", recording_join)
+    
+>       result = run_p01_campaign(
+            CONFIG_PATH,
+            REPOSITORY_PREDECLARATION_PATH,
+            tmp_path / "campaign-work",
+        )
+
+tests/test_phase0_campaign.py:552: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+config_path = PosixPath('/home/steven/jos-p0-1-wt/configs/calibration/v13_phase0_synthetic.yaml')
+predeclaration_path = PosixPath('/home/steven/jos-p0-1-wt/docs/research/v1_3/2026-09-21-phase0-predeclaration.md')
+work_dir = PosixPath('/tmp/pytest-of-steven/pytest-529/test_mocked_p01_path_persists_0/campaign-work')
+
+    def run_p01_campaign(
+        config_path: Path,
+        predeclaration_path: Path,
+        work_dir: Path,
+        *,
+        root: Path | None = None,
+    ) -> P01CampaignResult:
+        """Run the callable P0-1 adapter against existing JOS API boundaries.
+    
+        This function is intentionally separate from the public CLI.  The CLI
+        remains blocked until P0-2/P0-3 and independent review are complete.
+        """
+    
+        config = CampaignConfig.from_yaml(config_path)
+        validate_predeclaration(predeclaration_path, config.expected_predeclaration_sha256)
+        workload = guard_workload(config)
+        project_root = (root or config_path.resolve().parents[2]).resolve()
+        parameters = load_parameter_set(project_root)
+        target_truth = _truth_cell(config)
+        process_seeds = (*config.target_process_seeds, *config.candidate_process_seeds)
+        parents: dict[int, Any] = {}
+        try:
+            for process_seed in process_seeds:
+                parents[process_seed] = build_parent(
+                    project_root,
+                    config.mode,
+                    process_seed,
+                    work_dir / "parents" / str(process_seed),
+                    write_m4=True,
+                ).generated
+    
+            target_tables: dict[int, ObservedTables] = {}
+            target_outputs: dict[int, tuple[Any, Any, bool]] = {}
+            measured_latent_calls = 0
+            measured_observation_transforms = 0
+            for process_seed, observation_seed in zip(
+                config.target_process_seeds, config.target_observation_seeds, strict=True
+            ):
+                run_config = _run_config_for_cell(config, parameters, process_seed, target_truth)
+                observation_config = _observation_config_for_cell(
+                    project_root,
+                    config,
+                    observation_seed,
+                    config.target_observation_config_id,
+                    target_truth,
+                )
+                latent_result = run_outbreak(parents[process_seed], run_config, parameters)
+                measured_latent_calls += 1
+                observation_result = observe_latent_run(latent_result, observation_config)
+                measured_observation_transforms += 1
+                target_tables[process_seed] = _observed_tables_from_result(observation_result)
+                validate_observation_calendar(
+                    target_tables[process_seed],
+                    start_date=config.start_date,
+                    duration_days=config.duration_days,
+                    tail_days=config.observation_horizon_tail_days,
+                )
+                target_outputs[process_seed] = (
+                    latent_result,
+                    observation_result,
+                    _namespace_passes(latent_result, observation_result, run_config, observation_config),
+                )
+    
+            candidate_latents: dict[tuple[int, float, int], tuple[Any, OutbreakRunConfig]] = {}
+            latent_cells = tuple(
+                (beta, int(offset))
+                for beta in config.dimension_map["beta"].candidates
+                for offset in config.dimension_map["inoculation_day_offset"].candidates
+            )
+            first_candidate = config.candidate_grid[0]
+            for process_seed in config.candidate_process_seeds:
+                for beta, offset in latent_cells:
+                    latent_cell = CandidateCell(
+                        beta=beta,
+                        inoculation_day_offset=offset,
+                        symptomatic_detection_probability=first_candidate.symptomatic_detection_probability,
+                        asymptomatic_detection_probability=first_candidate.asymptomatic_detection_probability,
+                    )
+                    run_config = _run_config_for_cell(config, parameters, process_seed, latent_cell)
+                    latent_result = run_outbreak(parents[process_seed], run_config, parameters)
+                    measured_latent_calls += 1
+                    candidate_latents[(process_seed, beta, offset)] = (latent_result, run_config)
+    
+            candidate_predictions: dict[CandidateCell, tuple[ObservedTables, ...]] = {}
+            candidate_hashes: dict[CandidateCell, str] = {}
+            for cell in config.candidate_grid:
+                predictions: list[ObservedTables] = []
+                constructed_configs: list[tuple[Any, Any]] = []
+                for process_seed, observation_seed in zip(
+                    config.candidate_process_seeds, config.candidate_observation_seeds, strict=True
+                ):
+                    latent_result, run_config = candidate_latents[
+                        (process_seed, cell.beta, cell.inoculation_day_offset)
+                    ]
+                    observation_config = _observation_config_for_cell(
+                        project_root,
+                        config,
+                        observation_seed,
+                        config.candidate_observation_config_id,
+                        cell,
+                    )
+                    observation_result = observe_latent_run(latent_result, observation_config)
+                    measured_observation_transforms += 1
+                    table = _observed_tables_from_result(observation_result)
+                    validate_observation_calendar(
+                        table,
+                        start_date=config.start_date,
+                        duration_days=config.duration_days,
+                        tail_days=config.observation_horizon_tail_days,
+                    )
+                    predictions.append(table)
+                    constructed_configs.append((run_config, observation_config))
+                if len(predictions) != P01_FIT_REPLICATE_COUNT:
+                    raise CampaignError("candidate cell did not produce exactly three replicates")
+                candidate_predictions[cell] = tuple(predictions)
+                candidate_hashes[cell] = candidate_config_hash(
+                    cell, config, replicate_configs=constructed_configs
+                )
+    
+            blind_fits: dict[int, BlindFitResult] = {}
+            recovery_rows: list[RecoveryRow] = []
+            for process_seed in config.target_process_seeds:
+                fit = fit_blind(
+                    target_tables[process_seed],
+                    config.candidate_grid,
+                    candidate_predictions,
+                    config=config,
+                    candidate_config_hashes=candidate_hashes,
+                )
+                blind_fits[process_seed] = fit
+                persist_blind_estimate(work_dir / "blind_estimates" / f"{process_seed}.json", fit)
+                latent_result, observation_result, namespace_passed = target_outputs[process_seed]
+                diagnostics = _truth_diagnostics_from_result(
+                    latent_result,
+                    observation_result,
+                    target_tables[process_seed],
+                    namespace_passed=namespace_passed,
+                )
+                recovery_rows.append(
+                    join_truth_evaluation(
+                        fit,
+                        target_seed=process_seed,
+                        truth=target_truth,
+                        truth_diagnostics=diagnostics,
+                        namespace_passed=namespace_passed,
+                    )
+                )
+        except CampaignError:
+            raise
+        except Exception as exc:
+>           raise CampaignError(f"P0-1 generation failed: {type(exc).__name__}: {exc}") from exc
+E           jersey_outbreak.phase0_campaign.CampaignError: P0-1 generation failed: AttributeError: 'FakeConfig' object has no attribute 'mode'
+
+src/jersey_outbreak/phase0_campaign.py:1791: CampaignError
+=========================== short test summary info ============================
+FAILED tests/test_phase0_campaign.py::test_candidate_provenance_hash_includes_constructed_declaration
+FAILED tests/test_phase0_campaign.py::test_mocked_p01_path_persists_estimates_before_truth_join
+========================= 2 failed, 18 passed in 0.40s =========================
+=== AFTER FIXES: focused phase0 tests ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 20 items
+
+tests/test_phase0_campaign.py ....................                       [100%]
+
+============================== 20 passed in 0.38s ==============================
+=== AFTER ADAPTER/VALIDATION UPDATES: focused phase0 tests ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 20 items
+
+tests/test_phase0_campaign.py ...................F                       [100%]
+
+=================================== FAILURES ===================================
+__________ test_mocked_p01_path_persists_estimates_before_truth_join ___________
+
+config_path = PosixPath('/home/steven/jos-p0-1-wt/configs/calibration/v13_phase0_synthetic.yaml')
+predeclaration_path = PosixPath('/home/steven/jos-p0-1-wt/docs/research/v1_3/2026-09-21-phase0-predeclaration.md')
+work_dir = PosixPath('/tmp/pytest-of-steven/pytest-531/test_mocked_p01_path_persists_0/campaign-work')
+
+    def run_p01_campaign(
+        config_path: Path,
+        predeclaration_path: Path,
+        work_dir: Path,
+        *,
+        root: Path | None = None,
+    ) -> P01CampaignResult:
+        """Run the callable P0-1 adapter against existing JOS API boundaries.
+    
+        This function is intentionally separate from the public CLI.  The CLI
+        remains blocked until P0-2/P0-3 and independent review are complete.
+        """
+    
+        config = CampaignConfig.from_yaml(config_path)
+        validate_predeclaration(predeclaration_path, config.expected_predeclaration_sha256)
+        workload = guard_workload(config)
+        project_root = (root or config_path.resolve().parents[2]).resolve()
+        parameters = load_parameter_set(project_root)
+        target_truth = _truth_cell(config)
+        process_seeds = (*config.target_process_seeds, *config.candidate_process_seeds)
+        parents: dict[int, Any] = {}
+        try:
+            for process_seed in process_seeds:
+                parents[process_seed] = build_parent(
+                    project_root,
+                    config.mode,
+                    process_seed,
+                    work_dir / "parents" / str(process_seed),
+                    write_m4=True,
+                ).generated
+    
+            target_tables: dict[int, ObservedTables] = {}
+            target_outputs: dict[int, tuple[Any, Any, bool]] = {}
+            measured_latent_calls = 0
+            measured_observation_transforms = 0
+            for process_seed, observation_seed in zip(
+                config.target_process_seeds, config.target_observation_seeds, strict=True
+            ):
+                run_config = _run_config_for_cell(config, parameters, process_seed, target_truth)
+>               observation_config = _observation_config_for_cell(
+                    project_root,
+                    config,
+                    observation_seed,
+                    config.target_observation_config_id,
+                    target_truth,
+                )
+
+src/jersey_outbreak/phase0_campaign.py:1692: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/steven/jos-p0-1-wt')
+config = CampaignConfig(campaign_id='v13-phase0-synthetic-recovery', mode='ci', start_date=datetime.date(2025, 1, 6), duration_...s=('p0_1',), required_arms=('p0_1', 'p0_2a', 'p0_2b', 'p0_3'), retries=0, adaptive_grid=False, replacement_seeds=False)
+observation_seed = 52001, config_id = 'v13-phase0-target'
+cell = CandidateCell(beta=0.08, inoculation_day_offset=2, symptomatic_detection_probability=0.75, asymptomatic_detection_probability=0.25)
+
+    def _observation_config_for_cell(
+        root: Path,
+        config: CampaignConfig,
+        observation_seed: int,
+        config_id: str,
+        cell: CandidateCell,
+    ) -> ObservationConfig:
+        """Construct one fixed-seed observation namespace from the real schema."""
+    
+        base = load_observation_config(root)
+        parameters = dict(base.parameters)
+        parameters["symptomatic_detection_probability"] = parameters[
+            "symptomatic_detection_probability"
+        ].model_copy(update={"value": cell.symptomatic_detection_probability})
+        parameters["asymptomatic_detection_probability"] = parameters[
+            "asymptomatic_detection_probability"
+        ].model_copy(update={"value": cell.asymptomatic_detection_probability})
+        observation = base.model_copy(
+            update={
+                "observation_config_id": config_id,
+                "parameters": parameters,
+                "observation_seed": observation_seed,
+                "analysis_horizon_tail_days": config.observation_horizon_tail_days,
+                "day_of_week_effect": config.weekday_effect,
+            }
+        )
+        if (
+            observation.observation_config_id != config_id
+            or observation.observation_seed != observation_seed
+            or observation.analysis_horizon_tail_days != P01_TAIL_DAYS
+>           or observation.reporting_delay.kind != "fixed"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            or observation.reporting_delay.days != (2,)
+            or observation.detection_delay.kind != "fixed"
+            or observation.detection_delay.days != (0,)
+            or observation.day_of_week_effect != (1.0,) * 7
+        ):
+E       AttributeError: 'FakeConfig' object has no attribute 'kind'
+
+src/jersey_outbreak/phase0_campaign.py:1575: AttributeError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/tmp/pytest-of-steven/pytest-531/test_mocked_p01_path_persists_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x75861cbaec90>
+
+    def test_mocked_p01_path_persists_estimates_before_truth_join(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The generation path is callable under fakes but never runs in this test suite."""
+        import jersey_outbreak.phase0_campaign as campaign
+    
+        calls: list[tuple[str, int, int | None]] = []
+    
+        class FakeConfig:
+            def __init__(self, **values: object) -> None:
+                self.__dict__.update(values)
+    
+            def model_copy(self, *, update: dict[str, object]) -> "FakeConfig":
+                values = dict(self.__dict__)
+                values.update(update)
+                return FakeConfig(**values)
+    
+            def model_dump(self, mode: str = "json") -> dict[str, object]:
+                del mode
+                return dict(self.__dict__)
+    
+        class FakeParameter:
+            def __init__(self, value: float) -> None:
+                self.value = value
+    
+            def model_copy(self, *, update: dict[str, object]) -> "FakeParameter":
+                result = FakeParameter(self.value)
+                result.__dict__.update(update)
+                return result
+    
+        class FakeParent:
+            generated = object()
+    
+        class FakeLatent:
+            logical_content_hash = "latent-hash"
+            diagnostics = {
+                "natural_history": {"chronology_passed": True},
+                "states": {"conserved": True},
+            }
+            transmission_events = tuple(
+                [{"imported": True}] * 10 + [{"source_kind": "local"}]
+            )
+    
+        class FakeObserved:
+            diagnostics = {
+                "no_report_before_infection": True,
+                "latent_incidence_conservation": True,
+            }
+    
+            def __init__(self, observation_config: FakeConfig) -> None:
+                self.observation_events = [
+                    {"report_date": "2025-01-06", "symptomatic": True},
+                    {"report_date": "2025-01-07", "symptomatic": False},
+                    {"report_date": "2025-01-08", "symptomatic": True},
+                ]
+                self.config = observation_config
+    
+        def fake_load_parameter_set(root: Path) -> object:
+            calls.append(("load_parameters", 0, None))
+            return object()
+    
+        def fake_load_observation_config(root: Path) -> FakeConfig:
+            return FakeConfig(
+                observation_config_id="observation-demo",
+                observation_seed=0,
+                parameters={
+                    "symptomatic_detection_probability": FakeParameter(0.75),
+                    "asymptomatic_detection_probability": FakeParameter(0.25),
+                },
+                reporting_delay=FakeConfig(days=(2,)),
+                detection_delay=FakeConfig(days=(0,)),
+                analysis_horizon_tail_days=None,
+                day_of_week_effect=(1.0,) * 7,
+                model_marker="observation",
+            )
+    
+        def fake_default_run_config(mode: str, seed: int, parameters: object, **kwargs: object) -> FakeConfig:
+            del parameters
+            return FakeConfig(
+                mode=mode,
+                seed=seed,
+                initial_seed_count=10,
+                import_schedule={},
+                import_rate_per_day=0.0,
+                beta=0.08,
+                symptomatic_probability=0.6,
+                waning_enabled=False,
+                latent_duration=FakeConfig(family="constant", mean_days=2.0),
+                infectious_duration=FakeConfig(family="constant", mean_days=5.0),
+                route_multipliers={
+                    "household": 1.0,
+                    "school_class": 1.0,
+                    "school_cross_class": 1.0,
+                    "workplace_team": 1.0,
+                    "workplace_transient": 1.0,
+                    "care_resident": 1.0,
+                    "care_staff": 1.0,
+                    "shared_vehicle": 1.0,
+                    "bus": 1.0,
+                    "community_indoor": 1.0,
+                    "community_outdoor": 1.0,
+                },
+                **kwargs,
+            )
+    
+        def fake_build_parent(root: Path, mode: str, seed: int, destination: Path, **kwargs: object) -> FakeParent:
+            del root, mode, destination, kwargs
+            calls.append(("build_parent", seed, None))
+            return FakeParent()
+    
+        def fake_run_outbreak(parent: object, run_config: FakeConfig, parameters: object) -> FakeLatent:
+            del parent, parameters
+            calls.append(("run_outbreak", run_config.seed, None))
+            return FakeLatent()
+    
+        def fake_observe(latent: FakeLatent, observation_config: FakeConfig) -> FakeObserved:
+            del latent
+            calls.append(("observe", observation_config.observation_seed, observation_config.observation_config_id))
+            return FakeObserved(observation_config)
+    
+        original_persist = campaign.persist_blind_estimate
+    
+        def recording_persist(path: Path, fit: object) -> str:
+            calls.append(("persist", int(path.stem), None))
+            return original_persist(path, fit)  # type: ignore[arg-type]
+    
+        original_join = campaign.join_truth_evaluation
+    
+        def recording_join(*args: object, **kwargs: object) -> RecoveryRow:
+            calls.append(("join", int(kwargs["target_seed"]), None))
+            return original_join(*args, **kwargs)  # type: ignore[arg-type]
+    
+        monkeypatch.setattr(campaign, "load_parameter_set", fake_load_parameter_set)
+        monkeypatch.setattr(campaign, "load_observation_config", fake_load_observation_config)
+        monkeypatch.setattr(campaign, "default_run_config", fake_default_run_config)
+        monkeypatch.setattr(campaign, "build_parent", fake_build_parent)
+        monkeypatch.setattr(campaign, "run_outbreak", fake_run_outbreak)
+        monkeypatch.setattr(campaign, "observe_latent_run", fake_observe)
+        monkeypatch.setattr(campaign, "persist_blind_estimate", recording_persist)
+        monkeypatch.setattr(campaign, "join_truth_evaluation", recording_join)
+    
+>       result = run_p01_campaign(
+            CONFIG_PATH,
+            REPOSITORY_PREDECLARATION_PATH,
+            tmp_path / "campaign-work",
+        )
+
+tests/test_phase0_campaign.py:603: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+config_path = PosixPath('/home/steven/jos-p0-1-wt/configs/calibration/v13_phase0_synthetic.yaml')
+predeclaration_path = PosixPath('/home/steven/jos-p0-1-wt/docs/research/v1_3/2026-09-21-phase0-predeclaration.md')
+work_dir = PosixPath('/tmp/pytest-of-steven/pytest-531/test_mocked_p01_path_persists_0/campaign-work')
+
+    def run_p01_campaign(
+        config_path: Path,
+        predeclaration_path: Path,
+        work_dir: Path,
+        *,
+        root: Path | None = None,
+    ) -> P01CampaignResult:
+        """Run the callable P0-1 adapter against existing JOS API boundaries.
+    
+        This function is intentionally separate from the public CLI.  The CLI
+        remains blocked until P0-2/P0-3 and independent review are complete.
+        """
+    
+        config = CampaignConfig.from_yaml(config_path)
+        validate_predeclaration(predeclaration_path, config.expected_predeclaration_sha256)
+        workload = guard_workload(config)
+        project_root = (root or config_path.resolve().parents[2]).resolve()
+        parameters = load_parameter_set(project_root)
+        target_truth = _truth_cell(config)
+        process_seeds = (*config.target_process_seeds, *config.candidate_process_seeds)
+        parents: dict[int, Any] = {}
+        try:
+            for process_seed in process_seeds:
+                parents[process_seed] = build_parent(
+                    project_root,
+                    config.mode,
+                    process_seed,
+                    work_dir / "parents" / str(process_seed),
+                    write_m4=True,
+                ).generated
+    
+            target_tables: dict[int, ObservedTables] = {}
+            target_outputs: dict[int, tuple[Any, Any, bool]] = {}
+            measured_latent_calls = 0
+            measured_observation_transforms = 0
+            for process_seed, observation_seed in zip(
+                config.target_process_seeds, config.target_observation_seeds, strict=True
+            ):
+                run_config = _run_config_for_cell(config, parameters, process_seed, target_truth)
+                observation_config = _observation_config_for_cell(
+                    project_root,
+                    config,
+                    observation_seed,
+                    config.target_observation_config_id,
+                    target_truth,
+                )
+                latent_result = run_outbreak(parents[process_seed], run_config, parameters)
+                measured_latent_calls += 1
+                observation_result = observe_latent_run(latent_result, observation_config)
+                measured_observation_transforms += 1
+                target_tables[process_seed] = _observed_tables_from_result(observation_result)
+                validate_observation_calendar(
+                    target_tables[process_seed],
+                    start_date=config.start_date,
+                    duration_days=config.duration_days,
+                    tail_days=config.observation_horizon_tail_days,
+                )
+                target_outputs[process_seed] = (
+                    latent_result,
+                    observation_result,
+                    _namespace_passes(latent_result, observation_result, run_config, observation_config),
+                )
+    
+            candidate_latents: dict[tuple[int, float, int], tuple[Any, OutbreakRunConfig]] = {}
+            latent_cells = tuple(
+                (beta, int(offset))
+                for beta in config.dimension_map["beta"].candidates
+                for offset in config.dimension_map["inoculation_day_offset"].candidates
+            )
+            first_candidate = config.candidate_grid[0]
+            for process_seed in config.candidate_process_seeds:
+                for beta, offset in latent_cells:
+                    latent_cell = CandidateCell(
+                        beta=beta,
+                        inoculation_day_offset=offset,
+                        symptomatic_detection_probability=first_candidate.symptomatic_detection_probability,
+                        asymptomatic_detection_probability=first_candidate.asymptomatic_detection_probability,
+                    )
+                    run_config = _run_config_for_cell(config, parameters, process_seed, latent_cell)
+                    latent_result = run_outbreak(parents[process_seed], run_config, parameters)
+                    measured_latent_calls += 1
+                    candidate_latents[(process_seed, beta, offset)] = (latent_result, run_config)
+    
+            candidate_predictions: dict[CandidateCell, tuple[ObservedTables, ...]] = {}
+            candidate_hashes: dict[CandidateCell, str] = {}
+            for cell in config.candidate_grid:
+                predictions: list[ObservedTables] = []
+                constructed_configs: list[tuple[Any, Any]] = []
+                for process_seed, observation_seed in zip(
+                    config.candidate_process_seeds, config.candidate_observation_seeds, strict=True
+                ):
+                    latent_result, run_config = candidate_latents[
+                        (process_seed, cell.beta, cell.inoculation_day_offset)
+                    ]
+                    observation_config = _observation_config_for_cell(
+                        project_root,
+                        config,
+                        observation_seed,
+                        config.candidate_observation_config_id,
+                        cell,
+                    )
+                    observation_result = observe_latent_run(latent_result, observation_config)
+                    measured_observation_transforms += 1
+                    table = _observed_tables_from_result(observation_result)
+                    validate_observation_calendar(
+                        table,
+                        start_date=config.start_date,
+                        duration_days=config.duration_days,
+                        tail_days=config.observation_horizon_tail_days,
+                    )
+                    predictions.append(table)
+                    constructed_configs.append((run_config, observation_config))
+                if len(predictions) != P01_FIT_REPLICATE_COUNT:
+                    raise CampaignError("candidate cell did not produce exactly three replicates")
+                candidate_predictions[cell] = tuple(predictions)
+                candidate_hashes[cell] = candidate_config_hash(
+                    cell, config, replicate_configs=constructed_configs
+                )
+    
+            blind_fits: dict[int, BlindFitResult] = {}
+            recovery_rows: list[RecoveryRow] = []
+            for process_seed in config.target_process_seeds:
+                fit = fit_blind(
+                    target_tables[process_seed],
+                    config.candidate_grid,
+                    candidate_predictions,
+                    config=config,
+                    candidate_config_hashes=candidate_hashes,
+                )
+                blind_fits[process_seed] = fit
+                persist_blind_estimate(work_dir / "blind_estimates" / f"{process_seed}.json", fit)
+                latent_result, observation_result, namespace_passed = target_outputs[process_seed]
+                diagnostics = _truth_diagnostics_from_result(
+                    latent_result,
+                    observation_result,
+                    target_tables[process_seed],
+                    namespace_passed=namespace_passed,
+                )
+                recovery_rows.append(
+                    join_truth_evaluation(
+                        fit,
+                        target_seed=process_seed,
+                        truth=target_truth,
+                        truth_diagnostics=diagnostics,
+                        namespace_passed=namespace_passed,
+                    )
+                )
+        except CampaignError:
+            raise
+        except Exception as exc:
+>           raise CampaignError(f"P0-1 generation failed: {type(exc).__name__}: {exc}") from exc
+E           jersey_outbreak.phase0_campaign.CampaignError: P0-1 generation failed: AttributeError: 'FakeConfig' object has no attribute 'kind'
+
+src/jersey_outbreak/phase0_campaign.py:1803: CampaignError
+=========================== short test summary info ============================
+FAILED tests/test_phase0_campaign.py::test_mocked_p01_path_persists_estimates_before_truth_join
+========================= 1 failed, 19 passed in 0.48s =========================
+=== AFTER MOCK FIX: focused phase0 tests ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 20 items
+
+tests/test_phase0_campaign.py ....................                       [100%]
+
+============================== 20 passed in 0.43s ==============================
+=== DRY-RUN GATE ===
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci"
+}
+
+=== GATE: uv lock --check ===
+Resolved 77 packages in 0.70ms
+=== GATE RESULT: uv (0) ===
+
+=== GATE: compileall ===
+=== GATE RESULT: uv (0) ===
+
+=== GATE: ruff check . ===
+All checks passed!
+=== GATE RESULT: uv (0) ===
+
+=== GATE: ruff format --check . ===
+263 files already formatted
+=== GATE RESULT: uv (0) ===
+
+=== GATE: mypy phase0 module ===
+Success: no issues found in 1 source file
+=== GATE RESULT: uv (0) ===
+
+=== GATE: full pytest ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collected 434 items
+
+tests/test_b01_portable_artifacts.py ..............                      [  3%]
+tests/test_bench_dynamic_routes.py ......                                [  4%]
+tests/test_c1_identity.py .....                                          [  5%]
+tests/test_c2_network_semantics.py ......                                [  7%]
+tests/test_c3_contracts.py .......                                       [  8%]
+tests/test_c4_contracts.py ..................                            [ 12%]
+tests/test_c5_m7_integrity.py ............................               [ 19%]
+tests/test_calibration.py .....                                          [ 20%]
+tests/test_cli_integration.py ..                                         [ 20%]
+tests/test_contracts.py ....                                             [ 21%]
+tests/test_data_pipeline.py .....................                        [ 26%]
+tests/test_data_sources.py ....                                          [ 27%]
+tests/test_ensemble.py ...........                                       [ 30%]
+tests/test_ensemble_band_horizon.py .                                    [ 30%]
+tests/test_golden_hashes.py .........                                    [ 32%]
+tests/test_hashing.py ...                                                [ 33%]
+tests/test_hashkey_suffix.py ..                                          [ 33%]
+tests/test_init_metadata_boundary.py .                                   [ 33%]
+tests/test_job_liveness.py ....                                          [ 34%]
+tests/test_m3_secondary_jobs_oracle.py ...                               [ 35%]
+tests/test_m4_hash_stream.py ..                                          [ 35%]
+tests/test_m7_interventions.py .....                                     [ 37%]
+tests/test_m8_1_travel_integrity.py ...........=== DIAGNOSTIC: m8.1 file ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0 -- /home/steven/jos-p0-1-wt/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collecting ... collected 12 items
+
+tests/test_m8_1_travel_integrity.py::test_source_scale_reconciliation_and_day_weighted_seasonality PASSED [  8%]
+tests/test_m8_1_travel_integrity.py::test_travel_diagnostics_detect_resident_id_mutation PASSED [ 16%]
+tests/test_m8_1_travel_integrity.py::test_travel_diagnostics_status_fails_for_inactive_slot_violation PASSED [ 25%]
+tests/test_m8_1_travel_integrity.py::test_person_level_split_is_not_changed_by_party_grouping PASSED [ 33%]
+tests/test_m8_1_travel_integrity.py::test_slot_reuse_keeps_event_time_identity_and_resets_state PASSED [ 41%]
+tests/test_m8_1_travel_integrity.py::test_taxi_units_are_bounded_and_exact_edges_reconstruct PASSED [ 50%]
+tests/test_m8_1_travel_integrity.py::test_host_household_route_never_duplicates_resident_household_edges PASSED [ 58%]
+tests/test_m8_1_travel_integrity.py::test_all_optional_contact_zero_boundaries_are_exact PASSED [ 66%]
+tests/test_m8_1_travel_integrity.py::test_delayed_testing_and_all_arrival_quarantine_cover_resident_and_visitor PASSED [ 75%]
+tests/test_m8_1_travel_integrity.py::test_explicit_departure_mismatch_is_never_silent PASSED [ 83%]
+tests/test_m8_1_travel_integrity.py::test_logical_tamper_fails_even_if_raw_checksum_is_updated PASSED [ 91%]
+tests/test_m8_1_travel_integrity.py::test_actual_transmissions_retain_all_four_event_time_directions .                         [ 39%]
+tests/test_m8_2_travel_closure.py ......                                 [ 41%]
+tests/test_m8_travel.py ..............                                   [ 44%]
+tests/test_m9_1_job_integrity.py ........................                [ 50%]
+tests/test_m9_2_provenance.py ...............                            [ 53%]
+tests/test_m9_4_calendar_finalization.py .....                           [ 54%]
+tests/test_m9_api.py .......                                             [ 56%]
+tests/test_networks.py ............................                      [ 62%]
+tests/test_observation.py ........                                       [ 64%]
+tests/test_outbreak.py ............                                      [ 67%]
+tests/test_perf10_grid_once.py .                                         [ 67%]
+tests/test_perf4_diagnostics.py .......                                  [ 69%]
+tests/test_perf6_interventions.py ...................PASSED [100%]
+
+=============================== warnings summary ===============================
+tests/test_m8_1_travel_integrity.py::test_travel_diagnostics_detect_resident_id_mutation
+  /home/steven/jos-p0-1-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 12 passed, 1 warning in 234.93s (0:03:54) ===================
+=== FINAL FULL PYTEST (clean isolated rerun) ===
+........................................................................ [ 16%]
+..........................................................                   [ 73%]
+tests/test_perf9_parent_reuse.py ...................                               [ 75%]
+tests/test_phase0_campaign.py ....................                       [ 80%]
+tests/test_population.py .....                                           [ 81%]
+tests/test_population_structure.py ......                                [ 82%]
+tests/test_prov_helpers.py ..........                                    [ 85%]
+tests/test_prov_job_ordering.py .....                                    [ 86%]
+tests/test_respiratory_attribution_lookup.py ...........                 [ 88%]
+tests/test_route4_weekday_memo.py s                                      [ 89%]
+tests/test_route5_phase2_columns.py ss..                                 [ 90%]
+tests/test_route_snapshot_columns.py ....s                               [ 91%]
+tests/test_scientific_corrections_datafix.py .........                   [ 93%]
+tests/test_staffing.py ..........                                        [ 95%]
+tests/test_starsim_demo.py ..                                            [ 96%]
+tests/test_v121_prov_verifier_fixes.py .......                           [ 97%]
+tests/test_v12_bundle_selftest.py ....                                   [ 98%]
+tests/test_v12_carry_ins.py ..                                           [ 99%]
+tests/test_v12_corr3_dictionary.py ...                                   [ 99%]
+tests/test_v12_corr4_dictionary.py .                                     [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-p0-1-wt/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-p0-1-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+=========== 430 passed, 4 skipped, 15 warnings in 849.89s (0:14:09) ============
+=== GATE RESULT: uv (0) ===
+
+=== GATE: CI pinned mypy module list ===
+Success: no issues found in 15 source files
+=== GATE RESULT: uv (0) ===
+
+=== GATE: CI relocation check ===
+{"artifact_directory": "/home/steven/jos-p0-1-wt/outputs/interventions/jos-intervention-m7-ci-seed-123-c0be3d419f32", "artifact_id": "jos-intervention-m7-ci-seed-123-c0be3d419f32", "diagnostics_status": "passed", "logical_content_hash": "1e9f01ed1d770bbeb592c3d0c69add44040d2e80339b93b884b24701f4ed8a99", "runtime_seconds": 3.3147976019999987, "scenario_hash": "7158b33cb7eba93112b1326aacc253d19136a4a85f70c7c4245113a26478665a", "scenario_id": "m7-baseline", "travel_controls": "DEFERRED TO M8"}
+verifier success: m7_intervention jos-intervention-m7-ci-seed-123-c0be3d419f32
+=== GATE RESULT: uv (0) ===
+
+=== GATE: git diff --check ===
+=== GATE RESULT: git (0) ===
+
+=== FINAL GATE OVERALL: 0 ===
+..... [ 33%]
+........................................................................ [ 49%]
+........................................................................ [ 66%]
+........................................................................ [ 82%]
+..........................sss......s.................................... [ 99%]
+..                                                                       [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-p0-1-wt/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-p0-1-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+430 passed, 4 skipped, 15 warnings in 825.48s (0:13:45)
+
+=== POST-FINAL GATE: uv lock --check ===
+Resolved 77 packages in 0.72ms
+=== POST-FINAL RESULT: uv (0) ===
+
+=== POST-FINAL GATE: compileall ===
+=== POST-FINAL RESULT: uv (0) ===
+
+=== POST-FINAL GATE: ruff check . ===
+All checks passed!
+=== POST-FINAL RESULT: uv (0) ===
+
+=== POST-FINAL GATE: ruff format --check . ===
+263 files already formatted
+=== POST-FINAL RESULT: uv (0) ===
+
+=== POST-FINAL GATE: mypy phase0 module ===
+Success: no issues found in 1 source file
+=== POST-FINAL RESULT: uv (0) ===
+
+=== POST-FINAL GATE: CI pinned mypy module list ===
+Success: no issues found in 15 source files
+=== POST-FINAL RESULT: uv (0) ===
+
+=== POST-FINAL GATE: CI relocation check ===
+{"artifact_directory": "/home/steven/jos-p0-1-wt/outputs/interventions/jos-intervention-m7-ci-seed-123-c0be3d419f32", "artifact_id": "jos-intervention-m7-ci-seed-123-c0be3d419f32", "diagnostics_status": "passed", "logical_content_hash": "1e9f01ed1d770bbeb592c3d0c69add44040d2e80339b93b884b24701f4ed8a99", "runtime_seconds": 2.865918992999468, "scenario_hash": "7158b33cb7eba93112b1326aacc253d19136a4a85f70c7c4245113a26478665a", "scenario_id": "m7-baseline", "travel_controls": "DEFERRED TO M8"}
+verifier success: m7_intervention jos-intervention-m7-ci-seed-123-c0be3d419f32
+=== POST-FINAL RESULT: uv (0) ===
+
+=== POST-FINAL GATE: git diff --check ===
+=== POST-FINAL RESULT: git (0) ===
+
+=== POST-FINAL GATE OVERALL: 0 ===
+
+=== FINAL-SOURCE GATE: dry-run ===
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci"
+}
+=== FINAL-SOURCE RESULT: uv (0) ===
+
+=== FINAL-SOURCE GATE: focused phase0 tests ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 21 items
+
+tests/test_phase0_campaign.py .....................                      [100%]
+
+============================== 21 passed in 0.41s ==============================
+=== FINAL-SOURCE RESULT: uv (0) ===
+
+=== FINAL-SOURCE GATE: uv lock --check ===
+Resolved 77 packages in 0.68ms
+=== FINAL-SOURCE RESULT: uv (0) ===
+
+=== FINAL-SOURCE GATE: compileall ===
+=== FINAL-SOURCE RESULT: uv (0) ===
+
+=== FINAL-SOURCE GATE: ruff check . ===
+All checks passed!
+=== FINAL-SOURCE RESULT: uv (0) ===
+
+=== FINAL-SOURCE GATE: ruff format --check . ===
+263 files already formatted
+=== FINAL-SOURCE RESULT: uv (0) ===
+
+=== FINAL-SOURCE GATE: mypy phase0 module ===
+Success: no issues found in 1 source file
+=== FINAL-SOURCE RESULT: uv (0) ===
+
+=== FINAL-SOURCE GATE: CI pinned mypy module list ===
+Success: no issues found in 15 source files
+=== FINAL-SOURCE RESULT: uv (0) ===
+
+=== FINAL-SOURCE GATE: CI relocation check ===
+{"artifact_directory": "/home/steven/jos-p0-1-wt/outputs/interventions/jos-intervention-m7-ci-seed-123-c0be3d419f32", "artifact_id": "jos-intervention-m7-ci-seed-123-c0be3d419f32", "diagnostics_status": "passed", "logical_content_hash": "1e9f01ed1d770bbeb592c3d0c69add44040d2e80339b93b884b24701f4ed8a99", "runtime_seconds": 2.9250670999999784, "scenario_hash": "7158b33cb7eba93112b1326aacc253d19136a4a85f70c7c4245113a26478665a", "scenario_id": "m7-baseline", "travel_controls": "DEFERRED TO M8"}
+verifier success: m7_intervention jos-intervention-m7-ci-seed-123-c0be3d419f32
+=== FINAL-SOURCE RESULT: uv (0) ===
+
+=== FINAL-SOURCE GATE: git diff --check ===
+=== FINAL-SOURCE RESULT: git (0) ===
+
+=== FINAL-SOURCE GATE OVERALL: 0 ===

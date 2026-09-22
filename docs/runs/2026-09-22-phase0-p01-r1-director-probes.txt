@@ -1,0 +1,16 @@
+from pathlib import Path
+import inspect, json
+import jersey_outbreak.phase0_campaign as c
+root = Path('/home/steven/jos-p0-1-wt')
+config = c.CampaignConfig.from_yaml(root/'configs/calibration/v13_phase0_synthetic.yaml')
+params = c.load_parameter_set(root)
+cell = config.candidate_grid[0]
+run = c._run_config_for_cell(config, params, config.candidate_process_seeds[0], cell)
+obs = c._observation_config_for_cell(root, config, config.candidate_observation_seeds[0], config.candidate_observation_config_id, cell)
+print('ACTUAL_CONFIG_CONSTRUCTORS_COMPLETE', type(run).__name__, type(obs).__name__)
+print('BLIND_FITTER_ACCEPTS_FULL_CONFIG', 'config' in inspect.signature(c.fit_blind).parameters)
+print('CONFIG_CONTAINS_TRUTH', all(hasattr(d, 'truth') for d in config.dimensions))
+print('CONFIG_CONTAINS_TARGET_SEEDS', hasattr(config,'target_process_seeds'))
+print('P01_RESULT_RETAINS_LATENT_CACHE', 'candidate_latents' in c.P01CampaignResult.__dataclass_fields__)
+print('NO_SIMULATION_OR_OBSERVATION_TRANSFORM_EXECUTED')
+print('MISSING_RESULT_NAMESPACE_METADATA_ACCEPTED', c._namespace_passes(object(), object(), run, obs))
