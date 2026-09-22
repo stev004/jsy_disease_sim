@@ -27,6 +27,7 @@ from typing import Any, Literal, cast
 import yaml  # type: ignore[import-untyped]
 
 from .observation import load_observation_config, observe_latent_run
+from .observation_scheduler import observation_stream_seed
 from .observation_schemas import ObservationConfig
 from .outbreak_runner import default_run_config, load_parameter_set, run_outbreak
 from .outbreak_schemas import OutbreakRunConfig, RespiratoryParameterSet
@@ -1871,18 +1872,44 @@ def _namespace_passes(
 ) -> bool:
     """Derive namespace evidence from actual result/config metadata."""
 
-    latent_config = getattr(latent_result, "config", run_config)
-    observed_config = getattr(observation_result, "config", observation_config)
-    observation_diagnostics = getattr(observation_result, "diagnostics", {})
-    rng = observation_diagnostics.get("observation_rng", {})
-    return bool(
-        getattr(latent_config, "seed", None) == getattr(run_config, "seed", None)
-        and getattr(observed_config, "observation_config_id", None)
-        == getattr(observation_config, "observation_config_id", None)
-        and getattr(observed_config, "observation_seed", None)
-        == getattr(observation_config, "observation_seed", None)
-        and (not rng or rng.get("stream_namespace") == "observation")
-    )
+    try:
+        latent_config = latent_result.config
+        observed_config = observation_result.config
+        observed_latent = observation_result.latent_run
+        if not isinstance(latent_config, OutbreakRunConfig) or not isinstance(
+            run_config, OutbreakRunConfig
+        ):
+            return False
+        if not isinstance(observed_config, ObservationConfig) or not isinstance(
+            observation_config, ObservationConfig
+        ):
+            return False
+        if observed_latent is not latent_result:
+            return False
+        if latent_config != run_config or observed_config != observation_config:
+            return False
+
+        diagnostics = observation_result.diagnostics
+        if not isinstance(diagnostics, Mapping):
+            return False
+        rng = diagnostics.get("observation_rng")
+        if not isinstance(rng, Mapping):
+            return False
+        expected_key_inputs = (
+            "latent_replicate_seed",
+            "observation_seed",
+            "observation_config_id",
+        )
+        if rng.get("stream_namespace") != "observation":
+            return False
+        if tuple(rng.get("stream_key_inputs", ())) != expected_key_inputs:
+            return False
+        expected_fingerprint = hashlib.sha256(
+            str(observation_stream_seed(run_config.seed, observation_config)).encode("utf-8")
+        ).hexdigest()
+        return rng.get("stream_fingerprint") == expected_fingerprint
+    except (AttributeError, TypeError, ValueError, KeyError):
+        return False
 
 
 def sha256_file(path: Path) -> str:
@@ -1917,7 +1944,7 @@ def write_research_bundle(
         if not output_dir.is_dir():
             raise CampaignError(f"research bundle destination is not a directory: {output_dir}")
         if any(output_dir.iterdir()):
-            raise CampaignError("research bundle destination must be nonempty before writing")
+            raise CampaignError("research bundle destination must be empty before writing")
     else:
         output_dir.mkdir(parents=True)
     config_bytes = campaign_config_path.read_bytes()

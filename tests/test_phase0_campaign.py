@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import hashlib
 import inspect
 import math
 from dataclasses import replace
 from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import yaml
 
+from jersey_outbreak.observation_scheduler import observation_stream_seed
+from jersey_outbreak.observation_schemas import ObservationConfig
+from jersey_outbreak.outbreak_runner import load_parameter_set
+from jersey_outbreak.outbreak_schemas import OutbreakRunConfig
 from jersey_outbreak.phase0_campaign import (
     FIT_PROCESS_SEEDS,
     PREDECLARATION_SHA256,
@@ -50,6 +56,64 @@ PREDECLARATION_PATH = REPOSITORY_PREDECLARATION_PATH
 
 def _config() -> CampaignConfig:
     return CampaignConfig.from_yaml(CONFIG_PATH)
+
+
+def test_namespace_evidence_requires_returned_metadata() -> None:
+    import jersey_outbreak.phase0_campaign as campaign
+
+    config = _config()
+    parameters = load_parameter_set(ROOT)
+    cell = config.candidate_grid[0]
+    run_config = campaign._run_config_for_cell(config, parameters, 43001, cell)
+    observation_config = campaign._observation_config_for_cell(
+        ROOT, config, 53001, config.candidate_observation_config_id, cell
+    )
+    latent_result = SimpleNamespace(config=run_config)
+    observation_rng = {
+        "stream_namespace": "observation",
+        "stream_key_inputs": [
+            "latent_replicate_seed",
+            "observation_seed",
+            "observation_config_id",
+        ],
+        "stream_fingerprint": hashlib.sha256(
+            str(observation_stream_seed(run_config.seed, observation_config)).encode()
+        ).hexdigest(),
+    }
+    valid_observation_result = SimpleNamespace(
+        latent_run=latent_result,
+        config=observation_config,
+        diagnostics={"observation_rng": observation_rng},
+    )
+    mismatched_observation_result = SimpleNamespace(
+        latent_run=latent_result,
+        config=observation_config.model_copy(update={"observation_seed": 53002}),
+        diagnostics={"observation_rng": observation_rng},
+    )
+
+    cases = (
+        ("missing result metadata", object(), object(), False),
+        (
+            "missing RNG diagnostics",
+            latent_result,
+            SimpleNamespace(latent_run=latent_result, config=observation_config, diagnostics={}),
+            False,
+        ),
+        (
+            "mismatched result metadata",
+            latent_result,
+            mismatched_observation_result,
+            False,
+        ),
+        ("valid result metadata", latent_result, valid_observation_result, True),
+    )
+    for label, returned_latent, returned_observation, expected in cases:
+        assert (
+            campaign._namespace_passes(
+                returned_latent, returned_observation, run_config, observation_config
+            )
+            is expected
+        ), label
 
 
 def _tables(value: float, *, dates: tuple[str, ...] = ("2025-01-06",)) -> ObservedTables:
@@ -455,6 +519,20 @@ def test_missing_workload_and_undeclared_target_seeds_cannot_pass() -> None:
         ).status
         == "PASS"
     )
+    missing_namespace_evidence = replace(valid_evidence, namespaces_complete=False)
+    failed_namespace_evaluation = evaluate_p01(
+        rows,
+        config=_config(),
+        workload=plan_workload(_config()),
+        evidence=missing_namespace_evidence,
+    )
+    assert failed_namespace_evaluation.status == "FAIL"
+    assert (
+        failed_namespace_evaluation.predicates[
+            "declared_namespace_grid_objective_dates_fixed_parameters"
+        ]
+        is False
+    )
 
 
 def test_candidate_provenance_hash_includes_constructed_declaration() -> None:
@@ -472,7 +550,7 @@ def test_research_bundle_rejects_nonempty_destination_without_mutation(
     sentinel = output / "sentinel"
     sentinel.write_bytes(b"keep me")
     before = sentinel.read_bytes()
-    with pytest.raises(CampaignError, match="nonempty"):
+    with pytest.raises(CampaignError, match="empty before writing"):
         write_research_bundle(
             output,
             campaign_config_path=CONFIG_PATH,
@@ -490,29 +568,10 @@ def test_mocked_p01_path_persists_estimates_before_truth_join(
     """The generation path is callable under fakes but never runs in this test suite."""
     import jersey_outbreak.phase0_campaign as campaign
 
-    calls: list[tuple[str, int, int | None]] = []
-
-    class FakeConfig:
-        def __init__(self, **values: object) -> None:
-            self.__dict__.update(values)
-
-        def model_copy(self, *, update: dict[str, object]) -> FakeConfig:
-            values = dict(self.__dict__)
-            values.update(update)
-            return FakeConfig(**values)
-
-        def model_dump(self, mode: str = "json") -> dict[str, object]:
-            del mode
-            return dict(self.__dict__)
-
-    class FakeParameter:
-        def __init__(self, value: float) -> None:
-            self.value = value
-
-        def model_copy(self, *, update: dict[str, object]) -> FakeParameter:
-            result = FakeParameter(self.value)
-            result.__dict__.update(update)
-            return result
+    calls: list[tuple[str, int, object | None]] = []
+    run_configs: list[OutbreakRunConfig] = []
+    observation_configs: list[ObservationConfig] = []
+    fit_inputs: list[tuple[tuple[object, ...], dict[str, object]]] = []
 
     class FakeParent:
         generated = object()
@@ -525,69 +584,23 @@ def test_mocked_p01_path_persists_estimates_before_truth_join(
         }
         transmission_events = tuple([{"imported": True}] * 10 + [{"source_kind": "local"}])
 
+        def __init__(self, run_config: OutbreakRunConfig) -> None:
+            self.config = run_config
+
     class FakeObserved:
         diagnostics = {
             "no_report_before_infection": True,
             "latent_incidence_conservation": True,
         }
 
-        def __init__(self, observation_config: FakeConfig) -> None:
+        def __init__(self, latent_run: FakeLatent, observation_config: ObservationConfig) -> None:
             self.observation_events = [
                 {"report_date": "2025-01-06", "symptomatic": True},
                 {"report_date": "2025-01-07", "symptomatic": False},
                 {"report_date": "2025-01-08", "symptomatic": True},
             ]
+            self.latent_run = latent_run
             self.config = observation_config
-
-    def fake_load_parameter_set(root: Path) -> object:
-        calls.append(("load_parameters", 0, None))
-        return object()
-
-    def fake_load_observation_config(root: Path) -> FakeConfig:
-        return FakeConfig(
-            observation_config_id="observation-demo",
-            observation_seed=0,
-            parameters={
-                "symptomatic_detection_probability": FakeParameter(0.75),
-                "asymptomatic_detection_probability": FakeParameter(0.25),
-            },
-            reporting_delay=FakeConfig(kind="fixed", days=(2,)),
-            detection_delay=FakeConfig(kind="fixed", days=(0,)),
-            analysis_horizon_tail_days=None,
-            day_of_week_effect=(1.0,) * 7,
-            model_marker="observation",
-        )
-
-    def fake_default_run_config(
-        mode: str, seed: int, parameters: object, **kwargs: object
-    ) -> FakeConfig:
-        del parameters
-        return FakeConfig(
-            mode=mode,
-            seed=seed,
-            initial_seed_count=10,
-            import_schedule={},
-            import_rate_per_day=0.0,
-            beta=0.08,
-            symptomatic_probability=0.6,
-            waning_enabled=False,
-            latent_duration=FakeConfig(family="constant", mean_days=2.0),
-            infectious_duration=FakeConfig(family="constant", mean_days=5.0),
-            route_multipliers={
-                "household": 1.0,
-                "school_class": 1.0,
-                "school_cross_class": 1.0,
-                "workplace_team": 1.0,
-                "workplace_transient": 1.0,
-                "care_resident": 1.0,
-                "care_staff": 1.0,
-                "shared_vehicle": 1.0,
-                "bus": 1.0,
-                "community_indoor": 1.0,
-                "community_outdoor": 1.0,
-            },
-            **kwargs,
-        )
 
     def fake_build_parent(
         root: Path, mode: str, seed: int, destination: Path, **kwargs: object
@@ -596,13 +609,15 @@ def test_mocked_p01_path_persists_estimates_before_truth_join(
         calls.append(("build_parent", seed, None))
         return FakeParent()
 
-    def fake_run_outbreak(parent: object, run_config: FakeConfig, parameters: object) -> FakeLatent:
+    def fake_run_outbreak(
+        parent: object, run_config: OutbreakRunConfig, parameters: object
+    ) -> FakeLatent:
         del parent, parameters
         calls.append(("run_outbreak", run_config.seed, None))
-        return FakeLatent()
+        run_configs.append(run_config)
+        return FakeLatent(run_config)
 
-    def fake_observe(latent: FakeLatent, observation_config: FakeConfig) -> FakeObserved:
-        del latent
+    def fake_observe(latent: FakeLatent, observation_config: ObservationConfig) -> FakeObserved:
         calls.append(
             (
                 "observe",
@@ -610,7 +625,24 @@ def test_mocked_p01_path_persists_estimates_before_truth_join(
                 observation_config.observation_config_id,
             )
         )
-        return FakeObserved(observation_config)
+        observation_configs.append(observation_config)
+        result = FakeObserved(latent, observation_config)
+        result.diagnostics = {
+            "no_report_before_infection": True,
+            "latent_incidence_conservation": True,
+            "observation_rng": {
+                "stream_namespace": "observation",
+                "stream_key_inputs": [
+                    "latent_replicate_seed",
+                    "observation_seed",
+                    "observation_config_id",
+                ],
+                "stream_fingerprint": hashlib.sha256(
+                    str(observation_stream_seed(latent.config.seed, observation_config)).encode()
+                ).hexdigest(),
+            },
+        }
+        return result
 
     original_persist = campaign.persist_blind_estimate
     original_fit = campaign.fit_blind
@@ -621,6 +653,7 @@ def test_mocked_p01_path_persists_estimates_before_truth_join(
 
     def recording_fit(*args: object, **kwargs: object) -> object:
         calls.append(("fit_blind", len(args[1]), None))
+        fit_inputs.append((args, kwargs))
         return original_fit(*args, **kwargs)  # type: ignore[arg-type]
 
     original_join = campaign.join_truth_evaluation
@@ -629,9 +662,6 @@ def test_mocked_p01_path_persists_estimates_before_truth_join(
         calls.append(("join", int(kwargs["target_seed"]), None))
         return original_join(*args, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(campaign, "load_parameter_set", fake_load_parameter_set)
-    monkeypatch.setattr(campaign, "load_observation_config", fake_load_observation_config)
-    monkeypatch.setattr(campaign, "default_run_config", fake_default_run_config)
     monkeypatch.setattr(campaign, "build_parent", fake_build_parent)
     monkeypatch.setattr(campaign, "run_outbreak", fake_run_outbreak)
     monkeypatch.setattr(campaign, "observe_latent_run", fake_observe)
@@ -654,6 +684,47 @@ def test_mocked_p01_path_persists_estimates_before_truth_join(
     assert sum(kind == "persist" for kind, _, _ in calls) == 5
     assert sum(kind == "fit_blind" for kind, _, _ in calls) == 5
     assert {count for kind, count, _ in calls if kind == "fit_blind"} == {81}
+    assert all(isinstance(item, OutbreakRunConfig) for item in run_configs)
+    assert all(isinstance(item, ObservationConfig) for item in observation_configs)
+    assert [item.seed for item in run_configs] == [
+        42001,
+        42002,
+        42003,
+        42004,
+        42005,
+        *[seed for seed in (43001, 43002, 43003) for _ in range(9)],
+    ]
+    assert [item.observation_seed for item in observation_configs] == [
+        52001,
+        52002,
+        52003,
+        52004,
+        52005,
+        *[seed for _ in range(81) for seed in (53001, 53002, 53003)],
+    ]
+    assert [item.observation_config_id for item in observation_configs] == [
+        *(["v13-phase0-target"] * 5),
+        *(["v13-phase0-fit"] * 243),
+    ]
+    assert all(item.mode == "ci" for item in run_configs)
+    assert all(item.start_date == date(2025, 1, 6) for item in run_configs)
+    assert all(item.duration_days == 30 for item in run_configs)
+    assert all(item.analysis_horizon_tail_days == 4 for item in observation_configs)
+    expected_dates = observation_dates(date(2025, 1, 6), 30, 4)
+    assert all(table.dates == expected_dates for table in result.target_tables.values())
+    assert all(
+        table.dates == expected_dates
+        for tables in result.candidate_prediction_library.values()
+        for table in tables
+    )
+    assert len(fit_inputs) == 5
+    assert all(
+        len(args) == 3
+        and all(not isinstance(value, CampaignConfig) for value in args)
+        and set(kwargs) == {"candidate_config_hashes"}
+        and all(not isinstance(value, CampaignConfig) for value in kwargs.values())
+        for args, kwargs in fit_inputs
+    )
     assert {seed for kind, seed, _ in calls if kind == "build_parent"} == {
         42001,
         42002,
@@ -678,8 +749,15 @@ def test_mocked_p01_path_persists_estimates_before_truth_join(
         53002,
         53003,
     }
-    first_join = next(index for index, call in enumerate(calls) if call[0] == "join")
-    assert all(call[0] != "join" for call in calls[:first_join])
+    persist_positions = {
+        count: index for index, (kind, count, _) in enumerate(calls) if kind == "persist"
+    }
+    join_positions = {
+        count: index for index, (kind, count, _) in enumerate(calls) if kind == "join"
+    }
+    assert set(persist_positions) == {42001, 42002, 42003, 42004, 42005}
+    assert set(join_positions) == set(persist_positions)
+    assert all(persist_positions[seed] < join_positions[seed] for seed in persist_positions)
 
     def fail_persist(path: Path, fit: object) -> str:
         del path, fit
