@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH="$HOME/jos-g30-before/src"
+cd "$HOME/jos-g30-before"
+set +e
+"$HOME/jos-g30-verify/.venv/bin/python" -m pytest -q -p no:cacheprovider tests/test_prov_job_ordering.py::test_missing_head_request_fails_alone_and_scheduler_continues > "$HOME/jsy_disease_sim/docs/runs/2026-09-22-phase0-g30-known-flake-base.log" 2>&1
+base_rc=$?
+set -e
+printf 'BASE_EXIT=%s\n' "$base_rc" >> "$HOME/jsy_disease_sim/docs/runs/2026-09-22-phase0-g30-known-flake-base.log"
+tail -14 "$HOME/jsy_disease_sim/docs/runs/2026-09-22-phase0-g30-known-flake-base.log"

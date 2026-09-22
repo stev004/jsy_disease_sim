@@ -1,0 +1,56 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ test_missing_head_request_fails_alone_and_scheduler_continues _________
+
+tmp_path = PosixPath('/tmp/pytest-of-steven/pytest-554/test_missing_head_request_fail0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x77e0f52cb9e0>
+
+    def test_missing_head_request_fails_alone_and_scheduler_continues(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        manager = JobManager(state_dir=tmp_path, project_root=ROOT, poll_interval=0.01)
+        first = manager.submit(
+            ScenarioRunRequest(kind="scenario_run", mode="ci", seed=601, duration_days=1)
+        )
+        second = manager.submit(
+            ScenarioRunRequest(kind="scenario_run", mode="ci", seed=602, duration_days=1)
+        )
+        first_id = str(first["job_id"])
+        second_id = str(second["job_id"])
+        (manager._job_dir(first_id) / "request.json").unlink()
+        spawned_ids: list[str] = []
+        original_popen = job_manager_module.subprocess.Popen
+    
+        def observe_spawn(*args, **kwargs):
+            command = args[0]
+            job_id = command[command.index("--job-id") + 1]
+            spawned_ids.append(job_id)
+            return original_popen(*args, **kwargs)
+    
+        monkeypatch.setattr(job_manager_module.subprocess, "Popen", observe_spawn)
+        manager.start()
+        try:
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                states = {manager.get(first_id)["state"], manager.get(second_id)["state"]}
+                if states <= {"FAILED", "CANCELLED", "INTERRUPTED", "SUCCEEDED"}:
+                    break
+                time.sleep(0.01)
+            first_job = manager.get(first_id)
+            second_job = manager.get(second_id)
+            assert first_job["state"] == "FAILED", first_job
+            assert first_job["error_code"] == "request_not_persisted"
+            assert any(event["type"] == "job_failed" for event in manager.events(first_id))
+            assert first_id not in spawned_ids
+>           assert second_job["state"] == "SUCCEEDED", second_job
+E           AssertionError: {'bundle_hash': None, 'canonical_request': {'request': {'duration_days': 1, 'kind': 'scenario_run', 'mode': 'ci', 'obs....13', 'starsim_version': '3.5.2'}}, 'created_at': '2026-09-22T15:51:41.733530+00:00', 'dirty_worktree_flag': None, ...}
+E           assert 'RUNNING' == 'SUCCEEDED'
+E             
+E             - SUCCEEDED
+E             + RUNNING
+
+tests/test_prov_job_ordering.py:176: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_prov_job_ordering.py::test_missing_head_request_fails_alone_and_scheduler_continues
+1 failed in 5.94s
+BASE_EXIT=1

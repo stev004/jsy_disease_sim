@@ -1,0 +1,40 @@
++ uv --version
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv --version
+uv 0.11.30 (x86_64-unknown-linux-gnu)
++ uv run ruff check .
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run ruff check .
+All checks passed!
++ uv run ruff format --check .
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run ruff format --check .
+263 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py
+Success: no issues found in 15 source files
++ uv run jos demo --seed 123
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run jos demo --seed 123
+{"declared_deterministic_outputs": ["seed", "starsim_version", "time_series", "final"], "final": {"cumulative_infections": 37, "n_infected": 0, "n_recovered": 47, "n_susceptible": 53}, "model": "starsim_official_sir_demo", "network": {"n_contacts": 10, "official_starsim_network": true, "type": "RandomNet"}, "population_size": 100, "run_id": "jos-demo-55bc2313fab1", "schema_version": "1.0", "seed": 123, "simulation": {"dt": 1.0, "start": 2000.0, "stop": 2030.0, "unit": "year"}, "starsim_version": "3.5.2", "time_series": {"cumulative_infections": [36, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37], "n_infected": [46, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "n_recovered": [0, 45, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47], "n_susceptible": [54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53], "time_index": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]}, "validation_level": "compatibility_spike"}
++ uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-g30-mirror-population
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-g30-mirror-population
+{"artifact_directory": "/tmp/jos-g30-mirror-population/jos-population-m2-ci-seed-123-5f55360ffc68", "artifact_id": "jos-population-m2-ci-seed-123-5f55360ffc68", "communal_residents": 60, "diagnostics_status": "passed", "households": 1295, "logical_content_hash": "28a6d90a96454d11dcd6ad9d4531d69f9e4ec4396b802780084d3ae598c839a0", "mode": "ci", "runtime_seconds": 1.1273882979949121, "target_population": 3000}
++ uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-g30-mirror-structure
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-g30-mirror-structure
+{"artifact_directory": "/tmp/jos-g30-mirror-structure/jos-structure-m3-ci-seed-123-64334a035ddb", "artifact_id": "jos-structure-m3-ci-seed-123-64334a035ddb", "diagnostics_status": "passed", "logical_content_hash": "f072042f07db46a94fd61781eb9ee99545a6dc169d34b83d6de21ffdf56e3ce3", "m2_artifact_id": "jos-population-m2-ci-seed-123-5f55360ffc68", "mode": "ci", "primary_jobs": 1666, "runtime_seconds": 0.20126219899975695, "schools": 5, "secondary_jobs": 117, "target_population": 3000, "workplaces": 252}
++ uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-g30-mirror-network
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-g30-mirror-network
+{"artifact_directory": "/tmp/jos-g30-mirror-network/jos-networks-m4-ci-seed-123-4768b9613c93", "artifact_id": "jos-networks-m4-ci-seed-123-4768b9613c93", "baseline_edges": 22428, "diagnostics_status": "passed", "logical_content_hash": "749e32383cbcfa5973cd2680e09b175267b12d72963cc286e6c4dd720ae53657", "mode": "ci", "routes": 11, "runtime_seconds": 1.1821917979978025, "target_population": 3000}
++ uv run python scripts/ci_relocation_check.py
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run python scripts/ci_relocation_check.py
+{"artifact_directory": "/home/steven/jos-g30-verify/outputs/interventions/jos-intervention-m7-ci-seed-123-c0be3d419f32", "artifact_id": "jos-intervention-m7-ci-seed-123-c0be3d419f32", "diagnostics_status": "passed", "logical_content_hash": "1e9f01ed1d770bbeb592c3d0c69add44040d2e80339b93b884b24701f4ed8a99", "runtime_seconds": 6.58292680500017, "scenario_hash": "7158b33cb7eba93112b1326aacc253d19136a4a85f70c7c4245113a26478665a", "scenario_id": "m7-baseline", "travel_controls": "DEFERRED TO M8"}
+verifier success: m7_intervention jos-intervention-m7-ci-seed-123-c0be3d419f32
++ uv run mypy src/jersey_outbreak/phase0_campaign.py
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run mypy src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
++ git diff --check
+++ git status --porcelain
++ test -z ''
+++ git rev-parse HEAD
++ test 367f0324685437c4d2ed4aa0ae4878229da09839 = 367f0324685437c4d2ed4aa0ae4878229da09839
++ printf 'MIRROR_REMAINDER=PASS SHA=%s\n' 367f0324685437c4d2ed4aa0ae4878229da09839
+MIRROR_REMAINDER=PASS SHA=367f0324685437c4d2ed4aa0ae4878229da09839
++ rc=0
++ '[' 0 -ne 0 ']'
