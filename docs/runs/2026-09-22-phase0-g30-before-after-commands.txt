@@ -1,0 +1,27 @@
+#!/bin/bash
+set -euo pipefail
+base_dir="$HOME/jos-g30-before"
+test ! -e "$base_dir"
+git clone --shared --quiet "$HOME/jsy_disease_sim" "$base_dir"
+git -C "$base_dir" checkout --quiet --detach b5ef032e29c577bce634ce0933b2d7d316ac562e
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH="$base_dir/src"
+set +e
+"$HOME/jos-p01-numeric-fix-wt/.venv/bin/python" - <<'PY' > "$HOME/jsy_disease_sim/docs/runs/2026-09-22-phase0-g30-director-before.log" 2>&1
+import jersey_outbreak.phase0_campaign as m
+import pytest
+print('IMPORTED_SOURCE',m.__file__,flush=True)
+raise SystemExit(pytest.main(['-q','-p','no:cacheprovider','/home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py','-k','recovery_tolerance or asymptomatic_upper_endpoint or three_of_five_joint or declared_decimal_asymptomatic or recovery_arithmetic_preserves']))
+PY
+before_rc=$?
+set -e
+test "$before_rc" -eq 1
+export PYTHONPATH="$HOME/jos-p01-numeric-fix-wt/src"
+"$HOME/jos-p01-numeric-fix-wt/.venv/bin/python" - <<'PY' > "$HOME/jsy_disease_sim/docs/runs/2026-09-22-phase0-g30-director-after.log" 2>&1
+import jersey_outbreak.phase0_campaign as m
+import pytest
+print('IMPORTED_SOURCE',m.__file__,flush=True)
+raise SystemExit(pytest.main(['-q','-p','no:cacheprovider','/home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py','-k','recovery_tolerance or asymptomatic_upper_endpoint or three_of_five_joint or declared_decimal_asymptomatic or recovery_arithmetic_preserves']))
+PY
+tail -2 "$HOME/jsy_disease_sim/docs/runs/2026-09-22-phase0-g30-director-before.log"
+tail -2 "$HOME/jsy_disease_sim/docs/runs/2026-09-22-phase0-g30-director-after.log"

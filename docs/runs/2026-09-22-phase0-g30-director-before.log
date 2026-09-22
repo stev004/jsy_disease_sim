@@ -1,0 +1,185 @@
+IMPORTED_SOURCE /home/steven/jos-g30-before/src/jersey_outbreak/phase0_campaign.py
+.F.....FFFF.                                                             [100%]
+=================================== FAILURES ===================================
+_ test_recovery_tolerance_is_inclusive_at_both_frozen_grid_endpoints[beta-0.12-0.04] _
+
+dimension = 'beta', endpoint = 0.12, tolerance = 0.04
+
+    @pytest.mark.parametrize(
+        ("dimension", "endpoint", "tolerance"),
+        (
+            ("beta", 0.04, 0.04),
+            ("beta", 0.12, 0.04),
+            ("inoculation_day_offset", 0, 2.0),
+            ("inoculation_day_offset", 4, 2.0),
+            ("symptomatic_detection_probability", 0.50, 0.25),
+            ("symptomatic_detection_probability", 1.00, 0.25),
+            ("asymptomatic_detection_probability", 0.10, 0.15),
+            ("asymptomatic_detection_probability", 0.40, 0.15),
+        ),
+    )
+    def test_recovery_tolerance_is_inclusive_at_both_frozen_grid_endpoints(
+        dimension: str, endpoint: float | int, tolerance: float
+    ) -> None:
+        truth = CandidateCell(0.08, 2, 0.75, 0.25)
+        endpoint_selection = replace(truth, **{dimension: endpoint})
+        rows = tuple(
+            RecoveryRow(
+                target_seed=42001 + index,
+                estimate_hash=f"{index + 1:064x}",
+                selected=endpoint_selection if index == 0 else truth,
+                profiles=_identified_profiles(),
+                numerical_tie=False,
+                truth=truth,
+                truth_diagnostics=_diagnostics(),
+            )
+            for index in range(5)
+        )
+    
+        evaluation = evaluate_p01(rows)
+        endpoint_row = next(
+            row
+            for row in evaluation.rows
+            if row["target_seed"] == 42001 and row["dimension"] == dimension
+        )
+>       assert endpoint_row["absolute_error"] == tolerance
+E       assert 0.039999999999999994 == 0.04
+
+/home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py:403: AssertionError
+_ test_recovery_tolerance_is_inclusive_at_both_frozen_grid_endpoints[asymptomatic_detection_probability-0.4-0.15] _
+
+dimension = 'asymptomatic_detection_probability', endpoint = 0.4
+tolerance = 0.15
+
+    @pytest.mark.parametrize(
+        ("dimension", "endpoint", "tolerance"),
+        (
+            ("beta", 0.04, 0.04),
+            ("beta", 0.12, 0.04),
+            ("inoculation_day_offset", 0, 2.0),
+            ("inoculation_day_offset", 4, 2.0),
+            ("symptomatic_detection_probability", 0.50, 0.25),
+            ("symptomatic_detection_probability", 1.00, 0.25),
+            ("asymptomatic_detection_probability", 0.10, 0.15),
+            ("asymptomatic_detection_probability", 0.40, 0.15),
+        ),
+    )
+    def test_recovery_tolerance_is_inclusive_at_both_frozen_grid_endpoints(
+        dimension: str, endpoint: float | int, tolerance: float
+    ) -> None:
+        truth = CandidateCell(0.08, 2, 0.75, 0.25)
+        endpoint_selection = replace(truth, **{dimension: endpoint})
+        rows = tuple(
+            RecoveryRow(
+                target_seed=42001 + index,
+                estimate_hash=f"{index + 1:064x}",
+                selected=endpoint_selection if index == 0 else truth,
+                profiles=_identified_profiles(),
+                numerical_tie=False,
+                truth=truth,
+                truth_diagnostics=_diagnostics(),
+            )
+            for index in range(5)
+        )
+    
+        evaluation = evaluate_p01(rows)
+        endpoint_row = next(
+            row
+            for row in evaluation.rows
+            if row["target_seed"] == 42001 and row["dimension"] == dimension
+        )
+>       assert endpoint_row["absolute_error"] == tolerance
+E       assert 0.15000000000000002 == 0.15
+
+/home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py:403: AssertionError
+____ test_asymptomatic_upper_endpoint_preserves_marginal_and_joint_coverage ____
+
+    def test_asymptomatic_upper_endpoint_preserves_marginal_and_joint_coverage() -> None:
+        truth = CandidateCell(0.08, 2, 0.75, 0.25)
+        rows = tuple(
+            RecoveryRow(
+                target_seed=42001 + index,
+                estimate_hash=f"{index + 1:064x}",
+                selected=replace(
+                    truth,
+                    asymptomatic_detection_probability=0.40 if index == 0 else 0.25,
+                ),
+                profiles=_identified_profiles(),
+                numerical_tie=False,
+                truth=truth,
+                truth_diagnostics=_diagnostics(),
+            )
+            for index in range(5)
+        )
+    
+        evaluation = evaluate_p01(rows)
+>       assert evaluation.coverage["asymptomatic_detection_probability"] == 1.0
+E       assert 0.8 == 1.0
+
+/home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py:427: AssertionError
+____ test_three_of_five_joint_hit_boundary_counts_inclusive_upper_endpoint _____
+
+    def test_three_of_five_joint_hit_boundary_counts_inclusive_upper_endpoint() -> None:
+        truth = CandidateCell(0.08, 2, 0.75, 0.25)
+        not_identified = tuple(replace(profile, identified=False) for profile in _identified_profiles())
+        rows = tuple(
+            RecoveryRow(
+                target_seed=42001 + index,
+                estimate_hash=f"{index + 1:064x}",
+                selected=replace(
+                    truth,
+                    asymptomatic_detection_probability=0.40 if index == 0 else 0.25,
+                ),
+                profiles=_identified_profiles() if index < 3 else not_identified,
+                numerical_tie=False,
+                truth=truth,
+                truth_diagnostics=_diagnostics(),
+            )
+            for index in range(5)
+        )
+    
+        evaluation = evaluate_p01(rows)
+>       assert evaluation.joint_coverage == 3 / 5
+E       AssertionError: assert 0.4 == (3 / 5)
+E        +  where 0.4 = P01Evaluation(status='FAIL', predicates={'all_target_runs_and_cells_complete': False, 'truth_viability': False, 'obser...ction_probability', 'estimate': 0.25, 'truth': 0.25, 'signed_error': 0.0, 'absolute_error': 0.0, 'identified': False})).joint_coverage
+
+/home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py:451: AssertionError
+________ test_declared_decimal_asymptomatic_bias_cancellation_is_exact _________
+
+    def test_declared_decimal_asymptomatic_bias_cancellation_is_exact() -> None:
+        truth = CandidateCell(0.08, 2, 0.75, 0.25)
+        asymptomatic_values = (0.40, 0.10, 0.25, 0.25, 0.25)
+        rows = tuple(
+            RecoveryRow(
+                target_seed=42001 + index,
+                estimate_hash=f"{index + 1:064x}",
+                selected=replace(
+                    truth,
+                    asymptomatic_detection_probability=asymptomatic_values[index],
+                ),
+                profiles=_identified_profiles(),
+                numerical_tie=False,
+                truth=truth,
+                truth_diagnostics=_diagnostics(),
+            )
+            for index in range(5)
+        )
+    
+        evaluation = evaluate_p01(rows)
+        asymptomatic_rows = [
+            row for row in evaluation.rows if row["dimension"] == "asymptomatic_detection_probability"
+        ]
+>       assert [row["signed_error"] for row in asymptomatic_rows] == [0.15, -0.15, 0.0, 0.0, 0.0]
+E       assert [0.1500000000...0.0, 0.0, 0.0] == [0.15, -0.15, 0.0, 0.0, 0.0]
+E         
+E         At index 0 diff: 0.15000000000000002 != 0.15
+E         Use -v to get more diff
+
+/home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py:478: AssertionError
+=========================== short test summary info ============================
+FAILED ../../../../../../home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py::test_recovery_tolerance_is_inclusive_at_both_frozen_grid_endpoints[beta-0.12-0.04]
+FAILED ../../../../../../home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py::test_recovery_tolerance_is_inclusive_at_both_frozen_grid_endpoints[asymptomatic_detection_probability-0.4-0.15]
+FAILED ../../../../../../home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py::test_asymptomatic_upper_endpoint_preserves_marginal_and_joint_coverage
+FAILED ../../../../../../home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py::test_three_of_five_joint_hit_boundary_counts_inclusive_upper_endpoint
+FAILED ../../../../../../home/steven/jos-p01-numeric-fix-wt/tests/test_phase0_campaign.py::test_declared_decimal_asymptomatic_bias_cancellation_is_exact
+5 failed, 7 passed, 22 deselected in 0.16s
