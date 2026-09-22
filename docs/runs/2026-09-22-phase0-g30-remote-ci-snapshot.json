@@ -1,0 +1,85 @@
+{
+  "observed_at": "2026-09-22T17:04:52.115953+01:00",
+  "runs": [
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T23:06:23Z",
+      "databaseId": 35665995373,
+      "displayTitle": "Phase 0: persist P0-1 launch, frozen design and campaign-review seque\u2026",
+      "headSha": "b78b5bc7071edb3542525c0863dabc661c957ba6",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T23:06:22Z",
+      "databaseId": 35665993405,
+      "displayTitle": "trail: phase0-p01-launch \u2014 P0-1 Luna xhigh launched; one implementati\u2026",
+      "headSha": "c52617b8a9bf0043281468ebeaa2949836ae7612",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T23:06:20Z",
+      "databaseId": 35665991371,
+      "displayTitle": "trail: phase0-specification-READY \u2014 Sol predeclaration READY; four-di\u2026",
+      "headSha": "21395a61c5c635565279e7a784bef13f43da7cec",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T23:03:25Z",
+      "databaseId": 35665749386,
+      "displayTitle": "Phase 0: freeze Sol predeclaration before implementation or campaign \u2026",
+      "headSha": "a4b3200967f34e449bd7ffd4f589a8d30e841e95",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T23:00:32Z",
+      "databaseId": 35665508416,
+      "displayTitle": "Phase 0: persist prepared P0-1 worktree and resume path",
+      "headSha": "7834c2e832b93e0db38f18d8d33d439f69a9b474",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T23:00:30Z",
+      "databaseId": 35665505943,
+      "displayTitle": "trail: phase0-p01-worktree \u2014 Prepared isolated P0-1 worktree; Luna la\u2026",
+      "headSha": "6e56879a423e6518244df12297052b56b495574b",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T22:55:57Z",
+      "databaseId": 35665149067,
+      "displayTitle": "Phase 0: retain clean-base calibration/C3 transcript",
+      "headSha": "2ab6b10216b46e9599d9cc42c0b00aa9178c0436",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T22:55:55Z",
+      "databaseId": 35665146388,
+      "displayTitle": "trail: phase0-baseline-tests \u2014 Existing calibration and C3 baseline: \u2026",
+      "headSha": "f429ec25e90e47f8748cfae77dbc35f9b2b3c516",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T22:52:50Z",
+      "databaseId": 35664898471,
+      "displayTitle": "Phase 0: reconcile roadmap and auth handoff; record reported display \u2026",
+      "headSha": "535d963869c7ebd9d4c9c42e5cae2ff1d52392df",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-09-21T22:52:38Z",
+      "databaseId": 35664881591,
+      "displayTitle": "trail: phase0-display-warning \u2014 User reports biological display filte\u2026",
+      "headSha": "a77955c749950fe1387cdd4efbf05a76bc296700",
+      "status": "completed"
+    }
+  ]
+}
