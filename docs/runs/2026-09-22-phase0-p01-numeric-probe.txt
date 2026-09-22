@@ -1,0 +1,17 @@
+from pathlib import Path
+from jersey_outbreak.phase0_campaign import CampaignConfig,CandidateCell,RecoveryRow,TruthDiagnostics
+r=Path('/home/steven/jos-p0-1-wt')
+c=CampaignConfig.from_yaml(r/'configs/calibration/v13_phase0_synthetic.yaml')
+truth=CandidateCell(0.08,2,0.75,0.25)
+selected=CandidateCell(0.08,2,0.75,0.40)
+d=TruthDiagnostics(10,1,1,1,3,True,True,True,True)
+row=RecoveryRow(42001,'0'*64,selected,(),False,truth,d,True)
+name='asymptomatic_detection_probability'
+error=row.absolute_error(name)
+tolerance=c.dimension_map[name].tolerance
+print('DECLARED_GRID_ENDPOINT',selected.asymptomatic_detection_probability)
+print('DECLARED_TRUTH',truth.asymptomatic_detection_probability)
+print('ABSOLUTE_ERROR',repr(error))
+print('DECLARED_TOLERANCE',repr(tolerance))
+print('COUNTED_WITHIN_TOLERANCE',error <= tolerance)
+print('NO_CAMPAIGN_EXECUTED')
