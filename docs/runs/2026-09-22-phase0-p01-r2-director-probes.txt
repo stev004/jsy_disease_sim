@@ -1,0 +1,28 @@
+from pathlib import Path
+from types import SimpleNamespace
+import hashlib, importlib.util, subprocess, sys, tempfile
+import jersey_outbreak.phase0_campaign as c
+root=Path('/home/steven/jos-p0-1-wt')
+config=c.CampaignConfig.from_yaml(root/'configs/calibration/v13_phase0_synthetic.yaml')
+run=c._run_config_for_cell(config,c.load_parameter_set(root),43001,config.candidate_grid[0])
+obs=c._observation_config_for_cell(root,config,53001,config.candidate_observation_config_id,config.candidate_grid[0])
+base=subprocess.check_output(['git','-C',str(root),'show','289429cbdd40645aa8c4fcc2d3da498876f004a7:src/jersey_outbreak/phase0_campaign.py'])
+with tempfile.TemporaryDirectory(prefix='jos-p01-before-') as directory:
+ path=Path(directory)/'prior.py';path.write_bytes(base)
+ name='jersey_outbreak.phase0_prior_director_probe'
+ spec=importlib.util.spec_from_file_location(name,path)
+ prior=importlib.util.module_from_spec(spec);sys.modules[name]=prior;spec.loader.exec_module(prior)
+ assert prior._namespace_passes(object(),object(),run,obs) is True
+ print('BASE_MISSING_METADATA_ACCEPTED=True')
+ assert c._namespace_passes(object(),object(),run,obs) is False
+ print('CANDIDATE_MISSING_METADATA_ACCEPTED=False')
+latent=SimpleNamespace(config=run)
+rng={'stream_namespace':'observation','stream_key_inputs':['latent_replicate_seed','observation_seed','observation_config_id'],'stream_fingerprint':hashlib.sha256(str(c.observation_stream_seed(run.seed,obs)).encode()).hexdigest()}
+valid=SimpleNamespace(config=obs,latent_run=latent,diagnostics={'observation_rng':rng})
+assert c._namespace_passes(latent,valid,run,obs) is True
+print('VALID_RETURNED_METADATA_ACCEPTED=True')
+for label,diagnostics in [('missing',{}),('malformed',None),('bad_keys',{'observation_rng':dict(rng,stream_key_inputs=None)}),('bad_fingerprint',{'observation_rng':dict(rng,stream_fingerprint='0'*64)})]:
+ invalid=SimpleNamespace(config=obs,latent_run=latent,diagnostics=diagnostics)
+ assert c._namespace_passes(latent,invalid,run,obs) is False,label
+ print('REJECTED_'+label)
+print('NO_CAMPAIGN_OR_GENERATION_EXECUTED')

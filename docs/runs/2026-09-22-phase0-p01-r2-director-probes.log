@@ -1,0 +1,27 @@
+2026-09-22T02:00:37+01:00
+289429cbdd40645aa8c4fcc2d3da498876f004a7
+19a5d2b85b0b7962c62b36e9c7f7441a71b0098497a302306a50db1f793692cd  src/jersey_outbreak/phase0_campaign.py
+1d9d934b3cf9e2631997e21a8d53584eed9009328fe4ad640062f81990bb4c27  tests/test_phase0_campaign.py
+BASE_MISSING_METADATA_ACCEPTED=True
+CANDIDATE_MISSING_METADATA_ACCEPTED=False
+VALID_RETURNED_METADATA_ACCEPTED=True
+REJECTED_missing
+REJECTED_malformed
+REJECTED_bad_keys
+REJECTED_bad_fingerprint
+NO_CAMPAIGN_OR_GENERATION_EXECUTED
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 22 items
+
+tests/test_phase0_campaign.py ......................                     [100%]
+
+============================== 22 passed in 1.32s ==============================
+ src/jersey_outbreak/phase0_campaign.py |  53 +++++--
+ tests/test_phase0_campaign.py          | 248 ++++++++++++++++++++++-----------
+ 2 files changed, 203 insertions(+), 98 deletions(-)
+ M src/jersey_outbreak/phase0_campaign.py
+ M tests/test_phase0_campaign.py

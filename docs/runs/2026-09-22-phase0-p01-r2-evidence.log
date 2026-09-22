@@ -1,0 +1,547 @@
+$ uv run pytest tests/test_phase0_campaign.py -k namespace_evidence_requires_returned_metadata
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 22 items / 21 deselected / 1 selected
+
+tests/test_phase0_campaign.py F                                          [100%]
+
+=================================== FAILURES ===================================
+______________ test_namespace_evidence_requires_returned_metadata ______________
+
+    def test_namespace_evidence_requires_returned_metadata() -> None:
+        import jersey_outbreak.phase0_campaign as campaign
+    
+        config = _config()
+        parameters = load_parameter_set(ROOT)
+        cell = config.candidate_grid[0]
+        run_config = campaign._run_config_for_cell(config, parameters, 43001, cell)
+        observation_config = campaign._observation_config_for_cell(
+            ROOT, config, 53001, config.candidate_observation_config_id, cell
+        )
+        latent_result = SimpleNamespace(config=run_config)
+        observation_rng = {
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+                "latent_replicate_seed",
+                "observation_seed",
+                "observation_config_id",
+            ],
+            "stream_fingerprint": hashlib.sha256(
+                str(observation_stream_seed(run_config.seed, observation_config)).encode()
+            ).hexdigest(),
+        }
+        valid_observation_result = SimpleNamespace(
+            latent_run=latent_result,
+            config=observation_config,
+            diagnostics={"observation_rng": observation_rng},
+        )
+        mismatched_observation_result = SimpleNamespace(
+            latent_run=latent_result,
+            config=observation_config.model_copy(update={"observation_seed": 53002}),
+            diagnostics={"observation_rng": observation_rng},
+        )
+    
+        cases = (
+            ("missing result metadata", object(), object(), False),
+            (
+                "missing RNG diagnostics",
+                latent_result,
+                SimpleNamespace(latent_run=latent_result, config=observation_config, diagnostics={}),
+                False,
+            ),
+            (
+                "mismatched result metadata",
+                latent_result,
+                mismatched_observation_result,
+                False,
+            ),
+            ("valid result metadata", latent_result, valid_observation_result, True),
+        )
+        for label, returned_latent, returned_observation, expected in cases:
+>           assert (
+                campaign._namespace_passes(
+                    returned_latent, returned_observation, run_config, observation_config
+                )
+                is expected
+            ), label
+E           AssertionError: missing result metadata
+E           assert True is False
+E            +  where True = <function _namespace_passes at 0x744aa3510540>(<object object at 0x744aa64572f0>, <object object at 0x744aa6457290>, OutbreakRunConfig(schema_version='1.1', generator_version='11.1.0', mode='ci', seed=43001, start_date=datetime.date(20...sident': 1.0, 'care_staff': 1.0, 'shared_vehicle': 1.0, 'bus': 1.0, 'community_indoor': 1.0, 'community_outdoor': 1.0}), ObservationConfig(schema_version='1.2', observation_config_id='v13-phase0-fit', parameters={'symptomatic_detection_pro...cases.'), analysis_horizon_tail_days=4, day_of_week_effect=(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0), observation_seed=53001))
+E            +    where <function _namespace_passes at 0x744aa3510540> = <module 'jersey_outbreak.phase0_campaign' from '/home/steven/jos-p0-1-wt/src/jersey_outbreak/phase0_campaign.py'>._namespace_passes
+
+tests/test_phase0_campaign.py:109: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_phase0_campaign.py::test_namespace_evidence_requires_returned_metadata
+======================= 1 failed, 21 deselected in 0.24s =======================
+$ uv run pytest tests/test_phase0_campaign.py -k namespace_evidence_requires_returned_metadata
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 22 items / 21 deselected / 1 selected
+
+tests/test_phase0_campaign.py .                                          [100%]
+
+======================= 1 passed, 21 deselected in 0.16s =======================
+$ uv run pytest tests/test_phase0_campaign.py -k mocked_p01_path_persists_estimates_before_truth_join
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 22 items / 21 deselected / 1 selected
+
+tests/test_phase0_campaign.py .                                          [100%]
+
+======================= 1 passed, 21 deselected in 1.11s =======================
+$ uv run pytest tests/test_phase0_campaign.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 22 items
+
+tests/test_phase0_campaign.py ....................F.                     [100%]
+
+=================================== FAILURES ===================================
+______ test_research_bundle_rejects_nonempty_destination_without_mutation ______
+
+tmp_path = PosixPath('/tmp/pytest-of-steven/pytest-542/test_research_bundle_rejects_n0')
+
+    def test_research_bundle_rejects_nonempty_destination_without_mutation(
+        tmp_path: Path,
+    ) -> None:
+        output = tmp_path / "bundle"
+        output.mkdir()
+        sentinel = output / "sentinel"
+        sentinel.write_bytes(b"keep me")
+        before = sentinel.read_bytes()
+        with pytest.raises(CampaignError, match="nonempty"):
+>           write_research_bundle(
+                output,
+                campaign_config_path=CONFIG_PATH,
+                predeclaration_path=REPOSITORY_PREDECLARATION_PATH,
+                seed_ledger=[],
+                candidate_loss_surfaces={},
+            )
+
+tests/test_phase0_campaign.py:540: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+output_dir = PosixPath('/tmp/pytest-of-steven/pytest-542/test_research_bundle_rejects_n0/bundle')
+
+    def write_research_bundle(
+        output_dir: Path,
+        *,
+        campaign_config_path: Path,
+        predeclaration_path: Path,
+        seed_ledger: Sequence[Mapping[str, Any]],
+        candidate_loss_surfaces: Mapping[str, Any],
+        p01_recovery_rows: Sequence[Mapping[str, Any]] | None = None,
+        p02_misspecification_rows: Sequence[Mapping[str, Any]] | None = None,
+        p03_profile: Mapping[str, Any] | None = None,
+        campaign_summary: Mapping[str, Any] | None = None,
+        input_hashes: Mapping[str, str] | None = None,
+    ) -> Path:
+        """Write a standalone research bundle with file-level SHA-256 provenance."""
+    
+        if output_dir.exists():
+            if not output_dir.is_dir():
+                raise CampaignError(f"research bundle destination is not a directory: {output_dir}")
+            if any(output_dir.iterdir()):
+>               raise CampaignError("research bundle destination must be empty before writing")
+E               jersey_outbreak.phase0_campaign.CampaignError: research bundle destination must be empty before writing
+
+src/jersey_outbreak/phase0_campaign.py:1947: CampaignError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/tmp/pytest-of-steven/pytest-542/test_research_bundle_rejects_n0')
+
+    def test_research_bundle_rejects_nonempty_destination_without_mutation(
+        tmp_path: Path,
+    ) -> None:
+        output = tmp_path / "bundle"
+        output.mkdir()
+        sentinel = output / "sentinel"
+        sentinel.write_bytes(b"keep me")
+        before = sentinel.read_bytes()
+>       with pytest.raises(CampaignError, match="nonempty"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'nonempty'
+E        Input: 'research bundle destination must be empty before writing'
+
+tests/test_phase0_campaign.py:539: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_phase0_campaign.py::test_research_bundle_rejects_nonempty_destination_without_mutation
+========================= 1 failed, 21 passed in 1.38s =========================
+$ uv run pytest tests/test_phase0_campaign.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 22 items
+
+tests/test_phase0_campaign.py ......................                     [100%]
+
+============================== 22 passed in 1.31s ==============================
+$ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci"
+}
+$ uv lock --check
+Resolved 77 packages in 0.76ms
+$ uv run python -m compileall -q src
+$ uv run ruff check .
+B009 [*] Do not call `getattr` with a constant attribute value. It is not any safer than normal property access.
+    --> src/jersey_outbreak/phase0_campaign.py:1876:25
+     |
+1875 |     try:
+1876 |         latent_config = getattr(latent_result, "config")
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1877 |         observed_config = getattr(observation_result, "config")
+1878 |         observed_latent = getattr(observation_result, "latent_run")
+     |
+help: Replace `getattr` with attribute access
+     |
+1875 |     try:
+     -         latent_config = getattr(latent_result, "config")
+1876 +         latent_config = latent_result.config
+1877 |         observed_config = getattr(observation_result, "config")
+     |
+
+B009 [*] Do not call `getattr` with a constant attribute value. It is not any safer than normal property access.
+    --> src/jersey_outbreak/phase0_campaign.py:1877:27
+     |
+1875 |     try:
+1876 |         latent_config = getattr(latent_result, "config")
+1877 |         observed_config = getattr(observation_result, "config")
+     |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1878 |         observed_latent = getattr(observation_result, "latent_run")
+1879 |         if not isinstance(latent_config, OutbreakRunConfig) or not isinstance(
+     |
+help: Replace `getattr` with attribute access
+     |
+1876 |         latent_config = getattr(latent_result, "config")
+     -         observed_config = getattr(observation_result, "config")
+1877 +         observed_config = observation_result.config
+1878 |         observed_latent = getattr(observation_result, "latent_run")
+     |
+
+B009 [*] Do not call `getattr` with a constant attribute value. It is not any safer than normal property access.
+    --> src/jersey_outbreak/phase0_campaign.py:1878:27
+     |
+1876 |         latent_config = getattr(latent_result, "config")
+1877 |         observed_config = getattr(observation_result, "config")
+1878 |         observed_latent = getattr(observation_result, "latent_run")
+     |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1879 |         if not isinstance(latent_config, OutbreakRunConfig) or not isinstance(
+1880 |             run_config, OutbreakRunConfig
+     |
+help: Replace `getattr` with attribute access
+     |
+1877 |         observed_config = getattr(observation_result, "config")
+     -         observed_latent = getattr(observation_result, "latent_run")
+1878 +         observed_latent = observation_result.latent_run
+1879 |         if not isinstance(latent_config, OutbreakRunConfig) or not isinstance(
+     |
+
+B009 [*] Do not call `getattr` with a constant attribute value. It is not any safer than normal property access.
+    --> src/jersey_outbreak/phase0_campaign.py:1892:23
+     |
+1890 |             return False
+1891 |
+1892 |         diagnostics = getattr(observation_result, "diagnostics")
+     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1893 |         if not isinstance(diagnostics, Mapping):
+1894 |             return False
+     |
+help: Replace `getattr` with attribute access
+     |
+1891 |
+     -         diagnostics = getattr(observation_result, "diagnostics")
+1892 +         diagnostics = observation_result.diagnostics
+1893 |         if not isinstance(diagnostics, Mapping):
+     |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_phase0_campaign.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import inspect
+ 4 | | import hashlib
+ 5 | | import math
+ 6 | | from dataclasses import replace
+ 7 | | from datetime import date
+ 8 | | from pathlib import Path
+ 9 | | from types import SimpleNamespace
+10 | |
+11 | | import pytest
+12 | | import yaml
+13 | |
+14 | | from jersey_outbreak.phase0_campaign import (
+15 | |     FIT_PROCESS_SEEDS,
+16 | |     PREDECLARATION_SHA256,
+17 | |     BudgetError,
+18 | |     CampaignBlockedError,
+19 | |     CampaignConfig,
+20 | |     CampaignError,
+21 | |     CandidateCell,
+22 | |     ExecutionEvidence,
+23 | |     ObservedTables,
+24 | |     ProfileDiagnostic,
+25 | |     RecoveryRow,
+26 | |     TruthDiagnostics,
+27 | |     candidate_config_hash,
+28 | |     dry_run,
+29 | |     evaluate_p01,
+30 | |     fit_blind,
+31 | |     guard_workload,
+32 | |     join_truth_evaluation,
+33 | |     minimum_distance_loss,
+34 | |     observation_dates,
+35 | |     observed_tables_from_events,
+36 | |     plan_workload,
+37 | |     run_p01_campaign,
+38 | |     score_complete_grid,
+39 | |     sha256_file,
+40 | |     truth_diagnostics_from_events,
+41 | |     validate_observation_calendar,
+42 | |     write_research_bundle,
+43 | | )
+44 | | from jersey_outbreak.observation_scheduler import observation_stream_seed
+45 | | from jersey_outbreak.observation_schemas import ObservationConfig
+46 | | from jersey_outbreak.outbreak_runner import load_parameter_set
+47 | | from jersey_outbreak.outbreak_schemas import OutbreakRunConfig
+   | |______________________________________________________________^
+48 |
+49 |   ROOT = Path(__file__).resolve().parents[1]
+   |
+help: Organize imports
+   |
+2  |
+3  + import hashlib
+4  | import inspect
+   - import hashlib
+5  | import math
+--------------------------------------------------------------------------------
+13 |
+14 + from jersey_outbreak.observation_scheduler import observation_stream_seed
+15 + from jersey_outbreak.observation_schemas import ObservationConfig
+16 + from jersey_outbreak.outbreak_runner import load_parameter_set
+17 + from jersey_outbreak.outbreak_schemas import OutbreakRunConfig
+18 | from jersey_outbreak.phase0_campaign import (
+--------------------------------------------------------------------------------
+47 | )
+   - from jersey_outbreak.observation_scheduler import observation_stream_seed
+   - from jersey_outbreak.observation_schemas import ObservationConfig
+   - from jersey_outbreak.outbreak_runner import load_parameter_set
+   - from jersey_outbreak.outbreak_schemas import OutbreakRunConfig
+48 |
+   |
+
+Found 5 errors.
+[*] 5 fixable with the `--fix` option.
+$ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci"
+}
+$ uv lock --check
+Resolved 77 packages in 0.68ms
+$ uv run python -m compileall -q src
+$ uv run ruff check .
+All checks passed!
+$ uv run ruff format --check .
+unformatted: File would be reformatted
+   --> tests/test_phase0_campaign.py:530:12
+    |
+529 |     assert failed_namespace_evaluation.status == "FAIL"
+    -     assert failed_namespace_evaluation.predicates[
+    -         "declared_namespace_grid_objective_dates_fixed_parameters"
+    -     ] is False
+530 +     assert (
+531 +         failed_namespace_evaluation.predicates[
+532 +             "declared_namespace_grid_objective_dates_fixed_parameters"
+533 +         ]
+534 +         is False
+535 +     )
+536 |
+    |
+
+1 file would be reformatted, 262 files already formatted
+$ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
+$ uv run pytest tests/test_phase0_campaign.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 22 items
+
+tests/test_phase0_campaign.py ......................                     [100%]
+
+============================== 22 passed in 1.32s ==============================
+$ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci"
+}
+$ uv lock --check
+Resolved 77 packages in 0.69ms
+$ uv run python -m compileall -q src
+$ uv run ruff check .
+All checks passed!
+$ uv run ruff format --check .
+263 files already formatted
+$ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
+$ uv run pytest
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-1-wt
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collected 436 items
+
+tests/test_b01_portable_artifacts.py ..............                      [  3%]
+tests/test_bench_dynamic_routes.py ......                                [  4%]
+tests/test_c1_identity.py .....                                          [  5%]
+tests/test_c2_network_semantics.py ......                                [  7%]
+tests/test_c3_contracts.py .......                                       [  8%]
+tests/test_c4_contracts.py ..................                            [ 12%]
+tests/test_c5_m7_integrity.py ............................               [ 19%]
+tests/test_calibration.py .....                                          [ 20%]
+tests/test_cli_integration.py ..                                         [ 20%]
+tests/test_contracts.py ....                                             [ 21%]
+tests/test_data_pipeline.py .....................                        [ 26%]
+tests/test_data_sources.py ....                                          [ 27%]
+tests/test_ensemble.py ...........                                       [ 30%]
+tests/test_ensemble_band_horizon.py .                                    [ 30%]
+tests/test_golden_hashes.py .........                                    [ 32%]
+tests/test_hashing.py ...                                                [ 33%]
+tests/test_hashkey_suffix.py ..                                          [ 33%]
+tests/test_init_metadata_boundary.py .                                   [ 33%]
+tests/test_job_liveness.py ....                                          [ 34%]
+tests/test_m3_secondary_jobs_oracle.py ...                               [ 35%]
+tests/test_m4_hash_stream.py ..                                          [ 35%]
+tests/test_m7_interventions.py .....                                     [ 36%]
+tests/test_m8_1_travel_integrity.py ............                         [ 39%]
+tests/test_m8_2_travel_closure.py ......                                 [ 41%]
+tests/test_m8_travel.py ..............                                   [ 44%]
+tests/test_m9_1_job_integrity.py ........................                [ 49%]
+tests/test_m9_2_provenance.py ...............                            [ 53%]
+tests/test_m9_4_calendar_finalization.py .....                           [ 54%]
+tests/test_m9_api.py .......                                             [ 55%]
+tests/test_networks.py ............................                      [ 62%]
+tests/test_observation.py ........                                       [ 64%]
+tests/test_outbreak.py ............                                      [ 66%]
+tests/test_perf10_grid_once.py .                                         [ 67%]
+tests/test_perf4_diagnostics.py .......                                  [ 68%]
+tests/test_perf6_interventions.py ....................                   [ 73%]
+tests/test_perf9_parent_reuse.py .........                               [ 75%]
+tests/test_phase0_campaign.py ......................                     [ 80%]
+tests/test_population.py .....                                           [ 81%]
+tests/test_population_structure.py ......                                [ 83%]
+tests/test_prov_helpers.py ..........                                    [ 85%]
+tests/test_prov_job_ordering.py .....                                    [ 86%]
+tests/test_respiratory_attribution_lookup.py ...........                 [ 88%]
+tests/test_route4_weekday_memo.py s                                      [ 89%]
+tests/test_route5_phase2_columns.py ss..                                 [ 90%]
+tests/test_route_snapshot_columns.py ....s                               [ 91%]
+tests/test_scientific_corrections_datafix.py .........                   [ 93%]
+tests/test_staffing.py ..........                                        [ 95%]
+tests/test_starsim_demo.py ..                                            [ 96%]
+tests/test_v121_prov_verifier_fixes.py .......                           [ 97%]
+tests/test_v12_bundle_selftest.py ....                                   [ 98%]
+tests/test_v12_carry_ins.py ..                                           [ 99%]
+tests/test_v12_corr3_dictionary.py ...                                   [ 99%]
+tests/test_v12_corr4_dictionary.py .                                     [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-p0-1-wt/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-p0-1-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+=========== 432 passed, 4 skipped, 15 warnings in 807.71s (0:13:27) ============
+$ uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py
+Success: no issues found in 15 source files
+$ uv run python scripts/ci_relocation_check.py
+{"artifact_directory": "/home/steven/jos-p0-1-wt/outputs/interventions/jos-intervention-m7-ci-seed-123-c0be3d419f32", "artifact_id": "jos-intervention-m7-ci-seed-123-c0be3d419f32", "diagnostics_status": "passed", "logical_content_hash": "1e9f01ed1d770bbeb592c3d0c69add44040d2e80339b93b884b24701f4ed8a99", "runtime_seconds": 2.8957023980001395, "scenario_hash": "7158b33cb7eba93112b1326aacc253d19136a4a85f70c7c4245113a26478665a", "scenario_id": "m7-baseline", "travel_controls": "DEFERRED TO M8"}
+verifier success: m7_intervention jos-intervention-m7-ci-seed-123-c0be3d419f32
+$ git diff --check
+$ git diff --stat
+ src/jersey_outbreak/phase0_campaign.py |  53 +++++--
+ tests/test_phase0_campaign.py          | 248 ++++++++++++++++++++++-----------
+ 2 files changed, 203 insertions(+), 98 deletions(-)
+$ git status --porcelain
+ M src/jersey_outbreak/phase0_campaign.py
+ M tests/test_phase0_campaign.py

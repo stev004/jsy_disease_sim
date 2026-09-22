@@ -1,0 +1,10 @@
+2026-09-22T02:04:14+01:00
+SHA=b5ef032e29c577bce634ce0933b2d7d316ac562e
+    PID ELAPSED COMMAND
+  31384     165 bash
+2026-09-22T02:01:28+01:00
+b5ef032e29c577bce634ce0933b2d7d316ac562e
+uv 0.12.9 (x86_64-unknown-linux-gnu)
+CI verify job; only temporary output directories isolated from prior runs.
++ uv sync --locked
+Using CPython 3.12.13
