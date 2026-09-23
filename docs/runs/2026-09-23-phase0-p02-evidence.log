@@ -1,0 +1,1014 @@
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ git rev-parse HEAD
+367f0324685437c4d2ed4aa0ae4878229da09839
++ git status --porcelain
+ M configs/calibration/v13_phase0_synthetic.yaml
+ M src/jersey_outbreak/phase0_campaign.py
+ M tests/test_phase0_campaign.py
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+   Building jersey-outbreak-simulator @ file:///home/steven/jos-p0-2-wt
+      Built jersey-outbreak-simulator @ file:///home/steven/jos-p0-2-wt
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 75 packages in 2.04s
+2 files reformatted
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_phase0_campaign.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import hashlib
+ 4 | | import inspect
+ 5 | | import json
+ 6 | | import math
+ 7 | | from dataclasses import replace
+ 8 | | from datetime import date
+ 9 | | from pathlib import Path
+10 | | from types import SimpleNamespace
+11 | |
+12 | | import pytest
+13 | | import yaml
+14 | |
+15 | | from jersey_outbreak.observation_scheduler import observation_stream_seed
+16 | | from jersey_outbreak.observation_schemas import ObservationConfig
+17 | | from jersey_outbreak.outbreak_runner import load_parameter_set
+18 | | from jersey_outbreak.outbreak_schemas import OutbreakRunConfig
+19 | | from jersey_outbreak.phase0_campaign import (
+20 | |     FIT_PROCESS_SEEDS,
+21 | |     PREDECLARATION_SHA256,
+22 | |     BudgetError,
+23 | |     CampaignBlockedError,
+24 | |     CampaignConfig,
+25 | |     CampaignError,
+26 | |     CandidateCell,
+27 | |     ExecutionEvidence,
+28 | |     ObservedTables,
+29 | |     P01CampaignResult,
+30 | |     P01Evaluation,
+31 | |     P02TargetResult,
+32 | |     BlindFitResult,
+33 | |     LossRow,
+34 | |     ProfileDiagnostic,
+35 | |     RecoveryRow,
+36 | |     TruthDiagnostics,
+37 | |     candidate_config_hash,
+38 | |     aggregate_p02_detection,
+39 | |     evaluate_p02_target,
+40 | |     dry_run,
+41 | |     evaluate_p01,
+42 | |     fit_blind,
+43 | |     guard_workload,
+44 | |     join_truth_evaluation,
+45 | |     minimum_distance_loss,
+46 | |     observation_dates,
+47 | |     observed_tables_from_events,
+48 | |     plan_workload,
+49 | |     run_p01_campaign,
+50 | |     run_p02_campaign,
+51 | |     score_complete_grid,
+52 | |     sha256_file,
+53 | |     truth_diagnostics_from_events,
+54 | |     validate_observation_calendar,
+55 | |     write_research_bundle,
+56 | | )
+   | |_^
+57 |
+58 |   ROOT = Path(__file__).resolve().parents[1]
+   |
+help: Organize imports
+   |
+21 |     PREDECLARATION_SHA256,
+22 +     BlindFitResult,
+23 |     BudgetError,
+--------------------------------------------------------------------------------
+28 |     ExecutionEvidence,
+29 +     LossRow,
+30 |     ObservedTables,
+31 |     P01CampaignResult,
+32 |     P01Evaluation,
+33 |     P02TargetResult,
+   -     BlindFitResult,
+   -     LossRow,
+34 |     ProfileDiagnostic,
+35 |     RecoveryRow,
+36 |     TruthDiagnostics,
+37 +     aggregate_p02_detection,
+38 |     candidate_config_hash,
+   -     aggregate_p02_detection,
+   -     evaluate_p02_target,
+39 |     dry_run,
+40 |     evaluate_p01,
+41 +     evaluate_p02_target,
+42 |     fit_blind,
+   |
+
+F401 [*] `jersey_outbreak.phase0_campaign.P01CampaignResult` imported but unused
+  --> tests/test_phase0_campaign.py:29:5
+   |
+27 |     ExecutionEvidence,
+28 |     ObservedTables,
+29 |     P01CampaignResult,
+   |     ^^^^^^^^^^^^^^^^^
+30 |     P01Evaluation,
+31 |     P02TargetResult,
+   |
+help: Remove unused import
+   |
+28 |     ObservedTables,
+   -     P01CampaignResult,
+   -     P01Evaluation,
+29 |     P02TargetResult,
+   |
+
+F401 [*] `jersey_outbreak.phase0_campaign.P01Evaluation` imported but unused
+  --> tests/test_phase0_campaign.py:30:5
+   |
+28 |     ObservedTables,
+29 |     P01CampaignResult,
+30 |     P01Evaluation,
+   |     ^^^^^^^^^^^^^
+31 |     P02TargetResult,
+32 |     BlindFitResult,
+   |
+help: Remove unused import
+   |
+28 |     ObservedTables,
+   -     P01CampaignResult,
+   -     P01Evaluation,
+29 |     P02TargetResult,
+   |
+
+F821 Undefined name `config`
+    --> tests/test_phase0_campaign.py:1199:21
+     |
+1197 |     assert set(result.candidate_latents) == {
+1198 |         (seed, beta, offset)
+1199 |         for seed in config.candidate_process_seeds
+     |                     ^^^^^^
+1200 |         for beta in config.dimension_map["beta"].candidates
+1201 |         for offset in config.dimension_map["inoculation_day_offset"].candidates
+     |
+
+F821 Undefined name `config`
+    --> tests/test_phase0_campaign.py:1200:21
+     |
+1198 |         (seed, beta, offset)
+1199 |         for seed in config.candidate_process_seeds
+1200 |         for beta in config.dimension_map["beta"].candidates
+     |                     ^^^^^^
+1201 |         for offset in config.dimension_map["inoculation_day_offset"].candidates
+1202 |     }
+     |
+
+F821 Undefined name `config`
+    --> tests/test_phase0_campaign.py:1201:23
+     |
+1199 |         for seed in config.candidate_process_seeds
+1200 |         for beta in config.dimension_map["beta"].candidates
+1201 |         for offset in config.dimension_map["inoculation_day_offset"].candidates
+     |                       ^^^^^^
+1202 |     }
+1203 |     assert sum(kind == "run_outbreak" for kind, _, _ in calls) == latent_calls_before_p02
+     |
+
+F821 Undefined name `config`
+    --> tests/test_phase0_campaign.py:1241:34
+     |
+1239 |     p02b_configs = observation_configs[491:]
+1240 |     assert len(p02b_configs) == 81
+1241 |     grid_b = campaign._p02b_grid(config)
+     |                                  ^^^^^^
+1242 |     for cell_index, cell in enumerate(grid_b):
+1243 |         common = cell.symptomatic_detection_probability
+     |
+
+F821 Undefined name `config`
+    --> tests/test_phase0_campaign.py:1248:17
+     |
+1246 |             inoculation_day_offset=cell.inoculation_day_offset,
+1247 |             symptomatic_detection_probability=min(
+1248 |                 config.dimension_map["symptomatic_detection_probability"].candidates,
+     |                 ^^^^^^
+1249 |                 key=lambda value: (abs(value - common), value),
+1250 |             ),
+     |
+
+F821 Undefined name `config`
+    --> tests/test_phase0_campaign.py:1252:17
+     |
+1250 |             ),
+1251 |             asymptomatic_detection_probability=min(
+1252 |                 config.dimension_map["asymptomatic_detection_probability"].candidates,
+     |                 ^^^^^^
+1253 |                 key=lambda value: (abs(value - common), value),
+1254 |             ),
+     |
+
+F821 Undefined name `config`
+    --> tests/test_phase0_campaign.py:1259:17
+     |
+1257 |             reference_config = campaign._observation_config_for_cell(
+1258 |                 ROOT,
+1259 |                 config,
+     |                 ^^^^^^
+1260 |                 config.candidate_observation_seeds[replicate],
+1261 |                 config.candidate_observation_config_id,
+     |
+
+F821 Undefined name `config`
+    --> tests/test_phase0_campaign.py:1260:17
+     |
+1258 |                 ROOT,
+1259 |                 config,
+1260 |                 config.candidate_observation_seeds[replicate],
+     |                 ^^^^^^
+1261 |                 config.candidate_observation_config_id,
+1262 |                 reference,
+     |
+
+F821 Undefined name `config`
+    --> tests/test_phase0_campaign.py:1261:17
+     |
+1259 |                 config,
+1260 |                 config.candidate_observation_seeds[replicate],
+1261 |                 config.candidate_observation_config_id,
+     |                 ^^^^^^
+1262 |                 reference,
+1263 |             )
+     |
+
+Found 12 errors.
+[*] 3 fixable with the `--fix` option.
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_phase0_campaign.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import hashlib
+ 4 | | import inspect
+ 5 | | import json
+ 6 | | import math
+ 7 | | from dataclasses import replace
+ 8 | | from datetime import date
+ 9 | | from pathlib import Path
+10 | | from types import SimpleNamespace
+11 | |
+12 | | import pytest
+13 | | import yaml
+14 | |
+15 | | from jersey_outbreak.observation_scheduler import observation_stream_seed
+16 | | from jersey_outbreak.observation_schemas import ObservationConfig
+17 | | from jersey_outbreak.outbreak_runner import load_parameter_set
+18 | | from jersey_outbreak.outbreak_schemas import OutbreakRunConfig
+19 | | from jersey_outbreak.phase0_campaign import (
+20 | |     FIT_PROCESS_SEEDS,
+21 | |     PREDECLARATION_SHA256,
+22 | |     BudgetError,
+23 | |     CampaignBlockedError,
+24 | |     CampaignConfig,
+25 | |     CampaignError,
+26 | |     CandidateCell,
+27 | |     ExecutionEvidence,
+28 | |     ObservedTables,
+29 | |     P02TargetResult,
+30 | |     BlindFitResult,
+31 | |     LossRow,
+32 | |     ProfileDiagnostic,
+33 | |     RecoveryRow,
+34 | |     TruthDiagnostics,
+35 | |     candidate_config_hash,
+36 | |     aggregate_p02_detection,
+37 | |     evaluate_p02_target,
+38 | |     dry_run,
+39 | |     evaluate_p01,
+40 | |     fit_blind,
+41 | |     guard_workload,
+42 | |     join_truth_evaluation,
+43 | |     minimum_distance_loss,
+44 | |     observation_dates,
+45 | |     observed_tables_from_events,
+46 | |     plan_workload,
+47 | |     run_p01_campaign,
+48 | |     run_p02_campaign,
+49 | |     score_complete_grid,
+50 | |     sha256_file,
+51 | |     truth_diagnostics_from_events,
+52 | |     validate_observation_calendar,
+53 | |     write_research_bundle,
+54 | | )
+   | |_^
+55 |
+56 |   ROOT = Path(__file__).resolve().parents[1]
+   |
+help: Organize imports
+   |
+21 |     PREDECLARATION_SHA256,
+22 +     BlindFitResult,
+23 |     BudgetError,
+--------------------------------------------------------------------------------
+28 |     ExecutionEvidence,
+29 +     LossRow,
+30 |     ObservedTables,
+31 |     P02TargetResult,
+   -     BlindFitResult,
+   -     LossRow,
+32 |     ProfileDiagnostic,
+33 |     RecoveryRow,
+34 |     TruthDiagnostics,
+35 +     aggregate_p02_detection,
+36 |     candidate_config_hash,
+   -     aggregate_p02_detection,
+   -     evaluate_p02_target,
+37 |     dry_run,
+38 |     evaluate_p01,
+39 +     evaluate_p02_target,
+40 |     fit_blind,
+   |
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_phase0_campaign.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import hashlib
+ 4 | | import inspect
+ 5 | | import json
+ 6 | | import math
+ 7 | | from dataclasses import replace
+ 8 | | from datetime import date
+ 9 | | from pathlib import Path
+10 | | from types import SimpleNamespace
+11 | |
+12 | | import pytest
+13 | | import yaml
+14 | |
+15 | | from jersey_outbreak.observation_scheduler import observation_stream_seed
+16 | | from jersey_outbreak.observation_schemas import ObservationConfig
+17 | | from jersey_outbreak.outbreak_runner import load_parameter_set
+18 | | from jersey_outbreak.outbreak_schemas import OutbreakRunConfig
+19 | | from jersey_outbreak.phase0_campaign import (
+20 | |     BlindFitResult,
+21 | |     FIT_PROCESS_SEEDS,
+22 | |     PREDECLARATION_SHA256,
+23 | |     BudgetError,
+24 | |     CampaignBlockedError,
+25 | |     CampaignConfig,
+26 | |     CampaignError,
+27 | |     CandidateCell,
+28 | |     ExecutionEvidence,
+29 | |     LossRow,
+30 | |     ObservedTables,
+31 | |     P02TargetResult,
+32 | |     ProfileDiagnostic,
+33 | |     RecoveryRow,
+34 | |     TruthDiagnostics,
+35 | |     aggregate_p02_detection,
+36 | |     candidate_config_hash,
+37 | |     dry_run,
+38 | |     evaluate_p01,
+39 | |     evaluate_p02_target,
+40 | |     fit_blind,
+41 | |     guard_workload,
+42 | |     join_truth_evaluation,
+43 | |     minimum_distance_loss,
+44 | |     observation_dates,
+45 | |     observed_tables_from_events,
+46 | |     plan_workload,
+47 | |     run_p01_campaign,
+48 | |     run_p02_campaign,
+49 | |     score_complete_grid,
+50 | |     sha256_file,
+51 | |     truth_diagnostics_from_events,
+52 | |     validate_observation_calendar,
+53 | |     write_research_bundle,
+54 | | )
+   | |_^
+55 |
+56 |   ROOT = Path(__file__).resolve().parents[1]
+   |
+help: Organize imports
+   |
+19 | from jersey_outbreak.phase0_campaign import (
+   -     BlindFitResult,
+20 |     FIT_PROCESS_SEEDS,
+21 |     PREDECLARATION_SHA256,
+22 +     BlindFitResult,
+23 |     BudgetError,
+   |
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+All checks passed!
++ uv run ruff format --check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+src/jersey_outbreak/phase0_campaign.py:2337: error: Dict entry 0 has incompatible type "str": "float"; expected "str": "None"  [dict-item]
+src/jersey_outbreak/phase0_campaign.py:2338: error: Dict entry 1 has incompatible type "str": "float"; expected "str": "None"  [dict-item]
+src/jersey_outbreak/phase0_campaign.py:2339: error: Dict entry 2 has incompatible type "str": "bool"; expected "str": "None"  [dict-item]
+src/jersey_outbreak/phase0_campaign.py:2396: error: Dict entry 0 has incompatible type "str": "float"; expected "str": "None"  [dict-item]
+src/jersey_outbreak/phase0_campaign.py:2397: error: Dict entry 1 has incompatible type "str": "float"; expected "str": "None"  [dict-item]
+src/jersey_outbreak/phase0_campaign.py:2398: error: Dict entry 2 has incompatible type "str": "bool"; expected "str": "None"  [dict-item]
+Found 6 errors in 1 file (checked 1 source file)
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+All checks passed!
++ uv run ruff format --check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
++ uv run python -m compileall -q src
++ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": false,
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b"
+  ],
+  "implemented_p0_1_grid_cells": 81,
+  "implemented_p0_2a_grid_cells": 81,
+  "implemented_p0_2b_grid_cells": 27,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 189,
+  "implemented_latent_outbreak_calls": 32,
+  "implemented_observation_transforms": 572,
+  "planned_grid_cells": 198,
+  "planned_latent_outbreak_calls": 59,
+  "planned_observation_transforms": 599
+}
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run pytest tests/test_phase0_campaign.py -k p0_2
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 38 items / 33 deselected / 5 selected
+
+tests/test_phase0_campaign.py ..F..                                      [100%]
+
+=================================== FAILURES ===================================
+_ test_p0_2_detection_quantities_use_declared_floors_and_inclusive_boundaries __
+
+    def test_p0_2_detection_quantities_use_declared_floors_and_inclusive_boundaries() -> None:
+        config = _config()
+        target = ObservedTables(("2025-01-06",), (4.0,), (4.0,))
+        selected = CandidateCell(0.08, 2, 0.50, 0.50)
+        candidate_prediction = ObservedTables(("2025-01-06",), (5.0 / 3.0,), (4.0,))
+        fit = _p02_fit(1.25, (selected,), tied=False)
+        result = evaluate_p02_target(
+            "p0_2b",
+            target_seed=42001,
+            correct_minimum_objective=1.0,
+            wrong_fit=fit,
+            target_tables=target,
+            wrong_candidate_prediction_library={selected: (candidate_prediction,) * 3},
+            truth=CandidateCell(0.08, 2, 0.75, 0.25),
+            config=config,
+        )
+        assert result.relative_loss_degradation == 0.25
+>       assert result.channel_total_error == 0.25
+E       AssertionError: assert 0.5833333333333333 == 0.25
+E        +  where 0.5833333333333333 = P02TargetResult(arm='p0_2b', target_seed=42001, estimate_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...ulation_day_offset': {'signed_error': 0.0, 'absolute_error': 0.0, 'outside_tolerance': False}}, detection_state='TRUE').channel_total_error
+
+tests/test_phase0_campaign.py:413: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_phase0_campaign.py::test_p0_2_detection_quantities_use_declared_floors_and_inclusive_boundaries
+================== 1 failed, 4 passed, 33 deselected in 2.96s ==================
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+All checks passed!
++ uv run ruff format --check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
++ uv run python -m compileall -q src
++ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": false,
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b"
+  ],
+  "implemented_p0_1_grid_cells": 81,
+  "implemented_p0_2a_grid_cells": 81,
+  "implemented_p0_2b_grid_cells": 27,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 189,
+  "implemented_latent_outbreak_calls": 32,
+  "implemented_observation_transforms": 572,
+  "planned_grid_cells": 198,
+  "planned_latent_outbreak_calls": 59,
+  "planned_observation_transforms": 599
+}
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run pytest tests/test_phase0_campaign.py -k p0_2
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 38 items / 33 deselected / 5 selected
+
+tests/test_phase0_campaign.py .....                                      [100%]
+
+======================= 5 passed, 33 deselected in 2.79s =======================
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run pytest tests/test_phase0_campaign.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 38 items
+
+tests/test_phase0_campaign.py ......................................     [100%]
+
+============================== 38 passed in 3.11s ==============================
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+All checks passed!
++ uv run ruff format --check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
++ uv run python -m compileall -q src
++ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": false,
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b"
+  ],
+  "implemented_p0_1_grid_cells": 81,
+  "implemented_p0_2a_grid_cells": 81,
+  "implemented_p0_2b_grid_cells": 27,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 189,
+  "implemented_latent_outbreak_calls": 32,
+  "implemented_observation_transforms": 572,
+  "planned_grid_cells": 198,
+  "planned_latent_outbreak_calls": 59,
+  "planned_observation_transforms": 599
+}
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run pytest tests/test_phase0_campaign.py -k p0_2
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 38 items / 33 deselected / 5 selected
+
+tests/test_phase0_campaign.py .....                                      [100%]
+
+======================= 5 passed, 33 deselected in 2.37s =======================
++ uv run pytest tests/test_phase0_campaign.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 38 items
+
+tests/test_phase0_campaign.py ......................................     [100%]
+
+============================== 38 passed in 2.61s ==============================
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+1 file reformatted, 1 file left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+All checks passed!
++ uv run ruff format --check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
++ uv run python -m compileall -q src
++ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": false,
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b"
+  ],
+  "implemented_p0_1_grid_cells": 81,
+  "implemented_p0_2a_grid_cells": 81,
+  "implemented_p0_2b_grid_cells": 27,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 189,
+  "implemented_latent_outbreak_calls": 32,
+  "implemented_observation_transforms": 572,
+  "planned_grid_cells": 198,
+  "planned_latent_outbreak_calls": 59,
+  "planned_observation_transforms": 599
+}
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run pytest tests/test_phase0_campaign.py -k p0_2
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 38 items / 33 deselected / 5 selected
+
+tests/test_phase0_campaign.py .....                                      [100%]
+
+======================= 5 passed, 33 deselected in 3.21s =======================
++ uv run pytest tests/test_phase0_campaign.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 38 items
+
+tests/test_phase0_campaign.py ......................................     [100%]
+
+============================== 38 passed in 3.07s ==============================
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+1 file reformatted, 1 file left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+All checks passed!
++ uv run ruff format --check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
++ uv run python -m compileall -q src
++ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": false,
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b"
+  ],
+  "implemented_p0_1_grid_cells": 81,
+  "implemented_p0_2a_grid_cells": 81,
+  "implemented_p0_2b_grid_cells": 27,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 189,
+  "implemented_latent_outbreak_calls": 32,
+  "implemented_observation_transforms": 572,
+  "planned_grid_cells": 198,
+  "planned_latent_outbreak_calls": 59,
+  "planned_observation_transforms": 599
+}
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run pytest tests/test_phase0_campaign.py -k p0_2
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 38 items / 33 deselected / 5 selected
+
+tests/test_phase0_campaign.py .....                                      [100%]
+
+======================= 5 passed, 33 deselected in 2.83s =======================
++ uv run pytest tests/test_phase0_campaign.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 38 items
+
+tests/test_phase0_campaign.py ......................................     [100%]
+
+============================== 38 passed in 3.14s ==============================
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0lh69WU:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ uv run pytest
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-2-wt
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collected 452 items
+
+tests/test_b01_portable_artifacts.py ..............                      [  3%]
+tests/test_bench_dynamic_routes.py ......                                [  4%]
+tests/test_c1_identity.py .....                                          [  5%]
+tests/test_c2_network_semantics.py ......                                [  6%]
+tests/test_c3_contracts.py .......                                       [  8%]
+tests/test_c4_contracts.py ..................                            [ 12%]
+tests/test_c5_m7_integrity.py ............................               [ 18%]
+tests/test_calibration.py .....                                          [ 19%]
+tests/test_cli_integration.py ..                                         [ 20%]
+tests/test_contracts.py ....                                             [ 21%]
+tests/test_data_pipeline.py .....................                        [ 25%]
+tests/test_data_sources.py ....                                          [ 26%]
+tests/test_ensemble.py ...........                                       [ 28%]
+tests/test_ensemble_band_horizon.py .                                    [ 29%]
+tests/test_golden_hashes.py .........                                    [ 31%]
+tests/test_hashing.py ...                                                [ 31%]
+tests/test_hashkey_suffix.py ..                                          [ 32%]
+tests/test_init_metadata_boundary.py .                                   [ 32%]
+tests/test_job_liveness.py ....                                          [ 33%]
+tests/test_m3_secondary_jobs_oracle.py ...                               [ 34%]
+tests/test_m4_hash_stream.py ..                                          [ 34%]
+tests/test_m7_interventions.py .....                                     [ 35%]
+tests/test_m8_1_travel_integrity.py ............                         [ 38%]
+tests/test_m8_2_travel_closure.py ......                                 [ 39%]
+tests/test_m8_travel.py ..............                                   [ 42%]
+tests/test_m9_1_job_integrity.py ........................                [ 48%]
+tests/test_m9_2_provenance.py ...............                            [ 51%]
+tests/test_m9_4_calendar_finalization.py .....                           [ 52%]
+tests/test_m9_api.py .......                                             [ 53%]
+tests/test_networks.py ............................                      [ 60%]
+tests/test_observation.py ........                                       [ 61%]
+tests/test_outbreak.py ............                                      [ 64%]
+tests/test_perf10_grid_once.py .                                         [ 64%]
+tests/test_perf4_diagnostics.py .......                                  [ 66%]
+tests/test_perf6_interventions.py ....................                   [ 70%]
+tests/test_perf9_parent_reuse.py .........                               [ 72%]
+tests/test_phase0_campaign.py ......................................     [ 81%]
+tests/test_population.py .....                                           [ 82%]
+tests/test_population_structure.py ......                                [ 83%]
+tests/test_prov_helpers.py ..........                                    [ 85%]
+tests/test_prov_job_ordering.py .....                                    [ 86%]
+tests/test_respiratory_attribution_lookup.py ...........                 [ 89%]
+tests/test_route4_weekday_memo.py s                                      [ 89%]
+tests/test_route5_phase2_columns.py ss..                                 [ 90%]
+tests/test_route_snapshot_columns.py ....s                               [ 91%]
+tests/test_scientific_corrections_datafix.py .........                   [ 93%]
+tests/test_staffing.py ..........                                        [ 95%]
+tests/test_starsim_demo.py ..                                            [ 96%]
+tests/test_v121_prov_verifier_fixes.py .......                           [ 97%]
+tests/test_v12_bundle_selftest.py ....                                   [ 98%]
+tests/test_v12_carry_ins.py ..                                           [ 99%]
+tests/test_v12_corr3_dictionary.py ...                                   [ 99%]
+tests/test_v12_corr4_dictionary.py .                                     [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-p0-2-wt/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-p0-2-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+=========== 448 passed, 4 skipped, 15 warnings in 821.52s (0:13:41) ============
+
+===== FINAL i: git diff --check; git diff --stat; git status --porcelain =====
++ git diff --check
++ git diff --stat
+ configs/calibration/v13_phase0_synthetic.yaml |  23 +-
+ src/jersey_outbreak/phase0_campaign.py        | 958 +++++++++++++++++++++++++-
+ tests/test_phase0_campaign.py                 | 432 +++++++++++-
+ 3 files changed, 1378 insertions(+), 35 deletions(-)
++ git status --porcelain
+ M configs/calibration/v13_phase0_synthetic.yaml
+ M src/jersey_outbreak/phase0_campaign.py
+ M tests/test_phase0_campaign.py
++ set +x

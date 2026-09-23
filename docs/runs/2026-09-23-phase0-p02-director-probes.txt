@@ -1,0 +1,40 @@
+﻿== fit_blind tie/selected
+26:1494-    minimizers = tuple(row.cell for row in surface if abs(row.objective - minimum) <= tau)
+27:1495-    numerical_tie = len(minimizers) > 1
+28:1496-    selected = None if numerical_tie else minimizers[0]
+48:1516-        global_minimizers=minimizers,
+49:1517-        numerical_tie=numerical_tie,
+51:1519-        selected=selected,
+53:1521-        identified=not numerical_tie and all(profile.identified for profile in profiles),
+54:1522-        estimate_hash=_estimate_hash(selected, minimum, profiles, numerical_tie, surface),
+== real ruling verification (file copied untracked to /tmp, not into worktree)
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": true,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 189,
+  "implemented_latent_outbreak_calls": 32,
+  "implemented_observation_transforms": 572,
+  "planned_grid_cells": 198,
+  "planned_latent_outbreak_calls": 59,
+  "planned_observation_transforms": 599
+== tampered ruling must fail
+wsl : G29 ruling SHA-256 mismatch: expected 06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c, got 
+67633f0890bfa484e58fba771b1cf2857c5dffe2da2442d6ecef629ce951cd60
+At line:1 char:518
++ ... w2.sh" -Force; wsl -d Ubuntu -- bash /tmp/p02-review2.sh 2>&1 | Tee-O ...
++                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (G29 ruling SHA-...cef629ce951cd60:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+exit=1
+== execute still blocked with verified ruling
+campaign execution is fail-closed; required arms are not implemented: p0_3
+exit=1
+ls: cannot access '/tmp/jos-p02-should-not-exist': No such file or directory
+== focused phase0 tests
+......................................                                   [100%]
+38 passed in 2.34s
+ M configs/calibration/v13_phase0_synthetic.yaml
+ M src/jersey_outbreak/phase0_campaign.py
+ M tests/test_phase0_campaign.py
