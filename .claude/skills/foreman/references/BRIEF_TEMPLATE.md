@@ -20,4 +20,4 @@ Launch (backgrounded by the harness, log + clean final report):
 
 Before launch, print `Launching: <TASK> | <ROLE> | <model@effort> | <worktree> | log=<stem>.log`. Reuse the same TASK when reporting its terminal state. TASK must remain the first brief line so CodexBar shows a meaningful session name.
 
-Model routing: implementation = gpt-6-luna @ xhigh (Steven's standing preference) · audit/research/consult = gpt-6-sol @ high · trail-audit = whichever family did neither the directing nor the work (typically gpt-5.6-terra — no GPT-6 Terra exists; GPT-6 fleet since 2026-09-23, codex-cli ≥ 0.156.1 required). Read `<stem>.last.md` for the report; `<stem>.log` only when debugging the run itself.
+Model routing: implementation = gpt-6-luna @ xhigh (Steven's standing preference) · audit/research/consult = gpt-6-sol @ high · trail-audit = whichever family did neither the directing nor the work (typically gpt-5.5 — Terra discontinued 2026-09-22, MODEL_ROUTING v7.1; GPT-6 fleet needs codex-cli ≥ 0.155). Read `<stem>.last.md` for the report; `<stem>.log` only when debugging the run itself.
