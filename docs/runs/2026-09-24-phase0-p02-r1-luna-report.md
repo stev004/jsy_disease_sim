@@ -1,0 +1,13 @@
+**Verdict: implementation complete.** The four review findings are fixed in the two authorized files. No campaign arm was run, and no commit or push was made.
+
+- **B1 — digest pin:** Frozen-config validation now requires `g29_ruling_sha256 == G29_RULING_SHA256`, and ruling verification checks both the config and file against that constant ([phase0_campaign.py](/home/steven/jos-p0-2-wt/src/jersey_outbreak/phase0_campaign.py:758), [validation](/home/steven/jos-p0-2-wt/src/jersey_outbreak/phase0_campaign.py:2792)). Temporary ruling fixtures monkeypatch module constants. Regression: `test_p0_2_rejects_replaced_g29_digest_at_load_and_file_validation` verifies both load rejection and rejection of a matching altered config/file digest. **P0-2 tests: 6 passed.**
+
+- **B2 — blind read-back:** Shared persistence now parses the written JSON, compares the full record—including selection or tie record and `estimate_hash`—and returns the hash read from disk ([phase0_campaign.py](/home/steven/jos-p0-2-wt/src/jersey_outbreak/phase0_campaign.py:1911)). Regression: `test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readback` corrupts a unique-selection file with non-JSON and alters a tie record; both raise before truth evaluation. **P0-2 tests: 6 passed.**
+
+- **M1 — native JSON values:** `P02TargetResult.as_dict()` now emits native nulls and objects; CSV output separately renders null as `null` and JSON-encodes nested objects ([phase0_campaign.py](/home/steven/jos-p0-2-wt/src/jersey_outbreak/phase0_campaign.py:637), [CSV writer](/home/steven/jos-p0-2-wt/src/jersey_outbreak/phase0_campaign.py:2877)). The mocked-path regression checks native nulls in JSON provenance and `null` in CSV. **P0-2 tests: 6 passed.**
+
+- **m1 — worked example:** `test_p0_2_g29_worked_tie_examples_and_aggregates` gives the tied candidates prediction libraries with `E=0.10` and `E=0.40`, asserts both values, and confirms the tied target remains `UNKNOWN` with null `E_i`. **P0-2 tests: 6 passed.**
+
+**Verification:** P0-2 tests: **6 passed, 33 deselected**; campaign test module: **39 passed**; full suite: **449 passed, 4 skipped, 15 warnings** in 799.95 seconds. Ruff check/format, mypy, compileall, dry-run, and `git diff --check` passed. Base comparison: **5/5 target and 81/81 candidate P0-1 config hashes identical**; blind estimate hash `2ebc1f18a5dac62ec1432fc696e8c885c63cd53e818b8d8fbce0bcf7dad7421a` matches base and the pinned test value.
+
+HEAD remains `4df879d2f4357614148f6932e22e0c80fe760025`. Final status contains only the two authorized modified files. Diff stat: **2 files changed, 184 insertions(+), 30 deletions(-)**. Full command output is in [/tmp/jos-p0-2-r1-evidence.log](/tmp/jos-p0-2-r1-evidence.log).
