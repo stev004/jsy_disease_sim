@@ -19,6 +19,8 @@ from jersey_outbreak.outbreak_runner import load_parameter_set
 from jersey_outbreak.outbreak_schemas import OutbreakRunConfig
 from jersey_outbreak.phase0_campaign import (
     FIT_PROCESS_SEEDS,
+    G29_RULING_PATH,
+    G29_RULING_SHA256,
     PREDECLARATION_SHA256,
     BlindFitResult,
     BudgetError,
@@ -66,11 +68,18 @@ def _config() -> CampaignConfig:
     return CampaignConfig.from_yaml(CONFIG_PATH)
 
 
-def _test_ruling_config(tmp_path: Path) -> tuple[Path, Path]:
+def _test_ruling_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
+    import jersey_outbreak.phase0_campaign as campaign
+
     ruling = tmp_path / "accepted-ruling-fixture.md"
     ruling.write_text("test-only accepted G29 ruling fixture\n", encoding="utf-8")
+    digest = hashlib.sha256(ruling.read_bytes()).hexdigest()
+    ruling_path = "test-only/accepted-ruling-fixture.md"
+    monkeypatch.setattr(campaign, "G29_RULING_PATH", ruling_path)
+    monkeypatch.setattr(campaign, "G29_RULING_SHA256", digest)
     payload = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
-    payload["g29_ruling_sha256"] = hashlib.sha256(ruling.read_bytes()).hexdigest()
+    payload["g29_ruling_path"] = ruling_path
+    payload["g29_ruling_sha256"] = digest
     config_path = tmp_path / "test-only-config.yaml"
     config_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
     return config_path, ruling
@@ -310,11 +319,13 @@ def test_p0_1_dry_run_does_not_call_simulation_or_observation(
 
 
 def test_p0_2_ruling_hash_is_optional_for_dry_run_and_verified_when_supplied(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     import jersey_outbreak.phase0_campaign as campaign
 
-    config_path, ruling_path = _test_ruling_config(tmp_path)
+    config_path, ruling_path = _test_ruling_config(tmp_path, monkeypatch)
     campaign.dry_run(config_path, PREDECLARATION_PATH, ruling_path)
     output = capsys.readouterr().out
     assert hashlib.sha256(ruling_path.read_bytes()).hexdigest() in output
@@ -398,6 +409,35 @@ def test_p0_2_grids_and_common_probability_cells_are_exact() -> None:
     }
 
 
+def test_p0_2_rejects_replaced_g29_digest_at_load_and_file_validation(
+    tmp_path: Path,
+) -> None:
+    import jersey_outbreak.phase0_campaign as campaign
+
+    ruling = tmp_path / "altered-ruling.md"
+    ruling.write_text("unrelated but digest-matched ruling\n", encoding="utf-8")
+    altered_digest = sha256_file(ruling)
+    assert sha256_file(ruling) == altered_digest
+
+    payload = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+    payload["g29_ruling_sha256"] = altered_digest
+    altered_config_path = tmp_path / "altered-config.yaml"
+    altered_config_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    with pytest.raises(CampaignError, match="g29_ruling_sha256"):
+        CampaignConfig.from_yaml(altered_config_path)
+
+    original_config = _config()
+    altered_declaration = dict(original_config.declaration)
+    altered_declaration["g29_ruling_sha256"] = altered_digest
+    forged_config = replace(
+        original_config,
+        g29_ruling_sha256=altered_digest,
+        declaration=altered_declaration,
+    )
+    with pytest.raises(CampaignError, match="accepted ruling"):
+        campaign.validate_g29_ruling(ruling, forged_config)
+
+
 def test_p0_2_detection_quantities_use_declared_floors_and_inclusive_boundaries() -> None:
     config = _config()
     target = ObservedTables(("2025-01-06",), (4.0,), (4.0,))
@@ -451,7 +491,8 @@ def test_p0_2_detection_quantities_use_declared_floors_and_inclusive_boundaries(
     assert floor_r.detection_state == "TRUE"
     assert floor_r.clauses["relative_loss_degradation_at_least_0_25"] is True
     tie_record = floor_r.as_dict()
-    assert tie_record["selected_estimates"] == "null"
+    assert tie_record["selected_estimates"] is None
+    assert tie_record["tie_record"] == [cell.as_dict() for cell in tied]
     assert tie_record["E_i"] is None
 
 
@@ -459,7 +500,7 @@ def test_p0_2_g29_worked_tie_examples_and_aggregates() -> None:
     config = _config()
     truth = CandidateCell(0.08, 2, 0.75, 0.25)
     tied_cells = (truth, CandidateCell(0.12, 4, 0.75, 0.25))
-    target = _tables(0.0)
+    target = _tables(1.0)
 
     resolved = evaluate_p02_target(
         "p0_2a",
@@ -489,19 +530,39 @@ def test_p0_2_g29_worked_tie_examples_and_aggregates() -> None:
     assert unresolved_a.detection_state == "UNKNOWN"
     assert all(value is None for value in unresolved_a.dimension_errors["beta"].values())
 
+    contrasting_predictions = {
+        tied_cells[0]: (_tables(0.9),) * 3,
+        tied_cells[1]: (_tables(0.6),) * 3,
+    }
+    candidate_errors = tuple(
+        evaluate_p02_target(
+            "p0_2b",
+            target_seed=42001,
+            correct_minimum_objective=2.0,
+            wrong_fit=_p02_fit(2.2, (cell,), tied=False),
+            target_tables=target,
+            wrong_candidate_prediction_library=contrasting_predictions,
+            truth=truth,
+            config=config,
+        ).channel_total_error
+        for cell in tied_cells
+    )
+    assert candidate_errors == pytest.approx((0.10, 0.40))
+
     unresolved_b = evaluate_p02_target(
         "p0_2b",
         target_seed=42001,
         correct_minimum_objective=2.0,
         wrong_fit=_p02_fit(2.2, tied_cells, tied=True),
         target_tables=target,
-        wrong_candidate_prediction_library={},
+        wrong_candidate_prediction_library=contrasting_predictions,
         truth=truth,
         config=config,
     )
     assert unresolved_b.relative_loss_degradation < 0.25
     assert unresolved_b.channel_total_error is None
     assert unresolved_b.detection_state == "UNKNOWN"
+    assert unresolved_b.as_dict()["E_i"] is None
 
     states_b = _p02_states("p0_2b", ("TRUE", "TRUE", "TRUE", "FALSE", "UNKNOWN"))
     status, reason, detected, unknown, attainable = aggregate_p02_detection(states_b, arm="p0_2b")
@@ -816,20 +877,24 @@ def test_budget_guard_rejects_mode_duration_overlap_and_retry() -> None:
         guard_workload(oversized)
 
 
-def test_execute_is_fail_closed_before_p0_3(tmp_path: Path) -> None:
+def test_execute_is_fail_closed_before_p0_3(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     import jersey_outbreak.phase0_campaign as campaign
 
     with pytest.raises(CampaignError, match="requires a verified G29 ruling"):
         campaign.execute_campaign(CONFIG_PATH, PREDECLARATION_PATH, Path("/tmp/unused-p0-1"))
-    config_path, ruling_path = _test_ruling_config(tmp_path)
+    config_path, ruling_path = _test_ruling_config(tmp_path, monkeypatch)
     with pytest.raises(CampaignBlockedError, match="p0_3"):
         campaign.execute_campaign(
             config_path, PREDECLARATION_PATH, Path("/tmp/unused-p0-2"), ruling_path
         )
 
 
-def test_research_bundle_is_standalone_and_file_hashed(tmp_path: Path) -> None:
-    config_path, ruling_path = _test_ruling_config(tmp_path)
+def test_research_bundle_is_standalone_and_file_hashed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path, ruling_path = _test_ruling_config(tmp_path, monkeypatch)
     output = write_research_bundle(
         tmp_path / "bundle",
         campaign_config_path=config_path,
@@ -988,7 +1053,7 @@ def test_research_bundle_rejects_nonempty_destination_without_mutation(
     assert tuple(output.iterdir()) == (sentinel,)
 
 
-def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_persist_blind_estimates(
+def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readback(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The generation path is callable under fakes but never runs in this test suite."""
@@ -1278,7 +1343,7 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_persist_blind_estimates(
     assert all(
         json.loads(path.read_text(encoding="utf-8"))["estimate_hash"] for path in p02_persisted
     )
-    bundle_config, bundle_ruling = _test_ruling_config(tmp_path)
+    bundle_config, bundle_ruling = _test_ruling_config(tmp_path, monkeypatch)
     bundle = campaign.write_research_bundle(
         tmp_path / "p02-bundle",
         campaign_config_path=bundle_config,
@@ -1304,6 +1369,8 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_persist_blind_estimates(
     with (bundle / "p0_2_misspecification.csv").open(encoding="utf-8", newline="") as handle:
         csv_rows = list(csv.DictReader(handle))
     assert all(row["E_i"] == "null" for row in csv_rows)
+    assert all(row["selected_estimates"] == "null" for row in csv_rows)
+    assert all(row["tie_record"].startswith("[") for row in csv_rows)
     assert all(row["estimate_beta"] == "null" for row in csv_rows)
     assert all(row["signed_error_beta"] == "null" for row in csv_rows)
     surfaces = json.loads((bundle / "p0_2_loss_surfaces.json").read_text(encoding="utf-8"))
@@ -1312,6 +1379,76 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_persist_blind_estimates(
     provenance = json.loads((bundle / "p0_2_provenance.json").read_text(encoding="utf-8"))
     assert len(provenance["arms"]["p0_2a"]["replicate_provenance"]) == 243
     assert len(provenance["arms"]["p0_2b"]["replicate_provenance"]) == 81
+    p02_targets = provenance["arms"]["p0_2a"]["targets"]
+    assert any(
+        target["selected_estimates"] is None
+        and isinstance(target["tie_record"], list)
+        and target["E_i"] is None
+        for target in p02_targets
+    )
+
+    monkeypatch.setattr(campaign, "G29_RULING_PATH", G29_RULING_PATH)
+    monkeypatch.setattr(campaign, "G29_RULING_SHA256", G29_RULING_SHA256)
+
+    base_fit = result.blind_fits[42001]
+    first_cell, second_cell = result.config.candidate_grid[:2]
+    unique_fit = replace(
+        base_fit,
+        selected=first_cell,
+        global_minimizers=(first_cell,),
+        numerical_tie=False,
+        estimate_hash="c" * 64,
+    )
+    tied_fit = replace(
+        base_fit,
+        selected=None,
+        global_minimizers=(first_cell, second_cell),
+        numerical_tie=True,
+        estimate_hash="d" * 64,
+    )
+    reached_truth_evaluation: list[int] = []
+
+    def recording_p02_evaluation(*args: object, **kwargs: object) -> P02TargetResult:
+        del args, kwargs
+        reached_truth_evaluation.append(1)
+        raise AssertionError("truth evaluation ran before blind-record read-back")
+
+    monkeypatch.setattr(campaign, "evaluate_p02_target", recording_p02_evaluation)
+    original_path_write_text = Path.write_text
+    for label, fit, corruption in (
+        ("unique", unique_fit, "non-json"),
+        ("tie", tied_fit, "altered-selection"),
+    ):
+
+        def force_fit(
+            *args: object, _forced_fit: BlindFitResult = fit, **kwargs: object
+        ) -> BlindFitResult:
+            del args, kwargs
+            return _forced_fit
+
+        def corrupt_write_text(
+            path: Path,
+            data: str,
+            *args: object,
+            _label: str = label,
+            _corruption: str = corruption,
+            **kwargs: object,
+        ) -> int:
+            if f"corrupt-{_label}" in path.parts and path.parent.name == "blind_estimates":
+                if _corruption == "non-json":
+                    data = "{"
+                else:
+                    damaged = json.loads(data)
+                    damaged["selected"] = first_cell.as_dict()
+                    data = json.dumps(damaged, sort_keys=True)
+            return original_path_write_text(path, data, *args, **kwargs)
+
+        monkeypatch.setattr(campaign, "fit_blind", force_fit)
+        monkeypatch.setattr(Path, "write_text", corrupt_write_text)
+        with pytest.raises(CampaignError, match="blind estimate read-back"):
+            run_p02_campaign(result, tmp_path / f"corrupt-{label}", root=ROOT)
+        assert reached_truth_evaluation == []
+        monkeypatch.setattr(Path, "write_text", original_path_write_text)
 
     def fail_persist(path: Path, fit: object) -> str:
         del path, fit

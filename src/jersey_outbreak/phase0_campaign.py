@@ -634,8 +634,8 @@ class P02TargetResult:
             "arm": self.arm,
             "target_seed": self.target_seed,
             "estimate_hash": self.estimate_hash,
-            "selected_estimates": json.dumps(selected, sort_keys=True),
-            "tie_record": json.dumps(minimizers if self.numerical_tie else None, sort_keys=True),
+            "selected_estimates": selected,
+            "tie_record": minimizers if self.numerical_tie else None,
             "numerical_tie": self.numerical_tie,
             "wrong_minimum_objective": self.minimum_objective,
             "correct_minimum_objective": self.correct_minimum_objective,
@@ -755,9 +755,7 @@ def _validate_frozen_payload(payload: Mapping[str, Any]) -> None:
         "observation_horizon_tail_days": 4,
         "predeclaration_sha256": PREDECLARATION_SHA256,
         "g29_ruling_path": G29_RULING_PATH,
-        # Kept configurable for isolated provenance fixtures; the frozen
-        # repository config carries the accepted ruling's immutable digest.
-        "g29_ruling_sha256": payload.get("g29_ruling_sha256"),
+        "g29_ruling_sha256": G29_RULING_SHA256,
         "dimensions": {
             "beta": {
                 "truth": 0.08,
@@ -1016,6 +1014,8 @@ def validate_campaign_config(config: CampaignConfig, budget_caps: Mapping[str, A
         raise CampaignError("required arm declaration is incomplete or reordered")
     if config.g29_ruling_path != G29_RULING_PATH:
         raise CampaignError("G29 ruling path does not match the accepted ruling")
+    if config.g29_ruling_sha256 != G29_RULING_SHA256:
+        raise CampaignError("G29 ruling SHA-256 does not match the accepted ruling")
     if config.g29_ruling_sha256 != config.declaration.get("g29_ruling_sha256"):
         raise CampaignError("G29 ruling SHA-256 does not match the frozen config")
     if config.implemented_arms != ("p0_1", "p0_2a", "p0_2b"):
@@ -1913,16 +1913,21 @@ def persist_blind_estimate(path: Path, fit: BlindFitResult) -> str:
 
     if not fit.estimate_hash or len(fit.estimate_hash) != 64:
         raise CampaignError("cannot persist an unhashed blind estimate")
+    expected = fit.as_dict()
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(fit.as_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
-        if not path.is_file() or not path.read_text(encoding="utf-8").strip():
-            raise OSError("blind estimate write was not durable")
-    except OSError as exc:
-        raise CampaignError(f"blind estimate persistence failed for {path.name}: {exc}") from exc
-    return fit.estimate_hash
+        path.write_text(json.dumps(expected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        persisted = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise CampaignError(f"blind estimate read-back failed for {path.name}: {exc}") from exc
+    if not isinstance(persisted, dict) or json.dumps(
+        persisted, sort_keys=True, separators=(",", ":")
+    ) != json.dumps(expected, sort_keys=True, separators=(",", ":")):
+        raise CampaignError(f"blind estimate read-back mismatch for {path.name}")
+    persisted_hash = persisted.get("estimate_hash")
+    if not isinstance(persisted_hash, str):
+        raise CampaignError(f"blind estimate read-back has no hash for {path.name}")
+    return persisted_hash
 
 
 def run_p01_campaign(
@@ -2785,17 +2790,19 @@ def validate_predeclaration(path: Path, expected_sha256: str = PREDECLARATION_SH
 
 
 def validate_g29_ruling(path: Path, config: CampaignConfig) -> str:
-    """Verify a supplied owner ruling against the digest frozen in campaign config."""
+    """Verify the supplied owner ruling against its accepted frozen digest."""
 
     if config.g29_ruling_path != G29_RULING_PATH:
         raise CampaignError("G29 ruling path does not match the accepted ruling")
+    if config.g29_ruling_sha256 != G29_RULING_SHA256:
+        raise CampaignError("G29 ruling SHA-256 does not match the accepted ruling")
     try:
         actual = sha256_file(path)
     except OSError as exc:
         raise CampaignError(f"cannot read G29 ruling {path}: {exc}") from exc
-    if actual != config.g29_ruling_sha256:
+    if actual != G29_RULING_SHA256:
         raise CampaignError(
-            f"G29 ruling SHA-256 mismatch: expected {config.g29_ruling_sha256}, got {actual}"
+            f"G29 ruling SHA-256 mismatch: expected {G29_RULING_SHA256}, got {actual}"
         )
     return actual
 
@@ -2868,7 +2875,17 @@ def write_research_bundle(
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(
-            {key: "null" if value is None else value for key, value in row.items()} for row in rows
+            {
+                key: (
+                    "null"
+                    if value is None
+                    else json.dumps(value, sort_keys=True)
+                    if isinstance(value, (dict, list))
+                    else value
+                )
+                for key, value in row.items()
+            }
+            for row in rows
         )
     if p03_profile is not None:
         (output_dir / "p0_3_profile.json").write_text(
