@@ -4,20 +4,19 @@
 
 ## Open
 
-**2026-09-22 resume:** Steven instructed continued work; G30 bounded correction/review extension released. G29 remains unanswered and HOLD; G5 preserves branches.
-
-### G29 — P0-2 indeterminate detection status (Phase 0)
-- **Question:** approve the exact reporting rule in `docs/research/v1_3/2026-09-22-p02-tie-ruling-proposal.md` before P0-2 implementation? Sol found tied wrong-model minima can make selected-candidate diagnostics undefined; the frozen spec does not define the indeterminate aggregate status.
-- **Recommended:** preserve target UNKNOWNs and fixed denominator; record D/U/[D,D+U]; use arm detection null with an explicit indeterminate reason when the fixed threshold is unresolved. Overall exit gate remains FAIL/not established unless every arm is proven PASS. No threshold, grid, seed or dimension changes.
-- **Alternative:** hold for a different owner-declared pre-execution specification. No tie-breaking or unknown-as-false rule is inferred.
-- **Default on no answer:** HOLD P0-2 implementation and all campaign execution. P0-1 G30 correction passed bounded numerical review and may be published as a reviewed feature branch; preserve branches. P0-3 depends on P0-2 under the frozen unit order.
-- **Evidence:** `docs/audits/2026-09-22-phase0-p02-clarification-sol-NEEDS-OWNER.md`; source clone 29d44485c0871b57524a4a26ce38262e57f4ec04; session 01a0c69e-9418-7b01-9b4f-689a7eb75895; ts: trail row `phase0-p02-G29`.
+**2026-09-23:** G29 approved (recommended ruling); P0-2 implementation in flight. Only G5 remains open.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G29 — RESOLVED 2026-09-23: recommended P0-2 indeterminate-detection ruling APPROVED (Steven, chat: "approve g29 with your rec then keep going with it")
+- **Ruling:** proposal items 1–6 adopted verbatim — target TRUE/FALSE/UNKNOWN, no tied-minimizer choice, undefined fields null; R_i ≥ 0.25 → TRUE; D/U/[D,D+U] with k=3 (A) / 4 (B); D≥k PASS, D+U<k FAIL, else null `indeterminate_tied_minima`; exit gate PASS only if every arm proven PASS. No threshold/grid/seed/dimension change.
+- **Filed:** immutable `docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md`, commit `78f3c5c01ce140bd4f122104436498ce47fbee78`, SHA-256 `06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c`; original predeclaration unchanged (SHA-256 `ef67fe49…a104`). Campaign provenance must hash both.
+- **Follow-on:** P0-2 attempt 1 launched (gpt-6-luna @ xhigh) from `367f0324685437c4d2ed4aa0ae4878229da09839`; ts: trail rows `phase0-g29-accepted`, `phase0-p02-launch`.
+- **Original question/basis:** `docs/research/v1_3/2026-09-22-p02-tie-ruling-proposal.md`; `docs/audits/2026-09-22-phase0-p02-clarification-sol-NEEDS-OWNER.md`; ts: trail row `phase0-p02-G29`.
 
 ### G30 — RESOLVED: one bounded P0-1 numerical correction and review authorized (2026-09-22)
 - **Outcome:** correction 367f0324685437c4d2ed4aa0ae4878229da09839 passed Sol bounded numerical review (`docs/audits/2026-09-22-phase0-g30-review-sol-PASS.md`). Implementation was timebox-stopped without final report; director before/after checks and final clean verification gate established acceptance, using the predeclared base-confirmed timing-flake exception. No campaign or scientific PASS; extension spent.

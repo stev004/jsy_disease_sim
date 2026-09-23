@@ -1,0 +1,10 @@
+P0-2 implementation attempt 1 of 3 — launch record (2026-09-23)
+TASK: JOS · v13-p0-2 · implement both P0-2 misspecification arms (no execution)
+ROLE: implementer · model gpt-6-luna · effort xhigh (fleet moved from gpt-5.6-luna 2026-09-23 on Steven's instruction; codex-cli 0.156.1 in WSL + Windows)
+Worktree: /home/steven/jos-p0-2-wt  branch codex/v13-p0-2-misspecification  base 367f0324685437c4d2ed4aa0ae4878229da09839 (clean at launch)
+Brief: /home/steven/jos-p0-2-brief.md (70284 bytes; head = scratchpad p02-brief-head.md; appended verbatim: DIRECTOR.md, predeclaration, ACCEPTED G29 ruling, Sol G29 basis, P0-1 acceptance, P0-1 r2 report, G30 checkpoint, G30 Sol PASS)
+Log stem: /home/steven/jos-p0-2 (.log / .last.md); launcher /tmp/p02-launch.sh via detached hidden wsl.exe (sleep infinity)
+Liveness: 75 s after launch, 2 'codex exec' processes; log header: model gpt-6-luna, reasoning effort xhigh, session id 01a0d04e-13bb-7781-9ff1-5cb59232440a
+Ruling: docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md commit 78f3c5c01ce140bd4f122104436498ce47fbee78 sha256 06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c (verified in WSL)
+Predeclaration sha256 ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104 (verified in WSL, unchanged)
+Timebox 45 min (declaration §8); 20-min zero-write watchdog.
