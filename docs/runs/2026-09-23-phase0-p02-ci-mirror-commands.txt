@@ -1,0 +1,43 @@
+#!/bin/bash
+# Director gate: run only in a new clean verification clone at the candidate SHA.
+set -euo pipefail
+export PATH="$HOME/.local/bin:$PATH"
+: "${JOS_EXPECTED_SHA:?set exact candidate SHA}"
+test "$(git rev-parse HEAD)" = "$JOS_EXPECTED_SHA"
+test -z "$(git status --porcelain)"
+trap 'rc=$?; if [ "$rc" -ne 0 ]; then printf "MIRROR_RESULT=FAIL exit=%s\n" "$rc"; fi' EXIT
+uv() { "$HOME/.local/bin/uv" tool run --from uv==0.11.30 uv "$@"; }
+set -x
+uv --version
+uv sync --locked
+uv lock --check
+uv run python -m compileall -q src
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy --ignore-missing-imports \
+ src/jersey_outbreak/population_structure_schemas.py \
+ src/jersey_outbreak/population_structure_controls.py \
+ src/jersey_outbreak/population_structure_artifacts.py \
+ src/jersey_outbreak/population_structure_generator.py \
+ src/jersey_outbreak/network_schemas.py \
+ src/jersey_outbreak/network_generator.py \
+ src/jersey_outbreak/network_artifacts.py \
+ src/jersey_outbreak/intervention_schemas.py \
+ src/jersey_outbreak/interventions.py \
+ src/jersey_outbreak/intervention_artifacts.py \
+ src/jersey_outbreak/intervention_analysis.py \
+ src/jersey_outbreak/scenario.py \
+ src/jersey_outbreak/staffing_evidence.py \
+ src/jersey_outbreak/staffing_generator.py \
+ src/jersey_outbreak/starsim_adapter.py
+uv run jos demo --seed 123
+uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-p02-mirror-population
+uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-p02-mirror-structure
+uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-p02-mirror-network
+uv run python scripts/ci_relocation_check.py
+uv run mypy src/jersey_outbreak/phase0_campaign.py
+git diff --check
+test -z "$(git status --porcelain)"
+test "$(git rev-parse HEAD)" = "$JOS_EXPECTED_SHA"
+printf 'MIRROR_RESULT=PASS SHA=%s\n' "$JOS_EXPECTED_SHA"
