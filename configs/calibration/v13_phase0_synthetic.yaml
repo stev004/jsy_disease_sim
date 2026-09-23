@@ -5,6 +5,8 @@ start_date: "2025-01-06"
 duration_days: 30
 observation_horizon_tail_days: 4
 predeclaration_sha256: ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104
+g29_ruling_path: docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md
+g29_ruling_sha256: 06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c
 
 dimensions:
   beta:
@@ -93,6 +95,25 @@ identifiability:
   exact_global_tie: fail
   lexicographic_tie_break: forbidden
 
+misspecification:
+  p0_2a:
+    truth_reporting_delay_days: 2
+    fitted_reporting_delay_days: 0
+    grid_cells: 81
+    common_random_number_namespace_unchanged: true
+  p0_2b:
+    truth_detection_probabilities:
+      symptomatic: 0.75
+      asymptomatic: 0.25
+    common_probability_grid: [0.25, 0.50, 0.75]
+    grid_cells: 27
+  detection:
+    relative_loss_degradation_minimum: 0.25
+    channel_total_error_minimum: 0.25
+    p0_2a_minimum_detected_targets: 3
+    p0_2b_minimum_detected_targets: 4
+    tie_scale: 1.0e-12
+
 acceptance:
   descriptive_coverage_minimum: 0.8
   joint_coverage_minimum: 0.6
@@ -122,7 +143,7 @@ budget_caps:
   mode: ci
 
 implementation:
-  implemented_arms: [p0_1]
+  implemented_arms: [p0_1, p0_2a, p0_2b]
   required_arms: [p0_1, p0_2a, p0_2b, p0_3]
   retries: 0
   adaptive_grid: false
