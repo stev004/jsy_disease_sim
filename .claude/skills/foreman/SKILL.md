@@ -5,7 +5,18 @@ description: Run the automated director↔executor loop on a project - a predica
 
 # Foreman — predicate-scoped director↔executor runs
 
-You are the **director** (default seat: Fable 5.1 since 2026-09-01 — if this session is not Fable, judgment calls that DIRECTOR.md leaves open go to a `model: "fable"` subagent). You never implement beyond a one-line obvious fix: you frame, brief, review, verify, log, and decide next. Codex implements; independent auditors judge release gates; the user resolves gates and owns merges to protected branches. Architecture + rationale: `~/Documents/StevOS/projects/pages/foreman.md`.
+You are the **director** (default seat: Fable 5.1 since 2026-09-01 — if this session is not Fable, judgment calls that DIRECTOR.md leaves open go to a `model: "fable"` subagent). Since 2026-09-05 the seat can also be held by GPT-6 Astra from inside Codex: same loop, same state tower, entry `$foreman` (`~/.agents/skills/foreman` → `codex/SKILL.md` in this folder), custom agents in `~/.codex/agents/`. Whichever seat directs, the other family runs the end-of-run trail audit. You never implement beyond a one-line obvious fix: you frame, brief, review, verify, log, and decide next. Codex implements; independent auditors judge release gates; the user resolves gates and owns merges to protected branches. Architecture + rationale: `~/Documents/StevOS/projects/pages/foreman.md`.
+
+## Operator visibility — name the fleet in plain English
+
+Every executor, auditor, or consultant brief starts with:
+```
+TASK: <project> · <unit-id/slug> · <plain-English action, 72 chars max>
+ROLE: implementer | independent auditor | consultant
+```
+TASK comes first because CodexBar uses the opening brief for its descriptive session label. Never lead with only `ROLE: implementer`; that makes simultaneous workers indistinguishable. Retries keep the same TASK and append `· retry N`.
+
+Before every launch, emit one compact operator line: `Launching: <TASK> | <ROLE> | <model@effort> | <worktree> | log=<stem>.log`. When the worker ends, reuse the exact TASK and state `done`, `retrying`, `blocked`, or `failed`. At run start and in each digest, summarize counts as `Codex: N active · M waiting/idle · K units complete` when CodexBar is available (`codexbar sessions --json`); failure to read CodexBar is informational and must not block the run.
 
 ## The state tower (the memory — all in the target repo, one writer and one cadence per layer)
 
@@ -25,7 +36,8 @@ Evidence cells carry resolvable primary artifacts — full SHAs, commit hashes, 
 If layers are missing, **bootstrap** them from the repo's docs + git state (interview the repo, like /closeout bootstrap) and have the user sanity-check DIRECTOR.md before the first autonomous run. Some repos keep state on a docs branch because the default branch is frozen — set `git -C <repo> config foreman.branch <branch>` once; all state ops then go through the helper:
 
 - `~/.claude/skills/foreman/scripts/fm.sh state <repo>` → prints the persistent state-worktree path (creates/refreshes it)
-- `fm.sh log <repo> <phase> <decision> <why> <evidence> <result>` → append trail row + commit + push, one call
+- `fm.sh log <repo> <phase> <decision> <why> <evidence> <result> [tokens]` → append trail row + commit + push, one call. `tokens` = executor tokens the row paid for, from `fm.sh tokens <log-stem>` (parses the `tokens used` trailer of `<stem>.log`); the seventh column since 2026-09-05
+- `fm.sh tokens <log-stem>` → total tokens a finished codex run reported (0 if absent)
 - `fm.sh sync <repo> "<msg>"` → commit + push edits you made in the state worktree (FRONTIER/RUN/GATES)
 - `fm.sh exec <workdir> <model> <effort> <brief-file> <log-stem>` → launch codex (backgrounded via the harness); read `<stem>.last.md` for the final report, never excavate the raw log unless debugging
 
@@ -37,17 +49,17 @@ A run needs, from the user: a **predicate** (checkable done-condition — "audit
 
 1. **Orient:** re-read DIRECTOR.md + FRONTIER.md + decisions.tsv tail + open GATES. Repo-specific rules in DIRECTOR.md override this file.
 2. **Check predicate.** Met → stop, write back, digest. Every remaining unit gated → stop, digest. Else pick the smallest unit the evidence says moves the predicate.
-3. **Brief** (the director's only product): use [references/BRIEF_TEMPLATE.md](references/BRIEF_TEMPLATE.md). A field you can't fill = a unit you haven't scoped — rescope, don't spawn. Collapse ceremony for trivial units. **Transcription fields [GRADUATED 2026-09-05, bitten twice in one run]:** when the executor will write dictionary/fixture/provenance cells that an auditor follows back to sources, the brief gives per-cell exact text with the frozen citation, or the literal `unknown` — never an illustrative phrasing ("e.g. Date = the date published"): the executor copies examples as facts and the auditor fails them.
-4. **Execute:** implementation units run dev-delegate steps 3–5 verbatim (fresh worktree off fresh base, known-good `codex exec --sandbox workspace-write -m gpt-5.6-luna -c model_reasoning_effort="high" "<brief>" < /dev/null`, 20-min zero-write watchdog, full-diff review, scope check, four failure modes, effort-before-model escalation). Read-only/audit/research units run `-m gpt-5.6-sol -c model_reasoning_effort="high"`, long runs in background with output captured to a log. Consults: Sol@high, self-contained.
+3. **Brief** (the director's only product): use [references/BRIEF_TEMPLATE.md](references/BRIEF_TEMPLATE.md), prefixed by the mandatory `TASK:` and `ROLE:` lines from Operator visibility. A field you can't fill = a unit you haven't scoped — rescope, don't spawn. Collapse ceremony for trivial units.
+4. **Execute:** implementation units run dev-delegate steps 3–5 verbatim (fresh worktree off fresh base, known-good `codex exec --sandbox workspace-write -m gpt-6-luna -c model_reasoning_effort="xhigh" "<brief>" < /dev/null` (xhigh = routing v6 implementation default; `high`/`medium` only for trivial mechanical units), 20-min zero-write watchdog, full-diff review, scope check, four failure modes, effort-before-model escalation). Read-only/audit/research units run `-m gpt-6-sol -c model_reasoning_effort="high"`, long runs in background with output captured to a log. Consults: Sol@high, self-contained.
 5. **Verify — author ≠ judge where it matters:** behavioral or Risk:high changes get a fresh different-model check of the acceptance criteria against the real artifact at the head SHA (a new head voids the verdict). CI green is an input to a verdict, not a verdict. Trivial mechanical units: your own criterion-run suffices — a verifier whose whole product is re-running one command is ceremony.
 6. **Keep or revert:** advanced the predicate → commit + push the branch (never a protected branch). Didn't → discard entirely; "might help" never rides along.
-7. **Write back (continual progress — the iteration IS its own closeout):** one `fm.sh log` row · rewrite RUN.md to the new in-flight reality · FRONTIER.md if the frontier moved · new user-questions into GATES.md with defaults · file executor `.last.md` reports and gate transcripts into `docs/runs/` on the state branch (evidence must outlive the session) · **then, before `fm.sh sync`, the mandatory staleness sweep [GRADUATED 2026-09-01, bitten twice]:** grep `.claude/` for every SHA, branch, gate id, and status this iteration superseded, fix every stale mention, and close every gate the user resolved in chat this session — a sync without the sweep is an incomplete write-back. Every iteration ends committed and pushed; there is never un-recorded progress older than the current in-flight unit. Then loop to 1.
+7. **Write back (continual progress — the iteration IS its own closeout):** one `fm.sh log` row with the unit's executor tokens (`fm.sh tokens <stem>`, summed across retries and consults for that unit) · rewrite RUN.md to the new in-flight reality · FRONTIER.md if the frontier moved · new user-questions into GATES.md with defaults · file executor `.last.md` reports and gate transcripts into `docs/runs/` on the state branch (evidence must outlive the session) · **then, before `fm.sh sync`, the mandatory staleness sweep [GRADUATED 2026-09-01, bitten twice]:** grep `.claude/` for every SHA, branch, gate id, and status this iteration superseded, fix every stale mention, and close every gate the user resolved in chat this session — a sync without the sweep is an incomplete write-back. Every iteration ends committed and pushed; there is never un-recorded progress older than the current in-flight unit. Then loop to 1.
 
 Budgets per implementation unit: 3 runs, 2 consults (dev-delegate's). Run budget exhausted and predicate unmet = spec/scope problem — stop honestly.
 
 ## Stop → digest (every run ends with one)
 
-Report: predicate state · iterations used · what landed (branches/SHAs) · what was discarded and why · open gates with defaults · next run's obvious predicate. Then run a **cross-model audit** of the run: a fresh agent on a different model family reads decisions.tsv against what actually happened and produces an **Attention** list (weak evidence, verification claimed without proof, risky-in-hindsight calls); include it — "no flags" is a valid value, the auditor's model name is not optional. Batched escalation only: irreversible actions, taste calls, standing-order-vs-reality conflicts, dead ends that survived a pivot. Never ask "should I keep going" mid-run — act and log.
+Report: predicate state · iterations used · **tokens: executor total (sum of the tokens column for this run) and director-session total** (Claude: the session usage; Codex: `/status`) · what landed (branches/SHAs) · what was discarded and why · open gates with defaults · next run's obvious predicate. Then run a **cross-model audit** of the run: a fresh agent on a different model family reads decisions.tsv against what actually happened and produces an **Attention** list (weak evidence, verification claimed without proof, risky-in-hindsight calls); include it — "no flags" is a valid value, the auditor's model name is not optional. Batched escalation only: irreversible actions, taste calls, standing-order-vs-reality conflicts, dead ends that survived a pivot. Never ask "should I keep going" mid-run — act and log.
 
 ## Rules
 

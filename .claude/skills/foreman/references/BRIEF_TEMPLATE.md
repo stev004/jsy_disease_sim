@@ -2,6 +2,7 @@
 
 Fill every field or rescope — a field you cannot fill is a unit you have not scoped. Collapse the whole thing to a paragraph for trivial one-command units. Executor sees ONLY this text plus the worktree: paste upstream results in full, quote the code it needs.
 
+    TASK: <project> · <unit-id/slug> · <plain-English action, 72 chars max; retries append "· retry N">
     ROLE: <who the executor is for this unit: implementer / independent auditor / researcher. Auditors: "implementation claims are things to verify, not evidence">
     GOAL: <one sentence, the outcome, executable by a stranger with no chat access>
     SCOPE: <exact worktree path + branch/SHA; paths it MAY touch; paths it may NOT>
@@ -17,4 +18,6 @@ Launch (backgrounded by the harness, log + clean final report):
 
     ~/.claude/skills/foreman/scripts/fm.sh exec <workdir> <model> <effort> <brief-file> <log-stem>
 
-Model routing: implementation = gpt-5.6-luna @ xhigh (Steven's standing preference) · audit/research/consult = gpt-5.6-sol @ high · trail-audit = whichever family did neither the directing nor the work (typically gpt-5.6-terra). Read `<stem>.last.md` for the report; `<stem>.log` only when debugging the run itself.
+Before launch, print `Launching: <TASK> | <ROLE> | <model@effort> | <worktree> | log=<stem>.log`. Reuse the same TASK when reporting its terminal state. TASK must remain the first brief line so CodexBar shows a meaningful session name.
+
+Model routing: implementation = gpt-6-luna @ xhigh (Steven's standing preference) · audit/research/consult = gpt-6-sol @ high · trail-audit = whichever family did neither the directing nor the work (typically gpt-5.6-terra — no GPT-6 Terra exists; GPT-6 fleet since 2026-09-23, codex-cli ≥ 0.156.1 required). Read `<stem>.last.md` for the report; `<stem>.log` only when debugging the run itself.
