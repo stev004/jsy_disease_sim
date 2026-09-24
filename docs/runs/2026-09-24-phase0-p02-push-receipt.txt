@@ -1,0 +1,4 @@
+﻿https://github.com/stev004/jsy_disease_sim.git
+--- ls-remote receipt (2026-09-24T00:03:31Z)
+ae885295fca56d60f3e8ed5f33274a752d096d20	refs/heads/codex/v13-p0-2-misspecification
+73,296
