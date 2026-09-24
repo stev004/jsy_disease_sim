@@ -1,0 +1,8 @@
+﻿925838a Phase 0 P0-3 corrective: blind manifest states code-path guarantee, not event order [skip ci]
+30f72b3 Phase 0 P0-3 corrective: retain cold-audit evidence in the bundle [skip ci]
+29f43d1 Phase 0 P0-3: negative control + all-arms orchestration and execute path [skip ci]
+https://github.com/stev004/jsy_disease_sim.git
+--- ls-remote receipt (2026-09-24T03:09:45Z)
+925838ac0077dbc66243cc4934aa1eb5c5b67b04	refs/heads/codex/v13-p0-3-negative-control
+--- review tokens
+28,997

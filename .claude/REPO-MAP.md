@@ -2,7 +2,7 @@
 
 *A navigation map, not documentation. Module contracts live in `docs/architecture.md`; scientific scope in `docs/scientific_scope.md`. Written 2026-09-21 (code baseline `3ff3734`).*
 
-**Current pickup:** P0-2 accepted 2026-09-24 (ae88529, pushed); P0-3 implementation in flight (gpt-6-luna @ xhigh). RUN/GATES own live status.
+**Current pickup:** all three Phase-0 units accepted and pushed (P0-3 925838a); step-6 ci campaign running; step-7 Sol exit audit next. RUN/GATES own live status.
 
 ## Top level
 

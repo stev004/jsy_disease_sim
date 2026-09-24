@@ -1,0 +1,38 @@
+#!/bin/bash
+# Phase-0 unit-order step 6: the ONE predeclared ci campaign, at the reviewed SHA only.
+export PATH="$HOME/.local/bin:$PATH" UV_CACHE_DIR=/tmp/uv-cache STARSIM_INSTALL_FONTS=0 MPLCONFIGDIR=/tmp/mpl-cache NUMBA_CACHE_DIR=/tmp/numba-cache
+SHA=925838ac0077dbc66243cc4934aa1eb5c5b67b04
+TS=$(date -u +%Y%m%dT%H%M%SZ)
+BASE=$HOME/jos-phase0-campaign-$TS
+LOG=$HOME/jos-phase0-campaign.log
+UV() { "$HOME/.local/bin/uv" tool run --from uv==0.11.30 uv "$@"; }
+run() {
+  set -euo pipefail
+  echo "campaign start $TS sha=$SHA"
+  echo "host free: $(df -h /mnt/c | tail -1)"; echo "guest free: $(df -h / | tail -1)"
+  avail_kb=$(df -k /mnt/c | tail -1 | awk '{print $4}'); test "$avail_kb" -gt 5242880
+  test "$(sha256sum /tmp/g29-ruling.md | cut -d' ' -f1)" = 06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c
+  test ! -e "$BASE"; mkdir -p "$BASE"
+  git clone --shared --quiet "$HOME/jsy_disease_sim" "$BASE/src-clone"
+  git -C "$BASE/src-clone" checkout --quiet --detach "$SHA"
+  test "$(git -C "$BASE/src-clone" rev-parse HEAD)" = "$SHA"
+  test -z "$(git -C "$BASE/src-clone" status --porcelain)"
+  cd "$BASE/src-clone"
+  UV sync --locked
+  UV run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md --ruling /tmp/g29-ruling.md
+  start=$(date +%s)
+  set +e
+  UV run python -m jersey_outbreak.phase0_campaign execute --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md --ruling /tmp/g29-ruling.md --output-dir "$BASE/bundle"
+  rc=$?
+  set -e
+  echo "execute exit=$rc wall_seconds=$(( $(date +%s) - start ))"
+  test -z "$(git status --porcelain)" && echo "clone clean after run"
+  test "$rc" -eq 0
+  (cd "$BASE/bundle" && sha256sum -c SHA256SUMS --quiet) && echo "SHA256SUMS verify OK"
+  echo "bundle files: $(find "$BASE/bundle" -type f | wc -l)"
+  sha256sum "$BASE/bundle/SHA256SUMS"
+  echo "BUNDLE=$BASE/bundle"
+}
+( run ) > "$LOG" 2>&1
+echo $? > "$HOME/jos-phase0-campaign.exit"
+sleep infinity
