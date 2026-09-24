@@ -1,0 +1,199 @@
++ set -euo pipefail
++ export 'PATH=/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0Wrzshz:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ PATH='/home/steven/.local/bin:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/home/steven/.codex/tmp/arg0/codex-arg0Wrzshz:/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/steven/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/WindowsApps/MicrosoftCorporationII.WindowsSubsystemForLinux_2.7.14.0_x64__8wekyb3d8bbwe:/mnt/c/Program Files/Eclipse Adoptium/jre-8.0.492.9-hotspot/bin:/mnt/c/Program Files/Java/jdk-17/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA app/NvDLISR:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/Scripts/:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311/:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/StevBeast/AppData/Local/Programs/Ollama:/mnt/c/Users/StevBeast/AppData/Local/Programs/cursor/resources/app/bin:/mnt/c/Users/StevBeast/AppData/Roaming/npm:/mnt/c/Users/StevBeast/AppData/Local/Python/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/StevBeast/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/StevBeast/AppData/Local/Programs/Godot:/mnt/c/Users/StevBeast/AppData/Local/Microsoft/WinGet/Packages/astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/StevBeast/AppData/Local/Programs/Python/Python311:/mnt/c/Program Files/nodejs:/mnt/c/Program Files/Git/mingw64/bin:/snap/bin'
++ export UV_CACHE_DIR=/tmp/uv-cache
++ UV_CACHE_DIR=/tmp/uv-cache
++ export STARSIM_INSTALL_FONTS=0
++ STARSIM_INSTALL_FONTS=0
++ export MPLCONFIGDIR=/tmp/mpl-cache
++ MPLCONFIGDIR=/tmp/mpl-cache
++ export NUMBA_CACHE_DIR=/tmp/numba-cache
++ NUMBA_CACHE_DIR=/tmp/numba-cache
++ git rev-parse HEAD
+ae885295fca56d60f3e8ed5f33274a752d096d20
++ git status --porcelain
+ M configs/calibration/v13_phase0_synthetic.yaml
+ M src/jersey_outbreak/phase0_campaign.py
+ M tests/test_phase0_campaign.py
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+All checks passed!
++ uv run ruff format --check src/jersey_outbreak/phase0_campaign.py tests/test_phase0_campaign.py
+2 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
++ uv run python -m compileall -q src
++ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": false,
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b",
+    "p0_3"
+  ],
+  "implemented_p0_1_grid_cells": 81,
+  "implemented_p0_2a_grid_cells": 81,
+  "implemented_p0_2b_grid_cells": 27,
+  "implemented_p0_3_grid_cells": 9,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 198,
+  "implemented_latent_outbreak_calls": 59,
+  "implemented_observation_transforms": 599,
+  "planned_grid_cells": 198,
+  "planned_latent_outbreak_calls": 59,
+  "planned_observation_transforms": 599
+}
++ uv run pytest tests/test_phase0_campaign.py -k p0_3
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-3-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 42 items / 40 deselected / 2 selected
+
+tests/test_phase0_campaign.py ..                                         [100%]
+
+======================= 2 passed, 40 deselected in 3.26s =======================
++ uv run pytest tests/test_phase0_campaign.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-3-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 42 items
+
+tests/test_phase0_campaign.py .......................................... [100%]
+
+============================== 42 passed in 3.53s ==============================
+++ mktemp -d /tmp/jos-p0-3-base-XXXXXX
++ BASE_TMP=/tmp/jos-p0-3-base-tKTCHj
++ git show ae885295fca56d60f3e8ed5f33274a752d096d20:src/jersey_outbreak/phase0_campaign.py
++ git show ae885295fca56d60f3e8ed5f33274a752d096d20:configs/calibration/v13_phase0_synthetic.yaml
++ export JOS_P03_BASE_DIR=/tmp/jos-p0-3-base-tKTCHj
++ JOS_P03_BASE_DIR=/tmp/jos-p0-3-base-tKTCHj
++ uv run python -
+P0-1 target config hashes: 5/5 identical
+P0-1 candidate config hashes: 81/81 identical
+P0-2A candidate config hashes: 81/81 identical
+P0-2B candidate config hashes: 27/27 identical
+P0-1 blind estimate hash: 2ebc1f18a5dac62ec1432fc696e8c885c63cd53e818b8d8fbce0bcf7dad7421a (base identical)
+P0-2A blind fixture hash: base identical
+P0-2B blind fixture hash: base identical
++ uv run pytest
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0-3-wt
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collected 456 items
+
+tests/test_b01_portable_artifacts.py ..............                      [  3%]
+tests/test_bench_dynamic_routes.py ......                                [  4%]
+tests/test_c1_identity.py .....                                          [  5%]
+tests/test_c2_network_semantics.py ......                                [  6%]
+tests/test_c3_contracts.py .......                                       [  8%]
+tests/test_c4_contracts.py ..................                            [ 12%]
+tests/test_c5_m7_integrity.py ............................               [ 18%]
+tests/test_calibration.py .....                                          [ 19%]
+tests/test_cli_integration.py ..                                         [ 19%]
+tests/test_contracts.py ....                                             [ 20%]
+tests/test_data_pipeline.py .....................                        [ 25%]
+tests/test_data_sources.py ....                                          [ 26%]
+tests/test_ensemble.py ...........                                       [ 28%]
+tests/test_ensemble_band_horizon.py .                                    [ 28%]
+tests/test_golden_hashes.py .........                                    [ 30%]
+tests/test_hashing.py ...                                                [ 31%]
+tests/test_hashkey_suffix.py ..                                          [ 32%]
+tests/test_init_metadata_boundary.py .                                   [ 32%]
+tests/test_job_liveness.py ....                                          [ 33%]
+tests/test_m3_secondary_jobs_oracle.py ...                               [ 33%]
+tests/test_m4_hash_stream.py ..                                          [ 34%]
+tests/test_m7_interventions.py .....                                     [ 35%]
+tests/test_m8_1_travel_integrity.py ............                         [ 37%]
+tests/test_m8_2_travel_closure.py ......                                 [ 39%]
+tests/test_m8_travel.py ..............                                   [ 42%]
+tests/test_m9_1_job_integrity.py ........................                [ 47%]
+tests/test_m9_2_provenance.py ...............                            [ 50%]
+tests/test_m9_4_calendar_finalization.py .....                           [ 51%]
+tests/test_m9_api.py .......                                             [ 53%]
+tests/test_networks.py ............................                      [ 59%]
+tests/test_observation.py ........                                       [ 61%]
+tests/test_outbreak.py ............                                      [ 64%]
+tests/test_perf10_grid_once.py .                                         [ 64%]
+tests/test_perf4_diagnostics.py .......                                  [ 65%]
+tests/test_perf6_interventions.py ....................                   [ 70%]
+tests/test_perf9_parent_reuse.py .........                               [ 72%]
+tests/test_phase0_campaign.py .......................................... [ 81%]
+                                                                         [ 81%]
+tests/test_population.py .....                                           [ 82%]
+tests/test_population_structure.py ......                                [ 83%]
+tests/test_prov_helpers.py ..........                                    [ 85%]
+tests/test_prov_job_ordering.py .....                                    [ 87%]
+tests/test_respiratory_attribution_lookup.py ...........                 [ 89%]
+tests/test_route4_weekday_memo.py s                                      [ 89%]
+tests/test_route5_phase2_columns.py ss..                                 [ 90%]
+tests/test_route_snapshot_columns.py ....s                               [ 91%]
+tests/test_scientific_corrections_datafix.py .........                   [ 93%]
+tests/test_staffing.py ..........                                        [ 95%]
+tests/test_starsim_demo.py ..                                            [ 96%]
+tests/test_v121_prov_verifier_fixes.py .......                           [ 97%]
+tests/test_v12_bundle_selftest.py ....                                   [ 98%]
+tests/test_v12_carry_ins.py ..                                           [ 99%]
+tests/test_v12_corr3_dictionary.py ...                                   [ 99%]
+tests/test_v12_corr4_dictionary.py .                                     [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-p0-3-wt/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-p0-3-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+=========== 452 passed, 4 skipped, 15 warnings in 829.33s (0:13:49) ============
++ FULL_SUITE_RC=0
++ printf 'FULL_SUITE_RC=%s\n' 0
+FULL_SUITE_RC=0
++ git diff --check
++ git diff --stat
+ configs/calibration/v13_phase0_synthetic.yaml |  19 +-
+ src/jersey_outbreak/phase0_campaign.py        | 896 +++++++++++++++++++++++++-
+ tests/test_phase0_campaign.py                 | 410 ++++++++++--
+ 3 files changed, 1242 insertions(+), 83 deletions(-)
++ git status --porcelain
+ M configs/calibration/v13_phase0_synthetic.yaml
+ M src/jersey_outbreak/phase0_campaign.py
+ M tests/test_phase0_campaign.py
