@@ -4,7 +4,17 @@
 
 ## Open
 
-**2026-09-23:** G29 approved (recommended ruling); P0-2 implementation in flight. Only G5 remains open.
+**2026-09-24:** Phase-0 exit gate = FAIL (determinate). G31 is the blocking model-owner decision; G5 unchanged.
+
+### G31 — What Phase 0 does after a determinate exit FAIL (model owner)
+- **Result:** the independent step-7 audit (`docs/audits/2026-09-24-phase0-exit-audit-sol-FAIL.md`) confirmed `JOS V1.3 PHASE-0 EXIT GATE: FAIL`. The only failing predicate is P0-1 #8: the inoculation-day offset was selected at a grid boundary for 2 of 5 targets (seed 42001 → 0, seed 42005 → 4), against a frozen maximum of 1/5. Every other predicate passed on recomputation: 5/5 tolerance and joint hits, zero bias, unique minima, all dimensions identified, P0-2A/B D=5/5, and P0-3 NON_IDENTIFIED_STRUCTURAL. The bundle is immutable (SHA256SUMS digest `72cd9a568598530923e08ce20b013d60eb7a3b26553b87c31685ad623f3faa80`). No real-data fitting is licensed.
+- **Design observation, for the owner rather than as a basis for relaxing anything:** with 3-point grids and the truth at the midpoint, every one-step displacement that the declared ±1-step tolerance allows lands on a boundary. Predicates 5 (tolerance coverage) and 8 (boundary ≤1/5) therefore pull against each other for this dimension. The frozen declaration forbids relaxing either one after seeing results.
+- **Options:**
+  - **A (director's recommendation):** accept this FAIL as the recorded Phase-0 result. Commission **Phase 0b**: a new Sol design consult and a new predeclaration, filed and hashed *before* any run. The owner declares the design change explicitly, for example finer or wider grids so that truth ± tolerance lies inside the grid, and the rationale cites this FAIL. **Fresh target and candidate seeds** keep the redesign from being tuned on seen results. It reuses the reviewed harness with a declared config/code delta, bounded review, one campaign and a fresh exit audit. Real-data fitting stays blocked until Phase 0b passes.
+  - **B:** hold Phase 0 entirely; no further work.
+  - **C (independent of A/B):** SHA-first merge of the reviewed harness branch (`codex/v13-p0-3-negative-control` @ `925838ac0077dbc66243cc4934aa1eb5c5b67b04`, which contains P0-1/P0-2/P0-3) into `main` as research infrastructure. Merging does NOT imply the gate passed.
+- **Default on no answer:** HOLD. No new campaign, no redesign, no merge; all branches, bundles and evidence are preserved.
+- **Evidence:** `docs/audits/2026-09-24-phase0-exit-audit-sol-FAIL.md`; `docs/runs/2026-09-24-phase0-campaign-summary.json`; bundle `/home/steven/jos-phase0-campaign-20260924T030959Z/bundle`; ts: trail row `phase0-exit-FAIL`.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?

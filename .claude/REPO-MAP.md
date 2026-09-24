@@ -2,7 +2,7 @@
 
 *A navigation map, not documentation. Module contracts live in `docs/architecture.md`; scientific scope in `docs/scientific_scope.md`. Written 2026-09-21 (code baseline `3ff3734`).*
 
-**Current pickup:** all three Phase-0 units accepted and pushed (P0-3 925838a); step-6 ci campaign running; step-7 Sol exit audit next. RUN/GATES own live status.
+**Current pickup:** Phase-0 exit gate FAIL (determinate, P0-1 boundary predicate); G31 awaits Steven (default HOLD). RUN/GATES own live status.
 
 ## Top level
 
