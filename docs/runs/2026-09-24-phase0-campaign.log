@@ -1,0 +1,133 @@
+campaign start 20260924T030959Z sha=925838ac0077dbc66243cc4934aa1eb5c5b67b04
+host free: C:\             466G  443G   23G  96% /mnt/c
+guest free: /dev/sdd       1007G   15G  941G   2% /
+Downloading uv (25.7MiB)
+ Downloaded uv
+Installed 1 package in 5ms
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+Resolved 77 packages in 0.60ms
+   Building jersey-outbreak-simulator @ file:///home/steven/jos-phase0-campaign-20260924T030959Z/src-clone
+      Built jersey-outbreak-simulator @ file:///home/steven/jos-phase0-campaign-20260924T030959Z/src-clone
+Prepared 1 package in 353ms
+Installed 75 packages in 201ms
+ + alembic==1.19.1
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio==4.14.2
+ + certifi==2026.7.22
+ + click==8.5.0
+ + colorlog==6.12.0
+ + contourpy==1.3.3
+ + cycler==0.12.1
+ + dill==0.4.1
+ + et-xmlfile==2.0.0
+ + fastapi==0.141.1
+ + fonttools==4.63.0
+ + gitdb==4.0.12
+ + gitpython==3.1.59
+ + greenlet==3.5.5
+ + h11==0.16.0
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + idna==3.19
+ + iniconfig==2.3.0
+ + jellyfish==1.2.1
+ + jersey-outbreak-simulator==1.1.0 (from file:///home/steven/jos-phase0-campaign-20260924T030959Z/src-clone)
+ + jsonpickle==4.1.2
+ + kiwisolver==1.5.0
+ + librt==0.15.0
+ + line-profiler==5.0.2
+ + llvmlite==0.49.0
+ + mako==1.4.1
+ + markdown-it-py==4.2.0
+ + markupsafe==3.0.3
+ + matplotlib==3.11.1
+ + mdurl==0.1.2
+ + memory-profiler==0.61.0
+ + multiprocess==0.70.19
+ + mypy==1.20.2
+ + mypy-extensions==1.1.0
+ + networkx==3.6.1
+ + numba==0.67.0
+ + numpy==2.5.2
+ + openpyxl==3.1.5
+ + optuna==4.9.0
+ + packaging==26.3
+ + pandas==3.0.5
+ + pathspec==1.1.1
+ + pillow==12.3.0
+ + pluggy==1.6.0
+ + psutil==7.2.2
+ + pyarrow==22.0.0
+ + pydantic==2.13.4
+ + pydantic-core==2.46.4
+ + pygments==2.21.0
+ + pyparsing==3.3.2
+ + pytest==8.4.2
+ + python-dateutil==2.9.0.post0
+ + pyyaml==6.0.3
+ + rich==15.0.0
+ + ruff==0.16.4
+ + scipy==1.18.1
+ + sciris==3.3.0
+ + seaborn==0.13.2
+ + setuptools==84.0.0
+ + shellingham==1.5.4
+ + six==1.17.0
+ + smmap==5.0.3
+ + sqlalchemy==2.0.52
+ + starlette==1.6.0
+ + starsim==3.5.2
+ + tqdm==4.70.0
+ + typer==0.27.1
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.4
+ + uvicorn==0.52.4
+ + xlsxwriter==3.2.9
+ + zstandard==0.25.0
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": true,
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "p0_3_observation_transforms": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b",
+    "p0_3"
+  ],
+  "implemented_p0_1_grid_cells": 81,
+  "implemented_p0_2a_grid_cells": 81,
+  "implemented_p0_2b_grid_cells": 27,
+  "implemented_p0_3_grid_cells": 9,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 198,
+  "implemented_latent_outbreak_calls": 59,
+  "implemented_observation_transforms": 599,
+  "planned_grid_cells": 198,
+  "planned_latent_outbreak_calls": 59,
+  "planned_observation_transforms": 599
+}
+execute exit=0 wall_seconds=140
+clone clean after run
+SHA256SUMS verify OK
+bundle files: 633
+72cd9a568598530923e08ce20b013d60eb7a3b26553b87c31685ad623f3faa80  /home/steven/jos-phase0-campaign-20260924T030959Z/bundle/SHA256SUMS
+BUNDLE=/home/steven/jos-phase0-campaign-20260924T030959Z/bundle
