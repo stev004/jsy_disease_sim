@@ -1,0 +1,16 @@
+PHASE-0 ALL-ARMS RE-REVIEW: BLOCKED
+
+**BLOCKING — The blind manifest presents invented event numbers as recorded evidence.** [phase0_campaign.py](/home/steven/jos-allarms-rereview-readonly/src/jersey_outbreak/phase0_campaign.py:3901) assigns `persisted_event_order` and `truth_join_event_order` during bundle assembly, after all arms have run. The ordering note calls them event records, and [the test](/home/steven/jos-allarms-rereview-readonly/tests/test_phase0_campaign.py:1990) verifies only the same generated formula. The execution code enforces persistence and read-back before each truth evaluation, but these numbers are not an observed log. Under “explicit unknown beats false precision,” the one campaign should not publish this claim. **Minimal correction:** remove the synthetic event numbers and label the boolean as a code-path guarantee, explicitly stating that no runtime event order was recorded. A new event logger is not required for this gate.
+
+| Acceptance | Decision |
+|---|---|
+| 1. Identity, scope, hashes and controls | **Pass.** HEAD is the stated SHA, directly descended from `29f43d1`; only the two expected files changed. Independent base-versus-HEAD comparisons matched 81 P0-1, 27 P0-2B and nine P0-3 config hashes. No arm, threshold, status or budget change found. |
+| 2. Cold recomputation | **Pass for retained data.** The mocked bundle contains the 15 blind records, target and candidate tables, diagnostics and nine P0-3 vectors. I independently recomputed all 990 reported loss rows, all 15 argmin/tie records, ten \(R_i\) and five applicable \(E_i\) values from bundle files. The cold test reloads bundle files and calculates an objective independently; its surface and \(E_i\) checks cover one target each, not every target. |
+| 3. Publication and checksums | **Pass for the step-6 paths.** The mocked bundle has 633 files; 632 distinct `SHA256SUMS` entries cover every other file, including nested paths. Staging, occupied-destination rejection and retained-path containment remain intact. |
+| 4. Transform count | **Pass.** Measured P0-3 transforms use `plan.p03_observation_transforms` at [line 4217](/home/steven/jos-allarms-rereview-readonly/src/jersey_outbreak/phase0_campaign.py:4217). |
+| 5. Manifest ordering claim | **Fail; blocking.** Relabelling is sufficient; genuinely recorded event order is not necessary. |
+| 6. Other bundle risks | **No other blocking defect found.** The misleading ordering claim prevents approval at this SHA. |
+
+Focused tests: **42 passed**. The supplied clean-clone mirror exited **0** at this SHA with **452 passed, 4 skipped**; I did not rerun it. Ruling SHA-256 matched `06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c`. A ruling-verified dry run reported **198 cells, 59 latent calls, 599 transforms, eight builds**, `ci`, 30 days. Any eventual step-6 command must include `--ruling /tmp/g29-ruling.md`.
+
+These checks used mocked bundle data; they are not a scientific campaign verdict. No real campaign, simulator or observation API was invoked. Final SHA: `30f72b3fe1ef6eb60a0bd2d85ec07af8f0f0a126`. Initial and final `git status --porcelain` were empty, and `git diff --check` passed. No clone files were edited.
