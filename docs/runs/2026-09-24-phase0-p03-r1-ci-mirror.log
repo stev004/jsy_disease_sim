@@ -1,0 +1,215 @@
++ uv --version
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv --version
+uv 0.11.30 (x86_64-unknown-linux-gnu)
++ uv sync --locked
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv sync --locked
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+Resolved 77 packages in 0.73ms
+   Building jersey-outbreak-simulator @ file:///home/steven/jos-p03r1-verify
+      Built jersey-outbreak-simulator @ file:///home/steven/jos-p03r1-verify
+Prepared 1 package in 418ms
+Installed 75 packages in 163ms
+ + alembic==1.19.1
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio==4.14.2
+ + certifi==2026.7.22
+ + click==8.5.0
+ + colorlog==6.12.0
+ + contourpy==1.3.3
+ + cycler==0.12.1
+ + dill==0.4.1
+ + et-xmlfile==2.0.0
+ + fastapi==0.141.1
+ + fonttools==4.63.0
+ + gitdb==4.0.12
+ + gitpython==3.1.59
+ + greenlet==3.5.5
+ + h11==0.16.0
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + idna==3.19
+ + iniconfig==2.3.0
+ + jellyfish==1.2.1
+ + jersey-outbreak-simulator==1.1.0 (from file:///home/steven/jos-p03r1-verify)
+ + jsonpickle==4.1.2
+ + kiwisolver==1.5.0
+ + librt==0.15.0
+ + line-profiler==5.0.2
+ + llvmlite==0.49.0
+ + mako==1.4.1
+ + markdown-it-py==4.2.0
+ + markupsafe==3.0.3
+ + matplotlib==3.11.1
+ + mdurl==0.1.2
+ + memory-profiler==0.61.0
+ + multiprocess==0.70.19
+ + mypy==1.20.2
+ + mypy-extensions==1.1.0
+ + networkx==3.6.1
+ + numba==0.67.0
+ + numpy==2.5.2
+ + openpyxl==3.1.5
+ + optuna==4.9.0
+ + packaging==26.3
+ + pandas==3.0.5
+ + pathspec==1.1.1
+ + pillow==12.3.0
+ + pluggy==1.6.0
+ + psutil==7.2.2
+ + pyarrow==22.0.0
+ + pydantic==2.13.4
+ + pydantic-core==2.46.4
+ + pygments==2.21.0
+ + pyparsing==3.3.2
+ + pytest==8.4.2
+ + python-dateutil==2.9.0.post0
+ + pyyaml==6.0.3
+ + rich==15.0.0
+ + ruff==0.16.4
+ + scipy==1.18.1
+ + sciris==3.3.0
+ + seaborn==0.13.2
+ + setuptools==84.0.0
+ + shellingham==1.5.4
+ + six==1.17.0
+ + smmap==5.0.3
+ + sqlalchemy==2.0.52
+ + starlette==1.6.0
+ + starsim==3.5.2
+ + tqdm==4.70.0
+ + typer==0.27.1
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.4
+ + uvicorn==0.52.4
+ + xlsxwriter==3.2.9
+ + zstandard==0.25.0
++ uv lock --check
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv lock --check
+Resolved 77 packages in 0.84ms
++ uv run python -m compileall -q src
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run python -m compileall -q src
++ uv run pytest
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run pytest
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p03r1-verify
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collected 456 items
+
+tests/test_b01_portable_artifacts.py ..............                      [  3%]
+tests/test_bench_dynamic_routes.py ......                                [  4%]
+tests/test_c1_identity.py .....                                          [  5%]
+tests/test_c2_network_semantics.py ......                                [  6%]
+tests/test_c3_contracts.py .......                                       [  8%]
+tests/test_c4_contracts.py ..................                            [ 12%]
+tests/test_c5_m7_integrity.py ............................               [ 18%]
+tests/test_calibration.py .....                                          [ 19%]
+tests/test_cli_integration.py ..                                         [ 19%]
+tests/test_contracts.py ....                                             [ 20%]
+tests/test_data_pipeline.py .....................                        [ 25%]
+tests/test_data_sources.py ....                                          [ 26%]
+tests/test_ensemble.py ...........                                       [ 28%]
+tests/test_ensemble_band_horizon.py .                                    [ 28%]
+tests/test_golden_hashes.py .........                                    [ 30%]
+tests/test_hashing.py ...                                                [ 31%]
+tests/test_hashkey_suffix.py ..                                          [ 32%]
+tests/test_init_metadata_boundary.py .                                   [ 32%]
+tests/test_job_liveness.py ....                                          [ 33%]
+tests/test_m3_secondary_jobs_oracle.py ...                               [ 33%]
+tests/test_m4_hash_stream.py ..                                          [ 34%]
+tests/test_m7_interventions.py .....                                     [ 35%]
+tests/test_m8_1_travel_integrity.py ............                         [ 37%]
+tests/test_m8_2_travel_closure.py ......                                 [ 39%]
+tests/test_m8_travel.py ..............                                   [ 42%]
+tests/test_m9_1_job_integrity.py ........................                [ 47%]
+tests/test_m9_2_provenance.py ...............                            [ 50%]
+tests/test_m9_4_calendar_finalization.py .....                           [ 51%]
+tests/test_m9_api.py .......                                             [ 53%]
+tests/test_networks.py ............................                      [ 59%]
+tests/test_observation.py ........                                       [ 61%]
+tests/test_outbreak.py ............                                      [ 64%]
+tests/test_perf10_grid_once.py .                                         [ 64%]
+tests/test_perf4_diagnostics.py .......                                  [ 65%]
+tests/test_perf6_interventions.py ....................                   [ 70%]
+tests/test_perf9_parent_reuse.py .........                               [ 72%]
+tests/test_phase0_campaign.py .......................................... [ 81%]
+                                                                         [ 81%]
+tests/test_population.py .....                                           [ 82%]
+tests/test_population_structure.py ......                                [ 83%]
+tests/test_prov_helpers.py ..........                                    [ 85%]
+tests/test_prov_job_ordering.py .....                                    [ 87%]
+tests/test_respiratory_attribution_lookup.py ...........                 [ 89%]
+tests/test_route4_weekday_memo.py s                                      [ 89%]
+tests/test_route5_phase2_columns.py ss..                                 [ 90%]
+tests/test_route_snapshot_columns.py ....s                               [ 91%]
+tests/test_scientific_corrections_datafix.py .........                   [ 93%]
+tests/test_staffing.py ..........                                        [ 95%]
+tests/test_starsim_demo.py ..                                            [ 96%]
+tests/test_v121_prov_verifier_fixes.py .......                           [ 97%]
+tests/test_v12_bundle_selftest.py ....                                   [ 98%]
+tests/test_v12_carry_ins.py ..                                           [ 99%]
+tests/test_v12_corr3_dictionary.py ...                                   [ 99%]
+tests/test_v12_corr4_dictionary.py .                                     [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-p03r1-verify/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-p03r1-verify/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+=========== 452 passed, 4 skipped, 15 warnings in 1039.83s (0:17:19) ===========
++ uv run ruff check .
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run ruff check .
+All checks passed!
++ uv run ruff format --check .
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run ruff format --check .
+263 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run mypy --ignore-missing-imports src/jersey_outbreak/population_structure_schemas.py src/jersey_outbreak/population_structure_controls.py src/jersey_outbreak/population_structure_artifacts.py src/jersey_outbreak/population_structure_generator.py src/jersey_outbreak/network_schemas.py src/jersey_outbreak/network_generator.py src/jersey_outbreak/network_artifacts.py src/jersey_outbreak/intervention_schemas.py src/jersey_outbreak/interventions.py src/jersey_outbreak/intervention_artifacts.py src/jersey_outbreak/intervention_analysis.py src/jersey_outbreak/scenario.py src/jersey_outbreak/staffing_evidence.py src/jersey_outbreak/staffing_generator.py src/jersey_outbreak/starsim_adapter.py
+Success: no issues found in 15 source files
++ uv run jos demo --seed 123
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run jos demo --seed 123
+{"declared_deterministic_outputs": ["seed", "starsim_version", "time_series", "final"], "final": {"cumulative_infections": 37, "n_infected": 0, "n_recovered": 47, "n_susceptible": 53}, "model": "starsim_official_sir_demo", "network": {"n_contacts": 10, "official_starsim_network": true, "type": "RandomNet"}, "population_size": 100, "run_id": "jos-demo-55bc2313fab1", "schema_version": "1.0", "seed": 123, "simulation": {"dt": 1.0, "start": 2000.0, "stop": 2030.0, "unit": "year"}, "starsim_version": "3.5.2", "time_series": {"cumulative_infections": [36, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37], "n_infected": [46, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "n_recovered": [0, 45, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47], "n_susceptible": [54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53], "time_index": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]}, "validation_level": "compatibility_spike"}
++ uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-p03r1-mirror-population
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run jos population generate --mode ci --seed 123 --output-dir /tmp/jos-p03r1-mirror-population
+{"artifact_directory": "/tmp/jos-p03r1-mirror-population/jos-population-m2-ci-seed-123-5f55360ffc68", "artifact_id": "jos-population-m2-ci-seed-123-5f55360ffc68", "communal_residents": 60, "diagnostics_status": "passed", "households": 1295, "logical_content_hash": "28a6d90a96454d11dcd6ad9d4531d69f9e4ec4396b802780084d3ae598c839a0", "mode": "ci", "runtime_seconds": 0.6988714010003605, "target_population": 3000}
++ uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-p03r1-mirror-structure
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run jos structure generate --mode ci --seed 123 --output-dir /tmp/jos-p03r1-mirror-structure
+{"artifact_directory": "/tmp/jos-p03r1-mirror-structure/jos-structure-m3-ci-seed-123-64334a035ddb", "artifact_id": "jos-structure-m3-ci-seed-123-64334a035ddb", "diagnostics_status": "passed", "logical_content_hash": "f072042f07db46a94fd61781eb9ee99545a6dc169d34b83d6de21ffdf56e3ce3", "m2_artifact_id": "jos-population-m2-ci-seed-123-5f55360ffc68", "mode": "ci", "primary_jobs": 1666, "runtime_seconds": 0.11297349899905385, "schools": 5, "secondary_jobs": 117, "target_population": 3000, "workplaces": 252}
++ uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-p03r1-mirror-network
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run jos network generate --mode ci --seed 123 --output-dir /tmp/jos-p03r1-mirror-network
+{"artifact_directory": "/tmp/jos-p03r1-mirror-network/jos-networks-m4-ci-seed-123-4768b9613c93", "artifact_id": "jos-networks-m4-ci-seed-123-4768b9613c93", "baseline_edges": 22428, "diagnostics_status": "passed", "logical_content_hash": "749e32383cbcfa5973cd2680e09b175267b12d72963cc286e6c4dd720ae53657", "mode": "ci", "routes": 11, "runtime_seconds": 0.6162257989999489, "target_population": 3000}
++ uv run python scripts/ci_relocation_check.py
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run python scripts/ci_relocation_check.py
+{"artifact_directory": "/home/steven/jos-p03r1-verify/outputs/interventions/jos-intervention-m7-ci-seed-123-c0be3d419f32", "artifact_id": "jos-intervention-m7-ci-seed-123-c0be3d419f32", "diagnostics_status": "passed", "logical_content_hash": "1e9f01ed1d770bbeb592c3d0c69add44040d2e80339b93b884b24701f4ed8a99", "runtime_seconds": 3.311656578000111, "scenario_hash": "7158b33cb7eba93112b1326aacc253d19136a4a85f70c7c4245113a26478665a", "scenario_id": "m7-baseline", "travel_controls": "DEFERRED TO M8"}
+verifier success: m7_intervention jos-intervention-m7-ci-seed-123-c0be3d419f32
++ uv run mypy src/jersey_outbreak/phase0_campaign.py
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run mypy src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
++ git diff --check
+++ git status --porcelain
++ test -z ''
+++ git rev-parse HEAD
++ test 30f72b3fe1ef6eb60a0bd2d85ec07af8f0f0a126 = 30f72b3fe1ef6eb60a0bd2d85ec07af8f0f0a126
++ printf 'MIRROR_RESULT=PASS SHA=%s\n' 30f72b3fe1ef6eb60a0bd2d85ec07af8f0f0a126
+MIRROR_RESULT=PASS SHA=30f72b3fe1ef6eb60a0bd2d85ec07af8f0f0a126
++ rc=0
++ '[' 0 -ne 0 ']'
