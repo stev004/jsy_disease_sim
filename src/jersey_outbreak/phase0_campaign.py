@@ -3861,7 +3861,6 @@ def _collect_retained_evidence(
         )
 
     blind_records: list[dict[str, Any]] = []
-    record_ordinal = 0
     record_groups = (
         ("p0_1", workspace / "p0_1" / "blind_estimates", p01_result.config.target_process_seeds),
         (
@@ -3889,7 +3888,6 @@ def _collect_retained_evidence(
                 raise CampaignError(
                     f"persisted blind estimate is malformed for {arm}/{target_seed}"
                 )
-            record_ordinal += 1
             relative_path = f"blind_estimates/{arm}/{target_seed}.json"
             file_sha256 = hashlib.sha256(content).hexdigest()
             entry = {
@@ -3898,9 +3896,7 @@ def _collect_retained_evidence(
                 "target_seed": target_seed,
                 "estimate_hash": record["estimate_hash"],
                 "file_sha256": file_sha256,
-                "persisted_event_order": 2 * record_ordinal - 1,
-                "truth_join_event_order": 2 * record_ordinal,
-                "persisted_before_truth_join": True,
+                "persist_before_truth_join": "guaranteed_by_code_path",
             }
             blind_records.append(entry)
             add_file(
@@ -3915,7 +3911,7 @@ def _collect_retained_evidence(
                     "arm": arm,
                     "target_seed": target_seed,
                     "estimate_hash": record["estimate_hash"],
-                    "persisted_before_truth_join": True,
+                    "persist_before_truth_join": "guaranteed_by_code_path",
                     "manifest": "blind_estimate_manifest.json",
                 },
             )
@@ -3923,11 +3919,12 @@ def _collect_retained_evidence(
     blind_manifest = {
         "schema_version": 1,
         "record_count": len(blind_records),
+        "runtime_event_order_recorded": False,
         "records": blind_records,
         "ordering_note": (
-            "Event order records each persisted JSON read-back before the corresponding "
-            "truth join/evaluation; the persisted file SHA-256 and estimate_hash identify "
-            "the exact retained record."
+            "Persistence and read-back verification occur before each truth evaluation by "
+            "construction of the execution code path. Runtime event order and timestamps "
+            "were not recorded."
         ),
     }
     blind_manifest_bytes = _compact_json_bytes(blind_manifest)
@@ -3937,7 +3934,7 @@ def _collect_retained_evidence(
         {
             "kind": "blind_estimate_order_manifest",
             "record_count": len(blind_records),
-            "recomputes": "Record identity and persist-before-truth-join ordering evidence.",
+            "recomputes": "Record identity and code-path persist-before-truth-join guarantee.",
         },
     )
 

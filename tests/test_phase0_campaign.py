@@ -1976,20 +1976,33 @@ def test_p0_3_all_arms_mocked_execute_reuses_builds_and_rejects_corrupt_blind_re
         )
     assert recomputed_viability == summary["arms"]["p0_1"]["predicates"]["truth_viability"]
 
-    # Blind records are the exact published read-backs and carry ordering evidence.
+    # Blind records identify exact read-backs and state the code-path guarantee.
     blind_manifest = json.loads(
         (bundle / "blind_estimate_manifest.json").read_text(encoding="utf-8")
     )
     assert blind_manifest["record_count"] == 15
-    for ordinal, record in enumerate(blind_manifest["records"], start=1):
+    assert blind_manifest["runtime_event_order_recorded"] is False
+    assert "not recorded" in blind_manifest["ordering_note"].lower()
+    for record in blind_manifest["records"]:
         estimate_path = bundle / record["path"]
         estimate_bytes = estimate_path.read_bytes()
         assert hashlib.sha256(estimate_bytes).hexdigest() == record["file_sha256"]
         estimate = json.loads(estimate_bytes)
         assert estimate["estimate_hash"] == record["estimate_hash"]
-        assert record["persisted_event_order"] == 2 * ordinal - 1
-        assert record["truth_join_event_order"] == 2 * ordinal
-        assert record["persisted_before_truth_join"] is True
+        assert "persisted_event_order" not in record
+        assert "truth_join_event_order" not in record
+        assert "persisted_before_truth_join" not in record
+        assert record["persist_before_truth_join"] == "guaranteed_by_code_path"
+
+    blind_evidence_entries = [
+        entry for entry in retained_entries if entry["kind"] == "blind_estimate_readback"
+    ]
+    assert len(blind_evidence_entries) == 15
+    assert all(
+        entry["persist_before_truth_join"] == "guaranteed_by_code_path"
+        and "persisted_before_truth_join" not in entry
+        for entry in blind_evidence_entries
+    )
 
     sum_lines = (bundle / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
     sum_names = [line.split("  ", 1)[1] for line in sum_lines]
