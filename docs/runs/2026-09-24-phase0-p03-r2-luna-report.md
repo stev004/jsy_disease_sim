@@ -1,0 +1,7 @@
+**PASS — the blocking ordering claim is corrected.** HEAD remains `30f72b3fe1ef6eb60a0bd2d85ec07af8f0f0a126`. The worktree was clean before editing; only the two authorized files are modified.
+
+The manifest now labels ordering as `persist_before_truth_join: "guaranteed_by_code_path"` in records and evidence-index entries. It sets `runtime_event_order_recorded` to `False` and states that runtime event order and timestamps were not recorded. The synthetic ordinal fields and unused counter are removed. The test checks those absences, the guarantee labels, the disclosure, and all 15 evidence-index entries. Changes are in [phase0_campaign.py](/home/steven/jos-p0-3-wt/src/jersey_outbreak/phase0_campaign.py:3896) and [test_phase0_campaign.py](/home/steven/jos-p0-3-wt/tests/test_phase0_campaign.py:1979).
+
+**Verification:** Ruff format, Ruff check, mypy, compileall, and `git diff --check` passed. The focused suite passed: **42 passed**. The one full-suite run passed: **452 passed, 4 skipped, 15 warnings** in 1045.80 seconds. `git diff --stat`: **2 files changed, 25 insertions, 15 deletions**. Final status lists only those two files. The `event_order` grep’s sole source match is the explicitly required `runtime_event_order_recorded` disclosure field; synthetic order fields are absent.
+
+Transcript: [verification log](/tmp/jos-p0-3-r2-evidence.log). No commit or push.
