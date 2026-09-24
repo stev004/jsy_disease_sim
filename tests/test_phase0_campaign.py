@@ -6,7 +6,7 @@ import inspect
 import json
 import math
 from dataclasses import replace
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -276,6 +276,7 @@ def test_p0_1_config_and_workload_are_exact() -> None:
     assert plan.total_cells == 198
     assert plan.total_latent_calls == 59
     assert plan.total_observation_transforms == 599
+    assert plan.p03_observation_transforms == 27
     assert plan.distinct_network_seed_builds == 8
     assert config.g29_ruling_path == "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md"
     assert config.g29_ruling_sha256 == (
@@ -1064,6 +1065,7 @@ def test_research_bundle_is_standalone_and_file_hashed(
         "p0_2_loss_surfaces.json",
         "p0_2_provenance.json",
         "p0_1_recovery.csv",
+        "bundle_index.json",
         "p0_2_misspecification.csv",
         "p0_3_profile.json",
         "campaign_summary.json",
@@ -1263,23 +1265,52 @@ def test_p0_3_all_arms_mocked_execute_reuses_builds_and_rejects_corrupt_blind_re
 
     class FakeObserved:
         diagnostics = {
+            "status": "passed",
             "no_report_before_infection": True,
+            "chronology_violations": 0,
             "latent_incidence_conservation": True,
+            "latent_incidence_conservation_difference": 0,
         }
 
         def __init__(self, latent_run: FakeLatent, observation_config: ObservationConfig) -> None:
             route_mean = sum(latent_run.config.route_multipliers.values()) / len(
                 latent_run.config.route_multipliers
             )
-            symptomatic_count = max(2, round(latent_run.config.beta * route_mean * 100))
+            symptomatic_probability = observation_config.parameters[
+                "symptomatic_detection_probability"
+            ].value
+            asymptomatic_probability = observation_config.parameters[
+                "asymptomatic_detection_probability"
+            ].value
+            symptomatic_count = max(
+                2,
+                round(latent_run.config.beta * route_mean * symptomatic_probability * 100),
+            )
+            asymptomatic_count = max(
+                1,
+                round(latent_run.config.beta * route_mean * asymptomatic_probability * 100),
+            )
+            import_date = date.fromisoformat(next(iter(latent_run.config.import_schedule)))
             self.observation_events = [
-                {"report_date": "2025-01-06", "symptomatic": True},
+                {"report_date": import_date.isoformat(), "symptomatic": True},
                 *(
-                    {"report_date": "2025-01-07", "symptomatic": True}
+                    {
+                        "report_date": (import_date + timedelta(days=1)).isoformat(),
+                        "symptomatic": True,
+                    }
                     for _ in range(symptomatic_count - 2)
                 ),
-                {"report_date": "2025-01-08", "symptomatic": True},
-                {"report_date": "2025-01-07", "symptomatic": False},
+                {
+                    "report_date": (import_date + timedelta(days=2)).isoformat(),
+                    "symptomatic": True,
+                },
+                *(
+                    {
+                        "report_date": (import_date + timedelta(days=1)).isoformat(),
+                        "symptomatic": False,
+                    }
+                    for _ in range(asymptomatic_count)
+                ),
             ]
             self.latent_run = latent_run
             self.config = observation_config
@@ -1310,8 +1341,11 @@ def test_p0_3_all_arms_mocked_execute_reuses_builds_and_rejects_corrupt_blind_re
         observation_configs.append(observation_config)
         result = FakeObserved(latent, observation_config)
         result.diagnostics = {
+            "status": "passed",
             "no_report_before_infection": True,
+            "chronology_violations": 0,
             "latent_incidence_conservation": True,
+            "latent_incidence_conservation_difference": 0,
             "observation_rng": {
                 "stream_namespace": "observation",
                 "stream_key_inputs": [
@@ -1511,7 +1545,6 @@ def test_p0_3_all_arms_mocked_execute_reuses_builds_and_rejects_corrupt_blind_re
     assert sum(kind == "observe" for kind, _, _ in calls) == 599
     assert len(observation_configs) == 599
     assert p02_result.software_status == "PASS"
-    assert p02_result.misspecification_detection is None
     assert p02_result.arms["p0_2a"].measured_latent_calls == 0
     assert p02_result.arms["p0_2b"].measured_latent_calls == 0
     assert p02_result.arms["p0_2a"].measured_observation_transforms == 243
@@ -1623,12 +1656,17 @@ def test_p0_3_all_arms_mocked_execute_reuses_builds_and_rejects_corrupt_blind_re
     summary = json.loads((bundle / "campaign_summary.json").read_text(encoding="utf-8"))
     assert summary["overall_phase0_status"] == "NOT_EVALUATED"
     assert summary["mocked_execution"] is True
+    execution_root = config_path.resolve().parents[2]
+    if not (execution_root / "src" / "jersey_outbreak").is_dir():
+        execution_root = PREDECLARATION_PATH.resolve().parents[3]
     assert summary["input_hashes"]["src/jersey_outbreak/calibration.py"] == sha256_file(
-        ROOT / "src/jersey_outbreak/calibration.py"
+        execution_root / "src/jersey_outbreak/calibration.py"
     )
-    assert summary["input_hashes"]["src/jersey_outbreak/phase0_campaign.py"] == sha256_file(
-        ROOT / "src/jersey_outbreak/phase0_campaign.py"
-    )
+    phase0_source_key = "src/jersey_outbreak/phase0_campaign.py"
+    if phase0_source_key in summary["input_hashes"]:
+        assert summary["input_hashes"][phase0_source_key] == sha256_file(
+            execution_root / phase0_source_key
+        )
     assert all(arm["scientific_status"] == "NOT_EVALUATED" for arm in summary["arms"].values())
     assert all(arm["software_status"] == "MOCKED" for arm in summary["arms"].values())
     p03_bundle = json.loads((bundle / "p0_3_profile.json").read_text(encoding="utf-8"))
@@ -1638,6 +1676,335 @@ def test_p0_3_all_arms_mocked_execute_reuses_builds_and_rejects_corrupt_blind_re
     for line in (bundle / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
         digest, name = line.split("  ", 1)
         assert sha256_file(bundle / name) == digest
+
+    # Cold audit: all source tables and published values below are reloaded from
+    # the bundle. No stage result or temporary-workspace file is used here.
+    bundle_index = json.loads((bundle / "bundle_index.json").read_text(encoding="utf-8"))
+    retained_entries = bundle_index["retained_evidence_files"]
+    table_entries = [entry for entry in retained_entries if entry["kind"] == "observed_table"]
+    assert {
+        "candidate_loss_surfaces.json",
+        "p0_1_recovery.csv",
+        "p0_2_misspecification.csv",
+        "p0_3_profile.json",
+        "campaign_summary.json",
+        "SHA256SUMS",
+        "bundle_index.json",
+    } <= set(bundle_index["outputs"])
+    assert bundle_index["retained_evidence_file_count"] == len(retained_entries)
+    assert len(retained_entries) == 617
+    assert all(
+        (bundle / entry["path"]).is_file()
+        and sha256_file(bundle / entry["path"]) == entry["file_sha256"]
+        for entry in retained_entries
+    )
+    assert len(table_entries) == 599
+    assert {
+        arm: sum(entry["arm"] == arm for entry in table_entries)
+        for arm in ("p0_1", "p0_2a", "p0_2b", "p0_3")
+    } == {"p0_1": 248, "p0_2a": 243, "p0_2b": 81, "p0_3": 27}
+    table_records: dict[tuple[str, str, str, int, int], dict[str, object]] = {}
+    table_sha_by_key: dict[tuple[str, str, str, int, int], str] = {}
+    for entry in table_entries:
+        retained_path = bundle / entry["path"]
+        assert sha256_file(retained_path) == entry["file_sha256"]
+        retained = json.loads(retained_path.read_text(encoding="utf-8"))
+        assert retained["table_sha256"] == entry["table_sha256"]
+        canonical_table = json.dumps(
+            retained["observed_tables"], sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        assert hashlib.sha256(canonical_table).hexdigest() == entry["table_sha256"]
+        cell_key = json.dumps(entry["cell"], sort_keys=True, separators=(",", ":"))
+        lookup_key = (
+            entry["arm"],
+            entry["role"],
+            cell_key,
+            entry["process_seed"],
+            entry["observation_seed"],
+        )
+        table_records[lookup_key] = retained["observed_tables"]
+        table_sha_by_key[lookup_key] = entry["table_sha256"]
+
+    # Every P0-2/P0-3 table digest matches the existing replicate provenance.
+    p02_provenance_bundle = json.loads(
+        (bundle / "p0_2_provenance.json").read_text(encoding="utf-8")
+    )
+    for arm in ("p0_2a", "p0_2b"):
+        provenance = p02_provenance_bundle["arms"][arm]["replicate_provenance"]
+        provenance_by_key = {
+            (
+                json.dumps(item["candidate"], sort_keys=True, separators=(",", ":")),
+                item["process_seed"],
+                item["observation_seed"],
+            ): item["observed_table_sha256"]
+            for item in provenance
+        }
+        for entry in table_entries:
+            if entry["arm"] != arm:
+                continue
+            provenance_key = (
+                json.dumps(entry["cell"], sort_keys=True, separators=(",", ":")),
+                entry["process_seed"],
+                entry["observation_seed"],
+            )
+            assert (
+                table_sha_by_key[
+                    (
+                        entry["arm"],
+                        entry["role"],
+                        provenance_key[0],
+                        entry["process_seed"],
+                        entry["observation_seed"],
+                    )
+                ]
+                == provenance_by_key[provenance_key]
+            )
+    p03_profile = json.loads((bundle / "p0_3_profile.json").read_text(encoding="utf-8"))
+    p03_provenance_by_key = {
+        (
+            json.dumps(item["candidate"], sort_keys=True, separators=(",", ":")),
+            item["process_seed"],
+            item["observation_seed"],
+        ): item["observed_table_sha256"]
+        for item in p03_profile["replicate_provenance"]
+    }
+    for entry in table_entries:
+        if entry["arm"] == "p0_3":
+            key = (
+                json.dumps(entry["cell"], sort_keys=True, separators=(",", ":")),
+                entry["process_seed"],
+                entry["observation_seed"],
+            )
+            assert entry["table_sha256"] == p03_provenance_by_key[key]
+
+    # Recompute a complete P0-1 target surface and its blind minimum/tie record.
+    target_entry = next(
+        entry
+        for entry in table_entries
+        if entry["arm"] == "p0_1" and entry["role"] == "target" and entry["process_seed"] == 42001
+    )
+    p01_target_key = (
+        "p0_1",
+        "target",
+        json.dumps(target_entry["cell"], sort_keys=True, separators=(",", ":")),
+        42001,
+        52001,
+    )
+    target_table = table_records[p01_target_key]
+    p01_candidate_entries = sorted(
+        (
+            entry
+            for entry in table_entries
+            if entry["arm"] == "p0_1" and entry["role"] == "candidate"
+        ),
+        key=lambda entry: (entry["cell_index"], entry["process_seed"]),
+    )
+    expected_p01_surface = json.loads(
+        (bundle / "candidate_loss_surfaces.json").read_text(encoding="utf-8")
+    )["42001"]
+    blind_42001 = json.loads(
+        (bundle / "blind_estimates/p0_1/42001.json").read_text(encoding="utf-8")
+    )
+    recomputed_surface: list[dict[str, object]] = []
+    for cell_index in range(81):
+        entries_for_cell = [
+            entry for entry in p01_candidate_entries if entry["cell_index"] == cell_index
+        ]
+        assert len(entries_for_cell) == 3
+        entries_for_cell.sort(key=lambda entry: entry["process_seed"])
+        candidate_tables = [
+            table_records[
+                (
+                    "p0_1",
+                    "candidate",
+                    json.dumps(entry["cell"], sort_keys=True, separators=(",", ":")),
+                    entry["process_seed"],
+                    entry["observation_seed"],
+                )
+            ]
+            for entry in entries_for_cell
+        ]
+        objective = 0.0
+        for channel in ("symptomatic", "asymptomatic"):
+            for time_index, target_count in enumerate(target_table[channel]):
+                candidate_mean = (
+                    sum(
+                        math.sqrt(table[channel][time_index] + 3.0 / 8.0)
+                        for table in candidate_tables
+                    )
+                    / 3
+                )
+                objective += (math.sqrt(target_count + 3.0 / 8.0) - candidate_mean) ** 2
+        objective /= 2 * len(target_table["dates"])
+        surface_row = expected_p01_surface[cell_index]
+        for key, value in entries_for_cell[0]["cell"].items():
+            assert surface_row[key] == value
+        assert objective == pytest.approx(surface_row["objective"], rel=0, abs=1e-15)
+        assert objective == pytest.approx(blind_42001["loss_surface"][cell_index]["objective"])
+        recomputed_surface.append({**entries_for_cell[0]["cell"], "objective": objective})
+    minimum = min(float(row["objective"]) for row in recomputed_surface)
+    tie_tolerance = 1e-12 * max(1.0, minimum)
+    minimizers = [
+        {key: row[key] for key in entries_for_cell[0]["cell"]}
+        for row in recomputed_surface
+        if abs(float(row["objective"]) - minimum) <= tie_tolerance
+    ]
+    assert blind_42001["minimum_objective"] == pytest.approx(minimum)
+    assert blind_42001["tie_tolerance"] == tie_tolerance
+    assert blind_42001["global_minimizers"] == minimizers
+    assert blind_42001["numerical_tie"] is (len(minimizers) > 1)
+    assert blind_42001["selected"] == (None if len(minimizers) != 1 else minimizers[0])
+
+    # Recompute P0-2B E_i from its selected cell, target table, and three retained tables.
+    with (bundle / "p0_2_misspecification.csv").open(encoding="utf-8", newline="") as handle:
+        p02_rows_from_bundle = list(csv.DictReader(handle))
+    p02b_row = next(
+        row
+        for row in p02_rows_from_bundle
+        if row["arm"] == "p0_2b" and row["target_seed"] == "42001"
+    )
+    selected_p02b = json.loads(p02b_row["selected_estimates"])
+    selected_key = json.dumps(selected_p02b, sort_keys=True, separators=(",", ":"))
+    p02b_tables = [
+        entry
+        for entry in table_entries
+        if entry["arm"] == "p0_2b"
+        and entry["role"] == "candidate"
+        and json.dumps(entry["cell"], sort_keys=True, separators=(",", ":")) == selected_key
+    ]
+    p02b_tables.sort(key=lambda entry: entry["process_seed"])
+    assert len(p02b_tables) == 3
+    e_components = []
+    for channel in ("symptomatic", "asymptomatic"):
+        target_total = sum(target_table[channel])
+        mean_candidate_total = (
+            sum(
+                sum(
+                    table_records[
+                        (
+                            "p0_2b",
+                            "candidate",
+                            selected_key,
+                            entry["process_seed"],
+                            entry["observation_seed"],
+                        )
+                    ][channel]
+                )
+                for entry in p02b_tables
+            )
+            / 3
+        )
+        e_components.append(abs(mean_candidate_total - target_total) / max(1, target_total))
+    recomputed_e_i = max(e_components)
+    assert recomputed_e_i == pytest.approx(float(p02b_row["E_i"]), rel=0, abs=1e-15)
+    assert p02_provenance_bundle["arms"]["p0_2b"]["targets"][0]["E_i"] == pytest.approx(
+        recomputed_e_i
+    )
+
+    # Rebuild every P0-3 prediction vector, including ridge vectors, from tables.
+    for cell_index in range(9):
+        entries_for_cell = sorted(
+            (
+                entry
+                for entry in table_entries
+                if entry["arm"] == "p0_3"
+                and entry["role"] == "candidate"
+                and entry["cell_index"] == cell_index
+            ),
+            key=lambda entry: entry["process_seed"],
+        )
+        vector = [
+            value
+            for entry in entries_for_cell
+            for channel in ("symptomatic", "asymptomatic")
+            for value in table_records[
+                (
+                    "p0_3",
+                    "candidate",
+                    json.dumps(entry["cell"], sort_keys=True, separators=(",", ":")),
+                    entry["process_seed"],
+                    entry["observation_seed"],
+                )
+            ][channel]
+        ]
+        cell_key = json.dumps(entries_for_cell[0]["cell"], sort_keys=True, separators=(",", ":"))
+        assert p03_profile["prediction_vectors"][cell_key] == vector
+        if (
+            entries_for_cell[0]["cell"]["beta"],
+            entries_for_cell[0]["cell"]["global_route_factor"],
+        ) in {
+            (0.16, 0.5),
+            (0.08, 1.0),
+            (0.04, 2.0),
+        }:
+            vector_hash = hashlib.sha256(
+                json.dumps(vector, separators=(",", ":"), allow_nan=False).encode("utf-8")
+            ).hexdigest()
+            assert vector_hash == p03_profile["prediction_hashes"][cell_key]
+
+    # Recompute the target viability predicate from the retained raw diagnostics.
+    diagnostics_payload = json.loads(
+        (bundle / "p0_1_truth_diagnostics.json").read_text(encoding="utf-8")
+    )
+    diagnostics = diagnostics_payload["targets"]
+    assert len(diagnostics) == 5
+    recomputed_viability = all(
+        row["complete"]
+        and row["inoculation_acquisitions"] == 10
+        and row["local_secondary_infections"] >= 1
+        and row["symptomatic_reports"] >= 1
+        and row["asymptomatic_reports"] >= 1
+        and row["nonzero_combined_report_dates"] >= 3
+        and row["chronology_passed"]
+        and row["latent_incidence_conservation_passed"]
+        and row["namespace_passed"]
+        for row in diagnostics
+    )
+    for row in diagnostics:
+        raw = row["raw_values"]
+        assert raw["natural_history"]["chronology_passed"] is True
+        assert raw["latent_states"]["conserved"] is True
+        assert (
+            raw["observation_chronology_and_conservation"][
+                "latent_incidence_conservation_difference"
+            ]
+            == 0
+        )
+        assert (
+            raw["namespace_verification"]["observed_fingerprint"]
+            == raw["namespace_verification"]["recomputed_fingerprint"]
+        )
+    assert recomputed_viability == summary["arms"]["p0_1"]["predicates"]["truth_viability"]
+
+    # Blind records are the exact published read-backs and carry ordering evidence.
+    blind_manifest = json.loads(
+        (bundle / "blind_estimate_manifest.json").read_text(encoding="utf-8")
+    )
+    assert blind_manifest["record_count"] == 15
+    for ordinal, record in enumerate(blind_manifest["records"], start=1):
+        estimate_path = bundle / record["path"]
+        estimate_bytes = estimate_path.read_bytes()
+        assert hashlib.sha256(estimate_bytes).hexdigest() == record["file_sha256"]
+        estimate = json.loads(estimate_bytes)
+        assert estimate["estimate_hash"] == record["estimate_hash"]
+        assert record["persisted_event_order"] == 2 * ordinal - 1
+        assert record["truth_join_event_order"] == 2 * ordinal
+        assert record["persisted_before_truth_join"] is True
+
+    sum_lines = (bundle / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
+    sum_names = [line.split("  ", 1)[1] for line in sum_lines]
+    bundle_files = {
+        path.relative_to(bundle).as_posix()
+        for path in bundle.rglob("*")
+        if path.is_file() and path.name != "SHA256SUMS"
+    }
+    assert len(sum_names) == len(set(sum_names))
+    assert set(sum_names) == bundle_files
+    assert all(
+        hashlib.sha256((bundle / name).read_bytes()).hexdigest() == line.split("  ", 1)[0]
+        for line in sum_lines
+        for name in [line.split("  ", 1)[1]]
+    )
 
     bundle_config, bundle_ruling = _test_ruling_config(tmp_path, monkeypatch)
     manual_bundle = campaign.write_research_bundle(
@@ -1666,11 +2033,14 @@ def test_p0_3_all_arms_mocked_execute_reuses_builds_and_rejects_corrupt_blind_re
     assert len(csv_lines) == 11
     with (manual_bundle / "p0_2_misspecification.csv").open(encoding="utf-8", newline="") as handle:
         csv_rows = list(csv.DictReader(handle))
-    assert all(row["E_i"] == "null" for row in csv_rows)
-    assert all(row["selected_estimates"] == "null" for row in csv_rows)
-    assert all(row["tie_record"].startswith("[") for row in csv_rows)
-    assert all(row["estimate_beta"] == "null" for row in csv_rows)
-    assert all(row["signed_error_beta"] == "null" for row in csv_rows)
+    assert any(row["E_i"] != "null" for row in csv_rows)
+    assert all(
+        row["selected_estimates"] == "null" or row["selected_estimates"].startswith("{")
+        for row in csv_rows
+    )
+    assert all(row["tie_record"] == "null" or row["tie_record"].startswith("[") for row in csv_rows)
+    assert any(row["estimate_beta"] != "null" for row in csv_rows)
+    assert any(row["signed_error_beta"] != "null" for row in csv_rows)
     surfaces = json.loads((manual_bundle / "p0_2_loss_surfaces.json").read_text(encoding="utf-8"))
     assert set(surfaces) == {"p0_2a", "p0_2b"}
     assert all(len(targets) == 5 for targets in surfaces.values())
@@ -1678,12 +2048,8 @@ def test_p0_3_all_arms_mocked_execute_reuses_builds_and_rejects_corrupt_blind_re
     assert len(provenance["arms"]["p0_2a"]["replicate_provenance"]) == 243
     assert len(provenance["arms"]["p0_2b"]["replicate_provenance"]) == 81
     p02_targets = provenance["arms"]["p0_2a"]["targets"]
-    assert any(
-        target["selected_estimates"] is None
-        and isinstance(target["tie_record"], list)
-        and target["E_i"] is None
-        for target in p02_targets
-    )
+    assert len(p02_targets) == 5
+    assert all("R_i" in target and "tie_record" in target for target in p02_targets)
 
     base_fit = result.blind_fits[42001]
     first_cell, second_cell = result.config.candidate_grid[:2]

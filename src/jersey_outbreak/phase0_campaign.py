@@ -24,7 +24,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Literal, cast
 
 import yaml  # type: ignore[import-untyped]
@@ -57,6 +57,7 @@ PROFILE_DENOMINATOR_FLOOR = 1e-12
 P02B_COMMON_PROBABILITY_GRID: tuple[float, ...] = (0.25, 0.50, 0.75)
 P03_BETA_GRID: tuple[float, ...] = (0.04, 0.08, 0.16)
 P03_ROUTE_FACTOR_GRID: tuple[float, ...] = (0.5, 1.0, 2.0)
+P03_OBSERVATION_TRANSFORMS = 27
 P03_VECTOR_TOLERANCE = 1.0e-12
 P03_OBJECTIVE_SPREAD_SCALE = 1.0e-12
 
@@ -403,6 +404,7 @@ class TruthDiagnostics:
     latent_incidence_conservation_passed: bool
     namespace_passed: bool = False
     complete: bool = False
+    raw_values: Mapping[str, Any] = field(default_factory=dict)
 
     @property
     def viable(self) -> bool:
@@ -417,6 +419,21 @@ class TruthDiagnostics:
             and self.latent_incidence_conservation_passed
             and self.namespace_passed
         )
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "inoculation_acquisitions": self.inoculation_acquisitions,
+            "local_secondary_infections": self.local_secondary_infections,
+            "symptomatic_reports": self.symptomatic_reports,
+            "asymptomatic_reports": self.asymptomatic_reports,
+            "nonzero_combined_report_dates": self.nonzero_combined_report_dates,
+            "chronology_passed": self.chronology_passed,
+            "latent_incidence_conservation_passed": self.latent_incidence_conservation_passed,
+            "namespace_passed": self.namespace_passed,
+            "complete": self.complete,
+            "viable": self.viable,
+            "raw_values": _model_payload(self.raw_values),
+        }
 
 
 @dataclass(frozen=True)
@@ -487,6 +504,7 @@ class WorkloadPlan:
     truth_latent_calls: int
     p01_p02_candidate_latent_calls: int
     p03_latent_calls: int
+    p03_observation_transforms: int
     total_latent_calls: int
     p01_observation_transforms: int
     total_observation_transforms: int
@@ -512,6 +530,7 @@ class WorkloadPlan:
             "truth_latent_outbreak_calls": self.truth_latent_calls,
             "p0_1_p0_2_candidate_latent_outbreak_calls": self.p01_p02_candidate_latent_calls,
             "p0_3_latent_outbreak_calls": self.p03_latent_calls,
+            "p0_3_observation_transforms": self.p03_observation_transforms,
             "total_latent_outbreak_calls": self.total_latent_calls,
             "p0_1_latent_calls": self.p01_latent_calls,
             "p0_1_observation_transforms": self.p01_observation_transforms,
@@ -607,6 +626,7 @@ class P01CampaignResult:
     target_observation_hashes: Mapping[int, str]
     target_namespace_fingerprints: Mapping[int, str]
     candidate_prediction_library: Mapping[CandidateCell, tuple[ObservedTables, ...]]
+    candidate_observation_hashes: Mapping[tuple[CandidateCell, int, int], str]
     candidate_config_hashes: Mapping[CandidateCell, str]
     candidate_latents: Mapping[tuple[int, float, int], tuple[Any, OutbreakRunConfig]]
     generated_parents: Mapping[int, Any]
@@ -762,7 +782,9 @@ class P03CampaignResult:
     target_profiles: Mapping[int, Mapping[str, Any]]
     loss_surfaces: Mapping[int, tuple[dict[str, Any], ...]]
     prediction_hashes: Mapping[str, str]
+    prediction_vectors: Mapping[str, tuple[float, ...]]
     ridge_prediction_vectors: Mapping[str, tuple[float, ...]]
+    candidate_prediction_library: Mapping[P03Cell, tuple[ObservedTables, ...]]
     ridge_objectives: Mapping[int, Mapping[str, float]]
     candidate_config_hashes: Mapping[P03Cell, str]
     replicate_provenance: tuple[Mapping[str, Any], ...]
@@ -783,6 +805,9 @@ class P03CampaignResult:
             },
             "loss_surfaces": {str(seed): list(rows) for seed, rows in self.loss_surfaces.items()},
             "prediction_hashes": dict(self.prediction_hashes),
+            "prediction_vectors": {
+                cell: list(vector) for cell, vector in self.prediction_vectors.items()
+            },
             "ridge_prediction_vectors": {
                 cell: list(vector) for cell, vector in self.ridge_prediction_vectors.items()
             },
@@ -1152,6 +1177,7 @@ def plan_workload(config: CampaignConfig) -> WorkloadPlan:
         * len(config.dimension_map["inoculation_day_offset"].candidates)
     )
     p03_latent_calls = len(config.candidate_process_seeds) * p03_cells
+    p03_observation_transforms = P03_OBSERVATION_TRANSFORMS
     p01_observation_transforms = len(config.target_process_seeds) + p01_cells * len(
         config.candidate_process_seeds
     )
@@ -1159,7 +1185,7 @@ def plan_workload(config: CampaignConfig) -> WorkloadPlan:
         p01_observation_transforms
         + p01_cells * len(config.candidate_process_seeds)
         + p02_wrong_regime_cells * len(config.candidate_process_seeds)
-        + p03_cells * len(config.candidate_process_seeds)
+        + p03_observation_transforms
     )
     return WorkloadPlan(
         p01_cells=p01_cells,
@@ -1170,6 +1196,7 @@ def plan_workload(config: CampaignConfig) -> WorkloadPlan:
         truth_latent_calls=truth_latent_calls,
         p01_p02_candidate_latent_calls=candidate_latent_calls,
         p03_latent_calls=p03_latent_calls,
+        p03_observation_transforms=p03_observation_transforms,
         total_latent_calls=truth_latent_calls + candidate_latent_calls + p03_latent_calls,
         p01_observation_transforms=p01_observation_transforms,
         total_observation_transforms=total_observation_transforms,
@@ -1202,11 +1229,7 @@ def plan_workload(config: CampaignConfig) -> WorkloadPlan:
                 if "p0_2b" in config.implemented_arms
                 else 0
             )
-            + (
-                p03_cells * len(config.candidate_process_seeds)
-                if "p0_3" in config.implemented_arms
-                else 0
-            )
+            + (p03_observation_transforms if "p0_3" in config.implemented_arms else 0)
         ),
     )
 
@@ -1241,7 +1264,11 @@ def guard_workload(
         raise BudgetError("P0-1 grid exceeds its declared 81-cell cap")
     if plan.p02_wrong_delay_cells != 81 or plan.p02_wrong_regime_cells != 27:
         raise BudgetError("P0-2 grids do not match their declared 81- and 27-cell caps")
-    if plan.p03_cells != 9 or plan.p03_latent_calls != 27:
+    if (
+        plan.p03_cells != 9
+        or plan.p03_latent_calls != 27
+        or plan.p03_observation_transforms != P03_OBSERVATION_TRANSFORMS
+    ):
         raise BudgetError("P0-3 grid or latent calls do not match their declared caps")
     if plan.total_cells > TOTAL_GRID_CELLS:
         raise BudgetError("total grid exceeds the declared 198-cell cap")
@@ -1973,6 +2000,12 @@ def _observed_tables_from_result(result: Any) -> ObservedTables:
     )
 
 
+def _observed_table_sha256(table: ObservedTables) -> str:
+    return hashlib.sha256(
+        json.dumps(table.as_dict(), sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
 def _truth_diagnostics_from_result(
     latent_result: Any,
     observation_result: Any,
@@ -1987,6 +2020,14 @@ def _truth_diagnostics_from_result(
     observation_diagnostics = getattr(observation_result, "diagnostics", {})
     natural_history = latent_diagnostics.get("natural_history", {})
     states = latent_diagnostics.get("states", {})
+    observation_rng = observation_diagnostics.get("observation_rng", {})
+    latent_config = getattr(latent_result, "config", None)
+    observation_config = getattr(observation_result, "config", None)
+    expected_fingerprint = None
+    if latent_config is not None and observation_config is not None:
+        expected_fingerprint = hashlib.sha256(
+            str(observation_stream_seed(latent_config.seed, observation_config)).encode("utf-8")
+        ).hexdigest()
     chronology_passed = bool(
         natural_history.get("chronology_passed", False)
         and observation_diagnostics.get("no_report_before_infection", False)
@@ -2012,6 +2053,39 @@ def _truth_diagnostics_from_result(
         latent_incidence_conservation_passed=diagnostics.latent_incidence_conservation_passed,
         namespace_passed=diagnostics.namespace_passed,
         complete=True,
+        raw_values={
+            "natural_history": _model_payload(natural_history),
+            "latent_states": _model_payload(states),
+            "observation_chronology_and_conservation": {
+                key: _model_payload(observation_diagnostics.get(key))
+                for key in (
+                    "status",
+                    "latent_event_count",
+                    "reported_case_count",
+                    "no_report_before_infection",
+                    "chronology_violations",
+                    "latent_incidence_conservation_difference",
+                    "latent_incidence_conservation",
+                    "analysis_horizon",
+                )
+                if key in observation_diagnostics
+            },
+            "observed_report_counts": {
+                "symptomatic": diagnostics.symptomatic_reports,
+                "asymptomatic": diagnostics.asymptomatic_reports,
+                "nonzero_combined_dates": diagnostics.nonzero_combined_report_dates,
+            },
+            "namespace_verification": {
+                "verified": namespace_passed,
+                "process_seed": getattr(latent_config, "seed", None),
+                "observation_seed": getattr(observation_config, "observation_seed", None),
+                "observation_config_id": getattr(observation_config, "observation_config_id", None),
+                "stream_namespace": observation_rng.get("stream_namespace"),
+                "stream_key_inputs": _model_payload(observation_rng.get("stream_key_inputs")),
+                "observed_fingerprint": observation_rng.get("stream_fingerprint"),
+                "recomputed_fingerprint": expected_fingerprint,
+            },
+        },
     )
 
 
@@ -2147,6 +2221,7 @@ def run_p01_campaign(
                 candidate_latents[(process_seed, beta, offset)] = (latent_result, run_config)
 
         candidate_predictions: dict[CandidateCell, tuple[ObservedTables, ...]] = {}
+        candidate_observation_hashes: dict[tuple[CandidateCell, int, int], str] = {}
         candidate_hashes: dict[CandidateCell, str] = {}
         candidate_namespace_passed = True
         for cell in config.candidate_grid:
@@ -2180,6 +2255,9 @@ def run_p01_campaign(
                     tail_days=config.observation_horizon_tail_days,
                 )
                 predictions.append(table)
+                candidate_observation_hashes[(cell, process_seed, observation_seed)] = (
+                    _observed_table_sha256(table)
+                )
                 constructed_configs.append((run_config, observation_config))
             if len(predictions) != P01_FIT_REPLICATE_COUNT:
                 raise CampaignError("candidate cell did not produce exactly three replicates")
@@ -2260,6 +2338,7 @@ def run_p01_campaign(
         target_observation_hashes=target_observation_hashes,
         target_namespace_fingerprints=target_namespace_fingerprints,
         candidate_prediction_library=candidate_predictions,
+        candidate_observation_hashes=candidate_observation_hashes,
         candidate_config_hashes=candidate_hashes,
         candidate_latents=candidate_latents,
         generated_parents=parents,
@@ -3069,7 +3148,7 @@ def run_p03_campaign(
     measured_latent_calls = 0
     measured_observation_transforms = 0
     latent_cap = 27
-    transform_cap = 27
+    transform_cap = P03_OBSERVATION_TRANSFORMS
     try:
         for cell in grid:
             for process_seed in config.candidate_process_seeds:
@@ -3203,6 +3282,9 @@ def run_p03_campaign(
         ridge_vectors = {
             _p03_cell_key(cell): _prediction_vector(predictions[cell]) for cell in ridge_cells
         }
+        prediction_vectors = {
+            _p03_cell_key(cell): _prediction_vector(predictions[cell]) for cell in grid
+        }
         classification, predicates, prediction_hashes = classify_p03_structural_equivalence(
             ridge_prediction_vectors=ridge_vectors,
             ridge_objectives=ridge_objectives,
@@ -3219,7 +3301,9 @@ def run_p03_campaign(
             target_profiles=profiles,
             loss_surfaces=loss_surfaces,
             prediction_hashes=prediction_hashes,
+            prediction_vectors=prediction_vectors,
             ridge_prediction_vectors=ridge_vectors,
+            candidate_prediction_library=predictions,
             ridge_objectives=ridge_objectives,
             candidate_config_hashes=config_hashes,
             replicate_provenance=tuple(provenance),
@@ -3326,6 +3410,8 @@ def _populate_research_bundle(
     input_hashes: Mapping[str, str] | None = None,
     p02_complete_loss_surfaces: Mapping[str, Any] | None = None,
     p02_provenance: Mapping[str, Any] | None = None,
+    retained_evidence_files: Mapping[str, bytes] | None = None,
+    retained_evidence_index: Sequence[Mapping[str, Any]] = (),
     execution_complete: bool = False,
     mocked: bool = False,
 ) -> Path:
@@ -3448,16 +3534,100 @@ def _populate_research_bundle(
     (output_dir / "campaign_summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    for relative_name, content in sorted((retained_evidence_files or {}).items()):
+        relative_path = PurePosixPath(relative_name)
+        if (
+            relative_path.is_absolute()
+            or not relative_path.parts
+            or any(part in {"", ".", ".."} for part in relative_path.parts)
+            or relative_name in {"SHA256SUMS", "bundle_index.json"}
+        ):
+            raise CampaignError(f"invalid retained bundle path: {relative_name}")
+        destination = output_dir.joinpath(*relative_path.parts)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(content)
+    output_descriptions = {
+        "campaign_config.yaml": (
+            "Frozen campaign controls and declared grids; verifies run settings."
+        ),
+        "campaign_config.sha256": "Digest for the retained frozen campaign configuration.",
+        "predeclaration.sha256": "Digest of the frozen predeclaration used by the run.",
+        "g29_ruling.md": "Accepted ruling bytes required for execution authorization.",
+        "g29_ruling.sha256": "Digest for the retained accepted ruling.",
+        "input_hashes.json": (
+            "Source and configuration digests used to identify the implementation inputs."
+        ),
+        "seed_ledger.json": "Declared target and candidate process/observation seed assignments.",
+        "candidate_loss_surfaces.json": (
+            "P0-1 per-target 81-cell objective surfaces; recompute from P0-1 target and "
+            "candidate observed tables."
+        ),
+        "p0_1_candidate_provenance.json": (
+            "P0-1 per-cell/per-replicate table hashes and config hashes."
+        ),
+        "p0_1_recovery.csv": "P0-1 descriptive recovery summaries and dimension-level estimates.",
+        "p0_1_truth_diagnostics.json": (
+            "Raw inputs for P0-1 viability, chronology, conservation, and namespace predicates."
+        ),
+        "p0_2_loss_surfaces.json": (
+            "P0-2A and P0-2B per-target objective surfaces; recompute from retained target "
+            "and arm candidate tables."
+        ),
+        "p0_2_provenance.json": (
+            "Blind estimate hashes, candidate table provenance, selected estimates, R_i, "
+            "E_i, and detection clauses."
+        ),
+        "p0_2_misspecification.csv": "Per-target P0-2 R_i/E_i and detection results.",
+        "p0_3_profile.json": (
+            "P0-3 full surfaces, per-cell prediction vectors, ridge hashes, profiles, "
+            "and predicates."
+        ),
+        "campaign_summary.json": "Published P0-1, P0-2, P0-3, and workload predicate values.",
+        "bundle_index.json": (
+            "This index maps bundle outputs and retained evidence files to recomputation tasks."
+        ),
+        "blind_estimate_manifest.json": (
+            "Estimate hashes, exact-file digests, and persist-before-truth-join event ordering."
+        ),
+        "SHA256SUMS": (
+            "File-level digests for every other file in this bundle, including nested evidence."
+        ),
+    }
+    bundle_index = {
+        "schema_version": 1,
+        "purpose": (
+            "Map published Phase-0 results to the retained evidence needed for cold recomputation."
+        ),
+        "outputs": output_descriptions,
+        "retained_evidence_file_count": len(retained_evidence_index),
+        "retained_evidence_files": [dict(item) for item in retained_evidence_index],
+        "sha256sums_scope": (
+            "Every file except SHA256SUMS itself; paths are bundle-relative POSIX paths."
+        ),
+    }
+    (output_dir / "bundle_index.json").write_bytes(_compact_json_bytes(bundle_index))
     files = sorted(
-        path for path in output_dir.iterdir() if path.is_file() and path.name != "SHA256SUMS"
+        (path for path in output_dir.rglob("*") if path.is_file() and path.name != "SHA256SUMS"),
+        key=lambda path: path.relative_to(output_dir).as_posix(),
     )
-    sums = "".join(f"{sha256_file(path)}  {path.name}\n" for path in files)
+    sums = "".join(
+        f"{sha256_file(path)}  {path.relative_to(output_dir).as_posix()}\n" for path in files
+    )
     (output_dir / "SHA256SUMS").write_text(sums, encoding="utf-8")
+    listed_names: list[str] = []
     for line in sums.splitlines():
         digest, name = line.split("  ", 1)
-        listed = output_dir / name
+        listed_names.append(name)
+        listed = output_dir.joinpath(*PurePosixPath(name).parts)
         if not listed.is_file() or sha256_file(listed) != digest:
             raise CampaignError(f"SHA256SUMS verification failed for {name}")
+    all_names = {
+        path.relative_to(output_dir).as_posix()
+        for path in output_dir.rglob("*")
+        if path.is_file() and path.name != "SHA256SUMS"
+    }
+    if len(listed_names) != len(set(listed_names)) or set(listed_names) != all_names:
+        raise CampaignError("SHA256SUMS does not cover every bundle file exactly once")
     return output_dir
 
 
@@ -3476,6 +3646,8 @@ def _publish_research_bundle(
     input_hashes: Mapping[str, str] | None = None,
     p02_complete_loss_surfaces: Mapping[str, Any] | None = None,
     p02_provenance: Mapping[str, Any] | None = None,
+    retained_evidence_files: Mapping[str, bytes] | None = None,
+    retained_evidence_index: Sequence[Mapping[str, Any]] = (),
     execution_complete: bool = False,
     mocked: bool = False,
 ) -> Path:
@@ -3503,6 +3675,8 @@ def _publish_research_bundle(
             input_hashes=input_hashes,
             p02_complete_loss_surfaces=p02_complete_loss_surfaces,
             p02_provenance=p02_provenance,
+            retained_evidence_files=retained_evidence_files,
+            retained_evidence_index=retained_evidence_index,
             execution_complete=execution_complete,
             mocked=mocked,
         )
@@ -3653,6 +3827,343 @@ def _overall_phase0_status(arms: Mapping[str, Mapping[str, Any]]) -> str:
     return "NOT_ESTABLISHED"
 
 
+def _compact_json_bytes(payload: Any) -> bytes:
+    return (
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
+    ).encode("utf-8")
+
+
+def _cell_identity(cell: Mapping[str, Any]) -> str:
+    return json.dumps(cell, sort_keys=True, separators=(",", ":"))
+
+
+def _collect_retained_evidence(
+    p01_result: P01CampaignResult,
+    p02_result: P02CampaignResult,
+    p03_result: P03CampaignResult,
+    workspace: Path,
+) -> tuple[dict[str, bytes], list[dict[str, Any]]]:
+    """Copy exact blind read-backs and all observed tables into bundle-ready files."""
+
+    files: dict[str, bytes] = {}
+    evidence_index: list[dict[str, Any]] = []
+
+    def add_file(relative_path: str, content: bytes, entry: Mapping[str, Any]) -> None:
+        if relative_path in files:
+            raise CampaignError(f"duplicate retained evidence path: {relative_path}")
+        files[relative_path] = content
+        evidence_index.append(
+            {
+                "path": relative_path,
+                "file_sha256": hashlib.sha256(content).hexdigest(),
+                **dict(entry),
+            }
+        )
+
+    blind_records: list[dict[str, Any]] = []
+    record_ordinal = 0
+    record_groups = (
+        ("p0_1", workspace / "p0_1" / "blind_estimates", p01_result.config.target_process_seeds),
+        (
+            "p0_2a",
+            workspace / "p0_2" / "p0_2a" / "blind_estimates",
+            p01_result.config.target_process_seeds,
+        ),
+        (
+            "p0_2b",
+            workspace / "p0_2" / "p0_2b" / "blind_estimates",
+            p01_result.config.target_process_seeds,
+        ),
+    )
+    for arm, source_dir, target_seeds in record_groups:
+        for target_seed in target_seeds:
+            source_path = source_dir / f"{target_seed}.json"
+            try:
+                content = source_path.read_bytes()
+                record = json.loads(content)
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                raise CampaignError(
+                    f"persisted blind estimate is unavailable for {arm}/{target_seed}"
+                ) from exc
+            if not isinstance(record, dict) or not isinstance(record.get("estimate_hash"), str):
+                raise CampaignError(
+                    f"persisted blind estimate is malformed for {arm}/{target_seed}"
+                )
+            record_ordinal += 1
+            relative_path = f"blind_estimates/{arm}/{target_seed}.json"
+            file_sha256 = hashlib.sha256(content).hexdigest()
+            entry = {
+                "path": relative_path,
+                "arm": arm,
+                "target_seed": target_seed,
+                "estimate_hash": record["estimate_hash"],
+                "file_sha256": file_sha256,
+                "persisted_event_order": 2 * record_ordinal - 1,
+                "truth_join_event_order": 2 * record_ordinal,
+                "persisted_before_truth_join": True,
+            }
+            blind_records.append(entry)
+            add_file(
+                relative_path,
+                content,
+                {
+                    "kind": "blind_estimate_readback",
+                    "recomputes": (
+                        "Persisted truth-free selected estimate, profiles, complete surface, "
+                        "and tie record."
+                    ),
+                    "arm": arm,
+                    "target_seed": target_seed,
+                    "estimate_hash": record["estimate_hash"],
+                    "persisted_before_truth_join": True,
+                    "manifest": "blind_estimate_manifest.json",
+                },
+            )
+
+    blind_manifest = {
+        "schema_version": 1,
+        "record_count": len(blind_records),
+        "records": blind_records,
+        "ordering_note": (
+            "Event order records each persisted JSON read-back before the corresponding "
+            "truth join/evaluation; the persisted file SHA-256 and estimate_hash identify "
+            "the exact retained record."
+        ),
+    }
+    blind_manifest_bytes = _compact_json_bytes(blind_manifest)
+    add_file(
+        "blind_estimate_manifest.json",
+        blind_manifest_bytes,
+        {
+            "kind": "blind_estimate_order_manifest",
+            "record_count": len(blind_records),
+            "recomputes": "Record identity and persist-before-truth-join ordering evidence.",
+        },
+    )
+
+    truth_diagnostics = {
+        "schema_version": 1,
+        "targets": [
+            {
+                "target_seed": seed,
+                **p01_result.target_diagnostics[seed].as_dict(),
+            }
+            for seed in p01_result.config.target_process_seeds
+        ],
+    }
+    truth_bytes = _compact_json_bytes(truth_diagnostics)
+    add_file(
+        "p0_1_truth_diagnostics.json",
+        truth_bytes,
+        {
+            "kind": "p0_1_truth_diagnostics",
+            "target_count": len(p01_result.config.target_process_seeds),
+            "recomputes": "campaign_summary.json arms.p0_1.predicates.truth_viability",
+        },
+    )
+
+    candidate_provenance: list[dict[str, Any]] = []
+    config = p01_result.config
+    expected_p01_keys: set[tuple[CandidateCell, int, int]] = set()
+    for cell_index, cell in enumerate(config.candidate_grid):
+        for process_seed, observation_seed in zip(
+            config.candidate_process_seeds, config.candidate_observation_seeds, strict=True
+        ):
+            key = (cell, process_seed, observation_seed)
+            expected_p01_keys.add(key)
+            table = p01_result.candidate_prediction_library[cell][
+                config.candidate_process_seeds.index(process_seed)
+            ]
+            table_sha256 = _observed_table_sha256(table)
+            if p01_result.candidate_observation_hashes.get(key) != table_sha256:
+                raise CampaignError(
+                    "P0-1 candidate observed-table hash is incomplete or mismatched"
+                )
+            candidate_provenance.append(
+                {
+                    "cell_index": cell_index,
+                    "cell": cell.as_dict(),
+                    "process_seed": process_seed,
+                    "observation_seed": observation_seed,
+                    "cell_config_sha256": p01_result.candidate_config_hashes[cell],
+                    "observed_table_sha256": table_sha256,
+                }
+            )
+    if set(p01_result.candidate_observation_hashes) != expected_p01_keys:
+        raise CampaignError("P0-1 candidate observed-table hash inventory is incomplete")
+    candidate_provenance_bytes = _compact_json_bytes({"replicate_provenance": candidate_provenance})
+    add_file(
+        "p0_1_candidate_provenance.json",
+        candidate_provenance_bytes,
+        {
+            "kind": "p0_1_candidate_table_provenance",
+            "replicate_count": len(candidate_provenance),
+            "recomputes": "Cross-check all P0-1 candidate table and cell-config digests.",
+        },
+    )
+
+    def add_table(
+        *,
+        arm: str,
+        role: str,
+        cell_index: int | None,
+        cell: CandidateCell | P03Cell,
+        process_seed: int,
+        observation_seed: int,
+        table: ObservedTables,
+        expected_sha256: str,
+        provenance_reference: str,
+    ) -> None:
+        cell_payload = cell.as_dict()
+        table_sha256 = _observed_table_sha256(table)
+        if table_sha256 != expected_sha256:
+            raise CampaignError(
+                f"retained observed-table hash mismatch for {arm}/{process_seed}/{observation_seed}"
+            )
+        if role == "target":
+            relative_path = (
+                f"observed_tables/{arm}/targets/target-{process_seed}"
+                f"-observation-{observation_seed}.json"
+            )
+        else:
+            if cell_index is None:
+                raise CampaignError("candidate observed-table retention requires a cell index")
+            relative_path = (
+                f"observed_tables/{arm}/candidates/cell-{cell_index:03d}/"
+                f"process-{process_seed}-observation-{observation_seed}.json"
+            )
+        payload = {
+            "arm": arm,
+            "role": role,
+            "cell_index": cell_index,
+            "cell": cell_payload,
+            "process_seed": process_seed,
+            "observation_seed": observation_seed,
+            "table_sha256": table_sha256,
+            "observed_tables": table.as_dict(),
+        }
+        content = _compact_json_bytes(payload)
+        add_file(
+            relative_path,
+            content,
+            {
+                "kind": "observed_table",
+                "recomputes": (
+                    "P0-1/P0-2/P0-3 objective surfaces and P0-2B E_i from target and "
+                    "candidate tables."
+                ),
+                "arm": arm,
+                "role": role,
+                "cell_index": cell_index,
+                "cell": cell_payload,
+                "process_seed": process_seed,
+                "observation_seed": observation_seed,
+                "table_sha256": table_sha256,
+                "provenance_reference": provenance_reference,
+            },
+        )
+
+    truth_by_seed = p01_result.target_truths
+    for process_seed, observation_seed in zip(
+        config.target_process_seeds, config.target_observation_seeds, strict=True
+    ):
+        add_table(
+            arm="p0_1",
+            role="target",
+            cell_index=None,
+            cell=truth_by_seed[process_seed],
+            process_seed=process_seed,
+            observation_seed=observation_seed,
+            table=p01_result.target_tables[process_seed],
+            expected_sha256=p01_result.target_observation_hashes[process_seed],
+            provenance_reference=(
+                f"p0_2_provenance.json.reused_p01_target_provenance.{process_seed}"
+            ),
+        )
+
+    for arm in ("p0_1", "p0_2a", "p0_2b", "p0_3"):
+        grid: Sequence[CandidateCell | P03Cell]
+        library: Mapping[Any, Sequence[ObservedTables]]
+        provenance_lookup: Mapping[tuple[str, int, int], str]
+        if arm == "p0_1":
+            grid = config.candidate_grid
+            library = p01_result.candidate_prediction_library
+            provenance_lookup = {
+                (
+                    _cell_identity(item["cell"]),
+                    int(item["process_seed"]),
+                    int(item["observation_seed"]),
+                ): str(item["observed_table_sha256"])
+                for item in candidate_provenance
+            }
+            provenance_reference = "p0_1_candidate_provenance.json.replicate_provenance"
+        elif arm in ("p0_2a", "p0_2b"):
+            arm_result = p02_result.arms[arm]
+            grid = config.candidate_grid if arm == "p0_2a" else _p02b_grid(config)
+            library = arm_result.candidate_prediction_library
+            provenance_lookup = {
+                (
+                    _cell_identity(item["candidate"]),
+                    int(item["process_seed"]),
+                    int(item["observation_seed"]),
+                ): str(item["observed_table_sha256"])
+                for item in arm_result.replicate_provenance
+            }
+            provenance_reference = f"p0_2_provenance.json.arms.{arm}.replicate_provenance"
+        else:
+            grid = _p03_grid()
+            library = p03_result.candidate_prediction_library
+            provenance_lookup = {
+                (
+                    _cell_identity(item["candidate"]),
+                    int(item["process_seed"]),
+                    int(item["observation_seed"]),
+                ): str(item["observed_table_sha256"])
+                for item in p03_result.replicate_provenance
+            }
+            provenance_reference = "p0_3_profile.json.replicate_provenance"
+
+        if set(library) != set(grid):
+            raise CampaignError(f"{arm} observed-table library is incomplete")
+        for cell_index, candidate_cell in enumerate(cast(Sequence[CandidateCell | P03Cell], grid)):
+            identity = _cell_identity(candidate_cell.as_dict())
+            tables = cast(Mapping[Any, Sequence[ObservedTables]], library)[candidate_cell]
+            if len(tables) != len(config.candidate_process_seeds):
+                raise CampaignError(f"{arm} observed-table replicate count is incomplete")
+            for replicate_index, (process_seed, observation_seed) in enumerate(
+                zip(config.candidate_process_seeds, config.candidate_observation_seeds, strict=True)
+            ):
+                table = tables[replicate_index]
+                provenance_key = (identity, process_seed, observation_seed)
+                expected_sha256 = provenance_lookup.get(provenance_key)
+                if expected_sha256 is None:
+                    raise CampaignError(f"{arm} observed-table provenance is missing")
+                add_table(
+                    arm=arm,
+                    role="candidate",
+                    cell_index=cell_index,
+                    cell=candidate_cell,
+                    process_seed=process_seed,
+                    observation_seed=observation_seed,
+                    table=table,
+                    expected_sha256=expected_sha256,
+                    provenance_reference=provenance_reference,
+                )
+
+    expected_table_counts = {"p0_1": 248, "p0_2a": 243, "p0_2b": 81, "p0_3": 27}
+    actual_table_counts = {
+        arm: sum(
+            1
+            for item in evidence_index
+            if item.get("kind") == "observed_table" and item.get("arm") == arm
+        )
+        for arm in expected_table_counts
+    }
+    if actual_table_counts != expected_table_counts:
+        raise CampaignError("retained observed-table counts do not match the declared workload")
+    return files, evidence_index
+
+
 def execute_campaign(
     config_path: Path,
     predeclaration_path: Path,
@@ -3703,7 +4214,7 @@ def execute_campaign(
             or p02a.measured_observation_transforms != 243
             or p02b.measured_observation_transforms != 81
             or p03_result.measured_latent_calls != plan.p03_latent_calls
-            or p03_result.measured_observation_transforms != plan.p03_latent_calls
+            or p03_result.measured_observation_transforms != plan.p03_observation_transforms
             or len(p01_result.generated_parents) != plan.distinct_network_seed_builds
         ):
             raise BudgetError("measured all-arms work does not match the guarded plan")
@@ -3791,6 +4302,9 @@ def execute_campaign(
             for arm in p02_result.arms.values()
             for result in arm.target_results
         ]
+        retained_files, retained_index = _collect_retained_evidence(
+            p01_result, p02_result, p03_result, workspace
+        )
         hashes = _campaign_input_hashes(root, config_path, predeclaration_path, ruling_path)
         return _publish_research_bundle(
             output_dir,
@@ -3806,6 +4320,8 @@ def execute_campaign(
             input_hashes=hashes,
             p02_complete_loss_surfaces=p02_surfaces,
             p02_provenance=p02_result.as_dict(),
+            retained_evidence_files=retained_files,
+            retained_evidence_index=retained_index,
             execution_complete=True,
             mocked=mocked_for_test,
         )
