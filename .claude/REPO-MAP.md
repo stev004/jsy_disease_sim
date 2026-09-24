@@ -2,7 +2,7 @@
 
 *A navigation map, not documentation. Module contracts live in `docs/architecture.md`; scientific scope in `docs/scientific_scope.md`. Written 2026-09-21 (code baseline `3ff3734`).*
 
-**Current pickup:** G29 accepted 2026-09-23; P0-2 implementation in flight (gpt-6-luna @ xhigh). RUN/GATES own live status; handoff `docs/handoff/2026-09-22-phase0-g30-complete.md` (its G29 step is done).
+**Current pickup:** P0-2 accepted 2026-09-24 (ae88529, pushed); P0-3 implementation in flight (gpt-6-luna @ xhigh). RUN/GATES own live status.
 
 ## Top level
 
