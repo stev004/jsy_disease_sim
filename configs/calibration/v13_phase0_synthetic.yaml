@@ -114,6 +114,23 @@ misspecification:
     p0_2b_minimum_detected_targets: 4
     tie_scale: 1.0e-12
 
+negative_control:
+  beta_grid: [0.04, 0.08, 0.16]
+  global_route_factor_grid: [0.5, 1.0, 2.0]
+  route_multiplier_scope: all_eleven_routes_uniformly
+  fixed_inoculation_day_offset: 2
+  fixed_detection_probabilities:
+    symptomatic: 0.75
+    asymptomatic: 0.25
+  equal_product_route_beta: 0.08
+  vector_tolerance: 1.0e-12
+  objective_spread_scale: 1.0e-12
+  structural_classification: NON_IDENTIFIED_STRUCTURAL
+  factor_estimate: null
+  standard_error: absent
+  interval: absent
+  coverage: absent
+
 acceptance:
   descriptive_coverage_minimum: 0.8
   joint_coverage_minimum: 0.6
@@ -143,7 +160,7 @@ budget_caps:
   mode: ci
 
 implementation:
-  implemented_arms: [p0_1, p0_2a, p0_2b]
+  implemented_arms: [p0_1, p0_2a, p0_2b, p0_3]
   required_arms: [p0_1, p0_2a, p0_2b, p0_3]
   retries: 0
   adaptive_grid: false

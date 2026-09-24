@@ -5,9 +5,8 @@ contains the P0-1 scoring boundary and the frozen Phase-0 workload declaration;
 it does not alter, or write through, any existing simulation or calibration
 artifact schema.
 
-The campaign executor is intentionally fail-closed in this unit. P0-3 and the
-independent all-arms review are required before execution; dry-run cannot call
-a simulator or an observation transform.
+The campaign executor composes the frozen P0-1, P0-2, and P0-3 arms. Dry-run
+calculates the complete budget without calling a simulator or observation transform.
 """
 
 from __future__ import annotations
@@ -17,8 +16,10 @@ import csv
 import hashlib
 import json
 import math
+import os
 import shutil
 import sys
+import tempfile
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date, timedelta
@@ -28,6 +29,7 @@ from typing import Any, Literal, cast
 
 import yaml  # type: ignore[import-untyped]
 
+from .calibration import _profile_beta_nuisance, _record_argmin_shifts
 from .observation import load_observation_config, observe_latent_run
 from .observation_scheduler import observation_stream_seed
 from .observation_schemas import ObservationConfig
@@ -53,6 +55,10 @@ PROFILE_GAP = 0.05
 TIE_SCALE = 1e-12
 PROFILE_DENOMINATOR_FLOOR = 1e-12
 P02B_COMMON_PROBABILITY_GRID: tuple[float, ...] = (0.25, 0.50, 0.75)
+P03_BETA_GRID: tuple[float, ...] = (0.04, 0.08, 0.16)
+P03_ROUTE_FACTOR_GRID: tuple[float, ...] = (0.5, 1.0, 2.0)
+P03_VECTOR_TOLERANCE = 1.0e-12
+P03_OBJECTIVE_SPREAD_SCALE = 1.0e-12
 
 P01_DIMENSION_NAMES: tuple[str, ...] = (
     "beta",
@@ -523,6 +529,7 @@ class WorkloadPlan:
             "implemented_p0_2b_grid_cells": (
                 self.p02_wrong_regime_cells if "p0_2b" in self.implemented_arms else 0
             ),
+            "implemented_p0_3_grid_cells": self.p03_cells if "p0_3" in self.implemented_arms else 0,
             "planned_p0_3_grid_cells": self.p03_cells,
             "implemented_grid_cells": self.implemented_cells,
             "implemented_latent_outbreak_calls": self.implemented_latent_calls,
@@ -602,6 +609,7 @@ class P01CampaignResult:
     candidate_prediction_library: Mapping[CandidateCell, tuple[ObservedTables, ...]]
     candidate_config_hashes: Mapping[CandidateCell, str]
     candidate_latents: Mapping[tuple[int, float, int], tuple[Any, OutbreakRunConfig]]
+    generated_parents: Mapping[int, Any]
     target_truths: Mapping[int, CandidateCell]
     target_diagnostics: Mapping[int, TruthDiagnostics]
     blind_fits: Mapping[int, BlindFitResult]
@@ -731,6 +739,64 @@ class P02CampaignResult:
         }
 
 
+@dataclass(frozen=True, order=True)
+class P03Cell:
+    """One beta × global route-factor point in the negative control."""
+
+    beta: float
+    global_route_factor: float
+
+    def as_dict(self) -> dict[str, float]:
+        return {"beta": self.beta, "global_route_factor": self.global_route_factor}
+
+
+@dataclass(frozen=True)
+class P03CampaignResult:
+    """Complete P0-3 surface, prediction evidence, and structural classifier."""
+
+    software_status: Literal["PASS", "FAIL"]
+    scientific_status: Literal["PASS", "FAIL"]
+    classification: str
+    factor_estimate: None
+    predicates: Mapping[str, bool]
+    target_profiles: Mapping[int, Mapping[str, Any]]
+    loss_surfaces: Mapping[int, tuple[dict[str, Any], ...]]
+    prediction_hashes: Mapping[str, str]
+    ridge_prediction_vectors: Mapping[str, tuple[float, ...]]
+    ridge_objectives: Mapping[int, Mapping[str, float]]
+    candidate_config_hashes: Mapping[P03Cell, str]
+    replicate_provenance: tuple[Mapping[str, Any], ...]
+    measured_latent_calls: int
+    measured_observation_transforms: int
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "software_status": self.software_status,
+            "scientific_status": self.scientific_status,
+            "classification": self.classification,
+            "factor_estimate": self.factor_estimate,
+            "predicates": dict(self.predicates),
+            "measured_latent_calls": self.measured_latent_calls,
+            "measured_observation_transforms": self.measured_observation_transforms,
+            "target_profiles": {
+                str(seed): dict(profile) for seed, profile in self.target_profiles.items()
+            },
+            "loss_surfaces": {str(seed): list(rows) for seed, rows in self.loss_surfaces.items()},
+            "prediction_hashes": dict(self.prediction_hashes),
+            "ridge_prediction_vectors": {
+                cell: list(vector) for cell, vector in self.ridge_prediction_vectors.items()
+            },
+            "ridge_objectives": {
+                str(seed): dict(values) for seed, values in self.ridge_objectives.items()
+            },
+            "candidate_config_hashes": {
+                json.dumps(cell.as_dict(), sort_keys=True): digest
+                for cell, digest in self.candidate_config_hashes.items()
+            },
+            "replicate_provenance": list(self.replicate_provenance),
+        }
+
+
 def _product(values: Iterable[int]) -> int:
     result = 1
     for value in values:
@@ -854,6 +920,21 @@ def _validate_frozen_payload(payload: Mapping[str, Any]) -> None:
                 "tie_scale": 1.0e-12,
             },
         },
+        "negative_control": {
+            "beta_grid": [0.04, 0.08, 0.16],
+            "global_route_factor_grid": [0.5, 1.0, 2.0],
+            "route_multiplier_scope": "all_eleven_routes_uniformly",
+            "fixed_inoculation_day_offset": 2,
+            "fixed_detection_probabilities": {"symptomatic": 0.75, "asymptomatic": 0.25},
+            "equal_product_route_beta": 0.08,
+            "vector_tolerance": 1.0e-12,
+            "objective_spread_scale": 1.0e-12,
+            "structural_classification": "NON_IDENTIFIED_STRUCTURAL",
+            "factor_estimate": None,
+            "standard_error": "absent",
+            "interval": "absent",
+            "coverage": "absent",
+        },
         "acceptance": {
             "descriptive_coverage_minimum": 0.8,
             "joint_coverage_minimum": 0.6,
@@ -883,7 +964,7 @@ def _validate_frozen_payload(payload: Mapping[str, Any]) -> None:
             "mode": "ci",
         },
         "implementation": {
-            "implemented_arms": ["p0_1", "p0_2a", "p0_2b"],
+            "implemented_arms": ["p0_1", "p0_2a", "p0_2b", "p0_3"],
             "required_arms": ["p0_1", "p0_2a", "p0_2b", "p0_3"],
             "retries": 0,
             "adaptive_grid": False,
@@ -1018,8 +1099,21 @@ def validate_campaign_config(config: CampaignConfig, budget_caps: Mapping[str, A
         raise CampaignError("G29 ruling SHA-256 does not match the accepted ruling")
     if config.g29_ruling_sha256 != config.declaration.get("g29_ruling_sha256"):
         raise CampaignError("G29 ruling SHA-256 does not match the frozen config")
-    if config.implemented_arms != ("p0_1", "p0_2a", "p0_2b"):
-        raise CampaignError("implemented arm declaration does not match this unit")
+    negative_control = config.declaration.get("negative_control")
+    if not isinstance(negative_control, Mapping):
+        raise CampaignError("P0-3 negative-control declaration is missing")
+    if (
+        tuple(float(value) for value in negative_control["beta_grid"]) != P03_BETA_GRID
+        or tuple(float(value) for value in negative_control["global_route_factor_grid"])
+        != P03_ROUTE_FACTOR_GRID
+        or float(negative_control["vector_tolerance"]) != P03_VECTOR_TOLERANCE
+        or float(negative_control["objective_spread_scale"]) != P03_OBJECTIVE_SPREAD_SCALE
+        or negative_control["structural_classification"] != "NON_IDENTIFIED_STRUCTURAL"
+        or negative_control["factor_estimate"] is not None
+    ):
+        raise CampaignError("P0-3 runtime controls do not match the frozen declaration")
+    if config.implemented_arms != ("p0_1", "p0_2a", "p0_2b", "p0_3"):
+        raise CampaignError("implemented arm declaration is incomplete or reordered")
     plan = plan_workload(config)
     cap_names = {
         "p0_1_grid_cells": plan.p01_cells,
@@ -1040,7 +1134,7 @@ def validate_campaign_config(config: CampaignConfig, budget_caps: Mapping[str, A
 
 
 def plan_workload(config: CampaignConfig) -> WorkloadPlan:
-    """Calculate all three-arm counts before any simulation could be called."""
+    """Calculate all-arm counts before any simulation could be called."""
 
     dimension_sizes = [len(dimension.candidates) for dimension in config.dimensions]
     p01_cells = _product(dimension_sizes)
@@ -1089,8 +1183,13 @@ def plan_workload(config: CampaignConfig) -> WorkloadPlan:
             p01_cells
             + (p02_wrong_delay_cells if "p0_2a" in config.implemented_arms else 0)
             + (p02_wrong_regime_cells if "p0_2b" in config.implemented_arms else 0)
+            + (p03_cells if "p0_3" in config.implemented_arms else 0)
         ),
-        implemented_latent_calls=truth_latent_calls + candidate_latent_calls,
+        implemented_latent_calls=(
+            truth_latent_calls
+            + candidate_latent_calls
+            + (p03_latent_calls if "p0_3" in config.implemented_arms else 0)
+        ),
         implemented_observation_transforms=(
             p01_observation_transforms
             + (
@@ -1101,6 +1200,11 @@ def plan_workload(config: CampaignConfig) -> WorkloadPlan:
             + (
                 p02_wrong_regime_cells * len(config.candidate_process_seeds)
                 if "p0_2b" in config.implemented_arms
+                else 0
+            )
+            + (
+                p03_cells * len(config.candidate_process_seeds)
+                if "p0_3" in config.implemented_arms
                 else 0
             )
         ),
@@ -1137,6 +1241,8 @@ def guard_workload(
         raise BudgetError("P0-1 grid exceeds its declared 81-cell cap")
     if plan.p02_wrong_delay_cells != 81 or plan.p02_wrong_regime_cells != 27:
         raise BudgetError("P0-2 grids do not match their declared 81- and 27-cell caps")
+    if plan.p03_cells != 9 or plan.p03_latent_calls != 27:
+        raise BudgetError("P0-3 grid or latent calls do not match their declared caps")
     if plan.total_cells > TOTAL_GRID_CELLS:
         raise BudgetError("total grid exceeds the declared 198-cell cap")
     if plan.total_latent_calls > TOTAL_LATENT_CALLS:
@@ -1333,6 +1439,7 @@ def _p01_hash_config_payload(config: CampaignConfig) -> dict[str, Any]:
     declaration.pop("g29_ruling_path", None)
     declaration.pop("g29_ruling_sha256", None)
     declaration.pop("misspecification", None)
+    declaration.pop("negative_control", None)
     implementation = dict(declaration["implementation"])
     implementation["implemented_arms"] = ["p0_1"]
     declaration["implementation"] = implementation
@@ -1953,6 +2060,8 @@ def run_p01_campaign(
     parents: dict[int, Any] = {}
     try:
         for process_seed in process_seeds:
+            if len(parents) >= DISTINCT_NETWORK_SEED_BUILDS:
+                raise BudgetError("population/network seed build cap reached before dispatch")
             parents[process_seed] = build_parent(
                 project_root,
                 cast(PopulationMode, config.mode),
@@ -1979,8 +2088,12 @@ def run_p01_campaign(
                 config.target_observation_config_id,
                 target_truth,
             )
+            if measured_latent_calls >= P01_LATENT_CALLS:
+                raise BudgetError("P0-1 latent call cap reached before dispatch")
             latent_result = run_outbreak(parents[process_seed], run_config, parameters)
             measured_latent_calls += 1
+            if measured_observation_transforms >= P01_OBSERVATION_TRANSFORMS:
+                raise BudgetError("P0-1 observation transform cap reached before dispatch")
             observation_result = observe_latent_run(latent_result, observation_config)
             measured_observation_transforms += 1
             target_tables[process_seed] = _observed_tables_from_result(observation_result)
@@ -2027,6 +2140,8 @@ def run_p01_campaign(
                     asymptomatic_detection_probability=first_candidate.asymptomatic_detection_probability,
                 )
                 run_config = _run_config_for_cell(config, parameters, process_seed, latent_cell)
+                if measured_latent_calls >= P01_LATENT_CALLS:
+                    raise BudgetError("P0-1 latent call cap reached before dispatch")
                 latent_result = run_outbreak(parents[process_seed], run_config, parameters)
                 measured_latent_calls += 1
                 candidate_latents[(process_seed, beta, offset)] = (latent_result, run_config)
@@ -2050,6 +2165,8 @@ def run_p01_campaign(
                     config.candidate_observation_config_id,
                     cell,
                 )
+                if measured_observation_transforms >= P01_OBSERVATION_TRANSFORMS:
+                    raise BudgetError("P0-1 observation transform cap reached before dispatch")
                 observation_result = observe_latent_run(latent_result, observation_config)
                 measured_observation_transforms += 1
                 candidate_namespace_passed = candidate_namespace_passed and _namespace_passes(
@@ -2145,6 +2262,7 @@ def run_p01_campaign(
         candidate_prediction_library=candidate_predictions,
         candidate_config_hashes=candidate_hashes,
         candidate_latents=candidate_latents,
+        generated_parents=parents,
         target_truths={seed: target_truth for seed in config.target_process_seeds},
         target_diagnostics={row.target_seed: row.truth_diagnostics for row in recovery_rows},
         blind_fits=blind_fits,
@@ -2533,7 +2651,7 @@ def run_p02_campaign(
     validate_campaign_config(config, config.declaration["budget_caps"])
     guard_workload(config)
     _validate_p01_cache_for_p02(p01_result)
-    if config.implemented_arms != ("p0_1", "p0_2a", "p0_2b"):
+    if config.implemented_arms != ("p0_1", "p0_2a", "p0_2b", "p0_3"):
         raise CampaignError("P0-2 arm declaration is incomplete")
     arm_results: dict[str, P02ArmResult] = {}
     for arm in ("p0_2a", "p0_2b"):
@@ -2728,6 +2846,392 @@ def run_p02_campaign(
     )
 
 
+def _p03_grid() -> tuple[P03Cell, ...]:
+    return tuple(
+        P03Cell(beta, factor) for beta in P03_BETA_GRID for factor in P03_ROUTE_FACTOR_GRID
+    )
+
+
+def _p03_cell_key(cell: P03Cell) -> str:
+    return json.dumps(cell.as_dict(), sort_keys=True, separators=(",", ":"))
+
+
+def _prediction_vector(predictions: Sequence[ObservedTables]) -> tuple[float, ...]:
+    """Flatten actual replicate × channel × date vectors in declared order."""
+
+    return tuple(
+        value for table in predictions for channel in table.channel_values for value in channel
+    )
+
+
+def _prediction_vector_hash(vector: Sequence[float]) -> str:
+    payload = json.dumps(list(vector), separators=(",", ":"), allow_nan=False).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def classify_p03_structural_equivalence(
+    *,
+    ridge_prediction_vectors: Mapping[str, Sequence[float]],
+    ridge_objectives: Mapping[int, Mapping[str, float]],
+    target_profiles: Mapping[int, Mapping[str, Any]],
+    factor_estimate: Any = None,
+    emitted_precision_fields: Iterable[str] = (),
+) -> tuple[str, dict[str, bool], dict[str, str]]:
+    """Apply the six frozen P0-3 classifier predicates to actual evidence."""
+
+    ridge_cells = tuple(
+        _p03_cell_key(P03Cell(beta, factor))
+        for beta, factor in ((0.16, 0.5), (0.08, 1.0), (0.04, 2.0))
+    )
+    vectors_present = all(key in ridge_prediction_vectors for key in ridge_cells)
+    vectors = [
+        tuple(ridge_prediction_vectors[key])
+        for key in ridge_cells
+        if key in ridge_prediction_vectors
+    ]
+    vectors_agree = (
+        vectors_present
+        and bool(vectors)
+        and all(
+            len(vector) == len(vectors[0])
+            and all(
+                abs(left - right) <= P03_VECTOR_TOLERANCE
+                for left, right in zip(vectors[0], vector, strict=True)
+            )
+            for vector in vectors[1:]
+        )
+    )
+
+    expected_targets = set(TARGET_PROCESS_SEEDS)
+    objective_passed = set(ridge_objectives) == expected_targets and all(
+        all(key in values for key in ridge_cells)
+        and (max(values[key] for key in ridge_cells) - min(values[key] for key in ridge_cells))
+        <= P03_OBJECTIVE_SPREAD_SCALE * max(1.0, min(values[key] for key in ridge_cells))
+        for values in ridge_objectives.values()
+    )
+
+    expected_factors = set(P03_ROUTE_FACTOR_GRID)
+    forbidden_precision_fields = {"standard_error", "interval", "coverage"}
+
+    def contains_false_precision(value: Any) -> bool:
+        if isinstance(value, Mapping):
+            return any(
+                str(key) in forbidden_precision_fields or contains_false_precision(item)
+                for key, item in value.items()
+            )
+        if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+            return any(contains_false_precision(item) for item in value)
+        return False
+
+    profiles_reported = set(target_profiles) == expected_targets
+    for profile in target_profiles.values():
+        try:
+            argmin_by_factor = {
+                float(key): float(value) for key, value in profile["argmin_by_factor"].items()
+            }
+            shifts = {
+                float(key): float(value) for key, value in profile["argmin_shift_by_factor"].items()
+            }
+            reference = float(profile["argmin_shift_reference_beta"])
+            profiled_rows = profile["profiled_minima"]
+            profiled_betas = {float(row["transmission_beta"]) for row in profiled_rows}
+            profiled_complete = len(profiled_rows) == len(P03_BETA_GRID) and profiled_betas == set(
+                P03_BETA_GRID
+            )
+            profiled_complete = profiled_complete and all(
+                set(float(item["nuisance_factor"]) for item in row["nuisance_profile"])
+                == expected_factors
+                and math.isfinite(float(row["profiled_objective"]))
+                for row in profiled_rows
+            )
+            profile_valid = (
+                set(argmin_by_factor) == expected_factors
+                and set(shifts) == expected_factors
+                and all(value in P03_BETA_GRID for value in argmin_by_factor.values())
+                and profiled_complete
+                and reference == argmin_by_factor[1.0]
+                and all(
+                    abs(shifts[factor] - (argmin_by_factor[factor] - reference))
+                    <= P03_VECTOR_TOLERANCE
+                    for factor in expected_factors
+                )
+            )
+        except (KeyError, TypeError, ValueError, IndexError):
+            profile_valid = False
+        profiles_reported = profiles_reported and profile_valid
+
+    actual_hashes = {
+        key: _prediction_vector_hash(ridge_prediction_vectors[key])
+        for key in ridge_cells
+        if key in ridge_prediction_vectors
+    }
+    hash_passed = (
+        vectors_present
+        and set(actual_hashes) == set(ridge_cells)
+        and len({actual_hashes[key] for key in ridge_cells}) == 1
+    )
+    no_false_precision = (
+        factor_estimate is None
+        and not (forbidden_precision_fields & set(emitted_precision_fields))
+        and not contains_false_precision(target_profiles)
+    )
+    core_predicates = {
+        "equal_product_vectors_agree_within_1e_12": bool(vectors_agree),
+        "ridge_objective_spread_within_threshold": bool(objective_passed),
+        "per_factor_argmins_shifts_and_profiled_minima_reported": bool(profiles_reported),
+        "factor_estimate_null_without_precision_fields": bool(no_false_precision),
+        "target_independent_prediction_hashes_identical": bool(hash_passed),
+    }
+    classification = (
+        "NON_IDENTIFIED_STRUCTURAL" if all(core_predicates.values()) else "NOT_CLASSIFIED"
+    )
+    predicates = {
+        **core_predicates,
+        "classification_is_non_identified_structural": classification
+        == "NON_IDENTIFIED_STRUCTURAL",
+    }
+    return classification, predicates, actual_hashes
+
+
+def _p03_run_config_for_cell(
+    config: CampaignConfig,
+    parameters: RespiratoryParameterSet,
+    process_seed: int,
+    cell: P03Cell,
+) -> OutbreakRunConfig:
+    truth = _truth_cell(config)
+    base = _run_config_for_cell(
+        config,
+        parameters,
+        process_seed,
+        CandidateCell(
+            cell.beta,
+            truth.inoculation_day_offset,
+            truth.symptomatic_detection_probability,
+            truth.asymptomatic_detection_probability,
+        ),
+    )
+    run_config = base.model_copy(
+        update={"route_multipliers": {route: cell.global_route_factor for route in P01_ROUTE_IDS}}
+    )
+    if (
+        run_config.beta != cell.beta
+        or run_config.seed != process_seed
+        or tuple(run_config.route_multipliers) != P01_ROUTE_IDS
+        or any(value != cell.global_route_factor for value in run_config.route_multipliers.values())
+    ):
+        raise CampaignError("P0-3 run config failed the uniform route-factor contract")
+    return run_config
+
+
+def _p03_config_hash(cell: P03Cell, replicate_configs: Sequence[tuple[Any, Any]]) -> str:
+    payload = {
+        "campaign": "v13-phase0-p0-3-negative-control",
+        "cell": cell.as_dict(),
+        "replicate_configs": [
+            {
+                "process_seed": run_config.seed,
+                "observation_seed": observation_config.observation_seed,
+                "run_config": _model_payload(run_config),
+                "observation_config": _model_payload(observation_config),
+            }
+            for run_config, observation_config in replicate_configs
+        ],
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def run_p03_campaign(
+    p01_result: P01CampaignResult,
+    work_dir: Path,
+    *,
+    root: Path,
+) -> P03CampaignResult:
+    """Run the nine-cell control using only P0-1's targets and generated parents."""
+
+    config = p01_result.config
+    guard_workload(config)
+    if config.implemented_arms != ("p0_1", "p0_2a", "p0_2b", "p0_3"):
+        raise CampaignError("P0-3 arm declaration is incomplete")
+    expected_seeds = set(config.candidate_process_seeds)
+    if set(p01_result.generated_parents) != set(
+        (*config.target_process_seeds, *config.candidate_process_seeds)
+    ):
+        raise CampaignError("P0-3 requires the existing P0-1 population/network builds")
+    if set(p01_result.target_tables) != set(config.target_process_seeds):
+        raise CampaignError("P0-3 requires the complete P0-1 target observation set")
+    project_root = root.resolve()
+    parameters = load_parameter_set(project_root)
+    grid = _p03_grid()
+    latent_cache: dict[tuple[P03Cell, int], tuple[Any, OutbreakRunConfig]] = {}
+    measured_latent_calls = 0
+    measured_observation_transforms = 0
+    latent_cap = 27
+    transform_cap = 27
+    try:
+        for cell in grid:
+            for process_seed in config.candidate_process_seeds:
+                if process_seed not in expected_seeds:
+                    raise CampaignError("P0-3 process seed is outside the declared candidate pair")
+                if measured_latent_calls >= latent_cap:
+                    raise BudgetError("P0-3 latent call cap reached before dispatch")
+                run_config = _p03_run_config_for_cell(config, parameters, process_seed, cell)
+                latent = run_outbreak(
+                    p01_result.generated_parents[process_seed], run_config, parameters
+                )
+                if getattr(latent, "config", None) != run_config:
+                    raise CampaignError(
+                        "P0-3 latent result omitted or changed returned config metadata"
+                    )
+                measured_latent_calls += 1
+                latent_cache[(cell, process_seed)] = (latent, run_config)
+
+        predictions: dict[P03Cell, tuple[ObservedTables, ...]] = {}
+        config_hashes: dict[P03Cell, str] = {}
+        provenance: list[dict[str, Any]] = []
+        for cell in grid:
+            cell_predictions: list[ObservedTables] = []
+            actual_configs: list[tuple[Any, Any]] = []
+            for process_seed, observation_seed in zip(
+                config.candidate_process_seeds, config.candidate_observation_seeds, strict=True
+            ):
+                latent, run_config = latent_cache[(cell, process_seed)]
+                truth = _truth_cell(config)
+                observation_cell = CandidateCell(
+                    cell.beta,
+                    truth.inoculation_day_offset,
+                    truth.symptomatic_detection_probability,
+                    truth.asymptomatic_detection_probability,
+                )
+                observation_config = _observation_config_for_cell(
+                    project_root,
+                    config,
+                    observation_seed,
+                    config.candidate_observation_config_id,
+                    observation_cell,
+                )
+                if measured_observation_transforms >= transform_cap:
+                    raise BudgetError("P0-3 observation transform cap reached before dispatch")
+                observed = observe_latent_run(latent, observation_config)
+                measured_observation_transforms += 1
+                if not _namespace_passes(latent, observed, run_config, observation_config):
+                    raise CampaignError("P0-3 observation namespace evidence is incomplete")
+                table = _observed_tables_from_result(observed)
+                validate_observation_calendar(
+                    table,
+                    start_date=config.start_date,
+                    duration_days=config.duration_days,
+                    tail_days=config.observation_horizon_tail_days,
+                )
+                cell_predictions.append(table)
+                actual_configs.append((run_config, observation_config))
+                rng = observed.diagnostics["observation_rng"]
+                provenance.append(
+                    {
+                        "candidate": cell.as_dict(),
+                        "process_seed": process_seed,
+                        "observation_seed": observation_seed,
+                        "latent_result_hash": getattr(latent, "logical_content_hash", None),
+                        "observation_config_id": observation_config.observation_config_id,
+                        "observation_rng_fingerprint": rng["stream_fingerprint"],
+                        "namespace_verified": True,
+                        "observed_table_sha256": hashlib.sha256(
+                            json.dumps(
+                                table.as_dict(), sort_keys=True, separators=(",", ":")
+                            ).encode()
+                        ).hexdigest(),
+                    }
+                )
+            if len(cell_predictions) != P01_FIT_REPLICATE_COUNT:
+                raise CampaignError("P0-3 candidate cell did not produce exactly three replicates")
+            predictions[cell] = tuple(cell_predictions)
+            config_hashes[cell] = _p03_config_hash(cell, actual_configs)
+
+        if measured_latent_calls != latent_cap or measured_observation_transforms != transform_cap:
+            raise CampaignError("P0-3 measured work did not match its exact declared counts")
+        if set(predictions) != set(grid) or set(config_hashes) != set(grid):
+            raise CampaignError("P0-3 generated an incomplete nine-cell surface")
+
+        loss_surfaces: dict[int, tuple[dict[str, Any], ...]] = {}
+        profiles: dict[int, Mapping[str, Any]] = {}
+        ridge_objectives: dict[int, Mapping[str, float]] = {}
+        for target_seed in config.target_process_seeds:
+            target = p01_result.target_tables[target_seed]
+            objectives = {cell: minimum_distance_loss(target, predictions[cell]) for cell in grid}
+            rows = tuple(
+                {
+                    **cell.as_dict(),
+                    "objective": objectives[cell],
+                    "config_hash": config_hashes[cell],
+                }
+                for cell in grid
+            )
+            loss_surfaces[target_seed] = rows
+            objective_grid = {
+                beta: {
+                    factor: objectives[P03Cell(beta, factor)] for factor in P03_ROUTE_FACTOR_GRID
+                }
+                for beta in P03_BETA_GRID
+            }
+            profile = _profile_beta_nuisance(objective_grid)
+            reference_beta = profile["argmin_by_factor"][1.0]
+            _record_argmin_shifts(profile, reference_beta)
+            profiles[target_seed] = {
+                "argmin_by_factor": profile["argmin_by_factor"],
+                "argmin_shift_reference_beta": profile["argmin_shift_reference_beta"],
+                "argmin_shift_by_factor": profile["argmin_shift_by_factor"],
+                "max_abs_argmin_shift": profile["max_abs_argmin_shift"],
+                "profiled_minima": profile["rows"],
+                "global_argmin": profile["argmin"],
+            }
+            ridge_objectives[target_seed] = {
+                _p03_cell_key(cell): objectives[cell]
+                for cell in (
+                    P03Cell(0.16, 0.5),
+                    P03Cell(0.08, 1.0),
+                    P03Cell(0.04, 2.0),
+                )
+            }
+
+        ridge_cells = (
+            P03Cell(0.16, 0.5),
+            P03Cell(0.08, 1.0),
+            P03Cell(0.04, 2.0),
+        )
+        ridge_vectors = {
+            _p03_cell_key(cell): _prediction_vector(predictions[cell]) for cell in ridge_cells
+        }
+        classification, predicates, prediction_hashes = classify_p03_structural_equivalence(
+            ridge_prediction_vectors=ridge_vectors,
+            ridge_objectives=ridge_objectives,
+            target_profiles=profiles,
+            factor_estimate=None,
+        )
+        scientific_status: Literal["PASS", "FAIL"] = "PASS" if all(predicates.values()) else "FAIL"
+        return P03CampaignResult(
+            software_status="PASS",
+            scientific_status=scientific_status,
+            classification=classification,
+            factor_estimate=None,
+            predicates=predicates,
+            target_profiles=profiles,
+            loss_surfaces=loss_surfaces,
+            prediction_hashes=prediction_hashes,
+            ridge_prediction_vectors=ridge_vectors,
+            ridge_objectives=ridge_objectives,
+            candidate_config_hashes=config_hashes,
+            replicate_provenance=tuple(provenance),
+            measured_latent_calls=measured_latent_calls,
+            measured_observation_transforms=measured_observation_transforms,
+        )
+    except (CampaignError, BudgetError):
+        raise
+    except Exception as exc:
+        raise CampaignError(f"P0-3 generation failed: {type(exc).__name__}: {exc}") from exc
+
+
 def _namespace_passes(
     latent_result: Any,
     observation_result: Any,
@@ -2807,7 +3311,7 @@ def validate_g29_ruling(path: Path, config: CampaignConfig) -> str:
     return actual
 
 
-def write_research_bundle(
+def _populate_research_bundle(
     output_dir: Path,
     *,
     campaign_config_path: Path,
@@ -2822,8 +3326,10 @@ def write_research_bundle(
     input_hashes: Mapping[str, str] | None = None,
     p02_complete_loss_surfaces: Mapping[str, Any] | None = None,
     p02_provenance: Mapping[str, Any] | None = None,
+    execution_complete: bool = False,
+    mocked: bool = False,
 ) -> Path:
-    """Write a standalone research bundle with file-level SHA-256 provenance."""
+    """Populate one private staging directory with bundle files."""
 
     if output_dir.exists():
         if not output_dir.is_dir():
@@ -2839,12 +3345,18 @@ def write_research_bundle(
     if not output_dir.exists():
         output_dir.mkdir(parents=True)
     (output_dir / "campaign_config.yaml").write_bytes(config_bytes)
+    (output_dir / "campaign_config.sha256").write_text(
+        f"{hashlib.sha256(config_bytes).hexdigest()}  campaign_config.yaml\n", encoding="utf-8"
+    )
     (output_dir / "predeclaration.sha256").write_text(
         f"{predeclaration_hash}  predeclaration\n", encoding="utf-8"
     )
     shutil.copyfile(ruling_path, output_dir / "g29_ruling.md")
     (output_dir / "g29_ruling.sha256").write_text(
         f"{ruling_hash}  g29_ruling.md\n", encoding="utf-8"
+    )
+    (output_dir / "input_hashes.json").write_text(
+        json.dumps(dict(input_hashes or {}), indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     (output_dir / "seed_ledger.json").write_text(
         json.dumps(list(seed_ledger), indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -2860,13 +3372,12 @@ def write_research_bundle(
         json.dumps(p02_provenance or {}, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    if p01_recovery_rows is not None:
-        rows = list(p01_recovery_rows)
-        fields = sorted({key for row in rows for key in row}) or ["status"]
-        with (output_dir / "p0_1_recovery.csv").open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=fields)
-            writer.writeheader()
-            writer.writerows(rows)
+    p01_rows = list(p01_recovery_rows or [{"status": "UNEXECUTED"}])
+    fields = sorted({key for row in p01_rows for key in row}) or ["status"]
+    with (output_dir / "p0_1_recovery.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(p01_rows)
     rows = list(p02_misspecification_rows or [])
     fields = sorted({key for row in rows for key in row}) or ["status"]
     with (output_dir / "p0_2_misspecification.csv").open(
@@ -2887,13 +3398,32 @@ def write_research_bundle(
             }
             for row in rows
         )
-    if p03_profile is not None:
-        (output_dir / "p0_3_profile.json").write_text(
-            json.dumps(p03_profile, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    (output_dir / "p0_3_profile.json").write_text(
+        json.dumps(
+            p03_profile or {"software_status": "UNEXECUTED", "factor_estimate": None},
+            indent=2,
+            sort_keys=True,
         )
+        + "\n",
+        encoding="utf-8",
+    )
     summary = {
         **dict(campaign_summary or {}),
-        "status": "UNEXECUTED",
+        "status": (
+            "UNEXECUTED"
+            if not execution_complete
+            else "NOT_EVALUATED"
+            if mocked
+            else str((campaign_summary or {}).get("overall_phase0_status", "NOT_ESTABLISHED"))
+        ),
+        "overall_phase0_status": (
+            "UNEXECUTED"
+            if not execution_complete
+            else "NOT_EVALUATED"
+            if mocked
+            else str((campaign_summary or {}).get("overall_phase0_status", "NOT_ESTABLISHED"))
+        ),
+        "mocked_execution": bool(mocked),
         "real_jersey_data_used": False,
         "nominal_coverage_claim": None,
         "calibration_claim": None,
@@ -2904,6 +3434,17 @@ def write_research_bundle(
         "g29_ruling_sha256": ruling_hash,
         "g29_ruling_verified": True,
     }
+    if not execution_complete or mocked:
+        raw_arms = summary.get("arms", {})
+        if isinstance(raw_arms, Mapping):
+            summary["arms"] = {
+                name: {
+                    **dict(arm_summary),
+                    "software_status": "MOCKED" if mocked else "NOT_EXECUTED",
+                    "scientific_status": "NOT_EVALUATED",
+                }
+                for name, arm_summary in raw_arms.items()
+            }
     (output_dir / "campaign_summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -2918,6 +3459,99 @@ def write_research_bundle(
         if not listed.is_file() or sha256_file(listed) != digest:
             raise CampaignError(f"SHA256SUMS verification failed for {name}")
     return output_dir
+
+
+def _publish_research_bundle(
+    output_dir: Path,
+    *,
+    campaign_config_path: Path,
+    predeclaration_path: Path,
+    ruling_path: Path | None = None,
+    seed_ledger: Sequence[Mapping[str, Any]],
+    candidate_loss_surfaces: Mapping[str, Any],
+    p01_recovery_rows: Sequence[Mapping[str, Any]] | None = None,
+    p02_misspecification_rows: Sequence[Mapping[str, Any]] | None = None,
+    p03_profile: Mapping[str, Any] | None = None,
+    campaign_summary: Mapping[str, Any] | None = None,
+    input_hashes: Mapping[str, str] | None = None,
+    p02_complete_loss_surfaces: Mapping[str, Any] | None = None,
+    p02_provenance: Mapping[str, Any] | None = None,
+    execution_complete: bool = False,
+    mocked: bool = False,
+) -> Path:
+    """Atomically publish a complete standalone research bundle."""
+
+    if output_dir.exists():
+        if not output_dir.is_dir():
+            raise CampaignError(f"research bundle destination is not a directory: {output_dir}")
+        if any(output_dir.iterdir()):
+            raise CampaignError("research bundle destination must be empty before writing")
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=f".{output_dir.name}.staging-", dir=output_dir.parent))
+    try:
+        _populate_research_bundle(
+            staging,
+            campaign_config_path=campaign_config_path,
+            predeclaration_path=predeclaration_path,
+            ruling_path=ruling_path,
+            seed_ledger=seed_ledger,
+            candidate_loss_surfaces=candidate_loss_surfaces,
+            p01_recovery_rows=p01_recovery_rows,
+            p02_misspecification_rows=p02_misspecification_rows,
+            p03_profile=p03_profile,
+            campaign_summary=campaign_summary,
+            input_hashes=input_hashes,
+            p02_complete_loss_surfaces=p02_complete_loss_surfaces,
+            p02_provenance=p02_provenance,
+            execution_complete=execution_complete,
+            mocked=mocked,
+        )
+        if output_dir.exists():
+            if not output_dir.is_dir() or any(output_dir.iterdir()):
+                raise CampaignError("research bundle destination changed before publication")
+            output_dir.rmdir()
+        os.replace(staging, output_dir)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    return output_dir
+
+
+def write_research_bundle(
+    output_dir: Path,
+    *,
+    campaign_config_path: Path,
+    predeclaration_path: Path,
+    ruling_path: Path | None = None,
+    seed_ledger: Sequence[Mapping[str, Any]],
+    candidate_loss_surfaces: Mapping[str, Any],
+    p01_recovery_rows: Sequence[Mapping[str, Any]] | None = None,
+    p02_misspecification_rows: Sequence[Mapping[str, Any]] | None = None,
+    p03_profile: Mapping[str, Any] | None = None,
+    campaign_summary: Mapping[str, Any] | None = None,
+    input_hashes: Mapping[str, str] | None = None,
+    p02_complete_loss_surfaces: Mapping[str, Any] | None = None,
+    p02_provenance: Mapping[str, Any] | None = None,
+) -> Path:
+    """Write an unexecuted bundle; completed status is reserved for execute."""
+
+    return _publish_research_bundle(
+        output_dir,
+        campaign_config_path=campaign_config_path,
+        predeclaration_path=predeclaration_path,
+        ruling_path=ruling_path,
+        seed_ledger=seed_ledger,
+        candidate_loss_surfaces=candidate_loss_surfaces,
+        p01_recovery_rows=p01_recovery_rows,
+        p02_misspecification_rows=p02_misspecification_rows,
+        p03_profile=p03_profile,
+        campaign_summary=campaign_summary,
+        input_hashes=input_hashes,
+        p02_complete_loss_surfaces=p02_complete_loss_surfaces,
+        p02_provenance=p02_provenance,
+        execution_complete=False,
+        mocked=False,
+    )
 
 
 def dry_run(
@@ -2944,27 +3578,237 @@ def dry_run(
     return plan
 
 
+def _bundle_destination_is_available(output_dir: Path) -> None:
+    if output_dir.exists():
+        if not output_dir.is_dir():
+            raise CampaignError(f"research bundle destination is not a directory: {output_dir}")
+        if any(output_dir.iterdir()):
+            raise CampaignError("research bundle destination must be empty before execution")
+
+
+def _campaign_input_hashes(
+    root: Path,
+    config_path: Path,
+    predeclaration_path: Path,
+    ruling_path: Path,
+) -> dict[str, str]:
+    source_root = root / "src" / "jersey_outbreak"
+    source_paths = sorted(source_root.rglob("*.py"))
+    hashes = {str(path.relative_to(root)): sha256_file(path) for path in source_paths}
+    for relative in (
+        "configs/diseases/respiratory_seirs_demo.yaml",
+        "configs/observation/observation_demo.yaml",
+    ):
+        hashes[relative] = sha256_file(root / relative)
+    hashes["campaign_config"] = sha256_file(config_path)
+    hashes["predeclaration"] = sha256_file(predeclaration_path)
+    hashes["g29_ruling"] = sha256_file(ruling_path)
+    return hashes
+
+
+def _seed_ledger(config: CampaignConfig) -> list[dict[str, Any]]:
+    ledger: list[dict[str, Any]] = []
+    for process_seed, observation_seed in zip(
+        config.target_process_seeds, config.target_observation_seeds, strict=True
+    ):
+        ledger.append(
+            {
+                "role": "target",
+                "process_seed": process_seed,
+                "observation_seed": observation_seed,
+                "observation_config_id": config.target_observation_config_id,
+            }
+        )
+    for process_seed, observation_seed in zip(
+        config.candidate_process_seeds, config.candidate_observation_seeds, strict=True
+    ):
+        ledger.append(
+            {
+                "role": "candidate",
+                "process_seed": process_seed,
+                "observation_seed": observation_seed,
+                "observation_config_id": config.candidate_observation_config_id,
+            }
+        )
+    ledger.append(
+        {
+            "role": "p0_3_global_route_factor_cells",
+            "cells": [cell.as_dict() for cell in _p03_grid()],
+            "process_seeds": list(config.candidate_process_seeds),
+            "observation_seeds": list(config.candidate_observation_seeds),
+        }
+    )
+    return ledger
+
+
+def _overall_phase0_status(arms: Mapping[str, Mapping[str, Any]]) -> str:
+    """Return PASS only when every software and scientific arm status is proven PASS."""
+
+    scientific = [str(arm.get("scientific_status", "NOT_ESTABLISHED")) for arm in arms.values()]
+    software_complete = all(arm.get("software_status") == "PASS" for arm in arms.values())
+    if "FAIL" in scientific:
+        return "FAIL"
+    if software_complete and scientific and all(status == "PASS" for status in scientific):
+        return "PASS"
+    return "NOT_ESTABLISHED"
+
+
 def execute_campaign(
     config_path: Path,
     predeclaration_path: Path,
     output_dir: Path,
     ruling_path: Path | None = None,
-) -> None:
-    """Fail closed until every predeclared arm is implemented and reviewed."""
+    *,
+    mocked_for_test: bool = False,
+) -> Path:
+    """Execute each implemented arm in order and publish one immutable bundle."""
 
     config = CampaignConfig.from_yaml(config_path)
     validate_predeclaration(predeclaration_path, config.expected_predeclaration_sha256)
     if ruling_path is None:
         raise CampaignError("execute requires a verified G29 ruling supplied with --ruling")
     validate_g29_ruling(ruling_path, config)
-    guard_workload(config)
+    plan = guard_workload(config)
+    _bundle_destination_is_available(output_dir)
     missing = tuple(arm for arm in config.required_arms if arm not in config.implemented_arms)
     if missing:
         raise CampaignBlockedError(
             "campaign execution is fail-closed; required arms are not implemented: "
             + ", ".join(missing)
         )
-    raise CampaignBlockedError("campaign execution is not enabled in this implementation")
+    if config.implemented_arms != config.required_arms:
+        raise CampaignBlockedError("all required arms must be implemented in declared order")
+
+    root = config_path.resolve().parents[2]
+    if not (root / "src" / "jersey_outbreak").is_dir():
+        root = predeclaration_path.resolve().parents[3]
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix=f".{output_dir.name}.workspace-", dir=output_dir.parent
+    ) as workspace_name:
+        workspace = Path(workspace_name)
+        p01_result = run_p01_campaign(
+            config_path, predeclaration_path, workspace / "p0_1", root=root
+        )
+        p02_result = run_p02_campaign(p01_result, workspace / "p0_2", root=root)
+        p03_result = run_p03_campaign(p01_result, workspace / "p0_3", root=root)
+
+        p01_evidence = p01_result.execution_evidence
+        p02a = p02_result.arms["p0_2a"]
+        p02b = p02_result.arms["p0_2b"]
+        if (
+            p01_evidence.measured_latent_calls != plan.p01_latent_calls
+            or p01_evidence.measured_observation_transforms != plan.p01_observation_transforms
+            or p02a.measured_latent_calls + p02b.measured_latent_calls != 0
+            or p02a.measured_observation_transforms != 243
+            or p02b.measured_observation_transforms != 81
+            or p03_result.measured_latent_calls != plan.p03_latent_calls
+            or p03_result.measured_observation_transforms != plan.p03_latent_calls
+            or len(p01_result.generated_parents) != plan.distinct_network_seed_builds
+        ):
+            raise BudgetError("measured all-arms work does not match the guarded plan")
+        measured_latent = (
+            p01_evidence.measured_latent_calls
+            + p02a.measured_latent_calls
+            + p02b.measured_latent_calls
+            + p03_result.measured_latent_calls
+        )
+        measured_transforms = (
+            p01_evidence.measured_observation_transforms
+            + p02a.measured_observation_transforms
+            + p02b.measured_observation_transforms
+            + p03_result.measured_observation_transforms
+        )
+        if (
+            measured_latent != TOTAL_LATENT_CALLS
+            or measured_transforms != TOTAL_OBSERVATION_TRANSFORMS
+        ):
+            raise BudgetError("measured all-arms totals do not match 59 latent / 599 transforms")
+
+        p01_scientific = p01_result.evaluation.status
+        p02_scientific = {
+            name: arm.misspecification_detection or "NOT_ESTABLISHED"
+            for name, arm in p02_result.arms.items()
+        }
+        arms: dict[str, dict[str, Any]] = {
+            "p0_1": {
+                "software_status": "PASS",
+                "scientific_status": p01_scientific,
+                "predicates": dict(p01_result.evaluation.predicates),
+            },
+            "p0_2a": {
+                "software_status": p02a.software_status,
+                "scientific_status": p02_scientific["p0_2a"],
+                "misspecification_detection": p02a.misspecification_detection,
+                "detection_reason": p02a.detection_reason,
+            },
+            "p0_2b": {
+                "software_status": p02b.software_status,
+                "scientific_status": p02_scientific["p0_2b"],
+                "misspecification_detection": p02b.misspecification_detection,
+                "detection_reason": p02b.detection_reason,
+            },
+            "p0_3": {
+                "software_status": p03_result.software_status,
+                "scientific_status": p03_result.scientific_status,
+                "classification": p03_result.classification,
+                "predicates": dict(p03_result.predicates),
+            },
+        }
+        overall_status = _overall_phase0_status(arms)
+        summary = {
+            "overall_phase0_status": overall_status,
+            "arms": arms,
+            "workload_plan": plan.as_dict(),
+            "measured_work": {
+                "grid_cells": plan.total_cells,
+                "latent_outbreak_calls": measured_latent,
+                "observation_transforms": measured_transforms,
+                "distinct_population_network_seed_builds": len(p01_result.generated_parents),
+                "mode": config.mode,
+                "maximum_duration_days": config.duration_days,
+            },
+            "execution_complete": True,
+        }
+        p01_surfaces = {
+            str(seed): [row.as_dict() for row in fit.loss_surface]
+            for seed, fit in p01_result.blind_fits.items()
+        }
+        p02_surfaces = {
+            name: {
+                str(seed): [row.as_dict() for row in rows]
+                for seed, rows in arm.loss_surfaces.items()
+            }
+            for name, arm in p02_result.arms.items()
+        }
+        p02_rows = [
+            {
+                **result.as_dict(),
+                "software_status": arm.software_status,
+                "misspecification_detection": arm.misspecification_detection,
+                "detection_reason": arm.detection_reason,
+            }
+            for arm in p02_result.arms.values()
+            for result in arm.target_results
+        ]
+        hashes = _campaign_input_hashes(root, config_path, predeclaration_path, ruling_path)
+        return _publish_research_bundle(
+            output_dir,
+            campaign_config_path=config_path,
+            predeclaration_path=predeclaration_path,
+            ruling_path=ruling_path,
+            seed_ledger=_seed_ledger(config),
+            candidate_loss_surfaces=p01_surfaces,
+            p01_recovery_rows=[dict(row) for row in p01_result.evaluation.rows],
+            p02_misspecification_rows=p02_rows,
+            p03_profile=p03_result.as_dict(),
+            campaign_summary=summary,
+            input_hashes=hashes,
+            p02_complete_loss_surfaces=p02_surfaces,
+            p02_provenance=p02_result.as_dict(),
+            execution_complete=True,
+            mocked=mocked_for_test,
+        )
 
 
 def _parser() -> argparse.ArgumentParser:

@@ -22,9 +22,9 @@ from jersey_outbreak.phase0_campaign import (
     G29_RULING_PATH,
     G29_RULING_SHA256,
     PREDECLARATION_SHA256,
+    TARGET_PROCESS_SEEDS,
     BlindFitResult,
     BudgetError,
-    CampaignBlockedError,
     CampaignConfig,
     CampaignError,
     CandidateCell,
@@ -32,11 +32,13 @@ from jersey_outbreak.phase0_campaign import (
     LossRow,
     ObservedTables,
     P02TargetResult,
+    P03Cell,
     ProfileDiagnostic,
     RecoveryRow,
     TruthDiagnostics,
     aggregate_p02_detection,
     candidate_config_hash,
+    classify_p03_structural_equivalence,
     dry_run,
     evaluate_p01,
     evaluate_p02_target,
@@ -279,10 +281,10 @@ def test_p0_1_config_and_workload_are_exact() -> None:
     assert config.g29_ruling_sha256 == (
         "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c"
     )
-    assert config.implemented_arms == ("p0_1", "p0_2a", "p0_2b")
-    assert plan.implemented_cells == 189
-    assert plan.implemented_latent_calls == 32
-    assert plan.implemented_observation_transforms == 572
+    assert config.implemented_arms == ("p0_1", "p0_2a", "p0_2b", "p0_3")
+    assert plan.implemented_cells == 198
+    assert plan.implemented_latent_calls == 59
+    assert plan.implemented_observation_transforms == 599
     assert plan.p02_wrong_delay_cells == 81
     assert plan.p02_wrong_regime_cells == 27
     assert plan.total_cells == 198
@@ -309,12 +311,13 @@ def test_p0_1_dry_run_does_not_call_simulation_or_observation(
     assert '"total_latent_outbreak_calls": 59' in output
     assert '"total_observation_transforms": 599' in output
     assert '"implemented_arms": [' in output
-    assert '"implemented_grid_cells": 189' in output
+    assert '"implemented_grid_cells": 198' in output
     assert '"implemented_p0_2a_grid_cells": 81' in output
     assert '"implemented_p0_2b_grid_cells": 27' in output
+    assert '"implemented_p0_3_grid_cells": 9' in output
     assert '"planned_p0_3_grid_cells": 9' in output
-    assert '"implemented_latent_outbreak_calls": 32' in output
-    assert '"implemented_observation_transforms": 572' in output
+    assert '"implemented_latent_outbreak_calls": 59' in output
+    assert '"implemented_observation_transforms": 599' in output
     assert '"g29_ruling_verified": false' in output
 
 
@@ -407,6 +410,101 @@ def test_p0_2_grids_and_common_probability_cells_are_exact() -> None:
         "latent_hash",
         "target_latents",
     }
+
+
+def _p03_classifier_fixture() -> tuple[
+    dict[str, tuple[float, ...]],
+    dict[int, dict[str, float]],
+    dict[int, dict[str, object]],
+]:
+    import jersey_outbreak.phase0_campaign as campaign
+
+    ridge_cells = (P03Cell(0.16, 0.5), P03Cell(0.08, 1.0), P03Cell(0.04, 2.0))
+    keys = [campaign._p03_cell_key(cell) for cell in ridge_cells]
+    vectors = {key: (1.0, 2.0, 3.0) for key in keys}
+    objectives = {seed: {key: 1.0 for key in keys} for seed in TARGET_PROCESS_SEEDS}
+    profile = {
+        "argmin_by_factor": {0.5: 0.16, 1.0: 0.08, 2.0: 0.04},
+        "argmin_shift_reference_beta": 0.08,
+        "argmin_shift_by_factor": {0.5: 0.08, 1.0: 0.0, 2.0: -0.04},
+        "profiled_minima": [
+            {
+                "transmission_beta": beta,
+                "profiled_objective": 1.0,
+                "nuisance_profile": [{"nuisance_factor": factor} for factor in (0.5, 1.0, 2.0)],
+            }
+            for beta in (0.04, 0.08, 0.16)
+        ],
+    }
+    profiles = {seed: profile for seed in TARGET_PROCESS_SEEDS}
+    return vectors, objectives, profiles
+
+
+def test_p0_3_classifier_requires_all_six_structural_predicates() -> None:
+    vectors, objectives, profiles = _p03_classifier_fixture()
+    classify, predicates, actual_hashes = classify_p03_structural_equivalence(
+        ridge_prediction_vectors=vectors,
+        ridge_objectives=objectives,
+        target_profiles=profiles,
+    )
+    assert classify == "NON_IDENTIFIED_STRUCTURAL", predicates
+    assert len(predicates) == 6
+    assert all(predicates.values())
+    assert len(set(actual_hashes.values())) == 1
+
+    unequal_vector = dict(vectors)
+    vector_key = next(iter(unequal_vector))
+    unequal_vector[vector_key] = (1.0 + 2.0e-12, 2.0, 3.0)
+    failed_vector = classify_p03_structural_equivalence(
+        ridge_prediction_vectors=unequal_vector,
+        ridge_objectives=objectives,
+        target_profiles=profiles,
+    )
+    assert failed_vector[0] == "NOT_CLASSIFIED"
+    assert failed_vector[1]["equal_product_vectors_agree_within_1e_12"] is False
+
+    first_seed = next(iter(objectives))
+    objective_keys = list(objectives[first_seed])
+    spread_objectives = {seed: dict(values) for seed, values in objectives.items()}
+    spread_objectives[first_seed][objective_keys[0]] = 1.0 + 2.0e-12
+    failed_objective = classify_p03_structural_equivalence(
+        ridge_prediction_vectors=vectors,
+        ridge_objectives=spread_objectives,
+        target_profiles=profiles,
+    )
+    assert failed_objective[0] == "NOT_CLASSIFIED"
+    assert failed_objective[1]["ridge_objective_spread_within_threshold"] is False
+
+    near_vector = dict(vectors)
+    near_vector[vector_key] = (1.0 + 1.0e-13, 2.0, 3.0)
+    failed_hash = classify_p03_structural_equivalence(
+        ridge_prediction_vectors=near_vector,
+        ridge_objectives=objectives,
+        target_profiles=profiles,
+    )
+    assert failed_hash[0] == "NOT_CLASSIFIED"
+    assert failed_hash[1]["equal_product_vectors_agree_within_1e_12"] is True
+    assert failed_hash[1]["target_independent_prediction_hashes_identical"] is False
+    assert len(set(failed_hash[2].values())) > 1
+
+    failed_profile = classify_p03_structural_equivalence(
+        ridge_prediction_vectors=vectors,
+        ridge_objectives=objectives,
+        target_profiles={42001: profiles[42001]},
+        emitted_precision_fields=("standard_error",),
+    )
+    assert failed_profile[0] == "NOT_CLASSIFIED"
+    assert failed_profile[1]["factor_estimate_null_without_precision_fields"] is False
+
+    profile_with_coverage = dict(profiles)
+    profile_with_coverage[42001] = {**profiles[42001], "coverage": 1.0}
+    failed_coverage = classify_p03_structural_equivalence(
+        ridge_prediction_vectors=vectors,
+        ridge_objectives=objectives,
+        target_profiles=profile_with_coverage,
+    )
+    assert failed_coverage[0] == "NOT_CLASSIFIED"
+    assert failed_coverage[1]["factor_estimate_null_without_precision_fields"] is False
 
 
 def test_p0_2_rejects_replaced_g29_digest_at_load_and_file_validation(
@@ -877,18 +975,57 @@ def test_budget_guard_rejects_mode_duration_overlap_and_retry() -> None:
         guard_workload(oversized)
 
 
-def test_execute_is_fail_closed_before_p0_3(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_execute_requires_both_verified_authority_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     import jersey_outbreak.phase0_campaign as campaign
 
     with pytest.raises(CampaignError, match="requires a verified G29 ruling"):
         campaign.execute_campaign(CONFIG_PATH, PREDECLARATION_PATH, Path("/tmp/unused-p0-1"))
     config_path, ruling_path = _test_ruling_config(tmp_path, monkeypatch)
-    with pytest.raises(CampaignBlockedError, match="p0_3"):
-        campaign.execute_campaign(
-            config_path, PREDECLARATION_PATH, Path("/tmp/unused-p0-2"), ruling_path
-        )
+    config = CampaignConfig.from_yaml(config_path)
+    assert config.implemented_arms == config.required_arms
+    assert campaign.validate_g29_ruling(ruling_path, config) == sha256_file(ruling_path)
+    assert plan_workload(config).implemented_cells == 198
+    status = campaign.main(
+        [
+            "execute",
+            "--config",
+            str(config_path),
+            "--predeclaration",
+            str(PREDECLARATION_PATH),
+            "--output-dir",
+            str(tmp_path / "cli-output"),
+        ]
+    )
+    captured = capsys.readouterr()
+    assert status == 1
+    assert captured.out == ""
+    assert captured.err == "execute requires a verified G29 ruling supplied with --ruling\n"
+
+
+def test_overall_phase0_status_requires_every_arm_to_be_proven_pass() -> None:
+    import jersey_outbreak.phase0_campaign as campaign
+
+    complete = {
+        arm: {"software_status": "PASS", "scientific_status": "PASS"}
+        for arm in ("p0_1", "p0_2a", "p0_2b", "p0_3")
+    }
+    assert campaign._overall_phase0_status(complete) == "PASS"
+
+    indeterminate = {arm: dict(status) for arm, status in complete.items()}
+    indeterminate["p0_2a"]["scientific_status"] = "NOT_ESTABLISHED"
+    assert campaign._overall_phase0_status(indeterminate) == "NOT_ESTABLISHED"
+
+    failed = {arm: dict(status) for arm, status in complete.items()}
+    failed["p0_3"]["scientific_status"] = "FAIL"
+    assert campaign._overall_phase0_status(failed) == "FAIL"
+
+    incomplete = {arm: dict(status) for arm, status in complete.items()}
+    incomplete["p0_2b"]["software_status"] = "FAIL"
+    assert campaign._overall_phase0_status(incomplete) == "NOT_ESTABLISHED"
 
 
 def test_research_bundle_is_standalone_and_file_hashed(
@@ -905,11 +1042,20 @@ def test_research_bundle_is_standalone_and_file_hashed(
         p01_recovery_rows=[{"status": "not_run", "estimate": None}],
         p02_misspecification_rows=[],
         p03_profile={"status": "not_run", "factor_estimate": None},
-        campaign_summary={"status": "PASS", "calibration_claim": "forbidden"},
+        campaign_summary={
+            "status": "PASS",
+            "calibration_claim": "forbidden",
+            "arms": {
+                arm: {"software_status": "PASS", "scientific_status": "PASS"}
+                for arm in ("p0_1", "p0_2a", "p0_2b", "p0_3")
+            },
+        },
         input_hashes={"source_config": "a" * 64},
     )
     expected = {
         "campaign_config.yaml",
+        "campaign_config.sha256",
+        "input_hashes.json",
         "predeclaration.sha256",
         "g29_ruling.md",
         "g29_ruling.sha256",
@@ -929,6 +1075,14 @@ def test_research_bundle_is_standalone_and_file_hashed(
     assert '"g29_ruling_verified": true' in summary
     assert hashlib.sha256(ruling_path.read_bytes()).hexdigest() in summary
     assert '"calibration_claim": null' in summary
+    assert '"overall_phase0_status": "UNEXECUTED"' in summary
+    assert '"scientific_status": "NOT_EVALUATED"' in summary
+    assert '"software_status": "NOT_EXECUTED"' in summary
+    assert (
+        (output / "campaign_config.sha256")
+        .read_text(encoding="utf-8")
+        .startswith(f"{sha256_file(output / 'campaign_config.yaml')}  ")
+    )
     assert "CalibrationArtifactManifest" not in summary
     sums = (output / "SHA256SUMS").read_text(encoding="utf-8")
     assert f"{sha256_file(output / 'campaign_config.yaml')}  campaign_config.yaml" in sums
@@ -1053,7 +1207,36 @@ def test_research_bundle_rejects_nonempty_destination_without_mutation(
     assert tuple(output.iterdir()) == (sentinel,)
 
 
-def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readback(
+def test_research_bundle_stages_separately_and_discards_failed_partial_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import jersey_outbreak.phase0_campaign as campaign
+
+    output = tmp_path / "bundle"
+    output.mkdir()
+
+    def fail_after_partial_write(staging: Path, **kwargs: object) -> Path:
+        del kwargs
+        assert staging != output
+        (staging / "partial-evidence.txt").write_text("staging only", encoding="utf-8")
+        raise CampaignError("synthetic bundle population failure")
+
+    monkeypatch.setattr(campaign, "_populate_research_bundle", fail_after_partial_write)
+    with pytest.raises(CampaignError, match="synthetic bundle population failure"):
+        campaign.write_research_bundle(
+            output,
+            campaign_config_path=CONFIG_PATH,
+            predeclaration_path=REPOSITORY_PREDECLARATION_PATH,
+            ruling_path=ROOT / G29_RULING_PATH,
+            seed_ledger=[],
+            candidate_loss_surfaces={},
+        )
+    assert output.is_dir()
+    assert tuple(output.iterdir()) == ()
+    assert not tuple(tmp_path.glob(".bundle.staging-*"))
+
+
+def test_p0_3_all_arms_mocked_execute_reuses_builds_and_rejects_corrupt_blind_readback(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The generation path is callable under fakes but never runs in this test suite."""
@@ -1085,10 +1268,18 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
         }
 
         def __init__(self, latent_run: FakeLatent, observation_config: ObservationConfig) -> None:
+            route_mean = sum(latent_run.config.route_multipliers.values()) / len(
+                latent_run.config.route_multipliers
+            )
+            symptomatic_count = max(2, round(latent_run.config.beta * route_mean * 100))
             self.observation_events = [
                 {"report_date": "2025-01-06", "symptomatic": True},
-                {"report_date": "2025-01-07", "symptomatic": False},
+                *(
+                    {"report_date": "2025-01-07", "symptomatic": True}
+                    for _ in range(symptomatic_count - 2)
+                ),
                 {"report_date": "2025-01-08", "symptomatic": True},
+                {"report_date": "2025-01-07", "symptomatic": False},
             ]
             self.latent_run = latent_run
             self.config = observation_config
@@ -1153,18 +1344,69 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
         calls.append(("join", int(kwargs["target_seed"]), None))
         return original_join(*args, **kwargs)  # type: ignore[arg-type]
 
+    original_run_p01 = campaign.run_p01_campaign
+    original_run_p02 = campaign.run_p02_campaign
+    original_run_p03 = campaign.run_p03_campaign
+    stage_results: dict[str, object] = {}
+    stage_order: list[str] = []
+
+    def recording_run_p01(*args: object, **kwargs: object) -> object:
+        stage_order.append("p0_1")
+        result = original_run_p01(*args, **kwargs)  # type: ignore[arg-type]
+        stage_results["p0_1"] = result
+        return result
+
+    def recording_run_p02(*args: object, **kwargs: object) -> object:
+        stage_order.append("p0_2")
+        result = original_run_p02(*args, **kwargs)  # type: ignore[arg-type]
+        stage_results["p0_2"] = result
+        return result
+
+    def recording_run_p03(*args: object, **kwargs: object) -> object:
+        stage_order.append("p0_3")
+        result = original_run_p03(*args, **kwargs)  # type: ignore[arg-type]
+        stage_results["p0_3"] = result
+        return result
+
     monkeypatch.setattr(campaign, "build_parent", fake_build_parent)
     monkeypatch.setattr(campaign, "run_outbreak", fake_run_outbreak)
     monkeypatch.setattr(campaign, "observe_latent_run", fake_observe)
     monkeypatch.setattr(campaign, "persist_blind_estimate", recording_persist)
     monkeypatch.setattr(campaign, "fit_blind", recording_fit)
     monkeypatch.setattr(campaign, "join_truth_evaluation", recording_join)
+    monkeypatch.setattr(campaign, "run_p01_campaign", recording_run_p01)
+    monkeypatch.setattr(campaign, "run_p02_campaign", recording_run_p02)
+    monkeypatch.setattr(campaign, "run_p03_campaign", recording_run_p03)
 
-    result = run_p01_campaign(
-        CONFIG_PATH,
-        REPOSITORY_PREDECLARATION_PATH,
-        tmp_path / "campaign-work",
+    with pytest.raises(CampaignError, match="requires a verified G29 ruling"):
+        campaign.execute_campaign(CONFIG_PATH, PREDECLARATION_PATH, tmp_path / "missing-ruling")
+    config_path, ruling_path = _test_ruling_config(tmp_path, monkeypatch)
+    occupied_output = tmp_path / "occupied-bundle"
+    occupied_output.mkdir()
+    sentinel = occupied_output / "existing-evidence.txt"
+    sentinel.write_text("preserve this evidence", encoding="utf-8")
+    prior_call_count = len(calls)
+    with pytest.raises(CampaignError, match="empty before execution"):
+        campaign.execute_campaign(
+            config_path, PREDECLARATION_PATH, occupied_output, ruling_path, mocked_for_test=True
+        )
+    assert len(calls) == prior_call_count
+    assert sentinel.read_text(encoding="utf-8") == "preserve this evidence"
+    output_dir = tmp_path / "all-arms-bundle"
+    campaign.execute_campaign(
+        config_path,
+        PREDECLARATION_PATH,
+        output_dir,
+        ruling_path,
+        mocked_for_test=True,
     )
+    result = stage_results["p0_1"]
+    assert stage_order == ["p0_1", "p0_2", "p0_3"]
+    assert isinstance(result, campaign.P01CampaignResult)
+    p02_result = stage_results["p0_2"]
+    p03_result = stage_results["p0_3"]
+    assert isinstance(p02_result, campaign.P02CampaignResult)
+    assert isinstance(p03_result, campaign.P03CampaignResult)
     config = result.config
     with pytest.raises(CampaignError, match="retained candidate latent cache"):
         run_p02_campaign(
@@ -1177,14 +1419,14 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
     assert result.execution_evidence.measured_latent_calls == 32
     assert result.execution_evidence.measured_observation_transforms == 248
     assert sum(kind == "build_parent" for kind, _, _ in calls) == 8
-    assert sum(kind == "run_outbreak" for kind, _, _ in calls) == 32
-    assert sum(kind == "observe" for kind, _, _ in calls) == 248
-    assert sum(kind == "persist" for kind, _, _ in calls) == 5
-    assert sum(kind == "fit_blind" for kind, _, _ in calls) == 5
+    assert sum(kind == "run_outbreak" for kind, _, _ in calls) == 59
+    assert sum(kind == "observe" for kind, _, _ in calls) == 599
+    assert sum(kind == "persist" for kind, _, _ in calls) == 15
+    assert sum(kind == "fit_blind" for kind, _, _ in calls) == 10
     assert {count for kind, count, _ in calls if kind == "fit_blind"} == {81}
     assert all(isinstance(item, OutbreakRunConfig) for item in run_configs)
     assert all(isinstance(item, ObservationConfig) for item in observation_configs)
-    assert [item.seed for item in run_configs] == [
+    assert [item.seed for item in run_configs[:32]] == [
         42001,
         42002,
         42003,
@@ -1192,7 +1434,7 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
         42005,
         *[seed for seed in (43001, 43002, 43003) for _ in range(9)],
     ]
-    assert [item.observation_seed for item in observation_configs] == [
+    assert [item.observation_seed for item in observation_configs[:248]] == [
         52001,
         52002,
         52003,
@@ -1200,7 +1442,7 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
         52005,
         *[seed for _ in range(81) for seed in (53001, 53002, 53003)],
     ]
-    assert [item.observation_config_id for item in observation_configs] == [
+    assert [item.observation_config_id for item in observation_configs[:248]] == [
         *(["v13-phase0-target"] * 5),
         *(["v13-phase0-fit"] * 243),
     ]
@@ -1215,7 +1457,7 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
         for tables in result.candidate_prediction_library.values()
         for table in tables
     )
-    assert len(fit_inputs) == 5
+    assert len(fit_inputs) == 10
     assert all(
         len(args) == 3
         and all(not isinstance(value, CampaignConfig) for value in args)
@@ -1247,9 +1489,10 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
         53002,
         53003,
     }
-    persist_positions = {
-        count: index for index, (kind, count, _) in enumerate(calls) if kind == "persist"
-    }
+    persist_positions: dict[int, int] = {}
+    for index, (kind, count, _) in enumerate(calls):
+        if kind == "persist":
+            persist_positions.setdefault(count, index)
     join_positions = {
         count: index for index, (kind, count, _) in enumerate(calls) if kind == "join"
     }
@@ -1257,26 +1500,65 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
     assert set(join_positions) == set(persist_positions)
     assert all(persist_positions[seed] < join_positions[seed] for seed in persist_positions)
 
-    p01_observation_configs = tuple(observation_configs)
-    latent_calls_before_p02 = sum(kind == "run_outbreak" for kind, _, _ in calls)
-    observation_calls_before_p02 = sum(kind == "observe" for kind, _, _ in calls)
-    p02_result = run_p02_campaign(result, tmp_path / "p02-work", root=ROOT)
+    p01_observation_configs = tuple(observation_configs[:248])
     assert set(result.candidate_latents) == {
         (seed, beta, offset)
         for seed in config.candidate_process_seeds
         for beta in config.dimension_map["beta"].candidates
         for offset in config.dimension_map["inoculation_day_offset"].candidates
     }
-    assert sum(kind == "run_outbreak" for kind, _, _ in calls) == latent_calls_before_p02
-    assert sum(kind == "observe" for kind, _, _ in calls) - observation_calls_before_p02 == 324
-    assert observation_calls_before_p02 + 324 == 572
-    assert len(observation_configs) - len(p01_observation_configs) == 324
+    assert sum(kind == "run_outbreak" for kind, _, _ in calls) == 59
+    assert sum(kind == "observe" for kind, _, _ in calls) == 599
+    assert len(observation_configs) == 599
     assert p02_result.software_status == "PASS"
     assert p02_result.misspecification_detection is None
     assert p02_result.arms["p0_2a"].measured_latent_calls == 0
     assert p02_result.arms["p0_2b"].measured_latent_calls == 0
     assert p02_result.arms["p0_2a"].measured_observation_transforms == 243
     assert p02_result.arms["p0_2b"].measured_observation_transforms == 81
+    assert p03_result.measured_latent_calls == 27
+    assert p03_result.measured_observation_transforms == 27
+    assert len(p03_result.loss_surfaces) == 5
+    assert all(len(surface) == 9 for surface in p03_result.loss_surfaces.values())
+    assert p03_result.classification == "NON_IDENTIFIED_STRUCTURAL"
+    assert p03_result.factor_estimate is None
+    assert all(p03_result.predicates.values())
+    ridge_keys = {
+        campaign._p03_cell_key(P03Cell(0.16, 0.5)),
+        campaign._p03_cell_key(P03Cell(0.08, 1.0)),
+        campaign._p03_cell_key(P03Cell(0.04, 2.0)),
+    }
+    assert len({p03_result.prediction_hashes[key] for key in ridge_keys}) == 1
+    assert p03_result.target_profiles[42001]["argmin_by_factor"] == {
+        0.5: 0.16,
+        1.0: 0.08,
+        2.0: 0.04,
+    }
+    assert p03_result.target_profiles[42001]["argmin_shift_reference_beta"] == 0.08
+    assert p03_result.target_profiles[42001]["argmin_shift_by_factor"] == {
+        0.5: 0.08,
+        1.0: 0.0,
+        2.0: -0.04,
+    }
+    assert all(
+        tuple(run.route_multipliers.values()) == (factor,) * 11
+        for run, factor in zip(
+            run_configs[32:],
+            [
+                factor
+                for _beta in (0.04, 0.08, 0.16)
+                for factor in (0.5, 1.0, 2.0)
+                for _ in range(3)
+            ],
+            strict=True,
+        )
+    )
+    assert all(
+        item.parameters["symptomatic_detection_probability"].value == 0.75
+        and item.parameters["asymptomatic_detection_probability"].value == 0.25
+        for item in observation_configs[572:]
+    )
+    assert len(result.generated_parents) == 8
     assert len(p02_result.reused_p01_target_provenance) == 5
     assert all(
         len(record["target_config_sha256"]) == 64
@@ -1287,9 +1569,7 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
     )
     assert len(p02_result.arms["p0_2a"].candidate_prediction_library) == 81
     assert len(p02_result.arms["p0_2b"].candidate_prediction_library) == 27
-    assert (
-        sum(len(arm.candidate_prediction_library) for arm in p02_result.arms.values()) + 81 == 189
-    )
+    assert sum(len(arm.candidate_prediction_library) for arm in p02_result.arms.values()) == 108
 
     def payload(config: ObservationConfig) -> dict[str, object]:
         return config.model_dump(mode="json")
@@ -1303,7 +1583,7 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
         differences = _leaf_differences(payload(p01_config), payload(wrong_config))
         assert differences == {"reporting_delay.days[0]"}
 
-    p02b_configs = observation_configs[491:]
+    p02b_configs = observation_configs[491:572]
     assert len(p02b_configs) == 81
     grid_b = campaign._p02b_grid(config)
     for cell_index, cell in enumerate(grid_b):
@@ -1338,13 +1618,29 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
                 "parameters.asymptomatic_detection_probability.value",
             }
 
-    p02_persisted = tuple((tmp_path / "p02-work").glob("*/blind_estimates/*.json"))
-    assert len(p02_persisted) == 10
-    assert all(
-        json.loads(path.read_text(encoding="utf-8"))["estimate_hash"] for path in p02_persisted
+    assert sum(kind == "persist" for kind, _, _ in calls) == 15
+    bundle = output_dir
+    summary = json.loads((bundle / "campaign_summary.json").read_text(encoding="utf-8"))
+    assert summary["overall_phase0_status"] == "NOT_EVALUATED"
+    assert summary["mocked_execution"] is True
+    assert summary["input_hashes"]["src/jersey_outbreak/calibration.py"] == sha256_file(
+        ROOT / "src/jersey_outbreak/calibration.py"
     )
+    assert summary["input_hashes"]["src/jersey_outbreak/phase0_campaign.py"] == sha256_file(
+        ROOT / "src/jersey_outbreak/phase0_campaign.py"
+    )
+    assert all(arm["scientific_status"] == "NOT_EVALUATED" for arm in summary["arms"].values())
+    assert all(arm["software_status"] == "MOCKED" for arm in summary["arms"].values())
+    p03_bundle = json.loads((bundle / "p0_3_profile.json").read_text(encoding="utf-8"))
+    assert p03_bundle["factor_estimate"] is None
+    assert p03_bundle["classification"] == "NON_IDENTIFIED_STRUCTURAL"
+    assert not {"standard_error", "interval", "coverage"} & set(p03_bundle)
+    for line in (bundle / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
+        digest, name = line.split("  ", 1)
+        assert sha256_file(bundle / name) == digest
+
     bundle_config, bundle_ruling = _test_ruling_config(tmp_path, monkeypatch)
-    bundle = campaign.write_research_bundle(
+    manual_bundle = campaign.write_research_bundle(
         tmp_path / "p02-bundle",
         campaign_config_path=bundle_config,
         predeclaration_path=PREDECLARATION_PATH,
@@ -1364,19 +1660,21 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
         p02_provenance=p02_result.as_dict(),
         input_hashes={"campaign_config": campaign.sha256_file(bundle_config)},
     )
-    csv_lines = (bundle / "p0_2_misspecification.csv").read_text(encoding="utf-8").splitlines()
+    csv_lines = (
+        (manual_bundle / "p0_2_misspecification.csv").read_text(encoding="utf-8").splitlines()
+    )
     assert len(csv_lines) == 11
-    with (bundle / "p0_2_misspecification.csv").open(encoding="utf-8", newline="") as handle:
+    with (manual_bundle / "p0_2_misspecification.csv").open(encoding="utf-8", newline="") as handle:
         csv_rows = list(csv.DictReader(handle))
     assert all(row["E_i"] == "null" for row in csv_rows)
     assert all(row["selected_estimates"] == "null" for row in csv_rows)
     assert all(row["tie_record"].startswith("[") for row in csv_rows)
     assert all(row["estimate_beta"] == "null" for row in csv_rows)
     assert all(row["signed_error_beta"] == "null" for row in csv_rows)
-    surfaces = json.loads((bundle / "p0_2_loss_surfaces.json").read_text(encoding="utf-8"))
+    surfaces = json.loads((manual_bundle / "p0_2_loss_surfaces.json").read_text(encoding="utf-8"))
     assert set(surfaces) == {"p0_2a", "p0_2b"}
     assert all(len(targets) == 5 for targets in surfaces.values())
-    provenance = json.loads((bundle / "p0_2_provenance.json").read_text(encoding="utf-8"))
+    provenance = json.loads((manual_bundle / "p0_2_provenance.json").read_text(encoding="utf-8"))
     assert len(provenance["arms"]["p0_2a"]["replicate_provenance"]) == 243
     assert len(provenance["arms"]["p0_2b"]["replicate_provenance"]) == 81
     p02_targets = provenance["arms"]["p0_2a"]["targets"]
@@ -1386,9 +1684,6 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
         and target["E_i"] is None
         for target in p02_targets
     )
-
-    monkeypatch.setattr(campaign, "G29_RULING_PATH", G29_RULING_PATH)
-    monkeypatch.setattr(campaign, "G29_RULING_SHA256", G29_RULING_SHA256)
 
     base_fit = result.blind_fits[42001]
     first_cell, second_cell = result.config.candidate_grid[:2]
@@ -1449,6 +1744,9 @@ def test_p0_1_and_p0_2_mocked_paths_reuse_latents_and_reject_corrupt_blind_readb
             run_p02_campaign(result, tmp_path / f"corrupt-{label}", root=ROOT)
         assert reached_truth_evaluation == []
         monkeypatch.setattr(Path, "write_text", original_path_write_text)
+
+    monkeypatch.setattr(campaign, "G29_RULING_PATH", G29_RULING_PATH)
+    monkeypatch.setattr(campaign, "G29_RULING_SHA256", G29_RULING_SHA256)
 
     def fail_persist(path: Path, fit: object) -> str:
         del path, fit
