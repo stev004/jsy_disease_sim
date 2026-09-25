@@ -4,7 +4,17 @@
 
 ## Open
 
-**2026-09-24:** Phase-0 exit gate = FAIL (determinate). G31 is the blocking model-owner decision; G5 unchanged.
+**2026-09-25:** G31 resolved (A+C under Steven's delegation). Only G5 open.
+
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G31 — RESOLVED 2026-09-25: options A + C (Steven, chat: "do whatever you think is the right approach to do")
+- **Ruling (director, under explicit delegation):** **A**: the Phase-0 FAIL stands as the recorded result. A Phase 0b follows: a gpt-6-sol design consult produces a new predeclaration with fresh seeds and a declared design change; a Fable model-owner ruling on that design (per the foreman rule, since this session is not Fable) is filed and hashed before any implementation or run; then implement, review, run one campaign, and a fresh exit audit. **C**: SHA-first `--no-ff` merge of `925838ac0077dbc66243cc4934aa1eb5c5b67b04` into `main` as research infrastructure. Merging does NOT mean the gate passed. It goes ahead only after a clean-clone CI mirror at the merge commit passes. No real-data fitting until Phase 0b passes. ts: trail row `g31-resolved`.
+- *(original gate text below)*
 
 ### G31 — What Phase 0 does after a determinate exit FAIL (model owner)
 - **Result:** the independent step-7 audit (`docs/audits/2026-09-24-phase0-exit-audit-sol-FAIL.md`) confirmed `JOS V1.3 PHASE-0 EXIT GATE: FAIL`. The only failing predicate is P0-1 #8: the inoculation-day offset was selected at a grid boundary for 2 of 5 targets (seed 42001 → 0, seed 42005 → 4), against a frozen maximum of 1/5. Every other predicate passed on recomputation: 5/5 tolerance and joint hits, zero bias, unique minima, all dimensions identified, P0-2A/B D=5/5, and P0-3 NON_IDENTIFIED_STRUCTURAL. The bundle is immutable (SHA256SUMS digest `72cd9a568598530923e08ce20b013d60eb7a3b26553b87c31685ad623f3faa80`). No real-data fitting is licensed.
@@ -15,12 +25,6 @@
   - **C (independent of A/B):** SHA-first merge of the reviewed harness branch (`codex/v13-p0-3-negative-control` @ `925838ac0077dbc66243cc4934aa1eb5c5b67b04`, which contains P0-1/P0-2/P0-3) into `main` as research infrastructure. Merging does NOT imply the gate passed.
 - **Default on no answer:** HOLD. No new campaign, no redesign, no merge; all branches, bundles and evidence are preserved.
 - **Evidence:** `docs/audits/2026-09-24-phase0-exit-audit-sol-FAIL.md`; `docs/runs/2026-09-24-phase0-campaign-summary.json`; bundle `/home/steven/jos-phase0-campaign-20260924T030959Z/bundle`; ts: trail row `phase0-exit-FAIL`.
-
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
 
 ### G29 — RESOLVED 2026-09-23: recommended P0-2 indeterminate-detection ruling APPROVED (Steven, chat: "approve g29 with your rec then keep going with it")
 - **Ruling:** proposal items 1–6 adopted verbatim — target TRUE/FALSE/UNKNOWN, no tied-minimizer choice, undefined fields null; R_i ≥ 0.25 → TRUE; D/U/[D,D+U] with k=3 (A) / 4 (B); D≥k PASS, D+U<k FAIL, else null `indeterminate_tied_minima`; exit gate PASS only if every arm proven PASS. No threshold/grid/seed/dimension change.
