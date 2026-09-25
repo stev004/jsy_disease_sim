@@ -61,7 +61,7 @@ details.adv[open] summary::before{transform:rotate(90deg)}
 .phases{margin:24px 0 8px; display:grid; gap:0}
 .phase{display:grid; grid-template-columns:26px 1fr auto; align-items:center; gap:12px; padding:8px 2px; font-size:13.5px}
 .phase .ico{width:20px;height:20px;border-radius:99px; display:grid; place-items:center; font-size:11px}
-.phase.done .ico{background:var(--good-soft); color:var(--good)}
+.phase.done .ico{background:var(--accent); color:var(--on-accent)}
 .phase.now .ico{background:var(--accent-soft); color:var(--accent-ink)}
 .phase.todo{color:var(--ink-3)}
 .phase.todo .ico{border:1.5px solid var(--line-strong)}
