@@ -28,6 +28,8 @@ export interface Series {
 
 export interface LineChartProps {
   series: Series[];
+  /** Shade intervention-minus-baseline areas in comparison charts. */
+  comparisonAreas?: boolean;
   /** Day index of the vertical "current day" marker. */
   marker?: number | null;
   /** Number of day slots on the x axis (default 60). */
@@ -80,6 +82,7 @@ function defaultFormatDay(d: number): string {
  */
 export function LineChart({
   series,
+  comparisonAreas = false,
   marker = null,
   days = 60,
   height = 210,
@@ -107,6 +110,10 @@ export function LineChart({
   const Y = (v: number): number => padT + (H - padT - padB) * (1 - v / yMax);
 
   const gridValues = [0, 1, 2, 3].map((i) => (yMax * i) / 3);
+
+  const comparisonAreaPolygons = comparisonAreas
+    ? buildComparisonAreaPolygons(series, X, Y)
+    : [];
 
   return (
     <svg
@@ -156,6 +163,16 @@ export function LineChart({
           </g>
         );
       })}
+
+      {comparisonAreaPolygons.map((area, index) => (
+        <polygon
+          key={`comparison-area-${index}`}
+          className="chart-area"
+          points={area.points}
+          fill={area.positive ? 'var(--div-pos)' : 'var(--div-neg)'}
+          fillOpacity={0.14}
+        />
+      ))}
 
       {series.map((sr, i) => (
         <g className="line-series" key={`series-${i}`}>
@@ -215,4 +232,64 @@ export function LineChart({
       )}
     </svg>
   );
+}
+
+interface ComparisonAreaPolygon {
+  points: string;
+  positive: boolean;
+}
+
+function buildComparisonAreaPolygons(
+  series: Series[],
+  x: (day: number) => number,
+  y: (value: number) => number,
+): ComparisonAreaPolygon[] {
+  const baseline = series.find((item) => item.role === 'baseline');
+  const intervention = series.find((item) => item.role === 'intervention');
+  if (!baseline || !intervention) return [];
+
+  const baselineByDay = new Map(baseline.pts);
+  const interventionByDay = new Map(intervention.pts);
+  const days = [...baselineByDay.keys()]
+    .filter((day) => interventionByDay.has(day))
+    .sort((a, b) => a - b);
+  const polygons: ComparisonAreaPolygon[] = [];
+
+  for (let index = 0; index < days.length - 1; index += 1) {
+    const day0 = days[index];
+    const day1 = days[index + 1];
+    // Do not shade across unpublished days.
+    if (day1 !== day0 + 1) continue;
+    const base0 = baselineByDay.get(day0);
+    const base1 = baselineByDay.get(day1);
+    const treated0 = interventionByDay.get(day0);
+    const treated1 = interventionByDay.get(day1);
+    if (base0 == null || base1 == null || treated0 == null || treated1 == null) continue;
+
+    const difference0 = treated0 - base0;
+    const difference1 = treated1 - base1;
+    const crossing = difference0 * difference1 < 0
+      ? difference0 / (difference0 - difference1)
+      : null;
+    const stops = crossing == null ? [0, 1] : [0, crossing, 1];
+
+    for (let piece = 0; piece < stops.length - 1; piece += 1) {
+      const start = stops[piece];
+      const end = stops[piece + 1];
+      const middle = (start + end) / 2;
+      const middleDifference = difference0 + (difference1 - difference0) * middle;
+      if (middleDifference === 0) continue;
+
+      const interpolate = (from: number, to: number, t: number) => from + (to - from) * t;
+      const points = [
+        `${x(interpolate(day0, day1, start))},${y(interpolate(base0, base1, start))}`,
+        `${x(interpolate(day0, day1, end))},${y(interpolate(base0, base1, end))}`,
+        `${x(interpolate(day0, day1, end))},${y(interpolate(treated0, treated1, end))}`,
+        `${x(interpolate(day0, day1, start))},${y(interpolate(treated0, treated1, start))}`,
+      ].join(' ');
+      polygons.push({ points, positive: middleDifference > 0 });
+    }
+  }
+
+  return polygons;
 }

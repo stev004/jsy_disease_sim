@@ -156,7 +156,7 @@ details.adv[open] summary::before{transform:rotate(90deg)}
 .delta-card .v .pct{font-size:13px; font-weight:600}
 .delta-card .s{font-size:11.5px; color:var(--ink-3); margin-top:2px; font-variant-numeric:tabular-nums}
 .down{color:var(--div-neg)} .up{color:var(--div-pos)}
-:root[data-theme="dark"] .down{color:#7FB1EE}
+:root[data-theme="dark"] .down{color:var(--div-neg)}
 .cmp-grid{display:grid; grid-template-columns:1.15fr .85fr; gap:16px; align-items:start}
 .cmp-map-card{padding:16px 16px; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow)}
 .cmp-map-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px}
@@ -220,4 +220,3 @@ details.adv[open] summary::before{transform:rotate(90deg)}
 kbd{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px; background:var(--panel-2);
   border:1px solid var(--line-strong); border-radius:4px; padding:2px 7px; color:var(--ink)}
 .ks-foot{font-size:11.5px; color:var(--ink-3); margin-top:12px; border-top:1px solid var(--line); padding-top:8px}
-
