@@ -4,7 +4,7 @@
 
 ## Open
 
-**2026-09-25:** G31 resolved (A+C under Steven's delegation). Only G5 open.
+**2026-09-25:** Phase 0: FAIL (2026-09-24); Phase 0b: not run (frozen). G31 resolved A+C. Only G5 open.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?

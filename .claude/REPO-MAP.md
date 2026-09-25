@@ -2,7 +2,7 @@
 
 *A navigation map, not documentation. Module contracts live in `docs/architecture.md`; scientific scope in `docs/scientific_scope.md`. Written 2026-09-21 (code baseline `3ff3734`).*
 
-**Current pickup:** Phase-0 exit gate FAIL (determinate, P0-1 boundary predicate); G31 awaits Steven (default HOLD). RUN/GATES own live status.
+**Current pickup:** Phase 0: FAIL (2026-09-24); Phase 0b: not run — predeclaration frozen (ec8df646); G31-C harness merge mirroring. RUN/GATES own live status.
 
 ## Top level
 
