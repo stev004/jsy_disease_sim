@@ -92,13 +92,14 @@ Rules:
   - Attribution: bottom-right, verbatim.
   - **Pulse:** a two-ring ripple in `--seq5` on the parish with the highest *new infections on the current day* (from `ParishPoint.newInfections`). There is no pulse when that value is 0 or unavailable.
   - The died-out banner is kept, verbatim.
+- **Every `LineChart` series passes a semantic `role` or an explicit token, and every legend is derived from the series actually rendered (amended 2026-09-25).** Infection series use `epi`; baseline and intervention arms use `baseline`/`intervention`; non-infection quantities such as visitor counts use `neutral` (`--ink-2`); interface controls such as sliders use `--accent`; outcome notes such as died-out use neutral styling, never `--warn`.
 - **Epidemic curve ("tide gauge", `LineChart`):**
   - Median line `--epi` 2.2px, and replicate band `--epi-soft` between `bandLow`/`bandHigh` (single-seed runs draw no band and show the single-seed note).
   - Intervention windows as `--hatch` 45° hatch behind the data, with the family colour as a thin 3px strip at the top.
   - Day cursor: 1px `--seq5` line plus a 5px dot on the median.
   - Axis labels mono 11px `--ink-4`.
   - Dual-arm mode (Compare): baseline `--base-line` 2px, intervention `--div-neg` 2.4px, and the area where the intervention is below the baseline shaded `--div-neg` at .14 and labelled "infections averted (simulated)" in italic Newsreader. The area above is shaded `--div-pos` at .14 and labelled "added (simulated)".
-- **Ranked bars (`HBar`):** a 10px track `--panel-2`. The first bar is `--epi`, the rest `--accent` at 70% (dark) or `--ink-2` (light). Values are mono and right-aligned.
+- **Ranked bars (`HBar`) (amended 2026-09-25 after the integration review; resolves the §5/§2.3 conflict):** a 10px track `--panel-2`. Bars that encode infection counts (routes, parishes, ages) use the infection family only: the first bar is `--epi` at full opacity and the rest are `--epi` at 55% opacity. Teal is never used for data. Bars that encode non-infection quantities (e.g. visitor counts) use `--ink-2`. Values are mono and right-aligned. The PNG exporter uses the same colour resolver as the visible bars.
 - **Route-shift diverging bars:** a centre rule `--ink`, negative bars `--div-neg` to the left and positive `--div-pos` to the right, with values signed using the true minus sign "−".
 - **Change card (Compare):** a 2px `--ink` top rule, a 13px `--ink-3` label, a 40px Newsreader value (colour `--div-neg` or `--div-pos` by sign, `--ink` when neutral) and a mono sub line.
 - **Job phase pipeline:** a vertical list of the real phases (queued → validating → preparing → running → writing_artifacts → verifying → finalizing).
