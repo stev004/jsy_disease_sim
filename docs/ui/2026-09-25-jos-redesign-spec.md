@@ -70,9 +70,10 @@ Rules:
 ## 4. Shell and layout
 
 - **One 64px top bar replaces the 56px bar and the 76px rail on every page.**
+  - **Disclaimer (amended 2026-09-25 after the U1 browser check):** the verbatim "Synthetic research simulation — not a forecast" is a caption line directly under the brand name (11px `--ink-3`). It is a separate element outside the home link, so assistive technology reads it as text; it must never sit inside an element whose `aria-label` replaces its content. A right-side pill overflowed the navigation at 1180–1440px.
   - Left: the JOS mark (ring + dot in `--accent`), "JOS", and "Jersey Outbreak Simulator" in `--ink-3`.
   - Centre-left: primary nav tabs **Home · Simulate · Results · Compare · Runs & evidence**. The active tab uses `--accent` as a pill fill (dark) or a 2px underline (light), the rest `--ink-2`. Targets are at least 44px tall.
-  - Right: the disclaimer pill "Synthetic research simulation — not a forecast" (verbatim), the Demo data chip (mock mode only; `--accent` fill), the current scenario chip with its kind and job-state chip, the Simple/Scientific segmented toggle, the Theme toggle (icon button with `aria-label`), the Model info button (opens the drawer) and a **New scenario** primary button.
+  - Right: the Demo data chip (mock mode only; `--accent` fill), the current scenario chip with its kind and job-state chip, the Simple/Scientific segmented toggle, the Theme toggle (icon button with `aria-label`), the Model info button (opens the drawer) and a **New scenario** primary button.
   - Below 1440px the scenario chip collapses into a menu before anything else does.
 - **Routes are unchanged:** `/`, `/simulate`, `/results[/:jobId]`, `/compare[/:jobId]`, `/runs`. The `/runs` nav label becomes "Runs & evidence".
 - **Page padding** is 28px on the sides and 22px at the top. The content max width is unconstrained, and the minimum width stays 1180px.
