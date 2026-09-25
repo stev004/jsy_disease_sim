@@ -1,0 +1,7 @@
+--- ls-remote receipt (2026-09-25T18:11:58Z)
+474bb53b9e4fdfccfc84720eeff938564481bb27	refs/heads/ui/integration
+43b45cb9e5a17c616ee6b2028ac4b519e02fde12	refs/heads/ui/u1-foundation
+dd9a0d0b52de905c3e92a2e905320bafd7ae166f	refs/heads/ui/u2-results
+5f89f8c843ba2375e9ce5f47adb071b237933950	refs/heads/ui/u3-compare
+9cb9e4051f3f147dc7eff9b1764d3ad69fc5efd4	refs/heads/ui/u4-evidence
+9424ca7ca969065ad21ebbde306cf9029df32cfe	refs/heads/ui/u5-home-simulate
