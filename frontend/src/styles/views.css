@@ -55,9 +55,9 @@
 .view-simulate input[type=date]{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px}
 .inline-num{width:76px; text-align:right}
 .slider-row{display:grid; grid-template-columns:1fr 92px; gap:16px; align-items:center; margin-top:12px}
-input[type=range]{accent-color:var(--accent); width:100%}
+input[type=range]{accent-color:var(--accent); width:100%; min-height:44px}
 details.adv{margin-top:16px; border-top:1px dashed var(--line); padding-top:8px}
-details.adv summary{cursor:pointer; font-size:12.5px; font-weight:600; color:var(--accent-ink); list-style:none; display:flex; align-items:center; gap:6px}
+details.adv summary{min-height:44px; cursor:pointer; font-size:12.5px; font-weight:600; color:var(--accent-ink); list-style:none; display:flex; align-items:center; gap:6px}
 details.adv summary::before{content:"▸"; font-size:10px; transition:transform .12s}
 details.adv[open] summary::before{transform:rotate(90deg)}
 .adv-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px 24px; margin-top:12px}
@@ -187,7 +187,7 @@ body.sci .view-simulate .hash-line.sci-only{display:flex!important}
 .age-card .v{font-size:20px; font-weight:700; margin-top:3px; font-variant-numeric:tabular-nums}
 .age-card .s{font-size:11.5px; color:var(--ink-2); font-variant-numeric:tabular-nums}
 .age-bar{height:8px; background:var(--panel-2); border-radius:3px; margin-top:8px; position:relative; overflow:hidden}
-.age-bar i{position:absolute; inset:0 auto 0 0; background:var(--seq3); border-radius:2px}
+.age-bar i{position:absolute; inset:0 auto 0 0; background:var(--epi); border-radius:2px}
 .travel-stats{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-bottom:16px}
 .tstat{background:var(--panel); padding:12px 12px}
 .tstat .k{font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
@@ -254,16 +254,16 @@ body.sci .view-simulate .hash-line.sci-only{display:flex!important}
 .exp-btn svg{width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
 .exp-menu{display:none; position:absolute; top:calc(100% + 6px); right:0; z-index:30; min-width:184px; padding:4px}
 .exp-menu.open{display:block}
-.exp-menu button{display:block; width:100%; text-align:left; padding:8px 8px; border-radius:5px;
+.exp-menu button{display:flex; align-items:center; min-height:44px; width:100%; text-align:left; padding:8px 8px; border-radius:5px;
   font-size:12.5px; font-weight:550; color:var(--ink-2)}
 .exp-menu button:hover{background:var(--panel-2); color:var(--ink)}
 
 /* ================= fizzled-run callout ================= */
-.fizzle{padding:12px 16px; margin-bottom:12px; border-left:3px solid var(--warn); display:grid; gap:6px}
-.fizzle .ft{font-weight:650; font-size:13.5px}
+.fizzle{padding:12px 16px; margin-bottom:12px; border:1px solid var(--line); border-left:3px solid var(--line-strong); background:var(--panel-2); display:grid; gap:6px}
+.fizzle .ft{color:var(--ink-2);font-weight:650; font-size:13.5px}
 .fizzle .fb{font-size:12.5px; color:var(--ink-2); line-height:1.5; max-width:80ch}
 .fizzle .fa{display:flex; gap:8px; margin-top:5px}
-.fizzle .btn{padding:5px 12px; font-size:12px}
+.fizzle .btn{min-height:44px; padding:5px 12px; font-size:12px}
 
 /* ================= keyboard shortcuts overlay ================= */
 .ks{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 32px));

@@ -13,10 +13,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Btn,
   HBar,
+  isLineSeriesBandRendered,
+  isLineSeriesRendered,
   JerseyMap,
   LineChart,
+  lineSeriesColor,
   MetricTile,
   MetricTileGrid,
+  resolveRankedBarColor,
 } from '../../components';
 import type { HBarRow } from '../../components';
 import { api } from '../../api';
@@ -331,7 +335,7 @@ export function ResultsView() {
   })();
 
   const parishCurve = selectedParish
-    ? [{ pts: selectedParish.points.flatMap((point, d) => point.cum == null ? [] : [[d, point.cum] as [number, number]]) }]
+    ? [{ label: 'Cumulative parish infections', role: 'epi' as const, pts: selectedParish.points.flatMap((point, d) => point.cum == null ? [] : [[d, point.cum] as [number, number]]) }]
     : [];
   const parishRelative = selectedParish && data.availability.parishAttack
     ? 'Parish ever-infected fraction is published for this run.'
@@ -345,6 +349,8 @@ export function ResultsView() {
       : `This ensemble has ${data.seeds} persisted replicates, but no quantile band is available for this metric.`
     : 'Single-seed run: point values are one stochastic realisation, with no replicate range.';
   const tideSeries = [{
+    label: data.seeds > 1 ? 'Ensemble median' : 'Single replicate',
+    role: 'epi' as const,
     pts: data.epi.flatMap((point) => point.active == null ? [] : [[point.day, point.active] as [number, number]]),
     band: hasPublishedBand
       ? {
@@ -499,8 +505,12 @@ export function ResultsView() {
                 <div className="rs-gauge-title">
                   <h2>Active infectious · tide gauge</h2>
                   <div className="rs-tide-legend">
-                    <span><i className="rs-line-swatch" />{data.seeds > 1 ? 'Ensemble median' : 'Single replicate'}</span>
-                    {hasPublishedBand && <span><i className="rs-band-swatch" />Replicate range</span>}
+                    {tideSeries.filter(isLineSeriesRendered).map((item) => (
+                      <span key={item.label}><i className="rs-line-swatch" style={{ background: lineSeriesColor(item) }} />{item.label}</span>
+                    ))}
+                    {tideSeries.filter(isLineSeriesBandRendered).map((item) => (
+                      <span key={`${item.label}-band`}><i className="rs-band-swatch" />Replicate range</span>
+                    ))}
                     <span className="num">Day {day} · {formatDate(data.dates[day] ?? '')}</span>
                   </div>
                 </div>
@@ -629,7 +639,7 @@ export function ResultsView() {
               <section className="card panel-block rs-side-panel">
                 <h2>What&apos;s driving transmission <span className="x num">day {day}</span></h2>
                 {drivers.length ? (
-                  <HBar rows={drivers} />
+                  <HBar rows={drivers} role="infection" />
                 ) : data.availability.routes ? (
                   <p className="chart-note rs-side-copy">No infections were attributed to any route on day {day}.</p>
                 ) : (
@@ -653,10 +663,11 @@ export function ResultsView() {
                 <div className="rs-rank-list">
                   {topParishes.map((row, index) => {
                     const maxShare = topParishes[0]?.share ?? 1;
+                    const barColor = resolveRankedBarColor('infection', index);
                     return (
                       <div className="rs-rank-row" key={row.name}>
                         <span className="rs-rank-name">{row.name}</span>
-                        <span className="rs-rank-track"><i className={index === 0 ? 'is-top' : undefined} style={{ width: `${maxShare > 0 ? 100 * row.share / maxShare : 0}%` }} /></span>
+                        <span className="rs-rank-track"><i style={{ width: `${maxShare > 0 ? 100 * row.share / maxShare : 0}%`, background: barColor.color, opacity: barColor.opacity }} /></span>
                         <span className="rs-rank-value num">{(100 * row.share).toFixed(1)}%</span>
                       </div>
                     );

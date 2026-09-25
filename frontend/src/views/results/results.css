@@ -179,7 +179,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 36px;
+  min-height: 44px;
+  padding: 0 4px;
   color: var(--ink-2);
   font-size: 11px;
   cursor: pointer;
@@ -236,13 +237,16 @@
 }
 .view-results .fizzle {
   z-index: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
   padding: 12px 16px;
   margin: 0 0 8px;
-  border-left: 3px solid var(--warn);
   display: grid;
   gap: 6px;
 }
 .view-results .fizzle .ft {
+  color: var(--ink-2);
   font-weight: 650;
   font-size: 13.5px;
 }
@@ -259,7 +263,7 @@
   margin-top: 5px;
 }
 .view-results .fizzle .btn {
-  min-height: 36px;
+  min-height: 44px;
   padding: 5px 12px;
   font-size: 12px;
 }
@@ -334,8 +338,8 @@
   background: var(--epi-soft);
 }
 .view-results .rs-shortcuts-button {
-  min-height: 36px;
-  padding: 5px 8px;
+  min-height: 44px;
+  padding: 7px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   color: var(--ink-2);
@@ -350,7 +354,7 @@
   grid-template-columns: 56px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  min-height: 23px;
+  min-height: 44px;
 }
 .view-results .rs-slider-day {
   color: var(--ink-2);
@@ -363,6 +367,7 @@
 .view-results .rs-tide-panel .time-slider input {
   display: block;
   width: 100%;
+  min-height: 44px;
 }
 .view-results .rs-tide-panel .iv-strip {
   position: relative;
@@ -498,13 +503,9 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--accent);
-  opacity: .7;
-  transition: width 450ms ease;
-}
-.view-results .rs-rank-track i.is-top {
   background: var(--epi);
-  opacity: 1;
+  opacity: .55;
+  transition: width 450ms ease;
 }
 .view-results .rs-rank-value {
   color: var(--ink);

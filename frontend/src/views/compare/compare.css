@@ -100,7 +100,7 @@
 .cmp-day-control { display: grid; gap: 4px; margin: 7px 0 2px; }
 .cmp-day-control label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--ink-3); font: 11px "IBM Plex Mono", ui-monospace, monospace; }
 .cmp-selected-day { color: var(--ink); font-weight: 500; }
-.cmp-day-control input[type="range"] { width: 100%; min-height: 44px; margin: 0; accent-color: var(--seq5); cursor: pointer; }
+.cmp-day-control input[type="range"] { width: 100%; min-height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
 .cmp-date-range { display: flex; justify-content: space-between; color: var(--ink-4); font-size: 10px; }
 .view-compare .cmp-tide-chart .curve.base { stroke-width: 2; }
 .view-compare .cmp-tide-chart .curve.treated { stroke-width: 2.4; }

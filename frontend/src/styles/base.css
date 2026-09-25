@@ -195,11 +195,7 @@ body.sci .drv-row{grid-template-columns:188px 1fr 74px}
 .drv-row{display:grid; grid-template-columns:118px 1fr 74px; gap:8px; align-items:center; font-size:12px}
 .drv-row .nm{color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .drv-row .bar{height:10px;border-radius:999px;background:var(--panel-2);position:relative;overflow:hidden}
-.drv-row .bar i{position:absolute;inset:0 auto 0 0;background:var(--ink-2);border-radius:999px}
-.drv-row .bar i.epi{background:var(--epi)}
-@media not (prefers-color-scheme: light){:root:not([data-theme="light"]) .drv-row .bar i.secondary{
-  background:var(--accent);opacity:.7}}
-:root[data-theme="dark"] .drv-row .bar i.secondary{background:var(--accent);opacity:.7}
+.drv-row .bar i{position:absolute;inset:0 auto 0 0;background:var(--epi);border-radius:999px}
 .drv-row .val{text-align:right;color:var(--ink);font:11px "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .drv-row .val small{color:var(--ink-3)}
 .close-x{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;

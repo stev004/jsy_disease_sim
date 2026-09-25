@@ -10,6 +10,7 @@
  */
 
 import type { DatasetRow } from '../../api';
+import { resolveRankedBarColor, type RankedBarRole } from '../../components/rankedBarColor';
 
 function download(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
@@ -61,7 +62,8 @@ export interface BarSpec {
   name: string;
   count: number;
   share: number;
-  color?: string;
+  /** Rank within its visible panel, used to reproduce first-row emphasis. */
+  rank?: number;
 }
 
 /**
@@ -69,7 +71,7 @@ export interface BarSpec {
  * equivalent standalone SVG (explicit colors resolved from the theme tokens)
  * and rasterizes that instead.
  */
-export function buildBarsSvg(title: string, rows: BarSpec[]): SVGSVGElement {
+export function buildBarsSvg(title: string, rows: BarSpec[], role: RankedBarRole = 'infection'): SVGSVGElement {
   const NS = 'http://www.w3.org/2000/svg';
   const rowH = 26;
   const padT = 44;
@@ -86,7 +88,8 @@ export function buildBarsSvg(title: string, rows: BarSpec[]): SVGSVGElement {
   const ink = cssVar('--ink', '#1D2327');
   const ink3 = cssVar('--ink-3', '#6B6A63');
   const track = cssVar('--panel-2', '#EFEBE2');
-  const accent = cssVar('--accent', '#1B6670');
+  const epi = cssVar('--epi', '#B24A26');
+  const neutral = cssVar('--ink-2', '#4F5552');
   const panel = cssVar('--panel', '#FBFAF6');
 
   const svg = document.createElementNS(NS, 'svg') as SVGSVGElement;
@@ -110,6 +113,7 @@ export function buildBarsSvg(title: string, rows: BarSpec[]): SVGSVGElement {
   svg.appendChild(heading);
 
   rows.forEach((r, i) => {
+    const barColor = resolveRankedBarColor(role, r.rank ?? i);
     const y = padT + i * rowH;
     const name = document.createElementNS(NS, 'text');
     name.setAttribute('x', String(labelW));
@@ -135,7 +139,8 @@ export function buildBarsSvg(title: string, rows: BarSpec[]): SVGSVGElement {
     bar.setAttribute('width', String(Math.max(2, (barW * r.count) / maxC)));
     bar.setAttribute('height', '11');
     bar.setAttribute('rx', '3');
-    bar.setAttribute('fill', r.color ? cssVar(r.color, accent) : accent);
+    bar.setAttribute('fill', cssVar(barColor.color, role === 'infection' ? epi : neutral));
+    bar.setAttribute('fill-opacity', String(barColor.opacity));
     svg.appendChild(bar);
 
     const value = document.createElementNS(NS, 'text');

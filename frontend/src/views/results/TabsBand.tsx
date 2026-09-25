@@ -1,6 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
-import { HBar, LineChart, Seg, useToast } from '../../components';
-import type { HBarRow } from '../../components';
+import {
+  HBar,
+  isLineSeriesBandRendered,
+  isLineSeriesRendered,
+  lineSeriesColor,
+  LineChart,
+  resolveRankedBarColor,
+  Seg,
+  useToast,
+} from '../../components';
+import type { HBarRow, Series } from '../../components';
 import type { DatasetRow } from '../../api';
 import { ExportMenu } from './ExportMenu';
 import {
@@ -65,8 +74,13 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
     });
     const low = data.epi.flatMap((p) => p.bandLow == null ? [] : [[p.day, p.bandLow] as [number, number]]);
     const high = data.epi.flatMap((p) => p.bandHigh == null ? [] : [[p.day, p.bandHigh] as [number, number]]);
-    return [{ pts, role: 'epi' as const, band: low.length && high.length ? { low, high } : undefined }];
-  }, [data.epi, epiMetric]);
+    return [{
+      pts,
+      label: multiSeed ? 'Ensemble median' : 'Single replicate',
+      role: 'epi' as const,
+      band: low.length && high.length ? { low, high } : undefined,
+    }];
+  }, [data.epi, epiMetric, multiSeed]);
 
   /* ------------------------------ routes ------------------------------ */
   const routeRows = useMemo(
@@ -80,7 +94,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
   const travelRows: HBarRow[] = routeRows
     .filter((r) => r.family === 'travel')
     .sort((a, b) => b.count - a.count)
-    .map((r) => ({ name: r.name, key: r.key, count: r.count, share: r.share, color: 'var(--seq3)' }));
+    .map((r) => ({ name: r.name, key: r.key, count: r.count, share: r.share }));
 
   /* ------------------------------ exports ------------------------------ */
   function exportCsv(dataset: string, rows: DatasetRow[], suffix: string): void {
@@ -133,12 +147,20 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
   }
 
   async function routesPng(): Promise<void> {
-    const bars: BarSpec[] = [...residentRows, ...travelRows].map((r) => ({
-      name: r.name,
-      count: r.count,
-      share: r.share,
-      color: r.color,
-    }));
+    const bars: BarSpec[] = [
+      ...residentRows.map((r, rank) => ({
+        name: r.name,
+        count: r.count,
+        share: r.share,
+        rank,
+      })),
+      ...travelRows.map((r, rank) => ({
+        name: r.name,
+        count: r.count,
+        share: r.share,
+        rank,
+      })),
+    ];
     const svg = buildBarsSvg(
       `Where infections happened · ${routeWin === 'day' ? `day ${day} only` : `up to day ${day}`}`,
       bars,
@@ -217,12 +239,21 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
 
   const travelSeries = useMemo(() => {
     if (!travel) return [];
-    const series: Array<{ pts: Array<[number, number]>; cls?: string }> = [];
+    const series: Series[] = [];
     if (travel.hasArrivals) {
-      series.push({ pts: travel.points.flatMap((t, d) => t.arrivals == null ? [] : [[d, t.arrivals] as [number, number]]), cls: 'base' });
+      series.push({
+        label: 'Arrivals / day',
+        role: 'neutral',
+        pts: travel.points.flatMap((t, d) => t.arrivals == null ? [] : [[d, t.arrivals] as [number, number]]),
+        cls: 'base',
+      });
     }
     if (travel.hasActiveVisitors) {
-      series.push({ pts: travel.points.flatMap((t, d) => t.activeVisitors == null ? [] : [[d, t.activeVisitors] as [number, number]]) });
+      series.push({
+        label: 'Active visitors',
+        role: 'neutral',
+        pts: travel.points.flatMap((t, d) => t.activeVisitors == null ? [] : [[d, t.activeVisitors] as [number, number]]),
+      });
     }
     return series;
   }, [travel]);
@@ -247,13 +278,12 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
       name,
       count,
       share: total > 0 ? count / total : 0,
-      color: 'var(--seq3)',
     }));
   })();
 
   /* --------------------------- interventions --------------------------- */
   const ivSpark = useMemo(
-    () => [{ pts: data.epi.flatMap((p) => p.active == null ? [] : [[p.day, p.active] as [number, number]]) }],
+    () => [{ label: 'Active infectious', role: 'epi' as const, pts: data.epi.flatMap((p) => p.active == null ? [] : [[p.day, p.active] as [number, number]]) }],
     [data.epi],
   );
 
@@ -303,16 +333,18 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
               ]}
             />
             <span className="legend">
-              <span>
-                <span className="sw" style={{ background: 'var(--epi)' }} />
-                {multiSeed ? 'Ensemble median' : 'Single replicate'}
-              </span>
-              {hasPublishedBand && (
-                <span>
-                  <span className="swb" style={{ background: 'var(--band)' }} />
+              {epiSeries.filter(isLineSeriesRendered).map((item) => (
+                <span key={item.label}>
+                  <span className="sw" style={{ background: lineSeriesColor(item) }} />
+                  {item.label}
+                </span>
+              ))}
+              {epiSeries.filter(isLineSeriesBandRendered).map((item) => (
+                <span key={`${item.label}-band`}>
+                  <span className="swb" style={{ background: 'var(--epi-soft)' }} />
                   Replicate range
                 </span>
-              )}
+              ))}
             </span>
             <ExportMenu
               label="epidemic curve"
@@ -366,13 +398,13 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
           </p>
         ) : (
           <div className="routes-2col">
-            <HBar rows={residentRows} />
+            <HBar rows={residentRows} role="infection" />
             <div>
               <div className="label" style={{ marginBottom: 8 }}>
                 Travel &amp; visitor routes
               </div>
               {travelRows.length ? (
-                <HBar rows={travelRows} />
+                <HBar rows={travelRows} role="infection" />
               ) : (
                 <p className="chart-note">No travel routes in this run.</p>
               )}
@@ -403,10 +435,14 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
             <div className="age-grid">
               {(() => {
                 const totalAge = data.ages.reduce((s, a) => s + (a.cum[day] ?? 0), 0);
-                return data.ages.map((a) => {
+                return data.ages.map((a, index) => {
                   const inf = a.cum[day];
                   const atk = inf != null && a.pop ? inf / a.pop : null;
                   const share = inf != null && totalAge > 0 ? inf / totalAge : null;
+                  const visibleAgeRank = data.ages
+                    .slice(0, index)
+                    .filter((previous) => previous.cum[day] != null).length;
+                  const barColor = resolveRankedBarColor('infection', visibleAgeRank);
                   return (
                     <div className="card age-card" key={a.band}>
                       <div className="k">AGE {a.band}</div>
@@ -417,11 +453,15 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
                           : share == null ? 'not available' : `${(share * 100).toFixed(1)}% of infections`}
                       </div>
                       <div className="age-bar">
-                        <i
-                          style={{
-                            width: `${Math.min(100, data.availability.agePopulations ? (atk ?? 0) * 400 : (share ?? 0) * 100)}%`,
-                          }}
-                        />
+                        {inf != null && (
+                          <i
+                            style={{
+                              width: `${Math.min(100, data.availability.agePopulations ? (atk ?? 0) * 400 : (share ?? 0) * 100)}%`,
+                              background: barColor.color,
+                              opacity: barColor.opacity,
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                   );
@@ -459,14 +499,12 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
                 <div className="chart-head">
                   <h3>Arrivals &amp; active visitors</h3>
                   <span className="legend">
-                    <span>
-                      <span className="sw" style={{ background: 'var(--epi)' }} />
-                      Active visitors
-                    </span>
-                    <span>
-                      <span className="sw" style={{ background: 'var(--base-line)' }} />
-                      Arrivals / day
-                    </span>
+                    {travelSeries.filter(isLineSeriesRendered).map((item) => (
+                      <span key={item.label}>
+                        <span className="sw" style={{ background: lineSeriesColor(item) }} />
+                        {item.label}
+                      </span>
+                    ))}
                   </span>
                 </div>
                 <LineChart
@@ -483,7 +521,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
                   Cross-population transmission · up to selected day
                 </div>
                 {travelFlows.length ? (
-                  <HBar rows={travelFlows} />
+                  <HBar rows={travelFlows} role="infection" />
                 ) : (
                   <p className="chart-note">
                     This run published no cross-population transmission counts.

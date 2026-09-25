@@ -16,8 +16,10 @@ export interface HatchWindow {
 
 export interface Series {
   pts: Point[];
-  /** Semantic line colour role. Ignored when `color` is supplied. */
-  role?: SeriesRole;
+  /** Plain-language legend label for this rendered series. */
+  label: string;
+  /** Semantic line colour role. */
+  role: SeriesRole;
   /** Explicit line colour, normally a CSS custom property such as `var(--epi)`. */
   color?: string;
   /** Draw an artifact-published band behind the line. */
@@ -56,15 +58,21 @@ const ROLE_COLORS: Record<SeriesRole, string> = {
   epi: 'var(--epi)',
   baseline: 'var(--base-line)',
   intervention: 'var(--div-neg)',
-  travel: 'var(--accent)',
+  travel: 'var(--ink-2)',
   neutral: 'var(--ink-2)',
 };
 
-function seriesColor(series: Series): string {
+export function lineSeriesColor(series: Series): string {
   if (series.color) return series.color;
-  if (series.role) return ROLE_COLORS[series.role];
-  // Preserve the colours used by the existing Compare and travel legends.
-  return series.cls === 'base' ? 'var(--ink-3)' : 'var(--accent)';
+  return ROLE_COLORS[series.role];
+}
+
+export function isLineSeriesRendered(series: Series): boolean {
+  return series.pts.length > 1;
+}
+
+export function isLineSeriesBandRendered(series: Series): boolean {
+  return Boolean(series.band && series.band.low.length > 1 && series.band.high.length > 1);
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -102,7 +110,8 @@ export function LineChart({
   const padT = 12;
   const padB = 26;
 
-  const allValues = series.flatMap((s) => s.pts.map((p) => p[1]));
+  const renderedSeries = series.filter(isLineSeriesRendered);
+  const allValues = renderedSeries.flatMap((s) => s.pts.map((p) => p[1]));
   const yMax =
     (max ?? (allValues.length ? Math.max(...allValues) * 1.08 : 1)) || 1;
 
@@ -112,7 +121,7 @@ export function LineChart({
   const gridValues = [0, 1, 2, 3].map((i) => (yMax * i) / 3);
 
   const comparisonAreaPolygons = comparisonAreas
-    ? buildComparisonAreaPolygons(series, X, Y)
+    ? buildComparisonAreaPolygons(renderedSeries, X, Y)
     : [];
 
   return (
@@ -159,7 +168,7 @@ export function LineChart({
         return (
           <g key={`hatch-${i}`}>
             <rect x={x} y={padT} width={width} height={H - padT - padB} fill={`url(#${patternId})`} opacity={0.7} />
-            <rect x={x} y={padT} width={width} height={3} fill={window.color ?? 'var(--accent)'} />
+            <rect x={x} y={padT} width={width} height={3} fill={window.color ?? 'var(--ink-2)'} />
           </g>
         );
       })}
@@ -174,9 +183,9 @@ export function LineChart({
         />
       ))}
 
-      {series.map((sr, i) => (
+      {renderedSeries.map((sr, i) => (
         <g className="line-series" key={`series-${i}`}>
-          {sr.band && sr.band.low.length > 0 && sr.band.high.length > 0 && (
+          {isLineSeriesBandRendered(sr) && sr.band && (
             <polygon
               className="bandfill"
               points={
@@ -191,7 +200,7 @@ export function LineChart({
           )}
           <polyline
             className={`curve curve-draw${sr.cls ? ` ${sr.cls}` : ''}${i === 1 ? ' treated arm-secondary' : ''}`}
-            style={{ stroke: seriesColor(sr) }}
+            style={{ stroke: lineSeriesColor(sr) }}
             pathLength={1}
             points={sr.pts.map(([d, v]) => `${X(d)},${Y(v)}`).join(' ')}
           />
@@ -211,7 +220,7 @@ export function LineChart({
             opacity={0.9}
           />
           {(() => {
-            const median = series.find((item) => item.cls !== 'base') ?? series[0];
+            const median = renderedSeries.find((item) => item.cls !== 'base') ?? renderedSeries[0];
             const value = median?.pts.find(([day]) => day === marker)?.[1];
             return value == null ? null : (
               <circle className="day-cursor-dot" cx={X(marker)} cy={Y(value)} r={5} fill="var(--seq5)" />

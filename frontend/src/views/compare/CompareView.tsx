@@ -8,9 +8,14 @@ import { Btn } from '../../components/Btn';
 import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { JerseyMap } from '../../components/JerseyMap';
-import { LineChart } from '../../components/LineChart';
+import {
+  isLineSeriesBandRendered,
+  isLineSeriesRendered,
+  lineSeriesColor,
+  LineChart,
+} from '../../components/LineChart';
 import { useScenarioContextEffect } from '../../app/ScenarioContextProvider';
-import { divColor, OSM_ATTRIBUTION, seqColor, type ParishId } from '../../map/geometry';
+import { divColor, OSM_ATTRIBUTION, PARISHES, seqColor, type ParishId } from '../../map/geometry';
 import { setProvenanceJobId } from '../drawer/provenanceStore';
 import {
   fmt,
@@ -246,6 +251,7 @@ function CompareBody({ model }: { model: CompareModel }) {
   const chart = useMemo(
     () => [
       {
+        label: 'Baseline',
         pts: model.baseline.active.flatMap((value, index) =>
           value == null ? [] : [[index, value] as [number, number]],
         ),
@@ -263,6 +269,7 @@ function CompareBody({ model }: { model: CompareModel }) {
           : undefined,
       },
       {
+        label: 'Intervention',
         pts: model.treated.active.flatMap((value, index) =>
           value == null ? [] : [[index, value] as [number, number]],
         ),
@@ -316,6 +323,17 @@ function CompareBody({ model }: { model: CompareModel }) {
 
   const parishDifference = (parish: CompareModel['parishes'][number]): string =>
     signed(parish.treated - parish.base);
+  const parishDifferenceTooltip = (id: ParishId): string => {
+    const name = PARISHES.find((parish) => parish.id === id)?.name ?? id;
+    const parish = parishById.get(id);
+    if (!parish) return `${name}: difference unavailable (intervention − baseline)`;
+    if (model.population == null || model.population <= 0) {
+      return `${name}: per-1,000 difference unavailable (intervention − baseline)`;
+    }
+    const perThousand = ((parish.treated - parish.base) * 1000) / model.population;
+    const value = `${perThousand < 0 ? '−' : '+'}${Math.abs(perThousand).toFixed(1)}`;
+    return `${name}: ${value} per 1,000 (intervention − baseline)`;
+  };
 
   return (
     <section className="view view-compare">
@@ -394,14 +412,15 @@ function CompareBody({ model }: { model: CompareModel }) {
                   <h2>Active infectious over time</h2>
                 </div>
                 <div className="cmp-chart-legend" aria-label="Chart legend">
-                  <span><i className="cmp-line-swatch baseline" />Baseline</span>
-                  <span><i className="cmp-line-swatch intervention" />Intervention</span>
+                  {chart.filter(isLineSeriesRendered).map((item) => (
+                    <span key={item.label}><i className={`cmp-line-swatch ${item.role}`} style={{ background: lineSeriesColor(item) }} />{item.label}</span>
+                  ))}
                 </div>
               </div>
               <div className="cmp-area-legend">
                 <span><i className="cmp-area-swatch fewer" />infections averted (simulated)</span>
                 <span><i className="cmp-area-swatch more" />added (simulated)</span>
-                {(model.baseline.activeBand || model.treated.activeBand) && (
+                {chart.some(isLineSeriesBandRendered) && (
                   <span><i className="cmp-band-swatch" />Replicate range</span>
                 )}
               </div>
@@ -494,6 +513,7 @@ function CompareBody({ model }: { model: CompareModel }) {
               <MapPanel title="Difference" subtitle="Intervention − baseline">
                 <JerseyMap
                   colorFor={differenceColor}
+                  tooltipFor={parishDifferenceTooltip}
                   ariaLabel="Difference map: fewer, same, or more cumulative infections under intervention"
                   scalebar={false}
                 />

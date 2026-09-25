@@ -15,6 +15,8 @@ export interface JerseyMapProps {
   scalebar?: boolean;
   /** Accessible name for the figure. */
   ariaLabel?: string;
+  /** Parish-specific text shown in the SVG tooltip. */
+  tooltipFor?: (parishId: ParishId) => string;
   className?: string;
 }
 
@@ -39,6 +41,7 @@ export function JerseyMap({
   labels = true,
   scalebar = true,
   ariaLabel = 'Map of Jersey parishes',
+  tooltipFor,
   className,
 }: JerseyMapProps) {
   const interactive = Boolean(onSelect);
@@ -85,7 +88,7 @@ export function JerseyMap({
               : undefined
           }
         >
-          <title>{p.name}</title>
+          <title>{tooltipFor?.(p.id) ?? p.name}</title>
         </path>
       ))}
 

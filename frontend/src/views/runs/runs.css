@@ -20,6 +20,7 @@
 }
 
 .view-runs .runs-back {
+  min-height: 44px;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--accent-ink);
