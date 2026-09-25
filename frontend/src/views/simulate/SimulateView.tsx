@@ -15,6 +15,8 @@ import { api, type CapabilitiesResponse, type JsonObject, type PopulationMode } 
 import { Badge, Btn, Card, Label, Seg, useToast, type SegOption } from '../../components';
 import { useDetail } from '../../app/DetailProvider';
 import { useScenarioContextEffect } from '../../app/ScenarioContextProvider';
+import type { JobStatusResponse } from '../../api/types';
+import { deriveInterventions } from '../results/interventions';
 import {
   IV_PICKER,
   IV_PRESETS,
@@ -191,6 +193,28 @@ export function SimulateView() {
 
   const scenario = useMemo(() => buildScenario(state), [state]);
   const scenarioKey = useMemo(() => JSON.stringify(scenario), [scenario]);
+  const configuredIvKeys = useMemo(
+    () => state.ivs.filter((key) => IV_PRESETS[key].toConfig),
+    [state.ivs],
+  );
+  const previewInterventions = useMemo(
+    () => {
+      // The timeline builder reads only `job.request`; this preview has no persisted job metadata.
+      const previewJob = { request: { scenario } } as unknown as JobStatusResponse;
+      const timeline = deriveInterventions(
+        previewJob,
+        state.startDate,
+        state.duration,
+      );
+      return timeline.map((intervention, index) => ({
+        ...intervention,
+        color: configuredIvKeys[index]
+          ? `var(--iv-${IV_PRESETS[configuredIvKeys[index]].color})`
+          : intervention.color,
+      }));
+    },
+    [configuredIvKeys, scenario, state.startDate, state.duration],
+  );
 
   /* Continuous validation: 500ms after the last edit. */
   const requestSeq = useRef(0);
@@ -492,6 +516,56 @@ export function SimulateView() {
                 })
               )}
             </div>
+            <div className="sim-timeline" aria-label="Intervention timeline preview">
+              <div className="sim-timeline-head">
+                <div>
+                  <h3>Timing preview</h3>
+                  <span>Display only · edit timing in the intervention cards</span>
+                </div>
+                <span className="sim-timeline-duration num">{state.duration} days</span>
+              </div>
+              {previewInterventions.length === 0 ? (
+                <p className="sim-timeline-empty">Add an intervention to preview its calendar window.</p>
+              ) : (
+                <div className="sim-timeline-lanes">
+                  {previewInterventions.map((intervention) => (
+                    <div
+                      className="sim-timeline-lane"
+                      key={intervention.id}
+                      role="img"
+                      aria-label={`${intervention.name}: ${intervention.detail}`}
+                    >
+                      <span className="sim-timeline-name" title={intervention.name}>
+                        {intervention.name}
+                      </span>
+                      {intervention.triggered ? (
+                        <span className="sim-timeline-unknown" title={intervention.detail}>
+                          <i style={{ backgroundColor: intervention.color }} />
+                          Detection-triggered · timing is not known in advance
+                        </span>
+                      ) : (
+                        <span className="sim-timeline-track">
+                          <span
+                            className="sim-timeline-bar"
+                            style={{
+                              left: `${(100 * intervention.from) / state.duration}%`,
+                              width: `${(100 * (intervention.to - intervention.from + 1)) / state.duration}%`,
+                              backgroundColor: intervention.color,
+                            }}
+                            title={intervention.detail}
+                          />
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="sim-timeline-axis num" aria-hidden="true">
+                <span>Day 1</span>
+                <span>Day {Math.ceil(state.duration / 2)}</span>
+                <span>Day {state.duration}</span>
+              </div>
+            </div>
             <button
               type="button"
               className="iv-add"
@@ -601,7 +675,8 @@ export function SimulateView() {
             <div className="li">
               <span className="k">Population</span>
               <span className="v">
-                {POPULATION_NAME[state.population]} · {nf.format(presets[state.population])}
+                {POPULATION_NAME[state.population]} ·{' '}
+                <span className="num">{nf.format(presets[state.population])}</span>
               </span>
             </div>
             <div className="li">
@@ -611,7 +686,8 @@ export function SimulateView() {
             <div className="li">
               <span className="k">Starts</span>
               <span className="v">
-                {dayMonthYear(state.startDate)} · {state.seeded} seeded
+                <span className="num">{dayMonthYear(state.startDate)}</span> ·{' '}
+                <span className="num">{state.seeded}</span> seeded
               </span>
             </div>
             <div className="li">
@@ -630,7 +706,7 @@ export function SimulateView() {
               <span className="k">Uncertainty</span>
               <span className="v">
                 {state.uncertainty === 'ensemble'
-                  ? `Ensemble · ${ENSEMBLE_SEEDS.length} seeds`
+                  ? <>Ensemble · <span className="num">{ENSEMBLE_SEEDS.length} seeds</span></>
                   : 'Single run'}
               </span>
             </div>
@@ -668,7 +744,12 @@ export function SimulateView() {
               )}
             </div>
             {validation.hash && (
-              <div className="hash-line mono">scenario {shortHash(validation.hash)}</div>
+              <div className="hash-line sci-only">
+                <span className="hash-caption">Scenario hash</span>
+                <span className="chip neutral mono" title={validation.hash}>
+                  {shortHash(validation.hash)}
+                </span>
+              </div>
             )}
             <Btn
               variant="primary"
