@@ -65,7 +65,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
     });
     const low = data.epi.flatMap((p) => p.bandLow == null ? [] : [[p.day, p.bandLow] as [number, number]]);
     const high = data.epi.flatMap((p) => p.bandHigh == null ? [] : [[p.day, p.bandHigh] as [number, number]]);
-    return [{ pts, band: low.length && high.length ? { low, high } : undefined }];
+    return [{ pts, role: 'epi' as const, band: low.length && high.length ? { low, high } : undefined }];
   }, [data.epi, epiMetric]);
 
   /* ------------------------------ routes ------------------------------ */
