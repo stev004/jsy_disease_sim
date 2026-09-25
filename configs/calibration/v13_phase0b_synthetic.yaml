@@ -144,9 +144,9 @@ misspecification:
       symptomatic: 0.75
       asymptomatic: 0.25
     common_probability_grid:
-    - 0.25
-    - 0.5
-    - 0.75
+    - "0.25"
+    - "0.50"
+    - "0.75"
     grid_cells: 75
   detection:
     relative_loss_degradation_minimum: 0.25
@@ -156,13 +156,13 @@ misspecification:
     tie_scale: 1.0e-12
 negative_control:
   beta_grid:
-  - 0.04
-  - 0.08
-  - 0.16
+  - "0.04"
+  - "0.08"
+  - "0.16"
   global_route_factor_grid:
-  - 0.5
-  - 1.0
-  - 2.0
+  - "0.5"
+  - "1.0"
+  - "2.0"
   route_multiplier_scope: all_eleven_routes_uniformly
   fixed_inoculation_day_offset: 2
   fixed_detection_probabilities:

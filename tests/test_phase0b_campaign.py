@@ -93,6 +93,14 @@ def test_phase0b_profile_is_independently_frozen_and_workload_is_exact(
         Decimal("0.325"),
         Decimal("0.40"),
     )
+    p02b_declaration = config.declaration["misspecification"]["p0_2b"]
+    assert p02b_declaration["common_probability_grid"] == ["0.25", "0.50", "0.75"]
+    assert all(isinstance(value, str) for value in p02b_declaration["common_probability_grid"])
+    negative_control = config.declaration["negative_control"]
+    assert negative_control["beta_grid"] == ["0.04", "0.08", "0.16"]
+    assert negative_control["global_route_factor_grid"] == ["0.5", "1.0", "2.0"]
+    assert campaign._p02b_common_probability_grid(config) == (0.25, 0.5, 0.75)
+    assert campaign._p03_grids(config) == ((0.04, 0.08, 0.16), (0.5, 1.0, 2.0))
     assert plan.as_dict()["p0_1_grid_cells"] == 625
     assert plan.as_dict()["p0_2_wrong_delay_cells"] == 625
     assert plan.as_dict()["p0_2_wrong_regime_cells"] == 75
@@ -168,6 +176,28 @@ def test_phase0b_seed_sets_are_disjoint_and_guard_uses_phase0_constants() -> Non
     )
     with pytest.raises(campaign.BudgetError, match="frozen-profile cell count"):
         campaign.guard_workload(replace(config, dimensions=oversized_dimensions))
+
+
+@pytest.mark.parametrize(
+    ("section", "field"),
+    (
+        ("misspecification.p0_2b", "common_probability_grid"),
+        ("negative_control", "beta_grid"),
+        ("negative_control", "global_route_factor_grid"),
+    ),
+)
+def test_phase0b_secondary_grids_reject_numeric_yaml_values(
+    tmp_path: Path, section: str, field: str
+) -> None:
+    payload = yaml.safe_load(PHASE0B_CONFIG.read_text(encoding="utf-8"))
+    target: dict[str, Any] = payload
+    for key in section.split("."):
+        target = target[key]
+    target[field][0] = 0.25 if field == "common_probability_grid" else 0.04
+    changed_path = tmp_path / f"numeric-{field}.yaml"
+    changed_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    with pytest.raises(campaign.CampaignError, match="frozen declaration changed"):
+        campaign.CampaignConfig.from_yaml(changed_path)
 
 
 def test_phase0b_dry_run_reports_all_arm_counts_and_verified_authorities(
@@ -274,6 +304,210 @@ def test_phase0b_decimal_recovery_endpoints_are_inclusive_and_bias_cancels() -> 
     assert second._absolute_error_decimal("asymptomatic_detection_probability") == Decimal("0.075")
     assert first._absolute_error_decimal("symptomatic_detection_probability") == Decimal("0.125")
     assert second._absolute_error_decimal("symptomatic_detection_probability") == Decimal("0.125")
+
+
+def test_phase0b_production_p01_path_joins_exact_declared_decimals_after_readback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = campaign.CampaignConfig.from_yaml(PHASE0B_CONFIG)
+    selected_cells = (
+        campaign.CandidateCell(0.06, 1, 0.625, 0.175),
+        campaign.CandidateCell(0.10, 3, 0.875, 0.325),
+        campaign._truth_cell(config),
+        campaign._truth_cell(config),
+        campaign._truth_cell(config),
+    )
+    fit_index = 0
+
+    class FakeParent:
+        generated = object()
+
+    class FakeLatent:
+        diagnostics = {
+            "natural_history": {"chronology_passed": True},
+            "states": {"conserved": True},
+        }
+        transmission_events = tuple([{"imported": True}] * 10 + [{"source_kind": "local"}])
+
+        def __init__(self, run_config: OutbreakRunConfig) -> None:
+            self.config = run_config
+            self.logical_content_hash = f"latent-{run_config.seed}"
+
+    class FakeObserved:
+        def __init__(self, latent: FakeLatent, observation: ObservationConfig) -> None:
+            self.latent_run = latent
+            self.config = observation
+            report_date = date.fromisoformat(next(iter(latent.config.import_schedule)))
+            self.observation_events = [
+                {"report_date": report_date.isoformat(), "symptomatic": True},
+                {
+                    "report_date": (report_date + timedelta(days=1)).isoformat(),
+                    "symptomatic": False,
+                },
+                {
+                    "report_date": (report_date + timedelta(days=2)).isoformat(),
+                    "symptomatic": True,
+                },
+            ]
+            self.diagnostics: dict[str, Any] = {}
+
+    def fake_build_parent(*args: Any, **kwargs: Any) -> FakeParent:
+        del args, kwargs
+        return FakeParent()
+
+    def fake_run_outbreak(
+        parent: Any, run_config: OutbreakRunConfig, parameters: Any
+    ) -> FakeLatent:
+        del parent, parameters
+        return FakeLatent(run_config)
+
+    def fake_observe(latent: FakeLatent, observation: ObservationConfig) -> FakeObserved:
+        result = FakeObserved(latent, observation)
+        result.diagnostics = {
+            "status": "passed",
+            "no_report_before_infection": True,
+            "chronology_violations": 0,
+            "latent_incidence_conservation": True,
+            "latent_incidence_conservation_difference": 0,
+            "observation_rng": {
+                "stream_namespace": "observation",
+                "stream_key_inputs": [
+                    "latent_replicate_seed",
+                    "observation_seed",
+                    "observation_config_id",
+                ],
+                "stream_fingerprint": hashlib.sha256(
+                    str(observation_stream_seed(latent.config.seed, observation)).encode()
+                ).hexdigest(),
+            },
+        }
+        return result
+
+    def fake_fit_blind(
+        _target: campaign.ObservedTables,
+        candidate_grid: tuple[campaign.CandidateCell, ...],
+        _predictions: Any,
+        **_kwargs: Any,
+    ) -> campaign.BlindFitResult:
+        nonlocal fit_index
+        selected = selected_cells[fit_index]
+        fit_index += 1
+        profiles = tuple(
+            campaign.ProfileDiagnostic(
+                dimension=name,
+                values=tuple(sorted({float(getattr(cell, name)) for cell in candidate_grid})),
+                profiled_objectives=(0.0, 1.0, 2.0, 3.0, 4.0),
+                minimum=0.0,
+                second_minimum=1.0,
+                numerical_tie=False,
+                relative_gap=1.0,
+                identified=True,
+            )
+            for name in campaign.P01_DIMENSION_NAMES
+        )
+        return campaign.BlindFitResult(
+            loss_surface=tuple(
+                campaign.LossRow(cell, 0.0 if cell == selected else 1.0) for cell in candidate_grid
+            ),
+            minimum_objective=0.0,
+            global_minimizers=(selected,),
+            numerical_tie=False,
+            tie_tolerance=1e-12,
+            selected=selected,
+            profiles=profiles,
+            identified=True,
+            estimate_hash=f"{fit_index:064x}",
+        )
+
+    monkeypatch.setattr(campaign, "build_parent", fake_build_parent)
+    monkeypatch.setattr(campaign, "run_outbreak", fake_run_outbreak)
+    monkeypatch.setattr(campaign, "observe_latent_run", fake_observe)
+    monkeypatch.setattr(campaign, "fit_blind", fake_fit_blind)
+
+    result = campaign.run_p01_campaign(
+        PHASE0B_CONFIG,
+        PHASE0B_PREDECLARATION,
+        tmp_path,
+        root=ROOT,
+    )
+
+    dimensions = (
+        "beta",
+        "inoculation_day_offset",
+        "symptomatic_detection_probability",
+        "asymptomatic_detection_probability",
+    )
+    expected_endpoint_estimates = {
+        "beta": (Decimal("0.06"), Decimal("0.10")),
+        "inoculation_day_offset": (Decimal("1"), Decimal("3")),
+        "symptomatic_detection_probability": (Decimal("0.625"), Decimal("0.875")),
+        "asymptomatic_detection_probability": (Decimal("0.175"), Decimal("0.325")),
+    }
+    for row_index, target_seed in enumerate(config.target_process_seeds[:2]):
+        recovery = result.recovery_rows[row_index]
+        fit = result.blind_fits[target_seed]
+        persisted = json.loads(
+            (tmp_path / "blind_estimates" / f"{target_seed}.json").read_text(encoding="utf-8")
+        )
+        assert persisted["estimate_hash"] == fit.estimate_hash == recovery.estimate_hash
+        assert persisted["selected"] == selected_cells[row_index].as_dict()
+        for dimension in dimensions:
+            spec = config.dimension_map[dimension]
+            estimate, truth = recovery.exact_estimate_truth[dimension]
+            signed_error = estimate - truth
+            assert isinstance(estimate, Decimal)
+            assert isinstance(truth, Decimal)
+            assert estimate == expected_endpoint_estimates[dimension][row_index]
+            assert recovery._signed_error_decimal(dimension) == signed_error
+            assert signed_error == (
+                -spec.exact_tolerance() if row_index == 0 else spec.exact_tolerance()
+            )
+            assert recovery._absolute_error_decimal(dimension) == spec.exact_tolerance()
+            assert recovery._absolute_error_decimal(dimension) <= spec.exact_tolerance()
+            assert estimate == spec.exact_value(getattr(recovery.selected, dimension))
+    assert result.recovery_rows[0].exact_estimate_truth["beta"] == (
+        Decimal("0.06"),
+        Decimal("0.08"),
+    )
+    assert result.recovery_rows[1].exact_estimate_truth["beta"] == (
+        Decimal("0.10"),
+        Decimal("0.08"),
+    )
+    for dimension in dimensions:
+        spec = config.dimension_map[dimension]
+        assert result.evaluation.coverage[dimension] == 1.0
+        for target_seed in config.target_process_seeds[:2]:
+            output_row = next(
+                row
+                for row in result.evaluation.rows
+                if row["target_seed"] == target_seed and row["dimension"] == dimension
+            )
+            assert output_row["within_tolerance_hit"] is True
+            assert output_row["selected_at_grid_boundary"] is False
+            assert output_row["absolute_error"] == float(spec.exact_tolerance())
+
+
+def test_phase0b_p02_clause_serialization_uses_g29_states() -> None:
+    result = campaign.P02TargetResult(
+        arm="p0_2a",
+        target_seed=62001,
+        estimate_hash="a" * 64,
+        minimum_objective=1.0,
+        correct_minimum_objective=1.0,
+        relative_loss_degradation=0.0,
+        selected=None,
+        global_minimizers=(),
+        numerical_tie=True,
+        channel_total_error=None,
+        clauses={"known_false": False, "undefined": None},
+        dimension_errors={},
+        detection_state="UNKNOWN",
+        phase0b=True,
+    ).as_dict()
+    assert result["clause_known_false"] == "FALSE"
+    assert result["clause_undefined"] == "UNKNOWN"
+    assert result["estimate_beta"] is None
+    assert result["E_i"] is None
 
 
 def test_phase0b_p02a_independent_clauses_and_g29_tie_values() -> None:
@@ -406,11 +640,13 @@ def test_phase0b_p02b_uses_75_cells_and_exact_outside_tolerance_clauses() -> Non
 
 def test_phase0b_p03_keeps_nine_cell_design_on_fresh_candidate_seeds() -> None:
     config = campaign.CampaignConfig.from_yaml(PHASE0B_CONFIG)
-    assert len(campaign._p03_grid()) == 9
+    assert len(campaign._p03_grid(config)) == 9
     assert config.candidate_process_seeds == campaign.PHASE0B_FIT_PROCESS_SEEDS
     assert config.candidate_observation_seeds == campaign.PHASE0B_FIT_OBSERVATION_SEEDS
     assert campaign.P03_BETA_GRID == (0.04, 0.08, 0.16)
     assert campaign.P03_ROUTE_FACTOR_GRID == (0.5, 1.0, 2.0)
+    assert campaign.PHASE0B_P03_BETA_GRID == ("0.04", "0.08", "0.16")
+    assert campaign.PHASE0B_P03_ROUTE_FACTOR_GRID == ("0.5", "1.0", "2.0")
 
 
 def test_phase0b_mocked_full_orchestration_and_bundle_cold_recomputation(
@@ -527,6 +763,31 @@ def test_phase0b_mocked_full_orchestration_and_bundle_cold_recomputation(
         "maximum_duration_days": 30,
     }
     assert summary["lineage"] == campaign.PHASE0_LINEAGE
+    assert "phase0_historical_evidence" not in summary
+    lineage = summary["lineage"]
+    assert lineage["phase0_verdict"] == "FAIL"
+    assert lineage["phase0_exit_audit_path"] == (
+        "docs/audits/2026-09-24-phase0-exit-audit-sol-FAIL.md"
+    )
+    assert lineage["phase0_bundle_sha256sums_sha256"] == (
+        "72cd9a568598530923e08ce20b013d60eb7a3b26553b87c31685ad623f3faa80"
+    )
+    assert lineage["phase0_predeclaration_sha256"] == (
+        "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104"
+    )
+    assert lineage["failing_predicate"]["arm"] == "p0_1"
+    assert lineage["failing_predicate"]["predicate"] == 8
+    assert lineage["failing_predicate"]["dimension"] == "inoculation_day_offset"
+    assert lineage["failing_predicate"]["boundary_count"] == "2/5"
+    assert lineage["failing_predicate"]["selections"] == [0, 2, 2, 2, 4]
+    assert lineage["single_design_change"] == (
+        "grid resolution halved; tolerance and bias rules unchanged"
+    )
+    assert lineage["designed_after_phase0_results_were_observed"] is True
+    assert lineage["no_phase0b_outcome_alters_phase0_verdict"] is True
+    assert lineage["phase0_historical_evidence"]["p0_2a"] == "PASS (historical evidence only)"
+    assert lineage["phase0_historical_evidence"]["p0_2b"] == "PASS (historical evidence only)"
+    assert lineage["phase0_historical_evidence"]["p0_3"] == "PASS (historical evidence only)"
     assert summary["overall_phase0b_status"] == "NOT_EVALUATED"
     assert "overall_phase0_status" not in summary
     p03_profile = json.loads((bundle / "p0_3_profile.json").read_text(encoding="utf-8"))
@@ -545,8 +806,84 @@ def test_phase0b_mocked_full_orchestration_and_bundle_cold_recomputation(
     assert all(isinstance(count, int) and 0 <= count <= 5 for count in boundary_counts.values())
     with (bundle / "p0_1_recovery.csv").open(encoding="utf-8", newline="") as handle:
         p01_rows = list(csv.DictReader(handle))
-    assert {"selected_at_grid_boundary", "boundary_count"} <= set(p01_rows[0])
+    assert {
+        "identified",
+        "within_tolerance_hit",
+        "selected_at_grid_boundary",
+        "joint_hit",
+        "numerical_tie",
+        "truth_inoculation_acquisitions",
+        "truth_local_secondary_infections",
+        "truth_symptomatic_reports",
+        "truth_asymptomatic_reports",
+        "truth_nonzero_combined_report_dates",
+        "truth_complete",
+        "truth_viable",
+        "truth_chronology_pass",
+        "truth_latent_incidence_conservation_pass",
+        "truth_namespace_pass",
+        "namespace_pass",
+        "boundary_count",
+    } <= set(p01_rows[0])
     assert all(int(row["boundary_count"]) == boundary_counts[row["dimension"]] for row in p01_rows)
+    truth_diagnostics = json.loads((bundle / "p0_1_truth_diagnostics.json").read_text())
+    diagnostics_by_seed = {item["target_seed"]: item for item in truth_diagnostics["targets"]}
+    for row in p01_rows:
+        seed = int(row["target_seed"])
+        dimension = row["dimension"]
+        spec = config.dimension_map[dimension]
+        blind = json.loads(
+            (bundle / "blind_estimates" / "p0_1" / f"{seed}.json").read_text(encoding="utf-8")
+        )
+        selected = blind["selected"]
+        tied = bool(blind["numerical_tie"])
+        assert row["numerical_tie"] == str(tied)
+        assert row["estimate_hash"] == blind["estimate_hash"]
+        profiles_by_dimension = {item["dimension"]: item for item in blind["profiles"]}
+        profile = profiles_by_dimension[dimension]
+        assert row["identified"] == str(bool(profile["identified"]) and not tied)
+        if selected is None:
+            assert row["estimate"] == ""
+            assert row["within_tolerance_hit"] == "False"
+            assert row["selected_at_grid_boundary"] == "False"
+            expected_joint_hit = False
+        else:
+            estimate = spec.exact_value(selected[dimension])
+            error = abs(estimate - spec.exact_truth())
+            assert float(row["estimate"]) == selected[dimension]
+            assert Decimal(row["absolute_error"]) == error
+            assert row["within_tolerance_hit"] == str(error <= spec.exact_tolerance())
+            assert row["selected_at_grid_boundary"] == str(
+                selected[dimension] in {spec.candidates[0], spec.candidates[-1]}
+            )
+            expected_joint_hit = not tied and all(
+                bool(profiles_by_dimension[name]["identified"])
+                and abs(
+                    config.dimension_map[name].exact_value(selected[name])
+                    - config.dimension_map[name].exact_truth()
+                )
+                <= config.dimension_map[name].exact_tolerance()
+                for name in campaign.P01_DIMENSION_NAMES
+            )
+        assert row["joint_hit"] == str(expected_joint_hit)
+        diagnostics = diagnostics_by_seed[seed]
+        for column, diagnostic_key in (
+            ("truth_inoculation_acquisitions", "inoculation_acquisitions"),
+            ("truth_local_secondary_infections", "local_secondary_infections"),
+            ("truth_symptomatic_reports", "symptomatic_reports"),
+            ("truth_asymptomatic_reports", "asymptomatic_reports"),
+            ("truth_nonzero_combined_report_dates", "nonzero_combined_report_dates"),
+            ("truth_complete", "complete"),
+            ("truth_viable", "viable"),
+            ("truth_chronology_pass", "chronology_passed"),
+            (
+                "truth_latent_incidence_conservation_pass",
+                "latent_incidence_conservation_passed",
+            ),
+            ("truth_namespace_pass", "namespace_passed"),
+        ):
+            assert row[column] == str(diagnostics[diagnostic_key])
+        assert row["namespace_pass"] == str(diagnostics["namespace_passed"])
     assert summary["disclosures"]["bundle_byte_size"] == sum(
         path.stat().st_size for path in bundle.rglob("*") if path.is_file()
     )
@@ -562,6 +899,11 @@ def test_phase0b_mocked_full_orchestration_and_bundle_cold_recomputation(
     )
     assert summary["disclosures"]["total_wall_time_seconds"] >= 0
     assert (bundle / "predeclaration.md").read_bytes() == PHASE0B_PREDECLARATION.read_bytes()
+    predeclaration_digest_line = (bundle / "predeclaration.sha256").read_text().strip()
+    assert predeclaration_digest_line == (
+        f"{campaign.PHASE0B_PREDECLARATION_SHA256}  predeclaration.md"
+    )
+    assert predeclaration_digest_line in (bundle / "SHA256SUMS").read_text(encoding="utf-8")
     assert (bundle / "phase0b_owner_ruling.md").read_bytes() == OWNER_RULING.read_bytes()
     assert campaign.sha256_file(bundle / "phase0b_owner_ruling.md") == (
         campaign.PHASE0B_OWNER_RULING_SHA256
@@ -629,7 +971,9 @@ def test_phase0b_mocked_full_orchestration_and_bundle_cold_recomputation(
     recomputed_relative_loss = (wrong_minimum - correct_minimum) / max(correct_minimum, 1e-9)
     assert float(p02a_row["R_i"]) == pytest.approx(recomputed_relative_loss, abs=1e-15)
     relative_loss_clause = recomputed_relative_loss >= 0.25
-    assert p02a_row["clause_relative_loss_degradation_at_least_0_25"] == str(relative_loss_clause)
+    assert p02a_row["clause_relative_loss_degradation_at_least_0_25"] == (
+        "TRUE" if relative_loss_clause else "FALSE"
+    )
     if p02a_row["selected_estimates"] != "null":
         selected = json.loads(p02a_row["selected_estimates"])
         offset_clause = selected["inoculation_day_offset"] == 4
@@ -641,8 +985,15 @@ def test_phase0b_mocked_full_orchestration_and_bundle_cold_recomputation(
             > config.dimension_map[name].exact_tolerance()
             for name in campaign.P01_DIMENSION_NAMES
         )
-        assert p02a_row["clause_inoculation_day_offset_equals_4"] == str(offset_clause)
-        assert p02a_row["clause_any_dimension_outside_p0_1_tolerance"] == str(outside_clause)
+        assert p02a_row["clause_inoculation_day_offset_equals_4"] == (
+            "TRUE" if offset_clause else "FALSE"
+        )
+        assert p02a_row["clause_any_dimension_outside_p0_1_tolerance"] == (
+            "TRUE" if outside_clause else "FALSE"
+        )
+    else:
+        assert p02a_row["clause_inoculation_day_offset_equals_4"] == "UNKNOWN"
+        assert p02a_row["clause_any_dimension_outside_p0_1_tolerance"] == "UNKNOWN"
     p02b_row = next(row for row in rows if row["arm"] == "p0_2b")
     assert {
         "clause_relative_loss_degradation_at_least_0_25",
@@ -650,6 +1001,12 @@ def test_phase0b_mocked_full_orchestration_and_bundle_cold_recomputation(
         "clause_beta_outside_p0_1_tolerance",
         "clause_inoculation_day_offset_outside_p0_1_tolerance",
     } <= set(p02b_row)
+    assert all(
+        row[column] in {"TRUE", "FALSE", "UNKNOWN"}
+        for row in rows
+        for column in row
+        if column.startswith("clause_") and row[column]
+    )
 
     for line in (bundle / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
         digest, relative = line.split("  ", 1)

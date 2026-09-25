@@ -62,6 +62,9 @@ PROFILE_DENOMINATOR_FLOOR = 1e-12
 P02B_COMMON_PROBABILITY_GRID: tuple[float, ...] = (0.25, 0.50, 0.75)
 P03_BETA_GRID: tuple[float, ...] = (0.04, 0.08, 0.16)
 P03_ROUTE_FACTOR_GRID: tuple[float, ...] = (0.5, 1.0, 2.0)
+PHASE0B_P02B_COMMON_PROBABILITY_GRID: tuple[str, ...] = ("0.25", "0.50", "0.75")
+PHASE0B_P03_BETA_GRID: tuple[str, ...] = ("0.04", "0.08", "0.16")
+PHASE0B_P03_ROUTE_FACTOR_GRID: tuple[str, ...] = ("0.5", "1.0", "2.0")
 P03_OBSERVATION_TRANSFORMS = 27
 P03_VECTOR_TOLERANCE = 1.0e-12
 P03_OBJECTIVE_SPREAD_SCALE = 1.0e-12
@@ -126,7 +129,6 @@ PHASE0B_DIMENSION_DECLARATION: tuple[tuple[str, str, tuple[str, ...], str, str],
         "0.0375",
     ),
 )
-PHASE0B_P02B_COMMON_PROBABILITY_GRID: tuple[float, ...] = (0.25, 0.50, 0.75)
 PHASE0B_CAPS: Mapping[str, int] = {
     "p0_1_grid_cells": 625,
     "p0_2_wrong_delay_cells": 625,
@@ -158,6 +160,11 @@ PHASE0_LINEAGE = {
     "single_design_change": "grid resolution halved; tolerance and bias rules unchanged",
     "designed_after_phase0_results_were_observed": True,
     "no_phase0b_outcome_alters_phase0_verdict": True,
+    "phase0_historical_evidence": {
+        "p0_2a": "PASS (historical evidence only)",
+        "p0_2b": "PASS (historical evidence only)",
+        "p0_3": "PASS (historical evidence only)",
+    },
 }
 
 
@@ -885,6 +892,7 @@ class P02TargetResult:
     clauses: Mapping[str, bool | None]
     dimension_errors: Mapping[str, Mapping[str, float | bool | None]]
     detection_state: Literal["TRUE", "FALSE", "UNKNOWN"]
+    phase0b: bool = field(default=False, repr=False)
 
     def as_dict(self) -> dict[str, Any]:
         selected = None if self.selected is None else self.selected.as_dict()
@@ -902,7 +910,14 @@ class P02TargetResult:
             "E_i": self.channel_total_error,
             "detection_state": self.detection_state,
         }
-        row.update({f"clause_{name}": value for name, value in self.clauses.items()})
+        row.update(
+            {
+                f"clause_{name}": ("UNKNOWN" if value is None else "TRUE" if value else "FALSE")
+                if self.phase0b
+                else value
+                for name, value in self.clauses.items()
+            }
+        )
         for dimension, values in self.dimension_errors.items():
             for name, value in values.items():
                 row[f"{name}_{dimension}"] = value
@@ -1075,6 +1090,47 @@ def _parse_dimension_decimal(value: Any, profile: FrozenProfile) -> Decimal:
     if not parsed.is_finite():
         raise CampaignError("dimension values must be finite decimal numbers")
     return parsed
+
+
+def _phase0b_float_grid(values: Any, expected_strings: tuple[str, ...]) -> tuple[float, ...]:
+    """Parse a validated Phase-0b decimal-string grid for numeric simulator APIs."""
+
+    if not isinstance(values, list | tuple) or tuple(values) != expected_strings:
+        raise CampaignError("Phase-0b grid does not match its independent decimal-string constant")
+    try:
+        decimals = tuple(Decimal(value) for value in values)
+    except (ArithmeticError, TypeError, ValueError) as exc:
+        raise CampaignError("Phase-0b grids must contain decimal strings") from exc
+    if any(not value.is_finite() for value in decimals):
+        raise CampaignError("Phase-0b grids must contain finite decimals")
+    return tuple(float(value) for value in decimals)
+
+
+def _p02b_common_probability_grid(config: CampaignConfig) -> tuple[float, ...]:
+    if config.profile is PHASE0B_PROFILE:
+        misspecification = config.declaration["misspecification"]
+        assert isinstance(misspecification, Mapping)
+        p02b = misspecification["p0_2b"]
+        assert isinstance(p02b, Mapping)
+        return _phase0b_float_grid(
+            p02b["common_probability_grid"], PHASE0B_P02B_COMMON_PROBABILITY_GRID
+        )
+    return P02B_COMMON_PROBABILITY_GRID
+
+
+def _p03_grids(
+    config: CampaignConfig | None = None,
+) -> tuple[tuple[float, ...], tuple[float, ...]]:
+    if config is None or config.profile is PHASE0_PROFILE:
+        return P03_BETA_GRID, P03_ROUTE_FACTOR_GRID
+    negative_control = config.declaration["negative_control"]
+    assert isinstance(negative_control, Mapping)
+    return (
+        _phase0b_float_grid(negative_control["beta_grid"], PHASE0B_P03_BETA_GRID),
+        _phase0b_float_grid(
+            negative_control["global_route_factor_grid"], PHASE0B_P03_ROUTE_FACTOR_GRID
+        ),
+    )
 
 
 def _validate_frozen_payload(payload: Mapping[str, Any]) -> None:
@@ -1273,6 +1329,11 @@ def _validate_frozen_payload(payload: Mapping[str, Any]) -> None:
         if profile is PHASE0B_PROFILE
         else P02B_COMMON_PROBABILITY_GRID
     )
+    if profile is PHASE0B_PROFILE:
+        expected["negative_control"]["beta_grid"] = list(PHASE0B_P03_BETA_GRID)
+        expected["negative_control"]["global_route_factor_grid"] = list(
+            PHASE0B_P03_ROUTE_FACTOR_GRID
+        )
     expected["budget_caps"] = {
         **expected["budget_caps"],
         "p0_1_grid_cells": profile.p01_cells,
@@ -1443,10 +1504,11 @@ def validate_campaign_config(config: CampaignConfig, budget_caps: Mapping[str, A
     negative_control = config.declaration.get("negative_control")
     if not isinstance(negative_control, Mapping):
         raise CampaignError("P0-3 negative-control declaration is missing")
+    p03_beta_grid, p03_route_factor_grid = _p03_grids(config)
     if (
-        tuple(float(value) for value in negative_control["beta_grid"]) != P03_BETA_GRID
+        tuple(float(value) for value in negative_control["beta_grid"]) != p03_beta_grid
         or tuple(float(value) for value in negative_control["global_route_factor_grid"])
-        != P03_ROUTE_FACTOR_GRID
+        != p03_route_factor_grid
         or float(negative_control["vector_tolerance"]) != P03_VECTOR_TOLERANCE
         or float(negative_control["objective_spread_scale"]) != P03_OBJECTIVE_SPREAD_SCALE
         or negative_control["structural_classification"] != "NON_IDENTIFIED_STRUCTURAL"
@@ -2161,29 +2223,58 @@ def evaluate_p01(
         )
         descriptive_predicates[f"boundary_{dimension.name}"] = boundary_count <= 1
     joint_hits = 0
+    joint_hits_by_seed: dict[int, bool] = {}
     for row in rows:
-        if row.numerical_tie:
-            continue
-        joint_row = True
-        for dimension in dimensions:
-            error = row._absolute_error_decimal(dimension.name)
-            identified = any(
-                profile.dimension == dimension.name and profile.identified
-                for profile in row.profiles
-            )
-            if not identified or error is None or error > dimension.exact_tolerance():
-                joint_row = False
-                break
+        joint_row = not row.numerical_tie
+        if joint_row:
+            for dimension in dimensions:
+                error = row._absolute_error_decimal(dimension.name)
+                identified = any(
+                    profile.dimension == dimension.name and profile.identified
+                    for profile in row.profiles
+                )
+                if not identified or error is None or error > dimension.exact_tolerance():
+                    joint_row = False
+                    break
+        joint_hits_by_seed[row.target_seed] = joint_row
         if joint_row:
             joint_hits += 1
     if config is not None and config.profile is PHASE0B_PROFILE:
+        recovery_by_seed = {row.target_seed: row for row in rows}
         for serialized in serial_rows:
             dimension = config.dimension_map[str(serialized["dimension"])]
             estimate = serialized["estimate"]
+            recovery = recovery_by_seed[int(serialized["target_seed"])]
+            error = recovery._absolute_error_decimal(dimension.name)
+            diagnostics = recovery.truth_diagnostics
             serialized["selected_at_grid_boundary"] = estimate in {
                 dimension.candidates[0],
                 dimension.candidates[-1],
             }
+            serialized.update(
+                {
+                    "within_tolerance_hit": (
+                        error is not None and error <= dimension.exact_tolerance()
+                    ),
+                    "joint_hit": joint_hits_by_seed[recovery.target_seed],
+                    "numerical_tie": recovery.numerical_tie,
+                    "truth_inoculation_acquisitions": diagnostics.inoculation_acquisitions,
+                    "truth_local_secondary_infections": diagnostics.local_secondary_infections,
+                    "truth_symptomatic_reports": diagnostics.symptomatic_reports,
+                    "truth_asymptomatic_reports": diagnostics.asymptomatic_reports,
+                    "truth_nonzero_combined_report_dates": (
+                        diagnostics.nonzero_combined_report_dates
+                    ),
+                    "truth_complete": diagnostics.complete,
+                    "truth_viable": diagnostics.viable,
+                    "truth_chronology_pass": diagnostics.chronology_passed,
+                    "truth_latent_incidence_conservation_pass": (
+                        diagnostics.latent_incidence_conservation_passed
+                    ),
+                    "truth_namespace_pass": diagnostics.namespace_passed,
+                    "namespace_pass": recovery.namespace_passed,
+                }
+            )
             serialized["boundary_count"] = boundary_counts[dimension.name]
     joint_coverage = joint_hits / expected_count if complete else None
     predicates: dict[str, bool] = {
@@ -2686,6 +2777,7 @@ def run_p01_campaign(
                     truth_diagnostics=diagnostics,
                     namespace_passed=namespace_passed,
                     persisted_estimate_path=work_dir / "blind_estimates" / f"{process_seed}.json",
+                    config=config,
                 )
             )
     except CampaignError:
@@ -2747,11 +2839,7 @@ def run_p01_campaign(
 def _p02b_grid(config: CampaignConfig) -> tuple[CandidateCell, ...]:
     """Return beta × inoculation × common-ascertainment candidates in declaration order."""
 
-    probabilities = (
-        PHASE0B_P02B_COMMON_PROBABILITY_GRID
-        if config.profile is PHASE0B_PROFILE
-        else P02B_COMMON_PROBABILITY_GRID
-    )
+    probabilities = _p02b_common_probability_grid(config)
     return tuple(
         CandidateCell(beta, int(offset), probability, probability)
         for beta in config.dimension_map["beta"].candidates
@@ -2777,8 +2865,8 @@ def fit_p02_blind(
     grid = tuple(candidate_grid)
     profile = config.profile if config is not None else PHASE0_PROFILE
     common_probability_grid = (
-        PHASE0B_P02B_COMMON_PROBABILITY_GRID
-        if profile is PHASE0B_PROFILE
+        _p02b_common_probability_grid(config)
+        if config is not None
         else P02B_COMMON_PROBABILITY_GRID
     )
     expected_count = profile.p02a_cells if arm == "p0_2a" else profile.p02b_cells
@@ -3043,6 +3131,7 @@ def evaluate_p02_target(
         clauses=clauses,
         dimension_errors=dimension_errors,
         detection_state=state,
+        phase0b=config.profile is PHASE0B_PROFILE,
     )
 
 
@@ -3350,9 +3439,18 @@ def run_p02_campaign(
     )
 
 
-def _p03_grid() -> tuple[P03Cell, ...]:
-    return tuple(
-        P03Cell(beta, factor) for beta in P03_BETA_GRID for factor in P03_ROUTE_FACTOR_GRID
+def _p03_grid(config: CampaignConfig | None = None) -> tuple[P03Cell, ...]:
+    beta_grid, route_factor_grid = _p03_grids(config)
+    return tuple(P03Cell(beta, factor) for beta in beta_grid for factor in route_factor_grid)
+
+
+def _p03_ridge_cells(
+    beta_grid: Sequence[float], route_factor_grid: Sequence[float]
+) -> tuple[P03Cell, P03Cell, P03Cell]:
+    return (
+        P03Cell(beta_grid[-1], route_factor_grid[0]),
+        P03Cell(beta_grid[len(beta_grid) // 2], route_factor_grid[len(route_factor_grid) // 2]),
+        P03Cell(beta_grid[0], route_factor_grid[-1]),
     )
 
 
@@ -3381,12 +3479,13 @@ def classify_p03_structural_equivalence(
     factor_estimate: Any = None,
     emitted_precision_fields: Iterable[str] = (),
     expected_target_seeds: tuple[int, ...] = TARGET_PROCESS_SEEDS,
+    beta_grid: Sequence[float] = P03_BETA_GRID,
+    route_factor_grid: Sequence[float] = P03_ROUTE_FACTOR_GRID,
 ) -> tuple[str, dict[str, bool], dict[str, str]]:
     """Apply the six frozen P0-3 classifier predicates to actual evidence."""
 
     ridge_cells = tuple(
-        _p03_cell_key(P03Cell(beta, factor))
-        for beta, factor in ((0.16, 0.5), (0.08, 1.0), (0.04, 2.0))
+        _p03_cell_key(cell) for cell in _p03_ridge_cells(beta_grid, route_factor_grid)
     )
     vectors_present = all(key in ridge_prediction_vectors for key in ridge_cells)
     vectors = [
@@ -3408,6 +3507,7 @@ def classify_p03_structural_equivalence(
     )
 
     expected_targets = set(expected_target_seeds)
+    reference_factor = route_factor_grid[len(route_factor_grid) // 2]
     objective_passed = set(ridge_objectives) == expected_targets and all(
         all(key in values for key in ridge_cells)
         and (max(values[key] for key in ridge_cells) - min(values[key] for key in ridge_cells))
@@ -3415,7 +3515,7 @@ def classify_p03_structural_equivalence(
         for values in ridge_objectives.values()
     )
 
-    expected_factors = set(P03_ROUTE_FACTOR_GRID)
+    expected_factors = set(route_factor_grid)
     forbidden_precision_fields = {"standard_error", "interval", "coverage"}
 
     def contains_false_precision(value: Any) -> bool:
@@ -3440,8 +3540,8 @@ def classify_p03_structural_equivalence(
             reference = float(profile["argmin_shift_reference_beta"])
             profiled_rows = profile["profiled_minima"]
             profiled_betas = {float(row["transmission_beta"]) for row in profiled_rows}
-            profiled_complete = len(profiled_rows) == len(P03_BETA_GRID) and profiled_betas == set(
-                P03_BETA_GRID
+            profiled_complete = len(profiled_rows) == len(beta_grid) and profiled_betas == set(
+                beta_grid
             )
             profiled_complete = profiled_complete and all(
                 set(float(item["nuisance_factor"]) for item in row["nuisance_profile"])
@@ -3452,9 +3552,9 @@ def classify_p03_structural_equivalence(
             profile_valid = (
                 set(argmin_by_factor) == expected_factors
                 and set(shifts) == expected_factors
-                and all(value in P03_BETA_GRID for value in argmin_by_factor.values())
+                and all(value in beta_grid for value in argmin_by_factor.values())
                 and profiled_complete
-                and reference == argmin_by_factor[1.0]
+                and reference == argmin_by_factor[reference_factor]
                 and all(
                     abs(shifts[factor] - (argmin_by_factor[factor] - reference))
                     <= P03_VECTOR_TOLERANCE
@@ -3578,7 +3678,8 @@ def run_p03_campaign(
         raise CampaignError("P0-3 requires the complete P0-1 target observation set")
     project_root = root.resolve()
     parameters = load_parameter_set(project_root)
-    grid = _p03_grid()
+    beta_grid, route_factor_grid = _p03_grids(config)
+    grid = _p03_grid(config)
     latent_cache: dict[tuple[P03Cell, int], tuple[Any, OutbreakRunConfig]] = {}
     measured_latent_calls = 0
     measured_observation_transforms = 0
@@ -3688,13 +3789,13 @@ def run_p03_campaign(
             )
             loss_surfaces[target_seed] = rows
             objective_grid = {
-                beta: {
-                    factor: objectives[P03Cell(beta, factor)] for factor in P03_ROUTE_FACTOR_GRID
-                }
-                for beta in P03_BETA_GRID
+                beta: {factor: objectives[P03Cell(beta, factor)] for factor in route_factor_grid}
+                for beta in beta_grid
             }
             profile = _profile_beta_nuisance(objective_grid)
-            reference_beta = profile["argmin_by_factor"][1.0]
+            reference_beta = profile["argmin_by_factor"][
+                route_factor_grid[len(route_factor_grid) // 2]
+            ]
             _record_argmin_shifts(profile, reference_beta)
             profiles[target_seed] = {
                 "argmin_by_factor": profile["argmin_by_factor"],
@@ -3706,18 +3807,10 @@ def run_p03_campaign(
             }
             ridge_objectives[target_seed] = {
                 _p03_cell_key(cell): objectives[cell]
-                for cell in (
-                    P03Cell(0.16, 0.5),
-                    P03Cell(0.08, 1.0),
-                    P03Cell(0.04, 2.0),
-                )
+                for cell in _p03_ridge_cells(beta_grid, route_factor_grid)
             }
 
-        ridge_cells = (
-            P03Cell(0.16, 0.5),
-            P03Cell(0.08, 1.0),
-            P03Cell(0.04, 2.0),
-        )
+        ridge_cells = _p03_ridge_cells(beta_grid, route_factor_grid)
         ridge_vectors = {
             _p03_cell_key(cell): _prediction_vector(predictions[cell]) for cell in ridge_cells
         }
@@ -3730,6 +3823,8 @@ def run_p03_campaign(
             target_profiles=profiles,
             factor_estimate=None,
             expected_target_seeds=config.target_process_seeds,
+            beta_grid=beta_grid,
+            route_factor_grid=route_factor_grid,
         )
         scientific_status: Literal["PASS", "FAIL"] = "PASS" if all(predicates.values()) else "FAIL"
         return P03CampaignResult(
@@ -3905,8 +4000,11 @@ def _populate_research_bundle(
     (output_dir / "campaign_config.sha256").write_text(
         f"{hashlib.sha256(config_bytes).hexdigest()}  campaign_config.yaml\n", encoding="utf-8"
     )
+    predeclaration_filename = (
+        "predeclaration.md" if profile is PHASE0B_PROFILE else "predeclaration"
+    )
     (output_dir / "predeclaration.sha256").write_text(
-        f"{predeclaration_hash}  predeclaration\n", encoding="utf-8"
+        f"{predeclaration_hash}  {predeclaration_filename}\n", encoding="utf-8"
     )
     shutil.copyfile(ruling_path, output_dir / "g29_ruling.md")
     (output_dir / "g29_ruling.sha256").write_text(
@@ -3952,7 +4050,17 @@ def _populate_research_bundle(
         writer.writerows(
             {
                 key: (
-                    "null"
+                    (
+                        "UNKNOWN"
+                        if value is None
+                        else "TRUE"
+                        if value is True
+                        else "FALSE"
+                        if value is False
+                        else value
+                    )
+                    if profile is PHASE0B_PROFILE and key.startswith("clause_")
+                    else "null"
                     if value is None
                     else json.dumps(value, sort_keys=True)
                     if isinstance(value, (dict, list))
@@ -4009,11 +4117,6 @@ def _populate_research_bundle(
                 "owner_ruling_path": profile.owner_ruling_path,
                 "owner_ruling_sha256": owner_hash,
                 "owner_ruling_verified": True,
-                "phase0_historical_evidence": {
-                    "p0_2a": "PASS (historical evidence only)",
-                    "p0_2b": "PASS (historical evidence only)",
-                    "p0_3": "PASS (historical evidence only)",
-                },
                 "lineage": dict(PHASE0_LINEAGE),
             }
         )
@@ -4388,7 +4491,7 @@ def _seed_ledger(config: CampaignConfig) -> list[dict[str, Any]]:
     ledger.append(
         {
             "role": "p0_3_global_route_factor_cells",
-            "cells": [cell.as_dict() for cell in _p03_grid()],
+            "cells": [cell.as_dict() for cell in _p03_grid(config)],
             "process_seeds": list(config.candidate_process_seeds),
             "observation_seeds": list(config.candidate_observation_seeds),
         }
@@ -4689,7 +4792,7 @@ def _collect_retained_evidence(
             }
             provenance_reference = f"p0_2_provenance.json.arms.{arm}.replicate_provenance"
         else:
-            grid = _p03_grid()
+            grid = _p03_grid(config)
             library = p03_result.candidate_prediction_library
             provenance_lookup = {
                 (
@@ -4889,11 +4992,6 @@ def execute_campaign(
         }
         if profile is PHASE0B_PROFILE:
             summary["lineage"] = dict(PHASE0_LINEAGE)
-            summary["phase0_historical_evidence"] = {
-                "p0_2a": "PASS (historical evidence only)",
-                "p0_2b": "PASS (historical evidence only)",
-                "p0_3": "PASS (historical evidence only)",
-            }
             summary["disclosures"] = {
                 "wall_time_seconds_by_arm": {
                     "p0_1": p01_wall_seconds,
