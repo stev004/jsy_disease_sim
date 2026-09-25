@@ -27,7 +27,7 @@ export function HBar({ rows, formatCount = defaultFormat, className }: HBarProps
   const maxC = Math.max(...rows.map((r) => r.count), 1);
   return (
     <div className={['drv', className].filter(Boolean).join(' ')}>
-      {rows.map((r) => (
+      {rows.map((r, index) => (
         <div className="drv-row" key={r.key ?? r.name}>
           <span className="nm" title={r.name}>
             {r.name}
@@ -43,6 +43,7 @@ export function HBar({ rows, formatCount = defaultFormat, className }: HBarProps
           </span>
           <span className="bar">
             <i
+              className={r.color ? undefined : index === 0 ? 'epi' : 'secondary'}
               style={{
                 width: `${Math.max(2, (100 * r.count) / maxC)}%`,
                 ...(r.color ? { background: r.color } : {}),

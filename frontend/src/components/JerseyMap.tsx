@@ -4,6 +4,10 @@ export interface JerseyMapProps {
   /** Fill for each parish; return any CSS color (e.g. `seqColor(t)`). */
   colorFor: (parishId: ParishId) => string;
   selected?: ParishId | null;
+  /** Parish receiving the current-day new-infection ripple. */
+  pulse?: ParishId | null;
+  /** Animate the two ripple rings while day playback is running. */
+  pulsePlaying?: boolean;
   onSelect?: (parishId: ParishId) => void;
   /** Parish name labels (default true). */
   labels?: boolean;
@@ -14,20 +18,23 @@ export interface JerseyMapProps {
   className?: string;
 }
 
-const HALO_RINGS: Array<[number, number]> = [
-  [26, 0.35],
-  [13, 0.6],
+const COAST_CONTOURS: Array<[number, number]> = [
+  [38, 0.12],
+  [26, 0.18],
+  [14, 0.24],
 ];
 
 const PARISH_IDS = Object.keys(JERSEY_PATHS) as ParishId[];
 
 /**
- * The island: two-ring offshore shallows halo, parish fills, coastline
- * overlay, haloed labels and a 2-mile scale bar — the mockup's `renderMap`.
+ * The island: three offshore coast contours, parish fills, haloed labels,
+ * optional current-day ripple and a 2-mile scale bar.
  */
 export function JerseyMap({
   colorFor,
   selected = null,
+  pulse = null,
+  pulsePlaying = false,
   onSelect,
   labels = true,
   scalebar = true,
@@ -36,14 +43,19 @@ export function JerseyMap({
 }: JerseyMapProps) {
   const interactive = Boolean(onSelect);
   return (
-    <svg viewBox={MAP_VIEWBOX} role="img" aria-label={ariaLabel} className={className}>
-      {HALO_RINGS.map(([w, op]) =>
+    <svg
+      viewBox={MAP_VIEWBOX}
+      role="img"
+      aria-label={ariaLabel}
+      className={['jersey-map', className].filter(Boolean).join(' ')}
+    >
+      {COAST_CONTOURS.map(([w, op]) =>
         PARISH_IDS.map((id) => (
           <path
-            key={`halo-${w}-${id}`}
+            key={`contour-${w}-${id}`}
             d={JERSEY_PATHS[id]}
-            fill="var(--map-halo)"
-            stroke="var(--map-halo)"
+            fill="none"
+            stroke="var(--coast)"
             strokeWidth={w}
             strokeLinejoin="round"
             opacity={op}
@@ -77,18 +89,17 @@ export function JerseyMap({
         </path>
       ))}
 
-      {PARISH_IDS.map((id) => (
-        <path
-          key={`coast-${id}`}
-          d={JERSEY_PATHS[id]}
-          fill="none"
-          stroke="var(--coast)"
-          strokeWidth={0.9}
-          strokeLinejoin="round"
-          opacity={0.55}
-          pointerEvents="none"
-        />
-      ))}
+      {pulse && (() => {
+        const [cx, cy] = JERSEY_LABELS[pulse];
+        return pulsePlaying ? (
+          <g className="map-pulse" aria-hidden="true" pointerEvents="none">
+            <circle className="map-pulse-ring map-pulse-ring-first" cx={cx} cy={cy} r={6} fill="none" stroke="var(--seq5)" />
+            <circle className="map-pulse-ring map-pulse-ring-second" cx={cx} cy={cy} r={6} fill="none" stroke="var(--seq5)" />
+          </g>
+        ) : (
+          <circle className="map-pulse-ring map-pulse-ring-paused" cx={cx} cy={cy} r={24} fill="none" stroke="var(--seq5)" aria-hidden="true" />
+        );
+      })()}
 
       {labels &&
         PARISHES.map((p) => {

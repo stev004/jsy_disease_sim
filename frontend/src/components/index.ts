@@ -6,7 +6,7 @@ export { Badge, PROVENANCE_MEANING, type Provenance } from './Badge';
 export { Label } from './Label';
 export { MetricTile, MetricTileGrid, type MetricTileProps } from './MetricTile';
 export { JerseyMap, type JerseyMapProps } from './JerseyMap';
-export { LineChart, type LineChartProps, type Series, type Point } from './LineChart';
+export { LineChart, type LineChartProps, type Series, type Point, type HatchWindow } from './LineChart';
 export { HBar, type HBarProps, type HBarRow } from './HBar';
 export {
   ToastProvider,

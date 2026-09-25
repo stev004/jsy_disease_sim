@@ -1,5 +1,16 @@
+import { useId } from 'react';
+
 /** [dayIndex, value] */
 export type Point = [number, number];
+
+export interface HatchWindow {
+  /** First active day, inclusive. */
+  startDay: number;
+  /** Last active day, inclusive. */
+  endDay: number;
+  /** Intervention family color, normally a `var(--iv-*)` token. */
+  color?: string;
+}
 
 export interface Series {
   pts: Point[];
@@ -26,6 +37,8 @@ export interface LineChartProps {
   formatDay?: (day: number) => string;
   /** Format a y value (default: en-GB thousands). */
   formatValue?: (value: number) => string;
+  /** Optional intervention windows drawn behind the data. */
+  hatchWindows?: HatchWindow[];
   className?: string;
 }
 
@@ -54,8 +67,10 @@ export function LineChart({
   pct = false,
   formatDay = defaultFormatDay,
   formatValue = defaultFormatValue,
+  hatchWindows = [],
   className,
 }: LineChartProps) {
+  const patternId = `chart-hatch-${useId().replace(/:/g, '')}`;
   const W = width;
   const H = height;
   const padL = 52;
@@ -97,8 +112,32 @@ export function LineChart({
         </g>
       ))}
 
+      {hatchWindows.length > 0 && (
+        <defs>
+          <pattern id={patternId} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <path d="M 0 0 V 8" stroke="var(--hatch)" strokeWidth="2" />
+          </pattern>
+        </defs>
+      )}
+
+      {hatchWindows.map((window, i) => {
+        const start = Math.max(0, Math.min(days - 1, window.startDay));
+        const end = Math.max(0, Math.min(days - 1, window.endDay));
+        if (end < start) return null;
+        const slotWidth = (W - padL - padR) / Math.max(1, days - 1);
+        const x = Math.max(padL, X(start) - slotWidth / 2);
+        const right = Math.min(W - padR, X(end) + slotWidth / 2);
+        const width = right - x;
+        return (
+          <g key={`hatch-${i}`}>
+            <rect x={x} y={padT} width={width} height={H - padT - padB} fill={`url(#${patternId})`} opacity={0.7} />
+            <rect x={x} y={padT} width={width} height={3} fill={window.color ?? 'var(--accent)'} />
+          </g>
+        );
+      })}
+
       {series.map((sr, i) => (
-        <g key={`series-${i}`}>
+        <g className="line-series" key={`series-${i}`}>
           {sr.band && sr.band.low.length > 0 && sr.band.high.length > 0 && (
             <polygon
               className="bandfill"
@@ -113,7 +152,8 @@ export function LineChart({
             />
           )}
           <polyline
-            className={`curve${sr.cls ? ` ${sr.cls}` : ''}`}
+            className={`curve curve-draw${sr.cls ? ` ${sr.cls}` : ''}${i === 1 ? ' treated arm-secondary' : ''}`}
+            pathLength={1}
             points={sr.pts.map(([d, v]) => `${X(d)},${Y(v)}`).join(' ')}
           />
         </g>
@@ -122,21 +162,29 @@ export function LineChart({
       {marker != null && (
         <g>
           <line
+            className="day-cursor-line"
             x1={X(marker)}
             x2={X(marker)}
             y1={padT}
             y2={H - padB}
-            stroke="var(--ink)"
-            strokeWidth={1.5}
-            opacity={0.5}
+            stroke="var(--seq5)"
+            strokeWidth={1}
+            opacity={0.9}
           />
+          {(() => {
+            const median = series.find((item) => item.cls !== 'base') ?? series[0];
+            const value = median?.pts.find(([day]) => day === marker)?.[1];
+            return value == null ? null : (
+              <circle className="day-cursor-dot" cx={X(marker)} cy={Y(value)} r={5} fill="var(--seq5)" />
+            );
+          })()}
           <g className="axis">
             <text
               x={X(marker)}
               y={padT + 2}
               dy={-2}
               textAnchor="middle"
-              style={{ fontWeight: 600, fill: 'var(--ink)' }}
+              style={{ fontWeight: 600, fill: 'var(--seq5)' }}
             >
               Day {marker}
             </text>
