@@ -38,7 +38,7 @@ export const validation: {
           name: 'P0-1 synthetic recovery',
           verdict: 'FAIL',
           summary:
-            '19/20 predicates pass; inoculation offset at a grid boundary for 2/5 targets (limit 1/5); selections 0, 2, 2, 2, 4',
+            'Only the boundary predicate failed: inoculation offset at a grid boundary for 2/5 targets (limit 1/5); selections 0, 2, 2, 2, 4',
         },
         {
           id: 'p0-2a',
