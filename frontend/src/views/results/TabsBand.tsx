@@ -27,7 +27,7 @@ const TABS: Array<{ id: TabId; label: string }> = [
   { id: 'epi', label: 'Epidemic curve' },
   { id: 'routes', label: 'Transmission routes' },
   { id: 'ages', label: 'Ages' },
-  { id: 'travel', label: 'Travel & visitors' },
+  { id: 'travel', label: 'Travel' },
   { id: 'iv', label: 'Interventions' },
 ];
 
@@ -52,7 +52,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
 
   const lastDay = data.dayCount - 1;
   const multiSeed = data.seeds > 1;
-  const hasPublishedBand = data.epi.some((point) => point.bandLow != null && point.bandHigh != null);
+  const hasPublishedBand = multiSeed && data.epi.some((point) => point.bandLow != null && point.bandHigh != null);
   const formatDay = (d: number): string => formatDate(data.dates[d] ?? '');
 
   /* ------------------------------- epi ------------------------------- */
@@ -304,7 +304,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
             />
             <span className="legend">
               <span>
-                <span className="sw" style={{ background: 'var(--accent)' }} />
+                <span className="sw" style={{ background: 'var(--epi)' }} />
                 {multiSeed ? 'Ensemble median' : 'Single replicate'}
               </span>
               {hasPublishedBand && (
@@ -460,11 +460,11 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
                   <h3>Arrivals &amp; active visitors</h3>
                   <span className="legend">
                     <span>
-                      <span className="sw" style={{ background: 'var(--accent)' }} />
+                      <span className="sw" style={{ background: 'var(--epi)' }} />
                       Active visitors
                     </span>
                     <span>
-                      <span className="sw" style={{ background: 'var(--ink-3)' }} />
+                      <span className="sw" style={{ background: 'var(--base-line)' }} />
                       Arrivals / day
                     </span>
                   </span>

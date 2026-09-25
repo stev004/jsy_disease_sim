@@ -81,11 +81,13 @@ export function buildBarsSvg(title: string, rows: BarSpec[]): SVGSVGElement {
   const barW = width - barX - valueW;
   const maxC = Math.max(...rows.map((r) => r.count), 1);
 
-  const ink = cssVar('--ink', '#1a1a1a');
-  const ink3 = cssVar('--ink-3', '#6b6b6b');
-  const track = cssVar('--panel-2', '#f0efea');
-  const accent = cssVar('--accent', '#20707b');
-  const panel = cssVar('--panel', '#ffffff');
+  // Token values are resolved from the active theme; these Notebook values
+  // are export-only fallbacks for environments where a token is absent.
+  const ink = cssVar('--ink', '#1D2327');
+  const ink3 = cssVar('--ink-3', '#6B6A63');
+  const track = cssVar('--panel-2', '#EFEBE2');
+  const accent = cssVar('--accent', '#1B6670');
+  const panel = cssVar('--panel', '#FBFAF6');
 
   const svg = document.createElementNS(NS, 'svg') as SVGSVGElement;
   svg.setAttribute('xmlns', NS);
@@ -229,7 +231,7 @@ export async function exportSvgAsPng(
     canvas.height = height * scale;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas is unavailable in this browser');
-    ctx.fillStyle = cssVar('--panel', '#ffffff');
+    ctx.fillStyle = cssVar('--panel', '#FBFAF6');
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
