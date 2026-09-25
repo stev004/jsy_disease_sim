@@ -352,15 +352,15 @@
   display: grid;
   gap: 10px;
   min-width: 0;
-  overflow-x: auto;
   padding: 3px 2px 8px;
 }
 
 .view-runs .runs-chain {
   display: flex;
   align-items: center;
-  width: max-content;
-  min-width: 100%;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
 }
 
 .view-runs .runs-chain-item {
@@ -374,8 +374,8 @@
   align-content: center;
   justify-items: start;
   gap: 2px;
-  width: 138px;
-  min-width: 138px;
+  width: 128px;
+  min-width: 128px;
   min-height: 52px;
   padding: 7px 9px;
   border: 1px solid var(--line-strong);
@@ -620,7 +620,32 @@
   font-size: 11px;
 }
 
-.view-runs .runs-gate-arm span {
+.view-runs .runs-gate-arm-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.view-runs .runs-gate-arm-verdict {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.view-runs .runs-gate-arm-verdict.pass {
+  color: var(--good);
+}
+
+.view-runs .runs-gate-arm-verdict.fail {
+  color: var(--bad);
+}
+
+.view-runs .runs-gate-arm-verdict.not-run {
+  color: var(--ink-3);
+}
+
+.view-runs .runs-gate-arm > span {
   color: var(--ink-2);
 }
 

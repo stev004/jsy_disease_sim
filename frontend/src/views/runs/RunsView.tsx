@@ -37,6 +37,11 @@ const FILTERS: Array<{ value: FilterId; label: string }> = [
   { value: 'failed', label: 'Failed' },
 ];
 
+const FILTER_STATE: Partial<Record<FilterId, JobState>> = {
+  succeeded: 'SUCCEEDED',
+  failed: 'FAILED',
+};
+
 const PHASE_HONESTY_NOTE =
   'Phases are real checkpoints from the engine — it does not report a percentage, so none is shown.';
 
@@ -45,9 +50,12 @@ export function RunsView() {
   const selectedId = params.get('job');
   const [filter, setFilter] = useState<FilterId>('all');
   const [jobs, setJobs] = useState<JobStatusResponse[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<JobStatusResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [filterError, setFilterError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [filteredLoaded, setFilteredLoaded] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -55,6 +63,8 @@ export function RunsView() {
   /** Last seen state per job, for terminal-transition toasts. */
   const seen = useRef<Map<string, JobState>>(new Map());
   const primed = useRef(false);
+  const filteredRequest = useRef(0);
+  const filteredInitializedFor = useRef<FilterId | null>(null);
 
   useEffect(() => {
     alive.current = true;
@@ -136,9 +146,47 @@ export function RunsView() {
     }
   }, [announce, selectedId]);
 
+  const loadFiltered = useCallback(async () => {
+    const state = FILTER_STATE[filter];
+    if (!state) return;
+
+    const request = ++filteredRequest.current;
+    const needsInitialLoad = filteredInitializedFor.current !== filter;
+    if (needsInitialLoad) {
+      setFilteredJobs([]);
+      setFilterError(null);
+      setFilteredLoaded(false);
+    }
+    try {
+      const res = await api.listJobs({ limit: 100, state });
+      if (!alive.current || request !== filteredRequest.current) return;
+      setFilteredJobs(res.jobs);
+      setFilterError(null);
+    } catch (e) {
+      if (!alive.current || request !== filteredRequest.current) return;
+      setFilterError(e instanceof Error ? e.message : 'Could not reach the job API.');
+    } finally {
+      if (alive.current && request === filteredRequest.current && needsInitialLoad) {
+        filteredInitializedFor.current = filter;
+        setFilteredLoaded(true);
+      }
+    }
+  }, [filter]);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (FILTER_STATE[filter]) {
+      void loadFiltered();
+      return;
+    }
+    filteredRequest.current += 1;
+    setFilteredJobs([]);
+    setFilterError(null);
+    setFilteredLoaded(true);
+  }, [filter, loadFiltered]);
 
   const newestFirst = useMemo(
     () =>
@@ -149,12 +197,14 @@ export function RunsView() {
   );
   const visible = useMemo(() => {
     if (filter === 'active') return newestFirst.filter((job) => isActive(job.state));
-    if (filter === 'succeeded' || filter === 'failed') {
-      const state = filter === 'succeeded' ? 'SUCCEEDED' : 'FAILED';
-      return newestFirst.filter((job) => job.state === state);
-    }
+    if (filter === 'succeeded' || filter === 'failed')
+      return filteredJobs
+        .slice()
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return newestFirst;
-  }, [filter, newestFirst]);
+  }, [filter, filteredJobs, newestFirst]);
+  const recentError = filterError ?? (!selectedId ? error : null);
+  const recentLoaded = FILTER_STATE[filter] ? filteredLoaded : loaded;
   const activeJobs = useMemo(() => newestFirst.filter((job) => isActive(job.state)), [newestFirst]);
   const anyActive = activeJobs.length > 0;
   const selectedJob = selectedId
@@ -176,13 +226,16 @@ export function RunsView() {
   // Poll every two seconds while any listed job can still change.
   useEffect(() => {
     if (!anyActive) return undefined;
-    const poll = window.setInterval(() => void load(), POLL_MS);
+    const poll = window.setInterval(() => {
+      void load();
+      void loadFiltered();
+    }, POLL_MS);
     const tick = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => {
       window.clearInterval(poll);
       window.clearInterval(tick);
     };
-  }, [anyActive, load]);
+  }, [anyActive, load, loadFiltered]);
 
   const queuePosition = useMemo(() => {
     const map = new Map<string, number>();
@@ -254,13 +307,13 @@ export function RunsView() {
               label="Filter runs"
               className="runs-filter"
             />
-            {error && !selectedId && <div className="runs-note bad">{error}</div>}
+            {recentError && <div className="runs-note bad">{recentError}</div>}
             <Card className="runs-list-card">
               {visible.length === 0 ? (
                 <div className="runs-empty">
-                  {error
+                  {recentError
                     ? 'Runs could not be loaded.'
-                    : !loaded
+                    : !recentLoaded
                       ? 'Loading runs…'
                       : filter === 'all'
                         ? 'No runs yet. Build a scenario and submit it — it will appear here.'
@@ -631,7 +684,12 @@ function ValidationPanel() {
               <div className="runs-gate-arms">
                 {gate.arms.map((arm) => (
                   <div className="runs-gate-arm" key={arm.id}>
-                    <strong>{arm.name}</strong>
+                    <div className="runs-gate-arm-head">
+                      <strong>{arm.name}</strong>
+                      <span className={`runs-gate-arm-verdict ${arm.verdict.toLowerCase().replace(' ', '-')}`}>
+                        {arm.verdict}
+                      </span>
+                    </div>
                     <span>{arm.summary}</span>
                   </div>
                 ))}
