@@ -52,6 +52,15 @@ export interface LineChartProps {
   className?: string;
 }
 
+export interface LineChartRenderedContent {
+  /** Series with enough points to draw a line. */
+  series: Series[];
+  /** Drawn series whose replicate band also has enough points to draw. */
+  bands: Series[];
+  /** Difference polygons that the chart draws when comparisonAreas is enabled. */
+  comparisonAreas: ComparisonAreaPolygon[];
+}
+
 const defaultFormatValue = (n: number): string => Math.round(n).toLocaleString('en-GB');
 
 const ROLE_COLORS: Record<SeriesRole, string> = {
@@ -73,6 +82,21 @@ export function isLineSeriesRendered(series: Series): boolean {
 
 export function isLineSeriesBandRendered(series: Series): boolean {
   return Boolean(series.band && series.band.low.length > 1 && series.band.high.length > 1);
+}
+
+/** Shared by the chart and its views so legends reflect the marks that are drawn. */
+export function getLineChartRenderedContent(
+  series: Series[],
+  comparisonAreas = false,
+  x: (day: number) => number = (day) => day,
+  y: (value: number) => number = (value) => value,
+): LineChartRenderedContent {
+  const renderedSeries = series.filter(isLineSeriesRendered);
+  return {
+    series: renderedSeries,
+    bands: renderedSeries.filter(isLineSeriesBandRendered),
+    comparisonAreas: comparisonAreas ? buildComparisonAreaPolygons(renderedSeries, x, y) : [],
+  };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -110,7 +134,8 @@ export function LineChart({
   const padT = 12;
   const padB = 26;
 
-  const renderedSeries = series.filter(isLineSeriesRendered);
+  const lineContent = getLineChartRenderedContent(series);
+  const renderedSeries = lineContent.series;
   const allValues = renderedSeries.flatMap((s) => s.pts.map((p) => p[1]));
   const yMax =
     (max ?? (allValues.length ? Math.max(...allValues) * 1.08 : 1)) || 1;
@@ -120,9 +145,9 @@ export function LineChart({
 
   const gridValues = [0, 1, 2, 3].map((i) => (yMax * i) / 3);
 
-  const comparisonAreaPolygons = comparisonAreas
-    ? buildComparisonAreaPolygons(renderedSeries, X, Y)
-    : [];
+  const renderedContent = getLineChartRenderedContent(series, comparisonAreas, X, Y);
+  const renderedBands = new Set(renderedContent.bands);
+  const comparisonAreaPolygons = renderedContent.comparisonAreas;
 
   return (
     <svg
@@ -185,7 +210,7 @@ export function LineChart({
 
       {renderedSeries.map((sr, i) => (
         <g className="line-series" key={`series-${i}`}>
-          {isLineSeriesBandRendered(sr) && sr.band && (
+          {renderedBands.has(sr) && sr.band && (
             <polygon
               className="bandfill"
               points={
@@ -243,7 +268,7 @@ export function LineChart({
   );
 }
 
-interface ComparisonAreaPolygon {
+export interface ComparisonAreaPolygon {
   points: string;
   positive: boolean;
 }

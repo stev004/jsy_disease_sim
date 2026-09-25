@@ -9,8 +9,7 @@ import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { JerseyMap } from '../../components/JerseyMap';
 import {
-  isLineSeriesBandRendered,
-  isLineSeriesRendered,
+  getLineChartRenderedContent,
   lineSeriesColor,
   LineChart,
 } from '../../components/LineChart';
@@ -289,6 +288,7 @@ function CompareBody({ model }: { model: CompareModel }) {
     ],
     [model],
   );
+  const chartContent = getLineChartRenderedContent(chart, true);
 
   const routes = model.routes.slice(0, 6);
   const maxShift = Math.max(...routes.map((route) => Math.abs(route.treated - route.base)), 1);
@@ -326,13 +326,24 @@ function CompareBody({ model }: { model: CompareModel }) {
   const parishDifferenceTooltip = (id: ParishId): string => {
     const name = PARISHES.find((parish) => parish.id === id)?.name ?? id;
     const parish = parishById.get(id);
-    if (!parish) return `${name}: difference unavailable (intervention − baseline)`;
-    if (model.population == null || model.population <= 0) {
-      return `${name}: per-1,000 difference unavailable (intervention − baseline)`;
+    if (!parish || !Number.isFinite(parish.base) || !Number.isFinite(parish.treated)) {
+      return `${name}: infection count difference unavailable (intervention − baseline)`;
     }
-    const perThousand = ((parish.treated - parish.base) * 1000) / model.population;
-    const value = `${perThousand < 0 ? '−' : '+'}${Math.abs(perThousand).toFixed(1)}`;
-    return `${name}: ${value} per 1,000 (intervention − baseline)`;
+    const difference = parish.treated - parish.base;
+    const magnitude = Number.isInteger(difference)
+      ? Math.abs(difference).toLocaleString('en-GB')
+      : Math.abs(difference).toLocaleString('en-GB', { maximumSignificantDigits: 21 });
+    const count = `${difference < 0 ? '−' : '+'}${magnitude}`;
+    const countText = `${name}: ${count} ${Math.abs(difference) === 1 ? 'infection' : 'infections'} (intervention − baseline)`;
+    const population = PARISHES.find((candidate) => candidate.id === id)?.pop;
+    if (population == null || population <= 0) return countText;
+
+    const perThousand = (difference * 1000) / population;
+    const rateMagnitude = difference === 0
+      ? '0'
+      : Math.abs(perThousand).toLocaleString('en-GB', { maximumSignificantDigits: 2 });
+    const rate = `${perThousand < 0 ? '−' : '+'}${rateMagnitude}`;
+    return `${countText} · ${rate} per 1,000 (parish population)`;
   };
 
   return (
@@ -412,15 +423,19 @@ function CompareBody({ model }: { model: CompareModel }) {
                   <h2>Active infectious over time</h2>
                 </div>
                 <div className="cmp-chart-legend" aria-label="Chart legend">
-                  {chart.filter(isLineSeriesRendered).map((item) => (
+                  {chartContent.series.map((item) => (
                     <span key={item.label}><i className={`cmp-line-swatch ${item.role}`} style={{ background: lineSeriesColor(item) }} />{item.label}</span>
                   ))}
                 </div>
               </div>
               <div className="cmp-area-legend">
-                <span><i className="cmp-area-swatch fewer" />infections averted (simulated)</span>
-                <span><i className="cmp-area-swatch more" />added (simulated)</span>
-                {chart.some(isLineSeriesBandRendered) && (
+                {chartContent.comparisonAreas.some((area) => !area.positive) && (
+                  <span><i className="cmp-area-swatch fewer" />infections averted (simulated)</span>
+                )}
+                {chartContent.comparisonAreas.some((area) => area.positive) && (
+                  <span><i className="cmp-area-swatch more" />added (simulated)</span>
+                )}
+                {chartContent.bands.length > 0 && (
                   <span><i className="cmp-band-swatch" />Replicate range</span>
                 )}
               </div>
