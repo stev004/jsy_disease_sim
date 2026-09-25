@@ -1,0 +1,7 @@
+UI U4 RE-REVIEW: BLOCKED
+
+**One finding remains:** The P0-1 arm says “19/20 predicates pass” in [validation.ts](/home/steven/jos-ui-u4-rereview-readonly/frontend/src/content/validation.ts:40). Neither cited source gives that count. The [Phase-0 audit](/home/steven/jos-ui-u4-rereview-readonly/docs/audits/2026-09-24-phase0-exit-audit-sol-FAIL.md:14) says the boundary predicate alone failed; that wording would resolve the unsupported value. The other new arm numbers match the audit or [predeclaration](/home/steven/jos-ui-u4-rereview-readonly/docs/research/v1_3/2026-09-25-phase0b-predeclaration.md:132), and Phase 0b arms show NOT RUN.
+
+The other three findings are resolved: Succeeded and Failed each request up to 100 jobs with an API state filter while the live panel retains the unfiltered list; the chain’s fixed nodes and links total 752px within roughly 928px available at 1440; connectors remain dashed in every state and animate only for RUNNING. The supplied mirror reports 15 tests passed, typecheck passed, and build passed; I did not rerun it.
+
+Final SHA: `6e72f28927fbddfc8b11c65f6eae296eec4f1832`. The reviewed base is an ancestor, and `git status --porcelain=v1 -uall` was empty. No files were changed.
