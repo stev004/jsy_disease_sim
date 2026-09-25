@@ -44,6 +44,7 @@
   --band: var(--epi-soft);
   --shadow: 0 1px 2px rgba(29, 35, 39, .06), 0 8px 28px rgba(29, 35, 39, .07);
   --shadow-big: 0 12px 40px rgba(29, 35, 39, .18);
+  --scrim: rgba(15, 20, 22, .4);
   --radius: 10px;
   --radius-lg: 14px;
   /* Intervention identity — fixed categorical order, never used for map fills. */
@@ -103,6 +104,7 @@
     --band: var(--epi-soft);
     --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 10px 30px rgba(0, 0, 0, .35);
     --shadow-big: 0 16px 48px rgba(0, 0, 0, .45);
+    --scrim: rgba(15, 20, 22, .4);
     --radius: 10px;
     --radius-lg: 14px;
     --iv-isolation: #3987e5;
@@ -161,6 +163,7 @@
   --band: var(--epi-soft);
   --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 10px 30px rgba(0, 0, 0, .35);
   --shadow-big: 0 16px 48px rgba(0, 0, 0, .45);
+  --scrim: rgba(15, 20, 22, .4);
   --radius: 10px;
   --radius-lg: 14px;
   --iv-isolation: #3987e5;

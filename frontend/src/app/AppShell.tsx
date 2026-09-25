@@ -61,16 +61,18 @@ export function AppShell() {
   return (
     <div className="app">
       <header className="topbar">
-        <Link className="brand" to="/" aria-label="JOS home">
-          <span className="mark" aria-hidden="true"><span /></span>
-          <span className="brand-copy">
-            <span className="brand-line-one">
-              <span className="brand-code">JOS</span>
-              <span className="brand-name">Jersey Outbreak Simulator</span>
+        <div className="brand-lockup">
+          <Link className="brand" to="/" aria-label="JOS home">
+            <span className="mark" aria-hidden="true"><span /></span>
+            <span className="brand-copy">
+              <span className="brand-line-one">
+                <span className="brand-code">JOS</span>
+                <span className="brand-name">Jersey Outbreak Simulator</span>
+              </span>
             </span>
-            <span className="brand-disclaimer">{CLAIM_BOUNDARY}</span>
-          </span>
-        </Link>
+          </Link>
+          <span className="brand-disclaimer">{CLAIM_BOUNDARY}</span>
+        </div>
 
         <nav className="primary-nav" aria-label="Primary navigation">
           {PRIMARY_NAV.map((item) => (

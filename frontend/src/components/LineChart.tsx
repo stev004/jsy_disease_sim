@@ -3,6 +3,8 @@ import { useId } from 'react';
 /** [dayIndex, value] */
 export type Point = [number, number];
 
+export type SeriesRole = 'epi' | 'baseline' | 'intervention' | 'travel' | 'neutral';
+
 export interface HatchWindow {
   /** First active day, inclusive. */
   startDay: number;
@@ -14,6 +16,10 @@ export interface HatchWindow {
 
 export interface Series {
   pts: Point[];
+  /** Semantic line colour role. Ignored when `color` is supplied. */
+  role?: SeriesRole;
+  /** Explicit line colour, normally a CSS custom property such as `var(--epi)`. */
+  color?: string;
   /** Draw an artifact-published band behind the line. */
   band?: { low: Point[]; high: Point[] };
   /** Extra class on the polyline, e.g. `"base"` for the dashed baseline. */
@@ -43,6 +49,21 @@ export interface LineChartProps {
 }
 
 const defaultFormatValue = (n: number): string => Math.round(n).toLocaleString('en-GB');
+
+const ROLE_COLORS: Record<SeriesRole, string> = {
+  epi: 'var(--epi)',
+  baseline: 'var(--base-line)',
+  intervention: 'var(--div-neg)',
+  travel: 'var(--accent)',
+  neutral: 'var(--ink-2)',
+};
+
+function seriesColor(series: Series): string {
+  if (series.color) return series.color;
+  if (series.role) return ROLE_COLORS[series.role];
+  // Preserve the colours used by the existing Compare and travel legends.
+  return series.cls === 'base' ? 'var(--ink-3)' : 'var(--accent)';
+}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -153,6 +174,7 @@ export function LineChart({
           )}
           <polyline
             className={`curve curve-draw${sr.cls ? ` ${sr.cls}` : ''}${i === 1 ? ' treated arm-secondary' : ''}`}
+            style={{ stroke: seriesColor(sr) }}
             pathLength={1}
             points={sr.pts.map(([d, v]) => `${X(d)},${Y(v)}`).join(' ')}
           />
