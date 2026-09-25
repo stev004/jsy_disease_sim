@@ -4,7 +4,13 @@
 
 ## Open
 
-**2026-09-25:** Phase 0: FAIL (2026-09-24); Phase 0b: not run. **G32 open** (Phase-0b execution aborted by a population-generator defect on 4 of 8 seeds; default HOLD). G5 open.
+**2026-09-25:** Phase 0: FAIL (2026-09-24); Phase 0b: not run. **G32 open** (Phase-0b execution aborted by a population-generator defect on 4 of 8 seeds; default HOLD). **G33 open** (merge the reviewed UI redesign; default HOLD). G5 open.
+
+### G33 — Merge the UI redesign (`ui/integration` @ `474bb53b9e4fdfccfc84720eeff938564481bb27`) into `main`
+- **What it is:** the Harbour (dark) / Notebook (light) design system approved by Steven 2026-09-25, plus the new Runs & evidence page. Spec: `docs/ui/2026-09-25-jos-redesign-spec.md`; mocks https://claude.ai/artifact/Tav8SdSnyN8EMP1oCkXTNY. The change is frontend only, with no new dependencies; exported builders and tests are unchanged and all verbatim disclaimers are intact.
+- **Evidence:** units U1–U5 plus two integration correctives, each browser-checked by the director in both themes. The clean-clone frontend mirror passed (15 passed, 6 skipped, typecheck, build). The gpt-6-sol review chain ended with `docs/audits/2026-09-25-ui-integration-rereview3-sol-PASS.md` ("no finding remains open from my U1, U4, or integration UI reviews"). Push receipt: `docs/runs/2026-09-25-ui-push-receipt.txt`. The integrated build is served locally at http://localhost:5210 (demo data) for a look.
+- **Command (SHA-first):** `git -C ~/jsy_disease_sim merge --no-ff 474bb53b9e4fdfccfc84720eeff938564481bb27 -m "G33: merge ui/integration @ 474bb53 (UI redesign)" && git -C ~/jsy_disease_sim push`. Before pushing, the director runs the frontend mirror on the merge commit.
+- **Default on no answer:** HOLD; the branches stay pushed. Say "merge G33" to have the agent execute it.
 
 ### G32 — Phase-0b execution aborted: 4 of 8 fresh seeds cannot build a CI population (model owner + protected module)
 - **What happened (2026-09-25):** the one Phase-0b `execute` at the reviewed SHA `024caa09c19bbdad0952b09213ed56e6638ad676` stopped after 3 s at P0-1 population generation: `DataBuildError: age/sex pool cannot satisfy role constraint 0-15 … parish Trinity, household-m2-000784 (Couple with dependent children)`. **No outbreak simulation ran and no bundle was published** (log `docs/runs/2026-09-25-phase0b-campaign-aborted.log`). A read-only diagnostic of `jos structure generate --mode ci` per seed (`docs/runs/2026-09-25-phase0b-seed-population-diagnosis.txt`) found **62001, 62002, 62003 (targets) and 63002 (candidate) fail**, while 62004, 62005, 63001, 63003 and the Phase-0 controls 42001 and 43001 build. This is a latent **population-generator feasibility defect** in CI mode (3,000 residents; small-parish household role/age assignment), not a Phase-0b design issue. It also affects anyone running Quick test with an unlucky seed.
