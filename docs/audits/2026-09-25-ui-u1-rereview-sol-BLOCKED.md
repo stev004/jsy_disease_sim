@@ -1,0 +1,7 @@
+UI U1 RE-REVIEW: BLOCKED
+
+**Finding 1 remains open.** The new role and colour props exist, and the current legends now match their rendered strokes. But the views do not pass those props, so [LineChart.tsx](/home/steven/jos-ui-u1-rereview-readonly/frontend/src/components/LineChart.tsx:61) uses its fallback: the [Results epidemic curve](/home/steven/jos-ui-u1-rereview-readonly/frontend/src/views/results/TabsBand.tsx:59) renders in `--accent` instead of the specified `--epi`; [Compare’s arms](/home/steven/jos-ui-u1-rereview-readonly/frontend/src/views/compare/CompareView.tsx:244) render in `--ink-3` and `--accent` instead of `--base-line` and `--div-neg`. The U1 semantic colour contract is therefore still unmet.
+
+Findings 3, 6 and 7 are closed: no-preference selectors agree, the verbatim disclaimer is a separate caption outside the brand link, no literal colours remain in `base.css` or components, and `.close-x` has a 44px target. U2-owned findings 2, 4 and 5 remain unchanged by this diff; nothing here appears to make their fixes harder. Previously passed token, contrast, shell and motion work shows no regression in the reviewed diff.
+
+The supplied frontend mirror reports 15 passed, 6 skipped, with typecheck and build passing. Final SHA: `43b45cb9e5a17c616ee6b2028ac4b519e02fde12`. `git status --porcelain` was empty; this review made no edits.
