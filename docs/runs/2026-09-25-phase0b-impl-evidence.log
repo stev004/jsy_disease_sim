@@ -1,0 +1,320 @@
++ git rev-parse HEAD
+f64c586444ffb5788d90ae3b269cef0469f6c0dd
++ git status --porcelain
+ M src/jersey_outbreak/phase0_campaign.py
+?? configs/calibration/v13_phase0b_synthetic.yaml
+?? tests/test_phase0b_campaign.py
++ uv run ruff format src/jersey_outbreak/phase0_campaign.py tests/test_phase0b_campaign.py
+2 files left unchanged
++ uv run ruff check src/jersey_outbreak/phase0_campaign.py tests/test_phase0b_campaign.py
+All checks passed!
++ uv run ruff format --check src/jersey_outbreak/phase0_campaign.py tests/test_phase0b_campaign.py
+2 files already formatted
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/phase0_campaign.py
+Success: no issues found in 1 source file
++ uv run python -m compileall -q src
++ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-21-phase0-predeclaration.md
+{
+  "predeclaration_sha256": "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": false,
+  "p0_1_grid_cells": 81,
+  "p0_2_wrong_delay_cells": 81,
+  "p0_2_wrong_regime_cells": 27,
+  "p0_3_cells": 9,
+  "total_cells": 198,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 27,
+  "p0_3_latent_outbreak_calls": 27,
+  "p0_3_observation_transforms": 27,
+  "total_latent_outbreak_calls": 59,
+  "p0_1_latent_calls": 32,
+  "p0_1_observation_transforms": 248,
+  "total_observation_transforms": 599,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b",
+    "p0_3"
+  ],
+  "implemented_p0_1_grid_cells": 81,
+  "implemented_p0_2a_grid_cells": 81,
+  "implemented_p0_2b_grid_cells": 27,
+  "implemented_p0_3_grid_cells": 9,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 198,
+  "implemented_latent_outbreak_calls": 59,
+  "implemented_observation_transforms": 599,
+  "planned_grid_cells": 198,
+  "planned_latent_outbreak_calls": 59,
+  "planned_observation_transforms": 599
+}
++ uv run python -m jersey_outbreak.phase0_campaign dry-run --config configs/calibration/v13_phase0b_synthetic.yaml --predeclaration docs/research/v1_3/2026-09-25-phase0b-predeclaration.md --ruling docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md --owner-ruling docs/research/v1_3/2026-09-25-phase0b-owner-ruling-ACCEPTED.md
+{
+  "predeclaration_sha256": "ec8df64630dd50c83b0866a096fba4980453c34232d18114129587274f257451",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": true,
+  "p0_1_grid_cells": 625,
+  "p0_2_wrong_delay_cells": 625,
+  "p0_2_wrong_regime_cells": 75,
+  "p0_3_cells": 9,
+  "total_cells": 1334,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 75,
+  "p0_3_latent_outbreak_calls": 27,
+  "p0_3_observation_transforms": 27,
+  "total_latent_outbreak_calls": 107,
+  "p0_1_latent_calls": 80,
+  "p0_1_observation_transforms": 1880,
+  "total_observation_transforms": 4007,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b",
+    "p0_3"
+  ],
+  "implemented_p0_1_grid_cells": 625,
+  "implemented_p0_2a_grid_cells": 625,
+  "implemented_p0_2b_grid_cells": 75,
+  "implemented_p0_3_grid_cells": 9,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 1334,
+  "implemented_latent_outbreak_calls": 107,
+  "implemented_observation_transforms": 4007,
+  "planned_grid_cells": 1334,
+  "planned_latent_outbreak_calls": 107,
+  "planned_observation_transforms": 4007,
+  "predeclaration_path": "docs/research/v1_3/2026-09-25-phase0b-predeclaration.md",
+  "predeclaration_verified": true,
+  "p0_2a_latent_calls": 0,
+  "p0_2b_latent_calls": 0,
+  "p0_2a_observation_transforms": 1875,
+  "p0_2b_observation_transforms": 225,
+  "p0_3_latent_calls": 27,
+  "owner_ruling_path": "docs/research/v1_3/2026-09-25-phase0b-owner-ruling-ACCEPTED.md",
+  "owner_ruling_sha256": "ea15ea558bd7b6bea962f55b2cf83f44c13cf6f7b07da1f3bab03598a1f98a39",
+  "owner_ruling_verified": true
+}
++ uv run pytest tests/test_phase0_campaign.py tests/test_phase0b_campaign.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0b-wt
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 52 items
+
+tests/test_phase0_campaign.py .......................................... [ 80%]
+                                                                         [ 80%]
+tests/test_phase0b_campaign.py ..........                                [100%]
+
+============================= 52 passed in 16.11s ==============================
++ cat /tmp/jos-p0b-impl-hash-comparison.log
+{
+  "base_sha": "f64c586444ffb5788d90ae3b269cef0469f6c0dd",
+  "blind_estimate_hash_families_identical": true,
+  "blind_estimate_hash_family_counts": {
+    "p0_1": 5,
+    "p0_2a": 5,
+    "p0_2b": 5
+  },
+  "blind_family_sha256": "5b551979279cea98fff5d2be1d9832f12c38fcbfdb35f84de73a97fd38864b73",
+  "checked_head": "f64c586444ffb5788d90ae3b269cef0469f6c0dd",
+  "config_family_sha256": "0dd16b9ec2e776378ae2fe0252021025853b7471d24806a7ec631f4be7511a3a",
+  "config_hash_families_identical": true,
+  "config_hash_family_counts": {
+    "p0_1": 81,
+    "p0_2a": 81,
+    "p0_2b": 27,
+    "p0_3": 9
+  },
+  "phase0_hash_families_byte_identical": true
+}
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0b-wt
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collected 466 items
+
+tests/test_b01_portable_artifacts.py ..............                      [  3%]
+tests/test_bench_dynamic_routes.py ......                                [  4%]
+tests/test_c1_identity.py .....                                          [  5%]
+tests/test_c2_network_semantics.py ......                                [  6%]
+tests/test_c3_contracts.py .......                                       [  8%]
+tests/test_c4_contracts.py ..................                            [ 12%]
+tests/test_c5_m7_integrity.py ............................               [ 18%]
+tests/test_calibration.py .....                                          [ 19%]
+tests/test_cli_integration.py ..                                         [ 19%]
+tests/test_contracts.py ....                                             [ 20%]
+tests/test_data_pipeline.py ..............============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-p0b-wt
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collected 466 items
+
+tests/test_b01_portable_artifacts.py ........                        [ 24%]
+tests/test_data_sources.py ....                                          [ 25%]
+tests/test_ensemble.py ...................                      [  3%]
+tests/test_bench_dynamic_routes.py .........                                [  4%]
+tests/test_c1_identity.py .....                                          [  5%]
+tests/test_c2_network_semantics.py .....                                       [ 28%]
+tests/test_ensemble_band_horizon.py .                                    [ 28%]
+tests/test_golden_hashes.py ...                                [  6%]
+tests/test_c3_contracts.py ........                                       [  8%]
+tests/test_c4_contracts.py ..................                            [ 12%]
+tests/test_c5_m7_integrity.py ..................................               [ 18%]
+tests/test_calibration.py .....                                          [ 19%]
+tests/test_cli_integration.py ..                                         [ 19%]
+tests/test_contracts.py ....                                             [ 20%]
+tests/test_data_pipeline.py .....................                        [ 24%]
+tests/test_data_sources.py ....                                          [ 25%]
+tests/test_ensemble.py ...........                                       [ 28%]
+tests/test_ensemble_band_horizon.py .                                    [ 28%]
+tests/test_golden_hashes.py ...                                    [ 30%]
+tests/test_hashing.py ...                                                [ 30%]
+tests/test_hashkey_suffix.py ..                                          [ 31%]
+tests/test_init_metadata_boundary.py .                                   [ 31%]
+tests/test_job_liveness.py ....                                          [ 32%]
+tests/test_m3_secondary_jobs_oracle.py ........                               [ 33%]
+tests/test_m4_hash_stream.py ...                                          [ 33%]
+tests/test_m7_interventions.py .....                                     [ 34%]
+tests/test_m8_1_travel_integrity.py .............                                    [ 30%]
+tests/test_hashing.py ...                                                [ 30%]
+tests/test_hashkey_suffix.py ..                                          [ 31%]
+tests/test_init_metadata_boundary.py .                                   [ 31%]
+tests/test_job_liveness.py ....                                          [ 32%]
+tests/test_m3_secondary_jobs_oracle.py ...                               [ 33%]
+tests/test_m4_hash_stream.py ..                                          [ 33%]
+tests/test_m7_interventions.py .....                                     [ 34%]
+tests/test_m8_1_travel_integrity.py ............                         [ 37%]
+tests/test_m8_2_travel_closure.py ......                                 [ 38%]
+tests/test_m8_travel.py ..............                                   [ 41%]
+tests/test_m9_1_job_integrity.py ........................                [ 46%]
+tests/test_m9_2_provenance.py ...............                            [ 49%]
+tests/test_m9_4_calendar_finalization.py .....                           [ 50%]
+tests/test_m9_api.py .......                                             [ 52%]
+tests/test_networks.py ............................                      [ 58%]
+tests/test_observation.py ........                                       [ 60%]
+tests/test_outbreak.py ............                                      [ 62%]
+tests/test_perf10_grid_once.py .                                         [ 62%]
+tests/test_perf4_diagnostics.py ...                         [ 37%]
+tests/test_m8_2_travel_closure.py .......                                 [ 38%]
+tests/test_m8_travel.py .......                                  [ 64%]
+tests/test_perf6_interventions.py ..................                                   [ 41%]
+tests/test_m9_1_job_integrity.py ....................................                [ 46%]
+tests/test_m9_2_provenance.py ...............                            [ 49%]
+tests/test_m9_4_calendar_finalization.py .....                           [ 50%]
+tests/test_m9_api.py .......                                             [ 52%]
+tests/test_networks.py ............................                      [ 58%]
+tests/test_observation.py ........                                       [ 60%]
+tests/test_outbreak.py ............                                      [ 62%]
+tests/test_perf10_grid_once.py .                                         [ 62%]
+tests/test_perf4_diagnostics.py .......                                  [ 64%]
+tests/test_perf6_interventions.py ....................                   [ 68%]
+tests/test_perf9_parent_reuse.py .........                               [ 70%]
+tests/test_phase0_campaign.py .......................................... [ 79%]
+                                                                         [ 79%]
+tests/test_phase0b_campaign.py ..........                                [ 81%]
+tests/test_population.py .....                                           [ 82%]
+tests/test_population_structure.py ......                                [ 84%]
+tests/test_prov_helpers.py ..........                                    [ 86%]
+tests/test_prov_job_ordering.py .....                                    [ 87%]
+tests/test_respiratory_attribution_lookup.py ...........                 [ 89%]
+tests/test_route4_weekday_memo.py s                                      [ 89%]
+tests/test_route5_phase2_columns.py ss..                                 [ 90%]
+tests/test_route_snapshot_columns.py ....s                               [ 91%]
+tests/test_scientific_corrections_datafix.py ......                   [ 68%]
+tests/test_perf9_parent_reuse.py ....                   [ 93%]
+tests/test_staffing.py ...........                                        [ 95%]
+tests/test_starsim_demo.py ..                                            [ 96%]
+tests/test_v121_prov_verifier_fixes.py .........                           [ 97%]
+tests/test_v12_bundle_selftest.py ....                                   [ 98%]
+tests/test_v12_carry_ins.py ..                                           [ 99%]
+tests/test_v12_corr3_dictionary.py ....                                   [ 99%]
+tests/test_v12_corr4_dictionary.py .                                     [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-p0b-wt/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-p0b-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+=========== 462 passed, 4 skipped, 15 warnings in 1071.47s (0:17:51) ===========
+.....                               [ 70%]
+tests/test_phase0_campaign.py .......................................... [ 79%]
+                                                                         [ 79%]
+tests/test_phase0b_campaign.py ..........                                [ 81%]
+tests/test_population.py .....                                           [ 82%]
+tests/test_population_structure.py ......                                [ 84%]
+tests/test_prov_helpers.py ..........                                    [ 86%]
+tests/test_prov_job_ordering.py .....                                    [ 87%]
+tests/test_respiratory_attribution_lookup.py ...........                 [ 89%]
+tests/test_route4_weekday_memo.py s                                      [ 89%]
+tests/test_route5_phase2_columns.py ss..                                 [ 90%]
+tests/test_route_snapshot_columns.py ....s                               [ 91%]
+tests/test_scientific_corrections_datafix.py .........                   [ 93%]
+tests/test_staffing.py ..........                                        [ 95%]
+tests/test_starsim_demo.py ..                                            [ 96%]
+tests/test_v121_prov_verifier_fixes.py .......                           [ 97%]
+tests/test_v12_bundle_selftest.py ....                                   [ 98%]
+tests/test_v12_carry_ins.py ..                                           [ 99%]
+tests/test_v12_corr3_dictionary.py ...                                   [ 99%]
+tests/test_v12_corr4_dictionary.py .                                     [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-p0b-wt/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-p0b-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+=========== 462 passed, 4 skipped, 15 warnings in 1065.24s (0:17:45) ===========
+codex/v13-p0b-implementation
+f64c586444ffb5788d90ae3b269cef0469f6c0dd
+ src/jersey_outbreak/phase0_campaign.py | 859 ++++++++++++++++++++++++++++-----
+ 1 file changed, 748 insertions(+), 111 deletions(-)
+  220 configs/calibration/v13_phase0b_synthetic.yaml
+  656 tests/test_phase0b_campaign.py
+  876 total
+ M src/jersey_outbreak/phase0_campaign.py
+?? configs/calibration/v13_phase0b_synthetic.yaml
+?? tests/test_phase0b_campaign.py
+NOTE: the first full-suite terminal session yielded after 30 seconds and was stopped before a verdict; the subsequent captured run completed with 462 passed and 4 skipped.
