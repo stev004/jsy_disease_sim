@@ -13,8 +13,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Btn,
   HBar,
-  isLineSeriesBandRendered,
-  isLineSeriesRendered,
+
+  getLineChartRenderedContent, isLineSeriesRendered,
   JerseyMap,
   LineChart,
   lineSeriesColor,
@@ -508,7 +508,7 @@ export function ResultsView() {
                     {tideSeries.filter(isLineSeriesRendered).map((item) => (
                       <span key={item.label}><i className="rs-line-swatch" style={{ background: lineSeriesColor(item) }} />{item.label}</span>
                     ))}
-                    {tideSeries.filter(isLineSeriesBandRendered).map((item) => (
+                    {getLineChartRenderedContent(tideSeries).bands.map((item) => (
                       <span key={`${item.label}-band`}><i className="rs-band-swatch" />Replicate range</span>
                     ))}
                     <span className="num">Day {day} · {formatDate(data.dates[day] ?? '')}</span>

@@ -9,7 +9,7 @@ export { JerseyMap, type JerseyMapProps } from './JerseyMap';
 export {
   LineChart,
   isLineSeriesBandRendered,
-  isLineSeriesRendered,
+  getLineChartRenderedContent, isLineSeriesRendered,
   lineSeriesColor,
   type LineChartProps,
   type Series,

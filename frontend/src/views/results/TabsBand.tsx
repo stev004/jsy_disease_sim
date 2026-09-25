@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   HBar,
-  isLineSeriesBandRendered,
-  isLineSeriesRendered,
+
+  getLineChartRenderedContent, isLineSeriesRendered,
   lineSeriesColor,
   LineChart,
   resolveRankedBarColor,
@@ -339,7 +339,7 @@ export function TabsBand({ data, day, interventions }: TabsBandProps) {
                   {item.label}
                 </span>
               ))}
-              {epiSeries.filter(isLineSeriesBandRendered).map((item) => (
+              {getLineChartRenderedContent(epiSeries).bands.map((item) => (
                 <span key={`${item.label}-band`}>
                   <span className="swb" style={{ background: 'var(--epi-soft)' }} />
                   Replicate range
