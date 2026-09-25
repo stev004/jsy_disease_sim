@@ -1,0 +1,21 @@
+﻿BASE=/home/steven/jos-phase0b-campaign-20260925T174837Z
+134:P0-1 generation failed: DataBuildError: age/sex pool cannot satisfy role constraint 0-15; remaining=66, oldest=64 in parish Trinity, household household-m2-000784 (Couple with dependent children, roles=['adult', 'partner', 'dependent_child'])
+--- bundle / staging state:
+total 32
+drwxr-xr-x  3 steven steven  4096 Sep 25 18:48 .
+drwxr-x--- 67 steven steven 20480 Sep 25 18:48 ..
+drwxr-xr-x 15 steven steven  4096 Sep 25 18:48 src-clone
+ls: cannot access '/home/steven/jos-phase0b-campaign-20260925T174837Z/bundle': No such file or directory
+ls: cannot access '/home/steven/jos-phase0b-campaign-20260925T174837Z/.bundle*': No such file or directory
+ls: cannot access '/home/steven/jos-phase0b-campaign-20260925T174837Z/.*workspace*': No such file or directory
+--- per-seed structure build (diagnostic only; no outbreak simulation)
+seed 62001: dependent children, roles=['adult', 'partner', 'dependent_child'])
+seed 62002: roles=['adult', 'other'])
+seed 62003: dependent children, roles=['adult', 'partner', 'dependent_child', 'other'])
+seed 62004: {"artifact_directory": "/tmp/jos-p0b-diag-62004/jos-structure-m3-ci-seed-62004-c5d804a52e65", "artifact_id": "jos-structure-m3-ci-seed-62004-c5d804a52e65", "diagnostics_status": "passed", "logical_con
+seed 62005: {"artifact_directory": "/tmp/jos-p0b-diag-62005/jos-structure-m3-ci-seed-62005-4b61953c806a", "artifact_id": "jos-structure-m3-ci-seed-62005-4b61953c806a", "diagnostics_status": "passed", "logical_con
+seed 63001: {"artifact_directory": "/tmp/jos-p0b-diag-63001/jos-structure-m3-ci-seed-63001-eb1309655db9", "artifact_id": "jos-structure-m3-ci-seed-63001-eb1309655db9", "diagnostics_status": "passed", "logical_con
+seed 63002: dependent children, roles=['adult', 'partner', 'dependent_child'])
+seed 63003: {"artifact_directory": "/tmp/jos-p0b-diag-63003/jos-structure-m3-ci-seed-63003-9124fb9dae86", "artifact_id": "jos-structure-m3-ci-seed-63003-9124fb9dae86", "diagnostics_status": "passed", "logical_con
+seed 42001: {"artifact_directory": "/tmp/jos-p0b-diag-42001/jos-structure-m3-ci-seed-42001-c5977005ce11", "artifact_id": "jos-structure-m3-ci-seed-42001-c5977005ce11", "diagnostics_status": "passed", "logical_con
+seed 43001: {"artifact_directory": "/tmp/jos-p0b-diag-43001/jos-structure-m3-ci-seed-43001-fcd714828e5d", "artifact_id": "jos-structure-m3-ci-seed-43001-fcd714828e5d", "diagnostics_status": "passed", "logical_con

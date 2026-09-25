@@ -4,7 +4,18 @@
 
 ## Open
 
-**2026-09-25:** Phase 0: FAIL (2026-09-24); Phase 0b: not run (frozen). G31 resolved A+C. Only G5 open.
+**2026-09-25:** Phase 0: FAIL (2026-09-24); Phase 0b: not run. **G32 open** (Phase-0b execution aborted by a population-generator defect on 4 of 8 seeds; default HOLD). G5 open.
+
+### G32 — Phase-0b execution aborted: 4 of 8 fresh seeds cannot build a CI population (model owner + protected module)
+- **What happened (2026-09-25):** the one Phase-0b `execute` at the reviewed SHA `024caa09c19bbdad0952b09213ed56e6638ad676` stopped after 3 s at P0-1 population generation: `DataBuildError: age/sex pool cannot satisfy role constraint 0-15 … parish Trinity, household-m2-000784 (Couple with dependent children)`. **No outbreak simulation ran and no bundle was published** (log `docs/runs/2026-09-25-phase0b-campaign-aborted.log`). A read-only diagnostic of `jos structure generate --mode ci` per seed (`docs/runs/2026-09-25-phase0b-seed-population-diagnosis.txt`) found **62001, 62002, 62003 (targets) and 63002 (candidate) fail**, while 62004, 62005, 63001, 63003 and the Phase-0 controls 42001 and 43001 build. This is a latent **population-generator feasibility defect** in CI mode (3,000 residents; small-parish household role/age assignment), not a Phase-0b design issue. It also affects anyone running Quick test with an unlucky seed.
+- **Status (§12.4 vocabulary):** Phase 0: FAIL (2026-09-24); Phase 0b: not run. Per §12.3 an execution that consumed no simulation is not a campaign; nothing is VOID or FAIL.
+- **Constraints:** the frozen predeclaration forbids replacement seeds; the population generator is a protected module (its outputs feed M2/M3 hashes); §12.3 requires Steven's authorization for any corrected rerun, and a rerun must use the SAME seeds.
+- **Options:**
+  - **A (recommended):** a separately declared, reviewed **population-generator fix** as a protected-module migration. Make the CI household/age assignment feasible for these seeds, with a byte-identity proof that every currently-buildable seed (all Phase-0 seeds and the 4 buildable Phase-0b seeds, plus the full-mode and validation pins) produces unchanged M2/M3 hashes. Then rerun Phase 0b once with the SAME frozen seeds. This fixes a real product bug too.
+  - **B:** a new model-owner ruling that amends the seed sets before any simulation. Buildability is known before any outcome, so this is not result-driven, but it changes frozen text and needs a new ruling. The generator bug remains.
+  - **C:** hold Phase 0b.
+- **Default on no answer:** HOLD. No rerun, no seed change, no generator edit. The reviewed Phase-0b branch stays pushed at 024caa0.
+- **Evidence:** as above; ts: trail row `phase0b-execute-aborted`.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?

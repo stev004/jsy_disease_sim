@@ -1,0 +1,136 @@
+phase0b campaign start 20260925T174837Z sha=024caa09c19bbdad0952b09213ed56e6638ad676
+host free: C:\             466G  440G   26G  95% /mnt/c
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+Resolved 77 packages in 0.94ms
+   Building jersey-outbreak-simulator @ file:///home/steven/jos-phase0b-campaign-20260925T174837Z/src-clone
+      Built jersey-outbreak-simulator @ file:///home/steven/jos-phase0b-campaign-20260925T174837Z/src-clone
+Prepared 1 package in 384ms
+Installed 75 packages in 169ms
+ + alembic==1.19.1
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio==4.14.2
+ + certifi==2026.7.22
+ + click==8.5.0
+ + colorlog==6.12.0
+ + contourpy==1.3.3
+ + cycler==0.12.1
+ + dill==0.4.1
+ + et-xmlfile==2.0.0
+ + fastapi==0.141.1
+ + fonttools==4.63.0
+ + gitdb==4.0.12
+ + gitpython==3.1.59
+ + greenlet==3.5.5
+ + h11==0.16.0
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + idna==3.19
+ + iniconfig==2.3.0
+ + jellyfish==1.2.1
+ + jersey-outbreak-simulator==1.1.0 (from file:///home/steven/jos-phase0b-campaign-20260925T174837Z/src-clone)
+ + jsonpickle==4.1.2
+ + kiwisolver==1.5.0
+ + librt==0.15.0
+ + line-profiler==5.0.2
+ + llvmlite==0.49.0
+ + mako==1.4.1
+ + markdown-it-py==4.2.0
+ + markupsafe==3.0.3
+ + matplotlib==3.11.1
+ + mdurl==0.1.2
+ + memory-profiler==0.61.0
+ + multiprocess==0.70.19
+ + mypy==1.20.2
+ + mypy-extensions==1.1.0
+ + networkx==3.6.1
+ + numba==0.67.0
+ + numpy==2.5.2
+ + openpyxl==3.1.5
+ + optuna==4.9.0
+ + packaging==26.3
+ + pandas==3.0.5
+ + pathspec==1.1.1
+ + pillow==12.3.0
+ + pluggy==1.6.0
+ + psutil==7.2.2
+ + pyarrow==22.0.0
+ + pydantic==2.13.4
+ + pydantic-core==2.46.4
+ + pygments==2.21.0
+ + pyparsing==3.3.2
+ + pytest==8.4.2
+ + python-dateutil==2.9.0.post0
+ + pyyaml==6.0.3
+ + rich==15.0.0
+ + ruff==0.16.4
+ + scipy==1.18.1
+ + sciris==3.3.0
+ + seaborn==0.13.2
+ + setuptools==84.0.0
+ + shellingham==1.5.4
+ + six==1.17.0
+ + smmap==5.0.3
+ + sqlalchemy==2.0.52
+ + starlette==1.6.0
+ + starsim==3.5.2
+ + tqdm==4.70.0
+ + typer==0.27.1
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.4
+ + uvicorn==0.52.4
+ + xlsxwriter==3.2.9
+ + zstandard==0.25.0
+{
+  "predeclaration_sha256": "ec8df64630dd50c83b0866a096fba4980453c34232d18114129587274f257451",
+  "g29_ruling_path": "docs/research/v1_3/2026-09-23-g29-p02-tie-ruling-ACCEPTED.md",
+  "g29_ruling_sha256": "06e49aaa7f21564dd6f525941633054fad39cf6714aa74aec0ef1f12dc1eb70c",
+  "g29_ruling_verified": true,
+  "p0_1_grid_cells": 625,
+  "p0_2_wrong_delay_cells": 625,
+  "p0_2_wrong_regime_cells": 75,
+  "p0_3_cells": 9,
+  "total_cells": 1334,
+  "truth_latent_outbreak_calls": 5,
+  "p0_1_p0_2_candidate_latent_outbreak_calls": 75,
+  "p0_3_latent_outbreak_calls": 27,
+  "p0_3_observation_transforms": 27,
+  "total_latent_outbreak_calls": 107,
+  "p0_1_latent_calls": 80,
+  "p0_1_observation_transforms": 1880,
+  "total_observation_transforms": 4007,
+  "distinct_population_network_seed_builds": 8,
+  "duration_days": 30,
+  "mode": "ci",
+  "implemented_arms": [
+    "p0_1",
+    "p0_2a",
+    "p0_2b",
+    "p0_3"
+  ],
+  "implemented_p0_1_grid_cells": 625,
+  "implemented_p0_2a_grid_cells": 625,
+  "implemented_p0_2b_grid_cells": 75,
+  "implemented_p0_3_grid_cells": 9,
+  "planned_p0_3_grid_cells": 9,
+  "implemented_grid_cells": 1334,
+  "implemented_latent_outbreak_calls": 107,
+  "implemented_observation_transforms": 4007,
+  "planned_grid_cells": 1334,
+  "planned_latent_outbreak_calls": 107,
+  "planned_observation_transforms": 4007,
+  "predeclaration_path": "docs/research/v1_3/2026-09-25-phase0b-predeclaration.md",
+  "predeclaration_verified": true,
+  "p0_2a_latent_calls": 0,
+  "p0_2b_latent_calls": 0,
+  "p0_2a_observation_transforms": 1875,
+  "p0_2b_observation_transforms": 225,
+  "p0_3_latent_calls": 27,
+  "owner_ruling_path": "docs/research/v1_3/2026-09-25-phase0b-owner-ruling-ACCEPTED.md",
+  "owner_ruling_sha256": "ea15ea558bd7b6bea962f55b2cf83f44c13cf6f7b07da1f3bab03598a1f98a39",
+  "owner_ruling_verified": true
+}
+P0-1 generation failed: DataBuildError: age/sex pool cannot satisfy role constraint 0-15; remaining=66, oldest=64 in parish Trinity, household household-m2-000784 (Couple with dependent children, roles=['adult', 'partner', 'dependent_child'])
+execute exit=1 wall_seconds=3
+clone clean after run
