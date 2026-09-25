@@ -1,0 +1,9 @@
+﻿FINAL_MERGE=f64c586444ffb5788d90ae3b269cef0469f6c0dd
+--- code-tree diff vs mirrored merge (must be empty):
+--- non-code diff vs mirrored merge (state layer only expected):
+ .../2026-09-25-phase0b-owner-ruling-ACCEPTED.md    |  39 +++
+ .../v1_3/2026-09-25-phase0b-predeclaration.md      | 269 +++++++++++++++++++++
+ 9 files changed, 584 insertions(+), 6 deletions(-)
+--- ls-remote receipt (2026-09-25T15:27:34Z)
+f64c586444ffb5788d90ae3b269cef0469f6c0dd	refs/heads/main
+f64c586 G31-C: merge Phase-0 harness codex/v13-p0-3-negative-control @ 925838a [skip ci]
