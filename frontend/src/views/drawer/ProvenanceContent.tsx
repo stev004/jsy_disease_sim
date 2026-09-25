@@ -35,6 +35,8 @@ const PROVENANCE_ROWS: Array<[string, string, Provenance, boolean]> = [
 ];
 
 const LEGEND: Provenance[] = ['observed', 'derived', 'literature', 'calibrated', 'assumption'];
+const SYNTHETIC_SIMULATION_NOTE =
+  'This is a synthetic research simulation of a generated Jersey population. It is not a forecast, a surveillance product, or a policy recommendation. No real people are represented.';
 
 /* ============================== helpers ============================== */
 
@@ -126,10 +128,7 @@ export function ProvenanceContent() {
 
   return (
     <>
-      <div className="dnote">
-        This is a <b>synthetic research simulation</b> of a generated Jersey population. It is not a
-        forecast, a surveillance product, or a policy recommendation. No real people are represented.
-      </div>
+      <div className="dnote">{SYNTHETIC_SIMULATION_NOTE}</div>
 
       <div className="dsec">
         <h2>Verification</h2>

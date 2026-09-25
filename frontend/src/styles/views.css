@@ -5,17 +5,54 @@
    Feature agents implementing a view can rely on these classes.
    The mockup's #view-<name> ids are rewritten as .view-<name> classes. */
 
+/* ================= home ================= */
+.view-home{display:block}
+.view-home .home-wrap{width:100%;max-width:none;padding:22px 28px 32px;display:grid;gap:20px}
+.view-home .home-hero{display:block}
+.view-home .home-map{position:relative;display:flex;align-items:center;min-height:420px;overflow:hidden;
+  padding:32px;background-color:var(--water);background-image:none;border:1px solid var(--line);
+  border-radius:var(--radius-lg);box-shadow:var(--shadow)}
+.view-home .home-map-graphic{position:absolute;z-index:0;right:1%;top:0;width:54%;height:100%;max-width:none;
+  object-fit:contain;background:transparent;border-radius:0}
+.view-home .home-hero-copy{position:relative;z-index:1;width:55%;max-width:580px}
+.view-home .home-hero-copy .label{display:block}
+.view-home .home-hero h1{font-size:44px;font-weight:600;letter-spacing:-.025em;line-height:1.1;text-wrap:balance}
+.view-home .home-population{font-size:16px;color:var(--ink);margin-top:12px;font-weight:500}
+.view-home .home-intro{color:var(--ink-2);max-width:48ch;margin-top:8px}
+.view-home .home-hero .cta{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}
+.view-home .home-map-caption{position:absolute;right:28px;bottom:16px;z-index:1;font-size:11px;color:var(--ink-3);text-align:right}
+.view-home .home-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.view-home .home-step-card{padding:18px 20px;min-height:132px}
+.view-home .home-steps .n{font-size:12px;color:var(--accent-ink);font-weight:650;letter-spacing:.08em;text-transform:uppercase}
+.view-home .home-steps h3{font-size:16px;margin:8px 0 5px}
+.view-home .home-steps p{font-size:13px;color:var(--ink-2);max-width:42ch}
+.view-home .home-recent{overflow:hidden}
+.view-home .home-recent-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 10px}
+.view-home .home-recent h2{font-size:22px;font-weight:600}
+.view-home .home-recent-limit{font:11px "IBM Plex Mono",ui-monospace,monospace;color:var(--ink-3)}
+.view-home .home-recent .row{display:flex;align-items:center;gap:12px;padding:8px 20px;min-height:60px}
+.view-home .home-recent .row+.row{border-top:1px solid var(--line)}
+.view-home .home-run-copy{display:grid;gap:2px;min-width:0}
+.view-home .home-run-copy b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.view-home .home-run-copy span{font-size:12px;color:var(--ink-3)}
+.view-home .home-run-spacer{flex:1;min-width:12px}
+.view-home .home-empty{font-size:13px;color:var(--ink-3)}
+.view-home .home-foot{display:flex;gap:10px 24px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px;
+  font-size:12px;color:var(--ink-3)}
+
 /* ================= builder ================= */
-.view-simulate .wrap{display:grid; grid-template-columns:minmax(560px,660px) 320px; gap:24px;
-  max-width:1060px; margin:0 auto; padding:28px 32px 64px; align-items:start}
-.b-head{grid-column:1/-1; display:flex; align-items:baseline; gap:16px}
-.b-head h1{font-size:21px; font-weight:700; letter-spacing:-.01em}
-.b-head .sub{color:var(--ink-3); font-size:12.5px}
-.b-card{padding:16px 20px; margin-bottom:16px}
-.b-card .head{display:flex; align-items:center; justify-content:space-between; gap:12px}
-.b-card h2{font-size:14px; font-weight:650}
+.view-simulate .wrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;
+  max-width:none;margin:0;padding:22px 28px 56px;align-items:start}
+.b-head{grid-column:1/-1;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.b-head h1{font-size:44px;font-weight:600;letter-spacing:-.025em}
+.b-head .sub{color:var(--ink-3);font-size:14px}
+.b-card{padding:20px 22px;margin-bottom:16px;border-radius:var(--radius-lg)}
+.b-card .head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.b-card h2{font-size:16px;font-weight:650}
 .b-card .desc{font-size:12.5px; color:var(--ink-2); margin-top:2px}
 .b-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px}
+.view-simulate input[type=text],.view-simulate input[type=number],.view-simulate input[type=date]{min-height:44px}
+.view-simulate input[type=date]{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px}
 .inline-num{width:76px; text-align:right}
 .slider-row{display:grid; grid-template-columns:1fr 92px; gap:16px; align-items:center; margin-top:12px}
 input[type=range]{accent-color:var(--accent); width:100%}
@@ -26,6 +63,23 @@ details.adv[open] summary::before{transform:rotate(90deg)}
 .adv-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px 24px; margin-top:12px}
 .adv-item{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12.5px}
 .adv-item .nm{color:var(--ink-2)}
+.view-simulate .tchip{min-height:44px;padding:8px 14px;border-color:var(--line-strong);background:var(--panel)}
+.view-simulate .iv-add{min-height:44px;border-color:var(--line-strong);border-radius:var(--radius)}
+.view-simulate .iv-opt{min-height:54px;border-radius:var(--radius);padding:10px 12px}
+.sim-timeline{margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}
+.sim-timeline-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.sim-timeline-head h3{font-size:13px;font-weight:650}
+.sim-timeline-head span{font-size:11.5px;color:var(--ink-3)}
+.sim-timeline-duration{font-size:12px!important;color:var(--ink-2)!important}
+.sim-timeline-lanes{display:grid;gap:2px}
+.sim-timeline-lane{display:grid;grid-template-columns:170px minmax(0,1fr);gap:12px;align-items:center;min-height:28px}
+.sim-timeline-name{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sim-timeline-track{position:relative;height:18px;min-width:0;border-radius:999px;background:var(--panel-2);overflow:hidden}
+.sim-timeline-bar{position:absolute;top:3px;height:12px;min-width:4px;border-radius:999px}
+.sim-timeline-unknown{display:flex;align-items:center;gap:7px;min-height:24px;color:var(--ink-3);font-size:11px}
+.sim-timeline-unknown i{width:7px;height:7px;flex:none;border-radius:50%}
+.sim-timeline-empty{padding:3px 0 8px;font-size:12px;color:var(--ink-3)}
+.sim-timeline-axis{display:flex;justify-content:space-between;margin:6px 0 0 182px;color:var(--ink-3);font-size:10px}
 .iv-card{border:1px solid var(--line); border-left:4px solid var(--iv-school); border-radius:7px;
   padding:12px 16px; margin-top:8px; background:var(--panel-2); display:grid; gap:6px}
 .iv-card .top{display:flex; align-items:center; justify-content:space-between}
@@ -42,14 +96,18 @@ details.adv[open] summary::before{transform:rotate(90deg)}
 .iv-opt .nm{font-weight:600; font-size:12.5px; display:flex; align-items:center; gap:7px}
 .iv-opt .nm i{width:9px;height:9px;border-radius:3px; flex:none}
 .iv-opt .d{font-size:11px; color:var(--ink-3); margin-top:3px}
-.b-side{position:sticky; top:28px; display:grid; gap:16px}
+.b-side{position:sticky; top:20px; display:grid; gap:16px}
 .b-summary{padding:16px 20px}
 .b-summary h2{font-size:13px; margin-bottom:12px}
 .b-summary .li{display:flex; justify-content:space-between; gap:12px; font-size:12.5px; padding:5px 0}
 .b-summary .li .k{color:var(--ink-3)}
 .b-summary .li .v{font-weight:600; text-align:right}
+.b-summary .li .v .num{font-weight:500}
 .valid-note{display:flex; gap:8px; align-items:flex-start; font-size:12px; color:var(--good); margin-top:8px}
-.hash-line{font-size:11px; color:var(--ink-3); margin-top:6px}
+.hash-line{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.hash-caption{font-size:11px;color:var(--ink-3)}
+.hash-line .chip{min-height:30px;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+body.sci .view-simulate .hash-line.sci-only{display:flex!important}
 .runtime-note{font-size:11.5px; color:var(--ink-3); margin-top:8px; line-height:1.45}
 
 /* ================= job ================= */
@@ -208,14 +266,14 @@ details.adv[open] summary::before{transform:rotate(90deg)}
 .fizzle .btn{padding:5px 12px; font-size:12px}
 
 /* ================= keyboard shortcuts overlay ================= */
-.ks{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:380px;
-  padding:16px 20px 16px; z-index:61; display:none}
+.ks{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 32px));
+  padding:24px;z-index:61;display:none}
 .ks.open{display:block}
 .ks-head{display:flex; align-items:center; justify-content:space-between}
-.ks-head h2{font-size:14px; font-weight:650}
+.ks-head h2{font-size:18px;font-weight:600}
 .ks-rows{margin-top:12px}
 .ks-row{display:grid; grid-template-columns:98px 1fr; gap:12px; align-items:center;
-  padding:7px 0; font-size:12.5px; color:var(--ink-2)}
+  min-height:44px;padding:7px 0;font-size:13px;color:var(--ink-2)}
 .ks-row + .ks-row{border-top:1px solid var(--line)}
 kbd{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px; background:var(--panel-2);
   border:1px solid var(--line-strong); border-radius:4px; padding:2px 7px; color:var(--ink)}
