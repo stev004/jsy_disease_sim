@@ -358,3 +358,4 @@ ts	phase	decision	why	evidence	result	tokens
 2026-09-26T10:42	token-correction	[skip ci] Token correction for row 'ui-u2-kept-u3-launch': completion usage omitted (recorded 0)	Trail audit 2026-09-26 item 6	/home/steven/jos-ui-u2.log tokens-used trailer	correction	202748
 2026-09-26T10:42	token-correction	[skip ci] Token correction for row 'ui-u4-corrective-kept': completion usage omitted (recorded 0)	Trail audit 2026-09-26 item 6	/home/steven/jos-ui-u4r1.log tokens-used trailer	correction	85076
 2026-09-26T10:42	token-correction	[skip ci] Token correction for row 'ui-u3-kept': completion usage omitted (recorded 0)	Trail audit 2026-09-26 item 6	/home/steven/jos-ui-u3.log tokens-used trailer	correction	227603
+2026-09-26T10:42	token-correction	[skip ci] Token correction for row 'ui-integration': completion usage omitted (recorded 0)	Trail audit 2026-09-26 item 6	/home/steven/jos-ui-u5.log tokens-used trailer	correction	179799
