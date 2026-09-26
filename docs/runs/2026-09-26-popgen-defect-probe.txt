@@ -1,0 +1,12 @@
+      Built jersey-outbreak-simulator @ file:///home/steven/jos-popprobe
+Installed 75 packages in 131ms
+seed 62001: FAIL DataBuildError: age/sex pool cannot satisfy role constraint 0-15; remaining=66, oldest=64 in parish Trinity, household household-m2-000784 (Couple with dependent children, roles=['adult', 'partner', 'dependent_child'])
+  parish Trinity {'pool_16_17': 2, 'pool_18p': 88, 'pool_u16': 7, 'role_adult': 27, 'role_adult_child': 20, 'role_dependent_child': 7, 'role_other': 11, 'role_parent': 2, 'role_partner': 17, 'role_pensioner': 8, 'role_unrelated_adult': 5, 'u16_taken_by_other@Couple with dependent children': 1}
+seed 62002: FAIL DataBuildError: age/sex pool cannot satisfy role constraint 18-95; remaining=2, oldest=13 in parish St Peter, household household-m2-001283 (Other, roles=['adult', 'other'])
+  parish St Peter {'pool_16_17': 4, 'pool_18p': 100, 'pool_u16': 32, 'role_adult': 42, 'role_adult_child': 8, 'role_dependent_child': 30, 'role_other': 3, 'role_parent': 5, 'role_partner': 25, 'role_pensioner': 21, 'role_unrelated_adult': 2}
+seed 62003: FAIL DataBuildError: age/sex pool cannot satisfy role constraint 0-15; remaining=62, oldest=64 in parish Trinity, household household-m2-000784 (Couple with dependent children, roles=['adult', 'partner', 'dependent_child', 'other'])
+  parish Trinity {'pool_16_17': 2, 'pool_18p': 80, 'pool_u16': 6, 'role_adult': 24, 'role_adult_child': 20, 'role_dependent_child': 6, 'role_other': 8, 'role_parent': 2, 'role_partner': 15, 'role_pensioner': 8, 'role_unrelated_adult': 5, 'u16_taken_by_other@Couple with dependent children': 1}
+seed 63002: FAIL DataBuildError: age/sex pool cannot satisfy role constraint 0-15; remaining=60, oldest=64 in parish Trinity, household household-m2-000784 (Couple with dependent children, roles=['adult', 'partner', 'dependent_child'])
+  parish Trinity {'pool_16_17': 2, 'pool_18p': 78, 'pool_u16': 7, 'role_adult': 25, 'role_adult_child': 20, 'role_dependent_child': 7, 'role_other': 7, 'role_parent': 2, 'role_partner': 16, 'role_pensioner': 5, 'role_unrelated_adult': 5, 'u16_taken_by_other@Couple with dependent children': 1}
+seed 62004: OK
+PROBE_DONE

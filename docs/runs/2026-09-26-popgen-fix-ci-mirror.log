@@ -1,0 +1,41 @@
+SHA=ad37d45df75f28459b1311476128438114c198a6
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+   Building jersey-outbreak-simulator @ file:///home/steven/jos-popfix-mirror
+      Built jersey-outbreak-simulator @ file:///home/steven/jos-popfix-mirror
+Installed 75 packages in 137ms
+2 files already formatted
+All checks passed!
+Success: no issues found in 1 source file
+..........                                                               [100%]
+10 passed in 122.38s (0:02:02)
+........................................................................ [ 15%]
+........................................................................ [ 30%]
+........................................................................ [ 45%]
+........................................................................ [ 61%]
+........................................................................ [ 76%]
+................................................................sss..... [ 91%]
+.s......................................                                 [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-popfix-mirror/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-popfix-mirror/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+468 passed, 4 skipped, 15 warnings in 958.15s (0:15:58)
+MIRROR_EXIT=0
+MIRROR_DONE

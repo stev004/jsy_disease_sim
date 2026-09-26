@@ -1,0 +1,36 @@
+HEAD_SHA=ad37d45df75f28459b1311476128438114c198a6
+TALLY {'IDENTICAL': 133, 'FALLBACK': 19, 'BOTH-FAIL': 14}
+62001 FALLBACK disclosure_in=[] status_head_ok
+62002 FALLBACK disclosure_in=[] status_head_ok
+62003 FALLBACK disclosure_in=[] status_head_ok
+63002 FALLBACK disclosure_in=[] status_head_ok
+16 FALLBACK disclosure_in=[] status_head_ok
+29 FALLBACK disclosure_in=[] status_head_ok
+34 BOTH-FAIL
+44 FALLBACK disclosure_in=[] status_head_ok
+46 FALLBACK disclosure_in=[] status_head_ok
+47 BOTH-FAIL
+54 BOTH-FAIL
+58 FALLBACK disclosure_in=[] status_head_ok
+65 BOTH-FAIL
+69 FALLBACK disclosure_in=[] status_head_ok
+70 FALLBACK disclosure_in=[] status_head_ok
+73 BOTH-FAIL
+77 BOTH-FAIL
+79 BOTH-FAIL
+81 BOTH-FAIL
+93 BOTH-FAIL
+96 BOTH-FAIL
+98 FALLBACK disclosure_in=[] status_head_ok
+99 FALLBACK disclosure_in=[] status_head_ok
+103 FALLBACK disclosure_in=[] status_head_ok
+118 BOTH-FAIL
+119 BOTH-FAIL
+122 BOTH-FAIL
+127 FALLBACK disclosure_in=[] status_head_ok
+131 FALLBACK disclosure_in=[] status_head_ok
+136 FALLBACK disclosure_in=[] status_head_ok
+144 FALLBACK disclosure_in=[] status_head_ok
+147 BOTH-FAIL
+149 FALLBACK disclosure_in=[] status_head_ok
+SWEEP_DONE
