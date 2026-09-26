@@ -1,0 +1,37 @@
+SHA=43b45cb9e5a17c616ee6b2028ac4b519e02fde12
+
+added 111 packages in 3s
+
+> jos-frontend@1.1.0 test
+> vitest run
+
+
+ RUN  v2.1.9 /home/steven/jos-ui-u1r2-verify/frontend
+
+ ↓ src/m10_1_live.test.ts (6 tests | 6 skipped)
+ ✓ src/m10_2.test.ts (4 tests) 9ms
+ ✓ src/m10_1.test.ts (11 tests) 20ms
+
+ Test Files  2 passed | 1 skipped (3)
+      Tests  15 passed | 6 skipped (21)
+   Start at  17:47:56
+   Duration  963ms (transform 436ms, setup 0ms, collect 769ms, tests 29ms, environment 1ms, prepare 267ms)
+
+
+> jos-frontend@1.1.0 typecheck
+> tsc --noEmit
+
+
+> jos-frontend@1.1.0 build
+> tsc --noEmit && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 81 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.78 kB │ gzip:   0.43 kB
+dist/assets/index-2y812hNj.css   39.79 kB │ gzip:   8.55 kB
+dist/assets/index-Dr7Recz0.js   326.27 kB │ gzip: 104.76 kB
+✓ built in 1.07s
+FRONTEND_MIRROR=PASS SHA=43b45cb9e5a17c616ee6b2028ac4b519e02fde12

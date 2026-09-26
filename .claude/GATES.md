@@ -4,7 +4,7 @@
 
 ## Open
 
-**2026-09-25:** Phase 0: FAIL (2026-09-24); Phase 0b: not run. **G34 OPEN (default STOP)** — Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26; P0-1 inoculation offset). G32 closed (A executed: fix `ad37d45`, same-seed rerun completed). G33 closed (UI merged `862e440`). G5 open.
+**2026-09-26:** **G34 OPEN (default STOP)** — Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26; P0-1 inoculation offset). G32 closed (A executed: fix `ad37d45`, same-seed rerun completed). G33 closed (UI merged `862e440`). G5 open.
 
 ### G34 — Phase 0b FAIL: does V1.3 stop before real-data fitting? (§12.1 gate; model owner)
 - **What happened:** the same-seed Phase-0b campaign (G32-A) completed at `ad37d45`, bundle digest `a319c555…`. The independent exit audit gave a determinate FAIL (`docs/audits/2026-09-26-phase0b-exit-audit-sol-FAIL.md`), and its recomputation matches every published status.
@@ -17,12 +17,18 @@
   - **A — STOP (declared default).** V1.3 does not proceed to real-data fitting. Written era/holdout synthesis and specification work may continue.
   - **B — authorize a design memo only** (no execution, no predeclaration yet) on how a successor would treat inoculation timing. For example, treat it as a declared known or nuisance quantity instead of a fitted dimension, or lengthen the observation window. Any successor needs its own frozen predeclaration and synthetic-recovery check before real fitting.
   - **C — rescope V1.3's fitting target** in a new plan. That is a roadmap change.
-- **Director recommendation:** A now, plus B if you want V1.3 to keep moving. Two campaigns agree that the offset is what fails, and a finer grid made it worse. So a memo, not another campaign, is the honest next step.
+- **Director recommendation:** A now, plus B if you want V1.3 to keep moving. Both campaigns failed on the inoculation offset, 2/5 then 4/5 at the grid boundary. They differ in seeds, tolerances and grid, so this is not a controlled comparison, and its cause is untested. A memo, not another campaign, is the proportionate next step.
 - **Default on no answer:** A (STOP).
+
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
 
 ### G33 — CLOSED 2026-09-26 (merged at `862e440cfc311bd2b4f87b2af4b6ab145ddb2a14`; `docs/runs/2026-09-26-g33-merge-mirror.log`) — Merge the UI redesign (`ui/integration` @ `474bb53b9e4fdfccfc84720eeff938564481bb27`) into `main`
 - **What it is:** the Harbour (dark) / Notebook (light) design system approved by Steven 2026-09-25, plus the new Runs & evidence page. Spec: `docs/ui/2026-09-25-jos-redesign-spec.md`; mocks https://claude.ai/artifact/Tav8SdSnyN8EMP1oCkXTNY. The change is frontend only, with no new dependencies; exported builders and tests are unchanged and all verbatim disclaimers are intact.
-- **Evidence:** units U1–U5 plus two integration correctives, each browser-checked by the director in both themes. The clean-clone frontend mirror passed (15 passed, 6 skipped, typecheck, build). The gpt-6-sol review chain ended with `docs/audits/2026-09-25-ui-integration-rereview3-sol-PASS.md` ("no finding remains open from my U1, U4, or integration UI reviews"). Push receipt: `docs/runs/2026-09-25-ui-push-receipt.txt`. The integrated build is served locally at http://localhost:5210 (demo data) for a look.
+- **Evidence:** units U1–U5 plus two integration correctives, browser-checked by the director (self-attested; no captures filed; not every unit in both themes). The clean-clone frontend mirror passed (15 passed, 6 skipped, typecheck, build). The gpt-6-sol review chain ended with `docs/audits/2026-09-25-ui-integration-rereview3-sol-PASS.md` ("no finding remains open from my U1, U4, or integration UI reviews"). Push receipt: `docs/runs/2026-09-25-ui-push-receipt.txt`. The integrated build is served locally at http://localhost:5210 (demo data) for a look.
 - **Command (SHA-first):** `git -C ~/jsy_disease_sim merge --no-ff 474bb53b9e4fdfccfc84720eeff938564481bb27 -m "G33: merge ui/integration @ 474bb53 (UI redesign)" && git -C ~/jsy_disease_sim push`. Before pushing, the director runs the frontend mirror on the merge commit.
 - **Default on no answer:** HOLD; the branches stay pushed. Say "merge G33" to have the agent execute it.
 
@@ -37,11 +43,6 @@
 - **Default on no answer:** HOLD. No rerun, no seed change, no generator edit. The reviewed Phase-0b branch stays pushed at 024caa0.
 - **Evidence:** as above; ts: trail row `phase0b-execute-aborted`.
 
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
 
 ### G31 — RESOLVED 2026-09-25: options A + C (Steven, chat: "do whatever you think is the right approach to do")
 - **Ruling (director, under explicit delegation):** **A**: the Phase-0 FAIL stands as the recorded result. A Phase 0b follows: a gpt-6-sol design consult produces a new predeclaration with fresh seeds and a declared design change; a Fable model-owner ruling on that design (per the foreman rule, since this session is not Fable) is filed and hashed before any implementation or run; then implement, review, run one campaign, and a fresh exit audit. **C**: SHA-first `--no-ff` merge of `925838ac0077dbc66243cc4934aa1eb5c5b67b04` into `main` as research infrastructure. Merging does NOT mean the gate passed. It goes ahead only after a clean-clone CI mirror at the merge commit passes. No real-data fitting until Phase 0b passes. ts: trail row `g31-resolved`.

@@ -1,0 +1,43 @@
+SHA=7d5b0dec43c87adb87380c68f13280015e12194f
+
+added 111 packages in 3s
+
+> jos-frontend@1.1.0 test
+> vitest run
+
+
+ RUN  v2.1.9 /home/steven/jos-ui-u1-verify/frontend
+
+ ↓ src/m10_1_live.test.ts (6 tests | 6 skipped)
+ ✓ src/m10_2.test.ts (4 tests) 8ms
+ ✓ src/m10_1.test.ts (11 tests) 25ms
+
+ Test Files  2 passed | 1 skipped (3)
+      Tests  15 passed | 6 skipped (21)
+   Start at  17:31:02
+   Duration  1.04s (transform 424ms, setup 0ms, collect 807ms, tests 33ms, environment 1ms, prepare 292ms)
+
+
+> jos-frontend@1.1.0 typecheck
+> tsc --noEmit
+
+
+> jos-frontend@1.1.0 build
+> tsc --noEmit && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 81 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.78 kB │ gzip:   0.43 kB
+dist/assets/index-CG0jxksa.css   39.41 kB │ gzip:   8.49 kB
+dist/assets/index-DCBI-vRF.js   325.97 kB │ gzip: 104.66 kB
+✓ built in 1.18s
+Synthetic research simulation — not a forecast: 1
+not confidence intervals: 1
+not predictions of real policy effectiveness: 1
+Phases are real checkpoints: 1
+No real people are modelled: 1
+Map data © OpenStreetMap contributors, ODbL: 1
+FRONTEND_MIRROR=PASS SHA=7d5b0dec43c87adb87380c68f13280015e12194f

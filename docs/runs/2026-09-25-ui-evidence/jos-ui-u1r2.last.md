@@ -1,0 +1,10 @@
+**PASS — U1-owned findings fixed and verified.** HEAD remains `7d5b0dec43c87adb87380c68f13280015e12194f` on `ui/u1-foundation`. Only the four permitted files are modified; no views, `seqColor`, exporters, or other files were changed.
+
+- **Chart colors:** Added per-series `role` and `color` props and a role-to-token resolver in [LineChart.tsx](/home/steven/jos-ui-u1-wt/frontend/src/components/LineChart.tsx:17). With neither prop, `cls: 'base'` resolves to `--ink-3`; other existing series resolve to `--accent`, matching the current Compare and travel legends. Explicit roles map `epi → --epi`, `baseline → --base-line`, `intervention → --div-neg`, `travel → --accent`, and `neutral → --ink-2`. Color resolution no longer depends on series index.
+- **Theme consistency:** Updated all four dark-only rules in [base.css](/home/steven/jos-ui-u1-wt/frontend/src/styles/base.css:48) to use `@media not (prefers-color-scheme: light)` with `:root:not([data-theme="light"])`; explicit dark-theme selectors remain.
+- **Disclaimer accessibility:** In [AppShell.tsx](/home/steven/jos-ui-u1-wt/frontend/src/app/AppShell.tsx:64), the verbatim disclaimer is a plain-text sibling outside the “JOS home” link, positioned beneath the brand name.
+- **Token and target size:** Replaced the scrim’s literal color with `--scrim`, defined for both themes in [tokens.css](/home/steven/jos-ui-u1-wt/frontend/src/styles/tokens.css:47). The close button has a 44×44px hit target in [base.css](/home/steven/jos-ui-u1-wt/frontend/src/styles/base.css:205).
+
+**Verification:** `npm run typecheck` passed; `npm test` passed with 15 tests and 6 skipped; `npm run build` passed. The disclaimer grep found its source string. The requested hex/`rgba()` grep found no matches in components or `base.css`. `git diff --check` passed. Full command output is saved at [`/tmp/jos-ui-u1r2-evidence.log`](/tmp/jos-ui-u1r2-evidence.log).
+
+Diff stat: 4 files changed, 49 insertions, 18 deletions.

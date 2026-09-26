@@ -1,0 +1,6 @@
+**PASS — both open findings are fixed.** HEAD remains `3b687a2803e90017948cffd9663d43dbe88fcc17`; only the two permitted files changed.
+
+- **H1 — rendered marks drive legends:** [LineChart.tsx](/home/steven/jos-ui-integ-wt/frontend/src/components/LineChart.tsx:87) exposes the shared rendered-content calculation used by the chart and Compare. [CompareView.tsx](/home/steven/jos-ui-integ-wt/frontend/src/views/compare/CompareView.tsx:291) uses it for line, band, and shaded-area swatches. Bands require a drawn series; area swatches appear only for drawn polygons, so identical arms show neither.
+- **M2 — honest signed tooltip:** [CompareView.tsx](/home/steven/jos-ui-integ-wt/frontend/src/views/compare/CompareView.tsx:326) shows the signed count without rounding integers and calculates the rate using that parish’s population. Example: a difference of 1 in St Mary (population 1,753) reads `St Mary: +1 infection (intervention − baseline) · +0.57 per 1,000 (parish population)`. Missing counts are reported as unavailable; a missing population does not hide the count.
+
+**Gates:** typecheck passed; tests passed (15 passed, 6 skipped); build passed. Evidence and `git diff --stat`: [/tmp/jos-ui-integfix2-evidence.log](/tmp/jos-ui-integfix2-evidence.log). Diff: 2 files changed, 58 insertions(+), 18 deletions(-). No commit or push.
