@@ -1,5 +1,96 @@
 /* Drawer body + shortcuts-overlay extras. Base classes live in styles/. */
 
+.drawer {
+  width: 440px;
+  max-width: calc(100vw - 16px);
+  background: var(--panel);
+  border-left-color: var(--line);
+}
+.drawer .dhead {
+  z-index: 1;
+  min-height: 64px;
+  padding: 10px 20px 10px 24px;
+  background: var(--panel);
+}
+.drawer .dhead h1 {
+  color: var(--ink);
+}
+.drawer .body {
+  padding: 20px 24px 40px;
+  gap: 24px;
+}
+.drawer .body > .dnote:first-child {
+  border-radius: var(--radius);
+  border-color: var(--line-strong);
+  line-height: 1.6;
+}
+.drawer .dsec {
+  min-width: 0;
+}
+.drawer .dsec h2 {
+  color: var(--ink-3);
+  letter-spacing: 0.14em;
+  font-size: 11px;
+}
+.drawer .kv {
+  gap: 4px;
+}
+.drawer .kv .li {
+  min-height: 32px;
+  align-items: center;
+}
+.drawer .kv .li .v {
+  min-width: 0;
+}
+.drawer .prov-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  min-height: 44px;
+  align-items: center;
+}
+.drawer .prov-row > span:first-child {
+  min-width: 0;
+}
+.drawer .prov-row .badge {
+  white-space: nowrap;
+}
+.drawer .prov-copy {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+.drawer .verify-ok {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--good-soft);
+  border-radius: var(--radius);
+  background: var(--good-soft);
+}
+.drawer .dnote,
+.drawer .kv,
+.drawer .prov-row,
+.drawer .prov-jobline {
+  overflow-wrap: anywhere;
+}
+
+.ks {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-big);
+}
+.ks-head {
+  min-height: 44px;
+}
+.ks-row kbd {
+  display: inline-block;
+  min-width: 32px;
+  text-align: center;
+}
+.ks-foot {
+  line-height: 1.5;
+}
+
 /* Hash rows are buttons so they can be copied; they must still read as text. */
 .prov-copy {
   background: none;

@@ -1,12 +1,6 @@
-/**
- * Compare — two matched-seed arms of a `scenario_compare` job.
- *
- * Layout follows the M10 design (§6): delta cards → paired epicurve + route
- * shifts on the left, comparison map + intervention burden on the right, and
- * the permanent claim-boundary footnote.
- */
+/** Compare two matched-seed arms from a `scenario_compare` job. */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../../api';
 import type { JobStatusResponse } from '../../api/types';
@@ -14,10 +8,13 @@ import { Btn } from '../../components/Btn';
 import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { JerseyMap } from '../../components/JerseyMap';
-import { LineChart } from '../../components/LineChart';
-import { Seg } from '../../components/Seg';
+import {
+  getLineChartRenderedContent,
+  lineSeriesColor,
+  LineChart,
+} from '../../components/LineChart';
 import { useScenarioContextEffect } from '../../app/ScenarioContextProvider';
-import { divColor, seqColor, type ParishId } from '../../map/geometry';
+import { divColor, OSM_ATTRIBUTION, PARISHES, seqColor, type ParishId } from '../../map/geometry';
 import { setProvenanceJobId } from '../drawer/provenanceStore';
 import {
   fmt,
@@ -33,15 +30,36 @@ import {
 } from './compareData';
 import './compare.css';
 
-type MapMode = 'a' | 'b' | 'diff';
-
-const MAP_MODES: Array<{ value: MapMode; label: string }> = [
-  { value: 'a', label: 'Baseline' },
-  { value: 'b', label: 'Intervention' },
-  { value: 'diff', label: 'Difference' },
-];
-
+const COMPARE_FOOTNOTE = 'These are simulated differences under the declared model assumptions — matched-seed runs of a synthetic population using the declared intervention mechanics. They are not predictions of real policy effectiveness in Jersey.';
 const FOOTNOTE_LEAD = 'These are simulated differences under the declared model assumptions';
+
+type ChangeTone = 'negative' | 'positive' | 'neutral';
+
+function toneFor(value: number | null): ChangeTone {
+  if (value == null || value === 0) return 'neutral';
+  return value < 0 ? 'negative' : 'positive';
+}
+
+function ChangeCard({
+  label,
+  value,
+  tone,
+  detail,
+}: {
+  label: string;
+  value: string;
+  tone: ChangeTone;
+  detail: string;
+}) {
+  return (
+    <Card className="delta-card">
+      <div className="delta-rule" />
+      <div className="delta-label">{label}</div>
+      <div className={'delta-value ' + tone}>{value}</div>
+      <div className="delta-detail mono">{detail}</div>
+    </Card>
+  );
+}
 
 /* ============================ job resolution ============================ */
 
@@ -60,10 +78,10 @@ function useCompareJob(jobId: string | undefined) {
           const j = await api.getJob(jobId);
           if (cancelled) return;
           if (j.kind !== 'scenario_compare') {
-            setError(`Job ${jobId} is a ${j.kind}, not a comparison.`);
+            setError('Job ' + jobId + ' is a ' + j.kind + ', not a comparison.');
             setJob(null);
           } else if (j.state !== 'SUCCEEDED') {
-            setError(`Comparison ${jobId} has not finished (state ${j.state}).`);
+            setError('Comparison ' + jobId + ' has not finished (state ' + j.state + ').');
             setJob(null);
           } else {
             setJob(j);
@@ -102,7 +120,6 @@ export function CompareView() {
   const { job, error, loading } = useCompareJob(jobId);
   const [model, setModel] = useState<CompareModel | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [mapMode, setMapMode] = useState<MapMode>('diff');
 
   useEffect(() => {
     if (!job) {
@@ -111,6 +128,7 @@ export function CompareView() {
     }
     let cancelled = false;
     setDataError(null);
+    setModel(null);
     setProvenanceJobId(job.job_id);
     loadCompare(job)
       .then((m) => {
@@ -132,7 +150,7 @@ export function CompareView() {
       ? {
           name: model?.treatedName ?? 'Comparison',
           kind: 'scenario_compare',
-          kindDetail: model?.seeds.length ? `${model.seeds.length} matched seeds` : undefined,
+          kindDetail: model?.seeds.length ? model.seeds.length + ' matched seeds' : undefined,
           state: job.state,
           jobId: job.job_id,
         }
@@ -149,9 +167,7 @@ export function CompareView() {
     );
   }
 
-  if (!job) {
-    return <CompareEmpty reason={error} />;
-  }
+  if (!job) return <CompareEmpty reason={error} />;
 
   if (dataError) {
     return (
@@ -177,7 +193,7 @@ export function CompareView() {
     );
   }
 
-  return <CompareBody model={model} mapMode={mapMode} setMapMode={setMapMode} />;
+  return <CompareBody model={model} />;
 }
 
 /* ============================== empty state ============================== */
@@ -194,13 +210,9 @@ function CompareEmpty({ reason }: { reason: string | null }) {
               'Comparison is its own job kind: both arms are re-run against the same seeds so the ' +
                 'difference is attributable to the intervention, not to sampling noise.'}
           </p>
-          <p>
-            Build a scenario, add the measures you want to test, and submit it as a comparison run.
-          </p>
+          <p>Build a scenario, add the measures you want to test, and submit it as a comparison run.</p>
           <div className="cmp-empty-actions">
-            <Btn to="/simulate" variant="primary">
-              New scenario
-            </Btn>
+            <Btn to="/simulate" variant="primary">New scenario</Btn>
             <Btn to="/runs">Browse runs</Btn>
           </div>
         </Card>
@@ -211,16 +223,10 @@ function CompareEmpty({ reason }: { reason: string | null }) {
 
 /* ================================ body ================================ */
 
-function CompareBody({
-  model,
-  mapMode,
-  setMapMode,
-}: {
-  model: CompareModel;
-  mapMode: MapMode;
-  setMapMode: (m: MapMode) => void;
-}) {
-  const banded = Boolean(model.baseline.activeBand && model.treated.activeBand);
+function CompareBody({ model }: { model: CompareModel }) {
+  const [day, setDay] = useState(Math.max(0, model.days - 1));
+  const lastDay = Math.max(0, model.days - 1);
+  const selectedDay = Math.min(day, lastDay);
 
   const cumulative = model.comparisonMetrics.cumulative;
   const cumBase = cumulative.baseline;
@@ -244,281 +250,372 @@ function CompareBody({
   const chart = useMemo(
     () => [
       {
-        pts: model.baseline.active.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
+        label: 'Baseline',
+        pts: model.baseline.active.flatMap((value, index) =>
+          value == null ? [] : [[index, value] as [number, number]],
+        ),
+        role: 'baseline' as const,
         cls: 'base',
         band: model.baseline.activeBand
           ? {
-              low: model.baseline.activeBand.low.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
-              high: model.baseline.activeBand.high.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
+              low: model.baseline.activeBand.low.flatMap((value, index) =>
+                value == null ? [] : [[index, value] as [number, number]],
+              ),
+              high: model.baseline.activeBand.high.flatMap((value, index) =>
+                value == null ? [] : [[index, value] as [number, number]],
+              ),
             }
           : undefined,
       },
       {
-        pts: model.treated.active.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
+        label: 'Intervention',
+        pts: model.treated.active.flatMap((value, index) =>
+          value == null ? [] : [[index, value] as [number, number]],
+        ),
+        role: 'intervention' as const,
+        cls: 'treated',
         band: model.treated.activeBand
           ? {
-              low: model.treated.activeBand.low.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
-              high: model.treated.activeBand.high.flatMap((v, d) => v == null ? [] : [[d, v] as [number, number]]),
+              low: model.treated.activeBand.low.flatMap((value, index) =>
+                value == null ? [] : [[index, value] as [number, number]],
+              ),
+              high: model.treated.activeBand.high.flatMap((value, index) =>
+                value == null ? [] : [[index, value] as [number, number]],
+              ),
             }
           : undefined,
       },
     ],
-    [model, banded],
+    [model],
   );
+  const chartContent = getLineChartRenderedContent(chart, true);
 
-  const topRoutes = model.routes.slice(0, 6);
-  const routeMax = Math.max(...topRoutes.flatMap((r) => [r.base, r.treated]), 1);
-
+  const routes = model.routes.slice(0, 6);
+  const maxShift = Math.max(...routes.map((route) => Math.abs(route.treated - route.base)), 1);
   const parishById = useMemo(
-    () => new Map(model.parishes.map((p) => [p.id, p])),
+    () => new Map(model.parishes.map((parish) => [parish.id, parish])),
     [model.parishes],
   );
-  const parishCeiling = Math.max(...model.parishes.map((p) => p.base), 1) * 1.05;
+  const parishCeiling = Math.max(...model.parishes.flatMap((parish) => [parish.base, parish.treated]), 1);
+  const seedText = model.seeds.length
+    ? 'matched seeds ×' + model.seeds.length
+    : 'matched-seed comparison';
+  const populationText = model.population == null
+    ? 'population not published'
+    : fmt(model.population) + ' residents';
+  const chartKey = model.job.job_id + ':' + model.days + ':' + model.latestDate + ':' + JSON.stringify([
+    model.baseline.active,
+    model.treated.active,
+  ]);
 
-  const colorFor = (id: ParishId): string => {
-    const p = parishById.get(id);
-    if (!p) return 'var(--panel-2)';
-    if (mapMode === 'a') return seqColor(Math.min(0.999, p.base / parishCeiling));
-    if (mapMode === 'b') return seqColor(Math.min(0.999, p.treated / parishCeiling));
-    if (!p.base) return 'var(--panel-2)';
-    const rel = (p.treated - p.base) / p.base;
-    return divColor(Math.min(0.999, Math.max(0, (rel + 0.3) / 0.6)));
+  const armColor = (arm: 'base' | 'treated', id: ParishId): string => {
+    const parish = parishById.get(id);
+    if (!parish) return 'var(--panel-2)';
+    return seqColor(Math.min(0.999, parish[arm] / parishCeiling));
+  };
+  const differenceColor = (id: ParishId): string => {
+    const parish = parishById.get(id);
+    if (!parish) return 'var(--panel-2)';
+    if (parish.base === 0) return divColor(parish.treated === 0 ? 0.5 : 1);
+    const relative = (parish.treated - parish.base) / parish.base;
+    return divColor((Math.min(0.3, Math.max(-0.3, relative)) + 0.3) / 0.6);
   };
 
-  const mapTitle =
-    mapMode === 'diff'
-      ? 'Difference in cumulative infections by parish'
-      : mapMode === 'a'
-        ? 'Baseline — cumulative infections by parish'
-        : 'Intervention — cumulative infections by parish';
+  const parishDifference = (parish: CompareModel['parishes'][number]): string =>
+    signed(parish.treated - parish.base);
+  const parishDifferenceTooltip = (id: ParishId): string => {
+    const name = PARISHES.find((parish) => parish.id === id)?.name ?? id;
+    const parish = parishById.get(id);
+    if (!parish || !Number.isFinite(parish.base) || !Number.isFinite(parish.treated)) {
+      return `${name}: infection count difference unavailable (intervention − baseline)`;
+    }
+    const difference = parish.treated - parish.base;
+    const magnitude = Number.isInteger(difference)
+      ? Math.abs(difference).toLocaleString('en-GB')
+      : Math.abs(difference).toLocaleString('en-GB', { maximumSignificantDigits: 21 });
+    const count = `${difference < 0 ? '−' : '+'}${magnitude}`;
+    const countText = `${name}: ${count} ${Math.abs(difference) === 1 ? 'infection' : 'infections'} (intervention − baseline)`;
+    const population = PARISHES.find((candidate) => candidate.id === id)?.pop;
+    if (population == null || population <= 0) return countText;
+
+    const perThousand = (difference * 1000) / population;
+    const rateMagnitude = difference === 0
+      ? '0'
+      : Math.abs(perThousand).toLocaleString('en-GB', { maximumSignificantDigits: 2 });
+    const rate = `${perThousand < 0 ? '−' : '+'}${rateMagnitude}`;
+    return `${countText} · ${rate} per 1,000 (parish population)`;
+  };
 
   return (
     <section className="view view-compare">
       <div className="wrap">
-        <div className="cmp-head">
-          <h1>Compare scenarios</h1>
-          <div className="cmp-vs">
-            <span className="pill">{model.baselineName}</span>
-            <span style={{ color: 'var(--ink-3)' }}>vs</span>
-            <span className="pill b">{model.treatedName}</span>
-            <Chip className="kind">
-              {model.seeds.length
-                ? `Matched seeds ×${model.seeds.length}`
-                : 'Matched-seed comparison'}
-            </Chip>
+        <header className="cmp-header">
+          <div className="cmp-eyebrow">Scenario comparison · {seedText} · {populationText}</div>
+          <div className="cmp-header-main">
+            <div className="cmp-title-group">
+              <h1>What changes with {model.treatedName}?</h1>
+              <div className="cmp-arm-pills" aria-label="Compared scenarios">
+                <span className="cmp-arm-pill baseline" title={'Baseline: ' + model.baselineName}>
+                  <span>Baseline</span>{model.baselineName}
+                </span>
+                <span className="cmp-arm-pill intervention" title={'Intervention: ' + model.treatedName}>
+                  <span>Intervention</span>{model.treatedName}
+                </span>
+              </div>
+            </div>
+            <div className="cmp-header-actions">
+              <Chip className="kind">{model.seeds.length ? 'Matched seeds ×' + model.seeds.length : 'Matched-seed comparison'}</Chip>
+              <span className="cmp-date-note">Latest comparison date: {formatDate(model.latestDate)}</span>
+              <Btn to="/runs">Change runs</Btn>
+            </div>
           </div>
-          <span className="cmp-date-note">Latest comparison date: {formatDate(model.latestDate)}</span>
-          <span style={{ flex: 1 }} />
-          <Btn to="/runs">Change runs</Btn>
-        </div>
+        </header>
 
         <div className="deltas">
-          <Card className="delta-card">
-            <div className="k">Cumulative infections</div>
-              <div className={`v ${cumDelta != null && cumDelta < 0 ? 'down' : 'up'}`}>
-              {cumDelta == null ? '—' : signed(cumDelta)} <span className="pct">{cumPct == null ? 'not available' : signedPct(cumPct)}</span>
-            </div>
-            <div className="s">
-              {cumBase == null || cumTreated == null
-                ? `Cumulative values are unavailable at the same persisted date. ${metricDateLabel(cumulative)}`
-                : `${fmt(cumBase)} → ${fmt(cumTreated)} · ${metricDateLabel(cumulative)}`}
-            </div>
-          </Card>
-
-          <Card className="delta-card">
-            <div className="k">Peak infectious</div>
-            <div className={`v ${peakDelta != null && peakDelta < 0 ? 'down' : 'up'}`}>
-              {peakPct == null ? '—' : signedPct(peakPct, 0)} <span className="pct">{peakDelta == null ? 'not available' : signed(peakDelta)}</span>
-            </div>
-            <div className="s">
-              {peakBase == null || peakTreat == null ? 'Active infectious state is not published by both arms.' : `${fmt(peakBase)} → ${fmt(peakTreat)} residents`}
-            </div>
-          </Card>
-
-          <Card className="delta-card">
-            <div className="k">Peak date</div>
-            <div className="v">
-              {peakShift == null
-                ? '—'
-                : peakShift === 0
+          <ChangeCard
+            label="Cumulative infections"
+            value={cumDelta == null ? '—' : cumDelta === 0 ? '0' : signed(cumDelta)}
+            tone={toneFor(cumDelta)}
+            detail={cumBase == null || cumTreated == null
+              ? 'Unavailable · ' + metricDateLabel(cumulative)
+              : fmt(cumBase) + ' → ' + fmt(cumTreated) + ' · ' + (cumPct == null ? 'percent unavailable' : signedPct(cumPct))}
+          />
+          <ChangeCard
+            label="Peak active infectious"
+            value={peakDelta == null ? '—' : peakDelta === 0 ? '0' : signed(peakDelta)}
+            tone={toneFor(peakDelta)}
+            detail={peakBase == null || peakTreat == null
+              ? 'Active infectious state is not published by both arms.'
+              : fmt(peakBase) + ' → ' + fmt(peakTreat) + ' residents' + (peakPct == null ? '' : ' · ' + signedPct(peakPct, 0))}
+          />
+          <ChangeCard
+            label="Peak date shift"
+            value={peakShift == null
+              ? '—'
+              : peakShift === 0
                 ? 'unchanged'
-                : `${peakShift > 0 ? '+' : '−'}${Math.abs(peakShift)} day${
-                    Math.abs(peakShift) === 1 ? '' : 's'
-                  }`}
-            </div>
-            <div className="s">
-              {peakShift == null ? 'Peak date is not available for both arms.' : `${formatDay(model.startDate, peakBaseIdx)} → ${formatDay(model.startDate, peakTreatIdx)}`}
-            </div>
-          </Card>
-
-          <Card className="delta-card">
-            <div className="k">Ever infected</div>
-            <div className={`v ${arDelta != null && arDelta < 0 ? 'down' : 'up'}`}>
-              {arDelta == null ? '—' : `${arDelta < 0 ? '−' : '+'}${Math.abs(arDelta).toFixed(1)} pts`}
-            </div>
-            <div className="s">
-              {arBase == null || arTreated == null
-                ? `Ever-infected fraction is unavailable at the same persisted date. ${metricDateLabel(attack)}`
-                : `${arBase.toFixed(1)}% → ${arTreated.toFixed(1)}% of residents · ${metricDateLabel(attack)}`}
-            </div>
-          </Card>
+                : (peakShift < 0 ? '−' : '+') + Math.abs(peakShift) + ' day' + (Math.abs(peakShift) === 1 ? '' : 's')}
+            tone={toneFor(peakShift)}
+            detail={peakShift == null
+              ? 'Peak date is not available for both arms.'
+              : 'Baseline ' + formatDay(model.startDate, peakBaseIdx) + ' · intervention ' + formatDay(model.startDate, peakTreatIdx)}
+          />
+          <ChangeCard
+            label="Ever infected"
+            value={arDelta == null
+              ? '—'
+              : arDelta === 0
+                ? '0.0 pp'
+                : (arDelta < 0 ? '−' : '+') + Math.abs(arDelta).toFixed(1) + ' pp'}
+            tone={toneFor(arDelta)}
+            detail={arBase == null || arTreated == null
+              ? 'Unavailable · ' + metricDateLabel(attack)
+              : arBase.toFixed(1) + '% → ' + arTreated.toFixed(1) + '% · ' + metricDateLabel(attack)}
+          />
         </div>
 
         <div className="cmp-grid">
-          <div>
-            <Card style={{ padding: '16px 18px' }}>
-              <div className="chart-head">
-                <h3>Active infectious — both scenarios</h3>
-                <span className="legend">
-                  <span>
-                    <span className="sw" style={{ background: 'var(--ink-3)' }} />
-                    Baseline
-                  </span>
-                  <span>
-                    <span className="sw" style={{ background: 'var(--accent)' }} />
-                    Intervention
-                  </span>
-                  {banded && (
-                    <span>
-                      <span className="swb" style={{ background: 'var(--band)' }} />
-                      Replicate range
-                    </span>
-                  )}
-                </span>
+          <div className="cmp-left-column">
+            <Card className="cmp-chart-panel">
+              <div className="cmp-panel-head">
+                <div>
+                  <div className="cmp-section-kicker">Tide gauge</div>
+                  <h2>Active infectious over time</h2>
+                </div>
+                <div className="cmp-chart-legend" aria-label="Chart legend">
+                  {chartContent.series.map((item) => (
+                    <span key={item.label}><i className={`cmp-line-swatch ${item.role}`} style={{ background: lineSeriesColor(item) }} />{item.label}</span>
+                  ))}
+                </div>
               </div>
-              <LineChart series={chart} days={model.days} height={220} width={660} />
+              <div className="cmp-area-legend">
+                {chartContent.comparisonAreas.some((area) => !area.positive) && (
+                  <span><i className="cmp-area-swatch fewer" />infections averted (simulated)</span>
+                )}
+                {chartContent.comparisonAreas.some((area) => area.positive) && (
+                  <span><i className="cmp-area-swatch more" />added (simulated)</span>
+                )}
+                {chartContent.bands.length > 0 && (
+                  <span><i className="cmp-band-swatch" />Replicate range</span>
+                )}
+              </div>
+              <div className="cmp-day-control">
+                <label htmlFor="cmp-day-slider">
+                  <span className="cmp-selected-day">Day {selectedDay}</span>
+                  <span>{formatDay(model.startDate, selectedDay)}</span>
+                </label>
+                <input
+                  id="cmp-day-slider"
+                  type="range"
+                  min={0}
+                  max={lastDay}
+                  value={selectedDay}
+                  aria-label="Comparison day"
+                  onChange={(event) => setDay(Number(event.target.value))}
+                />
+                <div className="cmp-date-range mono">
+                  <span>{formatDate(model.startDate)}</span>
+                  <span>{formatDate(model.latestDate)}</span>
+                </div>
+              </div>
+              <LineChart
+                key={chartKey}
+                series={chart}
+                marker={selectedDay}
+                days={model.days}
+                height={188}
+                width={560}
+                comparisonAreas
+                formatDay={(index) => formatDay(model.startDate, index)}
+                className="cmp-tide-chart"
+              />
             </Card>
 
-            <Card style={{ padding: '16px 18px', marginTop: 16 }}>
-              <div className="chart-head">
-                <h3>Route shifts — cumulative infections by route</h3>
-                <span className="chart-note">
-                  Absolute change; shares can rise while counts fall
-                </span>
+            <Card className="cmp-route-panel">
+              <div className="cmp-panel-head cmp-route-head">
+                <div>
+                  <div className="cmp-section-kicker">Transmission routes</div>
+                  <h2>Route shifts</h2>
+                </div>
+                <span className="cmp-panel-note">Intervention − baseline infections</span>
               </div>
-              {topRoutes.length === 0 ? (
+              {routes.length === 0 ? (
                 <div className="cmp-note">This job serves no per-route table.</div>
               ) : (
-                <div className="drv">
-                  {topRoutes.map((r) => {
-                    const d = r.treated - r.base;
-                    const pct = r.base ? (100 * d) / r.base : null;
+                <div className="cmp-routes">
+                  {routes.map((route) => {
+                    const change = route.treated - route.base;
+                    const width = (50 * Math.abs(change)) / maxShift;
+                    const tone = toneFor(change);
                     return (
-                      <div className="drv-row cmp-route-row" key={r.routeId}>
-                        <span className="nm" title={r.name}>
-                          {r.name}
-                          <small className="mono sci-only" style={{ color: 'var(--ink-3)', fontSize: 10 }}>
-                            {' '}
-                            {r.routeId}
-                          </small>
+                      <div className="cmp-route-row" key={route.routeId}>
+                        <span className="cmp-route-name" title={route.name}>{route.name}
+                          <small className="mono sci-only">{route.routeId}</small>
                         </span>
-                        <span
-                          className="bar"
-                          style={{ height: 12 }}
-                          title={`Baseline ${fmt(r.base)} · intervention ${fmt(r.treated)}`}
-                        >
-                          {/* Longest bar first, so the shorter arm stays visible. */}
-                          {[
-                            {
-                              key: 'base',
-                              value: r.base,
-                              style: { background: 'var(--ink-3)', opacity: 0.35 },
-                            },
-                            {
-                              key: 'treated',
-                              value: r.treated,
-                              style: { background: 'var(--accent)' },
-                            },
-                          ]
-                            .sort((a, b) => b.value - a.value)
-                            .map((bar) => (
-                              <i
-                                key={bar.key}
-                                style={{
-                                  width: `${(100 * bar.value) / routeMax}%`,
-                                  ...bar.style,
-                                }}
-                              />
-                            ))}
+                        <span className="cmp-div-track" title={'Baseline ' + fmt(route.base) + ' · intervention ' + fmt(route.treated)}>
+                          <i className="cmp-div-center" />
+                          {change < 0 && <i className="cmp-div-bar negative" style={{ right: '50%', width: width + '%' }} />}
+                          {change > 0 && <i className="cmp-div-bar positive" style={{ left: '50%', width: width + '%' }} />}
                         </span>
-                        <span className={`val ${d < 0 ? 'down' : 'up'}`}>
-                          {signed(d)} <small>({pct == null ? 'not available' : `${pct.toFixed(0)}%`})</small>
+                        <span className={'cmp-route-value ' + tone}>
+                          {change === 0 ? '0' : signed(change)}
                         </span>
                       </div>
                     );
                   })}
                 </div>
               )}
+              <p className="cmp-route-note">Absolute change; route shares can rise while counts fall.</p>
             </Card>
           </div>
 
-          <div>
-            <div className="cmp-map-card mapground">
-              <div className="cmp-map-head">
-                <span style={{ fontWeight: 650, fontSize: 13 }}>{mapTitle}</span>
-                  {model.parishes.length > 0 && (
-                    <Seg
-                      options={MAP_MODES}
-                      value={mapMode}
-                      onChange={setMapMode}
-                      label="Map mode"
-                      title="Which arm the choropleth shows"
-                    />
-                  )}
-              </div>
-              {model.parishes.length === 0 ? (
-                <div className="cmp-note">This job serves no per-parish table.</div>
-              ) : (
+          <div className="cmp-right-column">
+            <div className="cmp-map-grid">
+              <MapPanel title="Baseline" subtitle="Cumulative infections by parish">
                 <JerseyMap
-                  colorFor={colorFor}
-                  ariaLabel={mapTitle}
-                  scalebar
+                  colorFor={(id) => armColor('base', id)}
+                  ariaLabel="Baseline cumulative infections by parish"
+                  scalebar={false}
                 />
-              )}
-              <div
-                className="map-legend"
-                style={{ visibility: mapMode === 'diff' ? 'visible' : 'hidden' }}
-              >
-                <span>Fewer under intervention</span>
-                <span className="bins">
-                  {['--div-neg', '--div-neg-soft', '--div-mid', '--div-pos-soft', '--div-pos'].map(
-                    (v) => (
-                      <span className="bin" key={v} style={{ background: `var(${v})` }} />
-                    ),
-                  )}
-                </span>
-                <span>More</span>
-              </div>
+              </MapPanel>
+              <MapPanel title="Intervention" subtitle="Cumulative infections by parish">
+                <JerseyMap
+                  colorFor={(id) => armColor('treated', id)}
+                  ariaLabel="Intervention cumulative infections by parish"
+                  scalebar={false}
+                />
+              </MapPanel>
+              <MapPanel title="Difference" subtitle="Intervention − baseline">
+                <JerseyMap
+                  colorFor={differenceColor}
+                  tooltipFor={parishDifferenceTooltip}
+                  ariaLabel="Difference map: fewer, same, or more cumulative infections under intervention"
+                  scalebar={false}
+                />
+              </MapPanel>
+              <Card className="cmp-map-explanation">
+                <div className="cmp-section-kicker">Difference scale</div>
+                {model.parishes.length > 0 ? (
+                  <>
+                    <div className="cmp-sequential-label">Cumulative infections · episodes</div>
+                    <div className="cmp-sequential-legend" aria-label="Fewer to more cumulative infections">
+                      <span>Fewer</span>
+                      <span className="cmp-sequential-bins">
+                        {['--seq0', '--seq1', '--seq2', '--seq3', '--seq4', '--seq5'].map((token) => (
+                          <i key={token} style={{ background: 'var(' + token + ')' }} />
+                        ))}
+                      </span>
+                      <span>More</span>
+                    </div>
+                    <div className="cmp-scale-divider" />
+                    <div className="cmp-difference-legend" aria-label="Fewer, same, more diverging scale">
+                      <span>Fewer</span>
+                      <span className="cmp-difference-bins">
+                        {['--div-neg', '--div-neg-soft', '--div-mid', '--div-pos-soft', '--div-pos'].map((token) => (
+                          <i key={token} style={{ background: 'var(' + token + ')' }} />
+                        ))}
+                      </span>
+                      <span>More</span>
+                    </div>
+                    <div className="cmp-same-label">Same</div>
+                    <p>Relative change in cumulative infections, capped at ±30%. Blue means fewer under intervention; orange means more.</p>
+                    <div className="cmp-parish-differences" aria-label="Signed cumulative infection differences by parish">
+                      {model.parishes.map((parish) => (
+                        <span key={parish.id} title={parish.name + ': ' + parishDifference(parish) + ' infections under intervention'}>
+                          {parish.name} <b className={toneFor(parish.treated - parish.base)}>{parishDifference(parish)}</b>
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="cmp-no-parish-values">This job serves no per-parish table; infection differences are unavailable.</p>
+                )}
+                <div className="cmp-map-attribution">{OSM_ATTRIBUTION}</div>
+              </Card>
             </div>
 
-            <Card style={{ padding: '16px 18px', marginTop: 16 }}>
-              <h3 style={{ fontSize: 13.5, fontWeight: 650 }}>Intervention burden</h3>
+            <Card className="cmp-burden sci-only">
+              <div className="cmp-section-kicker">Scientific mode</div>
+              <h2>Intervention burden</h2>
               <div className="burden">
-                {model.burden.map((b) => (
-                  <div className="li" key={b.label}>
-                    <span className="k">{b.label}</span>
-                    <span
-                      className="v"
-                      style={b.placeholder ? { color: 'var(--ink-3)', fontWeight: 500 } : undefined}
-                    >
-                      {b.value}
+                {model.burden.map((item) => (
+                  <div className="li" key={item.label}>
+                    <span className="k">{item.label}</span>
+                    <span className="v" style={item.placeholder ? { color: 'var(--ink-3)', fontWeight: 500 } : undefined}>
+                      {item.value}
                     </span>
                   </div>
                 ))}
               </div>
-              <p className="cmp-note" style={{ marginTop: 12 }}>
-                Burden is reported separately from health outcomes. Agent-days, setting-days and
-                doses need an intervention-burden dataset, which this job does not publish.
-              </p>
+              <p className="cmp-note">Burden is reported separately from health outcomes. Agent-days, setting-days and doses need an intervention-burden dataset, which this job does not publish.</p>
             </Card>
           </div>
         </div>
 
         <p className="cmp-footnote">
-          <b>{FOOTNOTE_LEAD}</b> — matched-seed runs of a synthetic population using the declared
-          intervention mechanics. They are not predictions of real policy effectiveness in Jersey.
-      </p>
+          <b>{FOOTNOTE_LEAD}</b>{COMPARE_FOOTNOTE.slice(FOOTNOTE_LEAD.length)}
+        </p>
       </div>
     </section>
+  );
+}
+
+function MapPanel({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="cmp-map-card mapground">
+      <div className="cmp-map-head">
+        <h2>{title}</h2>
+        <span>{subtitle}</span>
+      </div>
+      {children}
+    </Card>
   );
 }

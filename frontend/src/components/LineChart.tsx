@@ -1,8 +1,27 @@
+import { useId } from 'react';
+
 /** [dayIndex, value] */
 export type Point = [number, number];
 
+export type SeriesRole = 'epi' | 'baseline' | 'intervention' | 'travel' | 'neutral';
+
+export interface HatchWindow {
+  /** First active day, inclusive. */
+  startDay: number;
+  /** Last active day, inclusive. */
+  endDay: number;
+  /** Intervention family color, normally a `var(--iv-*)` token. */
+  color?: string;
+}
+
 export interface Series {
   pts: Point[];
+  /** Plain-language legend label for this rendered series. */
+  label: string;
+  /** Semantic line colour role. */
+  role: SeriesRole;
+  /** Explicit line colour, normally a CSS custom property such as `var(--epi)`. */
+  color?: string;
   /** Draw an artifact-published band behind the line. */
   band?: { low: Point[]; high: Point[] };
   /** Extra class on the polyline, e.g. `"base"` for the dashed baseline. */
@@ -11,6 +30,8 @@ export interface Series {
 
 export interface LineChartProps {
   series: Series[];
+  /** Shade intervention-minus-baseline areas in comparison charts. */
+  comparisonAreas?: boolean;
   /** Day index of the vertical "current day" marker. */
   marker?: number | null;
   /** Number of day slots on the x axis (default 60). */
@@ -26,10 +47,57 @@ export interface LineChartProps {
   formatDay?: (day: number) => string;
   /** Format a y value (default: en-GB thousands). */
   formatValue?: (value: number) => string;
+  /** Optional intervention windows drawn behind the data. */
+  hatchWindows?: HatchWindow[];
   className?: string;
 }
 
+export interface LineChartRenderedContent {
+  /** Series with enough points to draw a line. */
+  series: Series[];
+  /** Drawn series whose replicate band also has enough points to draw. */
+  bands: Series[];
+  /** Difference polygons that the chart draws when comparisonAreas is enabled. */
+  comparisonAreas: ComparisonAreaPolygon[];
+}
+
 const defaultFormatValue = (n: number): string => Math.round(n).toLocaleString('en-GB');
+
+const ROLE_COLORS: Record<SeriesRole, string> = {
+  epi: 'var(--epi)',
+  baseline: 'var(--base-line)',
+  intervention: 'var(--div-neg)',
+  travel: 'var(--ink-2)',
+  neutral: 'var(--ink-2)',
+};
+
+export function lineSeriesColor(series: Series): string {
+  if (series.color) return series.color;
+  return ROLE_COLORS[series.role];
+}
+
+export function isLineSeriesRendered(series: Series): boolean {
+  return series.pts.length > 1;
+}
+
+export function isLineSeriesBandRendered(series: Series): boolean {
+  return Boolean(series.band && series.band.low.length > 1 && series.band.high.length > 1);
+}
+
+/** Shared by the chart and its views so legends reflect the marks that are drawn. */
+export function getLineChartRenderedContent(
+  series: Series[],
+  comparisonAreas = false,
+  x: (day: number) => number = (day) => day,
+  y: (value: number) => number = (value) => value,
+): LineChartRenderedContent {
+  const renderedSeries = series.filter(isLineSeriesRendered);
+  return {
+    series: renderedSeries,
+    bands: renderedSeries.filter(isLineSeriesBandRendered),
+    comparisonAreas: comparisonAreas ? buildComparisonAreaPolygons(renderedSeries, x, y) : [],
+  };
+}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -46,6 +114,7 @@ function defaultFormatDay(d: number): string {
  */
 export function LineChart({
   series,
+  comparisonAreas = false,
   marker = null,
   days = 60,
   height = 210,
@@ -54,8 +123,10 @@ export function LineChart({
   pct = false,
   formatDay = defaultFormatDay,
   formatValue = defaultFormatValue,
+  hatchWindows = [],
   className,
 }: LineChartProps) {
+  const patternId = `chart-hatch-${useId().replace(/:/g, '')}`;
   const W = width;
   const H = height;
   const padL = 52;
@@ -63,7 +134,9 @@ export function LineChart({
   const padT = 12;
   const padB = 26;
 
-  const allValues = series.flatMap((s) => s.pts.map((p) => p[1]));
+  const lineContent = getLineChartRenderedContent(series);
+  const renderedSeries = lineContent.series;
+  const allValues = renderedSeries.flatMap((s) => s.pts.map((p) => p[1]));
   const yMax =
     (max ?? (allValues.length ? Math.max(...allValues) * 1.08 : 1)) || 1;
 
@@ -71,6 +144,10 @@ export function LineChart({
   const Y = (v: number): number => padT + (H - padT - padB) * (1 - v / yMax);
 
   const gridValues = [0, 1, 2, 3].map((i) => (yMax * i) / 3);
+
+  const renderedContent = getLineChartRenderedContent(series, comparisonAreas, X, Y);
+  const renderedBands = new Set(renderedContent.bands);
+  const comparisonAreaPolygons = renderedContent.comparisonAreas;
 
   return (
     <svg
@@ -97,9 +174,43 @@ export function LineChart({
         </g>
       ))}
 
-      {series.map((sr, i) => (
-        <g key={`series-${i}`}>
-          {sr.band && sr.band.low.length > 0 && sr.band.high.length > 0 && (
+      {hatchWindows.length > 0 && (
+        <defs>
+          <pattern id={patternId} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <path d="M 0 0 V 8" stroke="var(--hatch)" strokeWidth="2" />
+          </pattern>
+        </defs>
+      )}
+
+      {hatchWindows.map((window, i) => {
+        const start = Math.max(0, Math.min(days - 1, window.startDay));
+        const end = Math.max(0, Math.min(days - 1, window.endDay));
+        if (end < start) return null;
+        const slotWidth = (W - padL - padR) / Math.max(1, days - 1);
+        const x = Math.max(padL, X(start) - slotWidth / 2);
+        const right = Math.min(W - padR, X(end) + slotWidth / 2);
+        const width = right - x;
+        return (
+          <g key={`hatch-${i}`}>
+            <rect x={x} y={padT} width={width} height={H - padT - padB} fill={`url(#${patternId})`} opacity={0.7} />
+            <rect x={x} y={padT} width={width} height={3} fill={window.color ?? 'var(--ink-2)'} />
+          </g>
+        );
+      })}
+
+      {comparisonAreaPolygons.map((area, index) => (
+        <polygon
+          key={`comparison-area-${index}`}
+          className="chart-area"
+          points={area.points}
+          fill={area.positive ? 'var(--div-pos)' : 'var(--div-neg)'}
+          fillOpacity={0.14}
+        />
+      ))}
+
+      {renderedSeries.map((sr, i) => (
+        <g className="line-series" key={`series-${i}`}>
+          {renderedBands.has(sr) && sr.band && (
             <polygon
               className="bandfill"
               points={
@@ -113,7 +224,9 @@ export function LineChart({
             />
           )}
           <polyline
-            className={`curve${sr.cls ? ` ${sr.cls}` : ''}`}
+            className={`curve curve-draw${sr.cls ? ` ${sr.cls}` : ''}${i === 1 ? ' treated arm-secondary' : ''}`}
+            style={{ stroke: lineSeriesColor(sr) }}
+            pathLength={1}
             points={sr.pts.map(([d, v]) => `${X(d)},${Y(v)}`).join(' ')}
           />
         </g>
@@ -122,21 +235,29 @@ export function LineChart({
       {marker != null && (
         <g>
           <line
+            className="day-cursor-line"
             x1={X(marker)}
             x2={X(marker)}
             y1={padT}
             y2={H - padB}
-            stroke="var(--ink)"
-            strokeWidth={1.5}
-            opacity={0.5}
+            stroke="var(--seq5)"
+            strokeWidth={1}
+            opacity={0.9}
           />
+          {(() => {
+            const median = renderedSeries.find((item) => item.cls !== 'base') ?? renderedSeries[0];
+            const value = median?.pts.find(([day]) => day === marker)?.[1];
+            return value == null ? null : (
+              <circle className="day-cursor-dot" cx={X(marker)} cy={Y(value)} r={5} fill="var(--seq5)" />
+            );
+          })()}
           <g className="axis">
             <text
               x={X(marker)}
               y={padT + 2}
               dy={-2}
               textAnchor="middle"
-              style={{ fontWeight: 600, fill: 'var(--ink)' }}
+              style={{ fontWeight: 600, fill: 'var(--seq5)' }}
             >
               Day {marker}
             </text>
@@ -145,4 +266,64 @@ export function LineChart({
       )}
     </svg>
   );
+}
+
+export interface ComparisonAreaPolygon {
+  points: string;
+  positive: boolean;
+}
+
+function buildComparisonAreaPolygons(
+  series: Series[],
+  x: (day: number) => number,
+  y: (value: number) => number,
+): ComparisonAreaPolygon[] {
+  const baseline = series.find((item) => item.role === 'baseline');
+  const intervention = series.find((item) => item.role === 'intervention');
+  if (!baseline || !intervention) return [];
+
+  const baselineByDay = new Map(baseline.pts);
+  const interventionByDay = new Map(intervention.pts);
+  const days = [...baselineByDay.keys()]
+    .filter((day) => interventionByDay.has(day))
+    .sort((a, b) => a - b);
+  const polygons: ComparisonAreaPolygon[] = [];
+
+  for (let index = 0; index < days.length - 1; index += 1) {
+    const day0 = days[index];
+    const day1 = days[index + 1];
+    // Do not shade across unpublished days.
+    if (day1 !== day0 + 1) continue;
+    const base0 = baselineByDay.get(day0);
+    const base1 = baselineByDay.get(day1);
+    const treated0 = interventionByDay.get(day0);
+    const treated1 = interventionByDay.get(day1);
+    if (base0 == null || base1 == null || treated0 == null || treated1 == null) continue;
+
+    const difference0 = treated0 - base0;
+    const difference1 = treated1 - base1;
+    const crossing = difference0 * difference1 < 0
+      ? difference0 / (difference0 - difference1)
+      : null;
+    const stops = crossing == null ? [0, 1] : [0, crossing, 1];
+
+    for (let piece = 0; piece < stops.length - 1; piece += 1) {
+      const start = stops[piece];
+      const end = stops[piece + 1];
+      const middle = (start + end) / 2;
+      const middleDifference = difference0 + (difference1 - difference0) * middle;
+      if (middleDifference === 0) continue;
+
+      const interpolate = (from: number, to: number, t: number) => from + (to - from) * t;
+      const points = [
+        `${x(interpolate(day0, day1, start))},${y(interpolate(base0, base1, start))}`,
+        `${x(interpolate(day0, day1, end))},${y(interpolate(base0, base1, end))}`,
+        `${x(interpolate(day0, day1, end))},${y(interpolate(treated0, treated1, end))}`,
+        `${x(interpolate(day0, day1, start))},${y(interpolate(treated0, treated1, start))}`,
+      ].join(' ');
+      polygons.push({ points, positive: middleDifference > 0 });
+    }
+  }
+
+  return polygons;
 }

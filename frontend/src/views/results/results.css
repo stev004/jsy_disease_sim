@@ -1,5 +1,5 @@
-/* Results workspace — styles the shared sheets do not carry.
-   Scoped to `.view-results`; owned by the results view folder. */
+/* Results-specific Harbour layout. Shared surfaces, controls and type tokens
+   remain owned by the design-system stylesheets. */
 
 .view-results .rs-status {
   display: grid;
@@ -25,31 +25,536 @@
   margin-top: 6px;
 }
 
-/* The play button reads as active while the timeline is running. */
-.view-results .tbtn[aria-pressed='true'] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent-ink);
+.view-results .rs-page {
+  display: grid;
+  gap: 16px;
+  padding: 22px 28px 40px;
+  grid-template-columns: minmax(0, 1fr); /* single column: head, main layout, tabs stack vertically */
 }
-.view-results .tbtn[aria-pressed='true'] svg {
-  fill: var(--accent-ink);
+.view-results .rs-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+}
+.view-results .rs-headline-block {
+  min-width: 260px;
+}
+.view-results .rs-eyebrow {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+.view-results .rs-day-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 3px;
+  font: 600 44px/1.1 Newsreader, Georgia, serif;
+  letter-spacing: -.025em;
+}
+.view-results .rs-day-number {
+  color: var(--epi);
+  font: 500 40px/1.1 "IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+.view-results .rs-head-date {
+  color: var(--ink-3);
+  font: 12px "IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+.view-results .rs-metric-pills {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.view-results .rs-metric-pill {
+  min-height: 44px;
+  padding: 8px 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.view-results .rs-metric-pill:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+.view-results .rs-metric-pill[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
-/* Intervention strip labels sit above their bar without stealing clicks. */
-.view-results .iv-strip .ib {
-  pointer-events: auto;
+.view-results .rs-main-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 16px;
+  align-items: stretch;
 }
-.view-results .iv-strip .ib.dashed {
+.view-results .rs-main-column {
+  display: grid;
+  grid-template-rows: minmax(470px, 1fr) auto;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+}
+.view-results .rs-map-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 470px;
+  padding: 14px 16px 10px;
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+.view-results .rs-map-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.view-results .rs-map-head h2 {
+  font-size: 16px;
+  font-weight: 650;
+}
+.view-results .rs-map-head p {
+  color: var(--ink-3);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.view-results .rs-play-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ink-2);
+  background: var(--panel);
+  font-size: 11px;
+  font-weight: 600;
+}
+.view-results .rs-play-state i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.view-results .rs-play-state.is-playing {
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.view-results .rs-play-state.is-playing i {
+  background: var(--accent);
+}
+.view-results .rs-map-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  min-height: 40px;
+  margin-top: 4px;
+}
+.view-results .rs-layer-label {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.view-results .rs-map-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 4px;
+  color: var(--ink-2);
+  font-size: 11px;
+  cursor: pointer;
+}
+.view-results .rs-map-controls input {
+  accent-color: var(--accent);
+}
+.view-results .rs-map-svg-wrap {
+  flex: 1;
+  min-height: 280px;
+  margin: 0 auto;
+  width: 100%;
+}
+.view-results .rs-map-svg-wrap svg {
+  width: 100%;
+  max-width: 660px;
+  height: auto;
+}
+.view-results .rs-map-note {
+  margin: 2px 4px 0;
+}
+.view-results .rs-map-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 2px;
+  padding-top: 4px;
+}
+.view-results .rs-map-footer .map-legend {
+  flex: 1;
+  flex-wrap: wrap;
+  padding: 4px 2px 0;
+}
+.view-results .rs-map-footer .bin {
+  width: 22px;
+  height: 9px;
+}
+.view-results .rs-legend-metric {
+  color: var(--ink-3);
+  margin-left: 3px;
+}
+.view-results .rs-legend-scale {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.view-results .rs-map-attribution {
+  color: var(--ink-4);
+  flex: none;
+  font-size: 10px;
+  padding-bottom: 2px;
+  text-align: right;
+}
+.view-results .fizzle {
+  z-index: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  padding: 12px 16px;
+  margin: 0 0 8px;
+  display: grid;
+  gap: 6px;
+}
+.view-results .fizzle .ft {
+  color: var(--ink-2);
+  font-weight: 650;
+  font-size: 13.5px;
+}
+.view-results .fizzle .fb {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+  max-width: 80ch;
+}
+.view-results .fizzle .fa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+.view-results .fizzle .btn {
+  min-height: 44px;
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.view-results .rs-tide-panel {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 14px 9px;
+}
+.view-results .rs-gauge-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+}
+.view-results .rs-play-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--ink);
+}
+.view-results .rs-play-button:hover,
+.view-results .rs-play-button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.view-results .rs-play-button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+.view-results .rs-gauge-title {
+  min-width: 0;
+  flex: 1;
+}
+.view-results .rs-gauge-title h2 {
+  font-size: 14px;
+  font-weight: 650;
+}
+.view-results .rs-tide-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--ink-3);
+  font-size: 10px;
+}
+.view-results .rs-tide-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.view-results .rs-tide-legend .num {
+  color: var(--ink-2);
+}
+.view-results .rs-line-swatch {
+  width: 13px;
+  height: 2px;
+  background: var(--epi);
+}
+.view-results .rs-band-swatch {
+  width: 13px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--epi-soft);
+}
+.view-results .rs-shortcuts-button {
+  min-height: 44px;
+  padding: 7px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.view-results .rs-shortcuts-button:hover {
+  background: var(--panel-2);
+}
+.view-results .rs-slider-line {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.view-results .rs-slider-day {
+  color: var(--ink-2);
+  font-size: 10px;
+}
+.view-results .rs-tide-panel .time-slider {
+  min-width: 0;
+  padding: 0;
+}
+.view-results .rs-tide-panel .time-slider input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+}
+.view-results .rs-tide-panel .iv-strip {
+  position: relative;
+  height: 7px;
+  margin-top: 0;
+}
+.view-results .rs-tide-panel .iv-strip .ib {
+  position: absolute;
+  top: 1px;
+  height: 5px;
+  border-radius: 3px;
+  opacity: .85;
+}
+.view-results .rs-tide-panel .iv-strip .ib.dashed {
   background-image: repeating-linear-gradient(
     45deg,
     transparent 0 3px,
-    rgba(255, 255, 255, 0.45) 3px 6px
+    color-mix(in srgb, var(--hatch) 55%, transparent) 3px 6px
   );
 }
+.view-results .rs-tide-chart {
+  max-height: 108px;
+}
+.view-results .rs-tide-panel .time-range {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-3);
+  font: 10px "IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  margin-top: 0;
+  padding: 0 12px;
+}
 
-/* Parish mini-curve keeps the panel from growing on tall charts. */
+.view-results .rs-right-rail {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+.view-results .rs-right-rail .metrics4 {
+  min-width: 0;
+}
+.view-results .rs-right-rail .m4 {
+  min-width: 0;
+  padding: 12px 13px;
+}
+.view-results .rs-right-rail .m4 .k {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.view-results .rs-right-rail .m4 .v {
+  font-size: 24px;
+}
+.view-results .rs-right-rail .m4 .u {
+  line-height: 1.35;
+}
+.view-results .rs-ensemble-note {
+  color: var(--ink-3);
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 0 3px;
+}
+.view-results .rs-side-panel {
+  min-width: 0;
+  padding: 14px 15px;
+}
+.view-results .rs-side-panel h2 {
+  align-items: center;
+  font-size: 14px;
+}
+.view-results .rs-side-panel h2 .x {
+  flex: none;
+}
+.view-results .rs-side-panel .close-x {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+.view-results .rs-side-copy {
+  margin-top: 10px;
+  line-height: 1.45;
+}
+.view-results .rs-parish-metrics {
+  margin-top: 10px;
+  gap: 1px;
+}
+.view-results .rs-parish-metrics .m4 {
+  padding: 9px 10px;
+}
+.view-results .rs-parish-metrics .m4 .k {
+  font-size: 10px;
+}
+.view-results .rs-parish-metrics .m4 .v {
+  font-size: 18px;
+}
+.view-results .parish-mini {
+  margin-top: 8px;
+}
 .view-results .parish-mini svg {
   display: block;
   width: 100%;
   height: auto;
 }
+.view-results .rs-ranked-parishes h2 .x {
+  white-space: nowrap;
+}
+.view-results .rs-rank-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+.view-results .rs-rank-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1.1fr) minmax(50px, 1fr) 50px;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+}
+.view-results .rs-rank-name {
+  overflow: hidden;
+  color: var(--ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.view-results .rs-rank-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-2);
+}
+.view-results .rs-rank-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--epi);
+  opacity: .55;
+  transition: width 450ms ease;
+}
+.view-results .rs-rank-value {
+  color: var(--ink);
+  font-size: 10px;
+  text-align: right;
+}
+
+.view-results .ws-tabs {
+  min-width: 0;
+  overflow: visible;
+}
+.view-results .tabbar {
+  overflow-x: auto;
+}
+.view-results .tabbar button {
+  min-height: 44px;
+  white-space: nowrap;
+}
+.view-results .tabpane {
+  padding: 16px 18px 10px;
+}
+.view-results .tbtn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.view-results .tbtn[aria-pressed="true"] svg {
+  fill: var(--accent-ink);
+}
+
+@media (max-width: 1380px) {
+  .view-results .rs-page-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .view-results .rs-metric-pills {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 1180px) {
+  .view-results .rs-main-layout {
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+  .view-results .rs-page {
+    padding-inline: 20px;
+  }
+}
+
+/* the tabs card carries a legacy grid-area from views.css; reset it inside the Results page grid */
+.view-results .rs-page > .ws-tabs { grid-area: auto; }

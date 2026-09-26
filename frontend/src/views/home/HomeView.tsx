@@ -65,41 +65,41 @@ export function HomeView() {
     <section className="view view-home">
       <div className="home-wrap">
         <div className="home-hero">
-          <div>
-            <Label style={{ marginBottom: 10 }}>
-              Synthetic epidemiology · Jersey, Channel Islands
-            </Label>
-            <h1>Run an outbreak across all twelve parishes of a synthetic Jersey.</h1>
-            <p>
-              {POP_TEXT} synthetic residents, their households, schools, workplaces, care settings
-              and travel — a research instrument for exploring how a generic respiratory infection
-              moves through the island. No real people are modelled.
-            </p>
-            <div className="cta">
-              <Btn variant="primary" onClick={() => navigate('/simulate')}>
-                New scenario
-              </Btn>
-              <Btn
-                onClick={() =>
-                  lastSucceeded ? openResults(lastSucceeded) : navigate('/results')
-                }
-              >
-                Open last results
-              </Btn>
-              <Btn variant="ghost" onClick={() => navigate('/simulate')}>
-                Browse templates
-              </Btn>
-            </div>
-          </div>
-
           <div className="home-map card mapground">
             <JerseyMap
+              className="home-map-graphic"
               colorFor={() => 'var(--panel-2)'}
               labels
               scalebar
               ariaLabel="Map of the twelve parishes of Jersey"
             />
-            <div className="cap">
+            <div className="home-hero-copy">
+              <Label style={{ marginBottom: 10 }}>
+                Synthetic epidemiology · Jersey, Channel Islands
+              </Label>
+              <h1>A synthetic Jersey. Many possible outbreak paths.</h1>
+              <p className="home-population num">{POP_TEXT} synthetic residents</p>
+              <p className="home-intro">
+                Explore how a generic respiratory infection moves through households, schools,
+                workplaces, care settings and travel.
+              </p>
+              <div className="cta">
+                <Btn variant="primary" onClick={() => navigate('/simulate')}>
+                  New scenario
+                </Btn>
+                <Btn
+                  onClick={() =>
+                    lastSucceeded ? openResults(lastSucceeded) : navigate('/results')
+                  }
+                >
+                  Open last results
+                </Btn>
+                <Btn variant="ghost" onClick={() => navigate('/simulate')}>
+                  Browse templates
+                </Btn>
+              </div>
+            </div>
+            <div className="home-map-caption">
               Synthetic Jersey · {PARISHES.length} parishes · {POP_TEXT} agents
             </div>
           </div>
@@ -107,8 +107,8 @@ export function HomeView() {
 
         <div className="home-steps">
           {STEPS.map((s) => (
-            <Card key={s.n}>
-              <div className="n">{s.n}</div>
+            <Card key={s.n} className="home-step-card">
+              <div className="n">Step {s.n}</div>
               <h3>{s.title}</h3>
               <p>{s.body}</p>
             </Card>
@@ -116,20 +116,25 @@ export function HomeView() {
         </div>
 
         <Card className="home-recent">
-          <h2 style={{ padding: '14px 16px 0' }}>Recent runs</h2>
+          <div className="home-recent-head">
+            <h2>Recent runs</h2>
+            <span className="home-recent-limit">Latest 5</span>
+          </div>
           {jobs.length === 0 && (
-            <div className="row" style={{ color: 'var(--ink-3)', fontSize: 12.5 }}>
+            <div className="row home-empty" role="status">
               {loadError
                 ? `Unable to load recent runs: ${loadError}`
                 : 'No runs yet. Start with a new scenario.'}
             </div>
           )}
           {jobs.map((job) => (
-            <div className="row" key={job.job_id}>
+            <div className="row home-run-row" key={job.job_id}>
               <StateChip state={job.state} />
-              <b style={{ fontSize: 13 }}>{jobDisplayName(job)}</b>
-              <span style={{ color: 'var(--ink-3)', fontSize: 12 }}>{jobMetaLine(job)}</span>
-              <span style={{ flex: 1 }} />
+              <div className="home-run-copy">
+                <b>{jobDisplayName(job)}</b>
+                <span>{jobMetaLine(job)}</span>
+              </div>
+              <span className="home-run-spacer" />
               {job.state === 'SUCCEEDED' ? (
                 <Btn onClick={() => openResults(job)}>
                   {job.kind === 'scenario_compare' ? 'Open comparison' : 'Open results'}
@@ -142,7 +147,8 @@ export function HomeView() {
         </Card>
 
         <div className="home-foot">
-          <span>{CLAIM_BOUNDARY}.</span>
+          <span>{CLAIM_BOUNDARY}</span>
+          <span>No real people are modelled.</span>
           <span>{OSM_ATTRIBUTION}</span>
         </div>
       </div>

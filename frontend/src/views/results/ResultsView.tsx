@@ -13,16 +13,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Btn,
   HBar,
+
+  getLineChartRenderedContent, isLineSeriesRendered,
   JerseyMap,
   LineChart,
+  lineSeriesColor,
   MetricTile,
   MetricTileGrid,
+  resolveRankedBarColor,
 } from '../../components';
 import type { HBarRow } from '../../components';
 import { api } from '../../api';
 import type { JobStatusResponse } from '../../api';
 import { jobDisplayName, jobKindDetail } from '../../api/naming';
-import { seqColor, type ParishId } from '../../map/geometry';
+import { OSM_ATTRIBUTION, seqColor, type ParishId } from '../../map/geometry';
 import { useScenarioContextEffect } from '../../app/ScenarioContextProvider';
 import { setProvenanceJobId } from '../drawer/provenanceStore';
 import { TabsBand } from './TabsBand';
@@ -42,7 +46,7 @@ import {
 } from './data';
 import './results.css';
 
-const PLAY_INTERVAL_MS = 140;
+const PLAY_INTERVAL_MS = 500;
 
 /** Newest succeeded job, by finish time then creation time. */
 function newestSucceeded(jobs: JobStatusResponse[]): JobStatusResponse | null {
@@ -257,6 +261,29 @@ export function ResultsView() {
 
   const selectedParish = data && parish ? data.parishes.find((p) => p.id === parish) ?? null : null;
 
+  const pulseParish = useMemo(() => {
+    if (!data) return null;
+    let highest: { id: ParishId; count: number } | null = null;
+    for (const candidate of data.parishes) {
+      const count = candidate.points[day]?.newInfections;
+      if (count != null && count > 0 && (!highest || count > highest.count)) {
+        highest = { id: candidate.id, count };
+      }
+    }
+    return highest?.id ?? null;
+  }, [data, day]);
+
+  const topParishes = useMemo(() => {
+    if (!data?.availability.parishAttack) return [];
+    return data.parishes
+      .flatMap((candidate) => {
+        const share = candidate.points[day]?.attack;
+        return share == null ? [] : [{ name: candidate.name, share }];
+      })
+      .sort((a, b) => b.share - a.share)
+      .slice(0, 6);
+  }, [data, day]);
+
   /* ------------------------------ states ------------------------------ */
   if (loading) {
     return (
@@ -291,7 +318,7 @@ export function ResultsView() {
   const parishNote = data.availability.parishNote;
 
   const range = (value: number | null, pct = false, banded = false): string | undefined => {
-    if (!banded || value == null || epiToday.bandLow == null || epiToday.bandHigh == null) return undefined;
+    if (!banded || data.seeds === 1 || value == null || epiToday.bandLow == null || epiToday.bandHigh == null) return undefined;
     if (pct && data.population != null) {
       return `${((100 * epiToday.bandLow) / data.population).toFixed(1)} – ${((100 * epiToday.bandHigh) / data.population).toFixed(1)}%`;
     }
@@ -308,332 +335,351 @@ export function ResultsView() {
   })();
 
   const parishCurve = selectedParish
-    ? [
-        {
-          pts: selectedParish.points.flatMap((pt, d) => pt.cum == null ? [] : [[d, pt.cum] as [number, number]]),
-        },
-      ]
+    ? [{ label: 'Cumulative parish infections', role: 'epi' as const, pts: selectedParish.points.flatMap((point, d) => point.cum == null ? [] : [[d, point.cum] as [number, number]]) }]
     : [];
-
   const parishRelative = selectedParish && data.availability.parishAttack
     ? 'Parish ever-infected fraction is published for this run.'
     : selectedParish
       ? 'Parish route attribution and ever-infected denominator are not published for this run.'
       : '';
+  const hasPublishedBand = data.seeds > 1 && data.epi.some((point) => point.bandLow != null && point.bandHigh != null);
+  const ensembleNote = data.seeds > 1
+    ? hasPublishedBand
+      ? `Point values are ensemble medians of ${data.seeds} replicates; ranges are persisted lower–upper replicate quantiles, not confidence intervals.`
+      : `This ensemble has ${data.seeds} persisted replicates, but no quantile band is available for this metric.`
+    : 'Single-seed run: point values are one stochastic realisation, with no replicate range.';
+  const tideSeries = [{
+    label: data.seeds > 1 ? 'Ensemble median' : 'Single replicate',
+    role: 'epi' as const,
+    pts: data.epi.flatMap((point) => point.active == null ? [] : [[point.day, point.active] as [number, number]]),
+    band: hasPublishedBand
+      ? {
+          low: data.epi.flatMap((point) => point.bandLow == null ? [] : [[point.day, point.bandLow] as [number, number]]),
+          high: data.epi.flatMap((point) => point.bandHigh == null ? [] : [[point.day, point.bandHigh] as [number, number]]),
+        }
+      : undefined,
+  }];
+  const hatchWindows = showIvMarkers
+    ? interventions
+        .filter((intervention) => !intervention.triggered)
+        .map((intervention) => ({
+          startDay: intervention.from,
+          endDay: intervention.to,
+          color: intervention.color,
+        }))
+    : [];
 
   return (
     <section className="view view-results active">
-      <div className="ws">
-        {/* ------------------------ left: metrics + layers ------------------------ */}
-        <div className="ws-layers">
-          <div className="card metric-list" role="group" aria-label="Map metric">
-            <div className="label">Map metric</div>
-            {mapMetrics.length ? (
-              mapMetrics.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className="metric-btn"
-                  aria-pressed={metric === m.id}
-                  onClick={() => setMetric(m.id)}
-                >
-                  {m.label}
-                </button>
-              ))
-            ) : (
-              <p className="chart-note" style={{ padding: '2px 6px 4px', margin: 0 }}>
-                {parishNote}
-              </p>
-            )}
-          </div>
-          <div className="card layer-list">
-            <div className="label" style={{ padding: '2px 6px 6px' }}>
-              Layers
-            </div>
-            <label>
-              <input
-                type="checkbox"
-                checked={showLabels}
-                onChange={(e) => setShowLabels(e.target.checked)}
-              />{' '}
-              Parish names
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={showIvMarkers}
-                onChange={(e) => setShowIvMarkers(e.target.checked)}
-              />{' '}
-              Intervention markers
-            </label>
-            <label title="This run publishes no arrival-point geometry">
-              <input type="checkbox" disabled /> Arrival points
-            </label>
-          </div>
-        </div>
-
-        {/* ------------------------------ map ------------------------------ */}
-        <div className="ws-map mapground">
-          {fizzle && (
-            <div className="card fizzle">
-              <div className="ft">The outbreak died out by day {fizzle.dieOutDay}.</div>
-              <p className="fb">
-                {fmt(fizzle.cumulative)} synthetic residents were infected before transmission
-                stopped{data.population != null
-                  ? ` (${((100 * fizzle.cumulative) / data.population).toFixed(3)}% of the population)`
-                  : ' (the run did not publish a denominator)'}. With this scenario&apos;s assumptions stochastic die-out is common.
-                This is a real result, not an error.
-              </p>
-              <div className="fa">
-                <button type="button" className="btn" onClick={() => navigate('/simulate')}>
-                  Duplicate &amp; increase seeding
-                </button>
-                <button type="button" className="btn" onClick={() => navigate('/runs')}>
-                  Back to runs
-                </button>
-              </div>
-            </div>
-          )}
-          <div className="map-head">
-            <span className="mt">{parishAvailable ? activeMetric.title : 'Jersey parishes'}</span>
-            <span className="md num">
-              {formatDate(data.dates[day] ?? '', true)} · Day {day}
-            </span>
-          </div>
-          <div className="map-svg-wrap">
-            <JerseyMap
-              labels={showLabels}
-              selected={parish}
-              onSelect={(id) => setParish((cur) => (cur === id ? null : id))}
-              colorFor={(id) => {
-                if (!parishAvailable) return 'var(--panel-2)';
-                const p = data.parishes.find((x) => x.id === id);
-                if (!p) return 'var(--panel-2)';
-                const v = parishMetricPer1k(p, day, metric);
-                return v == null ? 'var(--panel-2)' : seqColor(Math.min(0.999, vmax ? v / vmax : 0));
-              }}
-              ariaLabel={
-                parishAvailable
-                  ? `${activeMetric.title}, day ${day}`
-                  : 'Jersey parishes — no parish breakdown was published by this run'
-              }
-            />
-          </div>
-          {!parishAvailable && (
-            <p className="chart-note" style={{ margin: '2px 4px 0' }}>
-              {parishNote} Parishes are drawn unshaded; the island-wide figures on the right are
-              unaffected.
+      <div className="rs-page">
+        <header className="rs-page-head">
+          <div className="rs-headline-block">
+            <p className="rs-eyebrow">
+              {jobDisplayName(data.job)} · {data.job.kind.replaceAll('_', ' ')} · {data.population == null ? 'Population not published' : `Population ${fmt(data.population)} residents`}
             </p>
-          )}
-          <div className="map-legend">
-            {parishAvailable ? (
-              <>
-                <span>Fewer</span>
-                <span className="bins">
-                  {['--seq0', '--seq1', '--seq2', '--seq3', '--seq4'].map((token) => (
-                    <span key={token} className="bin" style={{ background: `var(${token})` }} />
-                  ))}
+            <h1 className="rs-day-headline" aria-label={`Day ${day}`}>
+              <span>Day</span> <span className="rs-day-number">{String(day).padStart(2, '0')}</span>
+            </h1>
+            <p className="rs-head-date">{formatDate(data.dates[day] ?? '')}</p>
+          </div>
+          <div className="rs-metric-pills" role="group" aria-label="Map metric">
+            {mapMetrics.length ? mapMetrics.map((mapMetric) => (
+              <button
+                key={mapMetric.id}
+                type="button"
+                className="rs-metric-pill"
+                aria-pressed={metric === mapMetric.id}
+                onClick={() => setMetric(mapMetric.id)}
+              >
+                {mapMetric.label}
+              </button>
+            )) : <p className="chart-note">{parishNote}</p>}
+          </div>
+        </header>
+
+        <div className="rs-main-layout">
+          <div className="rs-main-column">
+            <section className="card rs-map-panel mapground" aria-label="Parish map panel">
+              {fizzle && (
+                <div className="card fizzle">
+                  <div className="ft">The outbreak died out by day {fizzle.dieOutDay}.</div>
+                  <p className="fb">
+                    {fmt(fizzle.cumulative)} synthetic residents were infected before transmission
+                    stopped{data.population != null
+                      ? ` (${((100 * fizzle.cumulative) / data.population).toFixed(3)}% of the population)`
+                      : ' (the run did not publish a denominator)'}. With this scenario&apos;s assumptions stochastic die-out is common.
+                    This is a real result, not an error.
+                  </p>
+                  <div className="fa">
+                    <button type="button" className="btn" onClick={() => navigate('/simulate')}>
+                      Duplicate &amp; increase seeding
+                    </button>
+                    <button type="button" className="btn" onClick={() => navigate('/runs')}>
+                      Back to runs
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="rs-map-head">
+                <div>
+                  <h2>{parishAvailable ? activeMetric.title : 'Jersey parishes'}</h2>
+                  <p>{parishAvailable ? `${activeMetric.label} · ${metric === 'attack' ? 'share of parish population' : 'count'}` : 'Parish detail unavailable for this run'}</p>
+                </div>
+                <span className={`rs-play-state${playing ? ' is-playing' : ''}`} aria-live="polite">
+                  <i aria-hidden="true" />{playing ? 'Playing' : 'Paused'}
                 </span>
-                <span>More</span>
-              </>
-            ) : (
-              <span>No parish metric to scale</span>
-            )}
-            <span style={{ flex: 1 }} />
-            <span className="num">{legendScale}</span>
-          </div>
-        </div>
+              </div>
 
-        {/* ------------------------------ side ------------------------------ */}
-        <aside className="ws-side">
-          <MetricTileGrid>
-            <MetricTile k="Active infectious" v={fmt(epiToday.active)} u={range(epiToday.active, false, true)} />
-            <MetricTile k={data.cumulativeLabel} v={fmt(epiToday.cum)} />
-            <MetricTile
-              k="Detected"
-              v={data.availability.detected ? fmt(epiToday.detected) : '—'}
-              u={data.availability.detected ? undefined : 'not published'}
-            />
-            <MetricTile
-              k="Ever infected"
-              v={epiToday.attack == null ? '—' : `${(100 * epiToday.attack).toFixed(1)}%`}
-              u={epiToday.attack == null ? 'not published' : undefined}
-            />
-          </MetricTileGrid>
+              <div className="rs-map-controls">
+                <span className="rs-layer-label">Layers</span>
+                <label>
+                  <input type="checkbox" checked={showLabels} onChange={(event) => setShowLabels(event.target.checked)} />
+                  Parish names
+                </label>
+                <label>
+                  <input type="checkbox" checked={showIvMarkers} onChange={(event) => setShowIvMarkers(event.target.checked)} />
+                  Intervention markers
+                </label>
+                <label title="This run publishes no arrival-point geometry">
+                  <input type="checkbox" disabled /> Arrival points
+                </label>
+              </div>
 
-          <div className="sci-only sci-note" style={{ padding: '0 4px' }}>
-            {data.seeds > 1 && data.epi.some((point) => point.bandLow != null && point.bandHigh != null)
-              ? `Point values are ensemble medians of ${data.seeds} replicates; ranges are persisted lower–upper replicate quantiles, not confidence intervals.`
-              : 'Single-seed run: point values are one stochastic realisation, with no replicate range.'}
-          </div>
+              <div className="map-svg-wrap rs-map-svg-wrap">
+                <JerseyMap
+                  labels={showLabels}
+                  selected={parish}
+                  pulse={pulseParish}
+                  pulsePlaying={playing}
+                  onSelect={(id) => setParish((current) => (current === id ? null : id))}
+                  colorFor={(id) => {
+                    if (!parishAvailable) return 'var(--panel-2)';
+                    const currentParish = data.parishes.find((candidate) => candidate.id === id);
+                    if (!currentParish) return 'var(--panel-2)';
+                    const value = parishMetricPer1k(currentParish, day, metric);
+                    return value == null ? 'var(--panel-2)' : seqColor(Math.min(0.999, vmax ? value / vmax : 0));
+                  }}
+                  ariaLabel={parishAvailable
+                    ? `${activeMetric.title}, day ${day}`
+                    : 'Jersey parishes — no parish breakdown was published by this run'}
+                />
+              </div>
+              {!parishAvailable && (
+                <p className="chart-note rs-map-note">
+                  {parishNote} Parishes are drawn unshaded; the island-wide figures on the right are unaffected.
+                </p>
+              )}
+              <div className="rs-map-footer">
+                <div className="map-legend">
+                  {parishAvailable ? (
+                    <>
+                      <span>Fewer</span>
+                      <span className="bins">
+                        {['--seq0', '--seq1', '--seq2', '--seq3', '--seq4', '--seq5'].map((token) => (
+                          <span key={token} className="bin" style={{ background: `var(${token})` }} />
+                        ))}
+                      </span>
+                      <span>More</span>
+                      <span className="rs-legend-metric">{activeMetric.label} · {metric === 'attack' ? '% of parish' : 'count'}</span>
+                    </>
+                  ) : <span>No parish metric to scale</span>}
+                  <span className="rs-legend-scale num">{legendScale}</span>
+                </div>
+                <span className="rs-map-attribution">{OSM_ATTRIBUTION}</span>
+              </div>
+            </section>
 
-          {selectedParish ? (
-            <div className="card panel-block">
-              <h2>
-                <span>{selectedParish.name}</span>
+            <section className="card rs-tide-panel" ref={timeCardRef} aria-label="Epidemic curve playback">
+              <div className="rs-gauge-head">
                 <button
                   type="button"
-                  className="close-x"
-                  onClick={() => setParish(null)}
-                  aria-label="Close parish detail"
+                  className="rs-play-button"
+                  aria-pressed={playing}
+                  onClick={() => setPlaying((current) => !current)}
+                  aria-label={playing ? 'Pause day playback' : 'Play day playback'}
                 >
-                  ×
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    {playing ? <path d="M7 5h4v14H7zM13 5h4v14h-4z" /> : <path d="M8 5l11 7-11 7z" />}
+                  </svg>
                 </button>
-              </h2>
-              {!parishAvailable ? (
-                <p className="chart-note" style={{ marginTop: 10 }}>
-                  {parishNote} There are no per-parish counts, ever-infected fractions or route splits to show
-                  for {selectedParish.name} in this run.
-                </p>
-              ) : (
-                <>
-              <div
-                className="metrics4"
-                style={{ border: 'none', boxShadow: 'none', marginTop: 10, gap: 1 }}
-              >
-                <div className="m4" style={{ padding: '9px 11px' }}>
-                  <div className="k">Active infectious</div>
-                  <div className="v num" style={{ fontSize: 18 }}>
-                    {fmt(selectedParish.points[day]?.active)}
-                  </div>
-                  {!data.availability.parishActive && <div className="s">not available for this run</div>}
-                </div>
-                <div className="m4" style={{ padding: '9px 11px' }}>
-                  <div className="k">New infections today</div>
-                  <div className="v num" style={{ fontSize: 18 }}>
-                    {fmt(selectedParish.points[day]?.newInfections)}
+                <div className="rs-gauge-title">
+                  <h2>Active infectious · tide gauge</h2>
+                  <div className="rs-tide-legend">
+                    {tideSeries.filter(isLineSeriesRendered).map((item) => (
+                      <span key={item.label}><i className="rs-line-swatch" style={{ background: lineSeriesColor(item) }} />{item.label}</span>
+                    ))}
+                    {getLineChartRenderedContent(tideSeries).bands.map((item) => (
+                      <span key={`${item.label}-band`}><i className="rs-band-swatch" />Replicate range</span>
+                    ))}
+                    <span className="num">Day {day} · {formatDate(data.dates[day] ?? '')}</span>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  className="rs-shortcuts-button"
+                  title="Keyboard shortcuts"
+                  onClick={() => window.dispatchEvent(new CustomEvent('jos:shortcuts'))}
+                >
+                  ⌨ Shortcuts
+                </button>
               </div>
-              <div className="parish-mini">
-                <LineChart
-                  series={parishCurve}
-                  marker={day}
-                  days={data.dayCount}
-                  height={110}
-                  width={300}
-                  formatDay={(d) => formatDate(data.dates[d] ?? '')}
-                />
+              <div className="rs-slider-line">
+                <span className="rs-slider-day num">Day {day}</span>
+                <div className="time-slider">
+                  <input
+                    ref={sliderRef}
+                    type="range"
+                    min={0}
+                    max={lastDay}
+                    value={day}
+                    aria-label="Simulation day"
+                    onChange={(event) => {
+                      setPlaying(false);
+                      goToDay(Number(event.target.value));
+                    }}
+                  />
+                </div>
               </div>
-              <div className="vs-avg">{parishRelative}</div>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="card panel-block">
-              <h2>
-                What&apos;s driving transmission <span className="x num">day {day}</span>
-              </h2>
-              {drivers.length ? (
-                <HBar rows={drivers} />
-              ) : data.availability.routes ? (
-                <p className="chart-note" style={{ marginTop: 10 }}>
-                  No infections were attributed to any route on day {day}.
-                </p>
-              ) : (
-                <p className="chart-note" style={{ marginTop: 10 }}>
-                  This run published no route attribution (neither daily_route nor
-                  transmission_events carried rows).
-                </p>
-              )}
-              <div className="vs-avg" style={{ marginTop: 12 }}>
-                {data.availability.routeSource === 'transmission_events'
-                  ? 'Attributed per day from transmission_events; seeded and imported infections are excluded.'
-                  : data.seeds > 1
-                    ? `Range shows the middle of ${data.seeds} ensemble replicates.`
-                    : 'Counts are from a single replicate.'}
+              <div className="iv-strip" ref={stripRef} aria-label="Intervention windows">
+                {showIvMarkers && interventions.map((intervention) => (
+                  <span
+                    key={intervention.id}
+                    className={`ib${intervention.triggered ? ' dashed' : ''}`}
+                    title={`${intervention.name} · ${intervention.detail}`}
+                    style={{
+                      left: `${(100 * intervention.from) / Math.max(1, lastDay)}%`,
+                      width: `${(100 * Math.max(1, intervention.to - intervention.from)) / Math.max(1, lastDay)}%`,
+                      background: intervention.color,
+                    }}
+                  />
+                ))}
               </div>
-            </div>
-          )}
-        </aside>
-
-        {/* ------------------------------ time ------------------------------ */}
-        <div className="card ws-time" ref={timeCardRef}>
-          <div className="time-row">
-            <button
-              type="button"
-              className="tbtn"
-              onClick={() => stepDay(-1)}
-              aria-label="Step back one day"
-            >
-              <svg viewBox="0 0 24 24">
-                <path d="M15 5l-7 7 7 7z" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="tbtn"
-              aria-pressed={playing}
-              onClick={() => setPlaying((p) => !p)}
-              aria-label={playing ? 'Pause' : 'Play'}
-            >
-              <svg viewBox="0 0 24 24">
-                {playing ? (
-                  <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
-                ) : (
-                  <path d="M8 5l11 7-11 7z" />
-                )}
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="tbtn"
-              onClick={() => stepDay(1)}
-              aria-label="Step forward one day"
-            >
-              <svg viewBox="0 0 24 24">
-                <path d="M9 5l7 7-7 7z" />
-              </svg>
-            </button>
-            <span className="time-day">
-              Day <b>{day}</b> · {formatDate(data.dates[day] ?? '')}
-            </span>
-            <div className="time-slider">
-              <input
-                ref={sliderRef}
-                type="range"
-                min={0}
-                max={lastDay}
-                value={day}
-                aria-label="Simulation day"
-                onChange={(e) => {
-                  setPlaying(false);
-                  goToDay(Number(e.target.value));
-                }}
+              <LineChart
+                series={tideSeries}
+                marker={day}
+                days={data.dayCount}
+                height={104}
+                formatDay={(index) => formatDate(data.dates[index] ?? '')}
+                hatchWindows={hatchWindows}
+                className="rs-tide-chart"
               />
-            </div>
-            <button
-              type="button"
-              className="btn ghost"
-              style={{ padding: '5px 10px', fontSize: 12 }}
-              title="Keyboard shortcuts"
-              onClick={() => window.dispatchEvent(new CustomEvent('jos:shortcuts'))}
-            >
-              ⌨ Shortcuts
-            </button>
+              <div className="time-range" ref={rangeRef}>
+                <span>{formatDateYear(data.dates[0] ?? '')}</span>
+                <span>{formatDateYear(data.dates[lastDay] ?? '')}</span>
+              </div>
+            </section>
           </div>
-          <div className="iv-strip" ref={stripRef}>
-            {showIvMarkers &&
-              interventions.map((iv) => (
-                <span
-                  key={iv.id}
-                  className={`ib${iv.triggered ? ' dashed' : ''}`}
-                  title={`${iv.name} · ${iv.detail}`}
-                  style={{
-                    left: `${(100 * iv.from) / Math.max(1, lastDay)}%`,
-                    width: `${(100 * Math.max(1, iv.to - iv.from)) / Math.max(1, lastDay)}%`,
-                    background: iv.color,
-                  }}
-                />
-              ))}
-          </div>
-          <div className="time-range" ref={rangeRef}>
-            <span>{formatDateYear(data.dates[0] ?? '')}</span>
-            <span>{formatDateYear(data.dates[lastDay] ?? '')}</span>
-          </div>
+
+          <aside className="rs-right-rail">
+            <MetricTileGrid>
+              <MetricTile
+                k="Active infectious"
+                v={epiToday.active == null ? null : fmt(epiToday.active)}
+                u={range(epiToday.active, false, true)}
+                availabilityNote="Active infectious data are not published for this day."
+              />
+              <MetricTile
+                k={data.cumulativeLabel}
+                v={epiToday.cum == null ? null : fmt(epiToday.cum)}
+                availabilityNote="Cumulative infections are not published for this day."
+              />
+              <MetricTile
+                k="Detected"
+                v={data.availability.detected && epiToday.detected != null ? fmt(epiToday.detected) : null}
+                u={data.availability.detected ? undefined : 'not published'}
+                availabilityNote="Detected cases are not published by this run."
+              />
+              <MetricTile
+                k="Ever infected"
+                v={epiToday.attack == null ? null : `${(100 * epiToday.attack).toFixed(1)}%`}
+                u={epiToday.attack == null ? 'not published' : undefined}
+                availabilityNote="Ever-infected fraction is not published for this day."
+              />
+            </MetricTileGrid>
+            <p className="rs-ensemble-note">{ensembleNote}</p>
+
+            {selectedParish ? (
+              <section className="card panel-block rs-side-panel">
+                <h2>
+                  <span>{selectedParish.name}</span>
+                  <button type="button" className="close-x" onClick={() => setParish(null)} aria-label="Close parish detail">×</button>
+                </h2>
+                {!parishAvailable ? (
+                  <p className="chart-note rs-side-copy">
+                    {parishNote} There are no per-parish counts, ever-infected fractions or route splits to show for {selectedParish.name} in this run.
+                  </p>
+                ) : (
+                  <>
+                    <div className="metrics4 rs-parish-metrics">
+                      <div className="m4">
+                        <div className="k">Active infectious</div>
+                        <div className="v num">{fmt(selectedParish.points[day]?.active ?? null)}</div>
+                        {!data.availability.parishActive && <div className="s">not available for this run</div>}
+                      </div>
+                      <div className="m4">
+                        <div className="k">New infections today</div>
+                        <div className="v num">{fmt(selectedParish.points[day]?.newInfections ?? null)}</div>
+                      </div>
+                    </div>
+                    <div className="parish-mini">
+                      <LineChart
+                        series={parishCurve}
+                        marker={day}
+                        days={data.dayCount}
+                        height={110}
+                        width={300}
+                        formatDay={(index) => formatDate(data.dates[index] ?? '')}
+                      />
+                    </div>
+                    <div className="vs-avg">{parishRelative}</div>
+                  </>
+                )}
+              </section>
+            ) : (
+              <section className="card panel-block rs-side-panel">
+                <h2>What&apos;s driving transmission <span className="x num">day {day}</span></h2>
+                {drivers.length ? (
+                  <HBar rows={drivers} role="infection" />
+                ) : data.availability.routes ? (
+                  <p className="chart-note rs-side-copy">No infections were attributed to any route on day {day}.</p>
+                ) : (
+                  <p className="chart-note rs-side-copy">
+                    This run published no route attribution (neither daily_route nor transmission_events carried rows).
+                  </p>
+                )}
+                <div className="vs-avg rs-side-copy">
+                  {data.availability.routeSource === 'transmission_events'
+                    ? 'Attributed per day from transmission_events; seeded and imported infections are excluded.'
+                    : data.seeds > 1
+                      ? `Range shows the middle of ${data.seeds} ensemble replicates.`
+                      : 'Counts are from a single replicate.'}
+                </div>
+              </section>
+            )}
+
+            <section className="card panel-block rs-side-panel rs-ranked-parishes">
+              <h2>Parishes by ever-infected share <span className="x num">day {day}</span></h2>
+              {data.availability.parishAttack ? topParishes.length ? (
+                <div className="rs-rank-list">
+                  {topParishes.map((row, index) => {
+                    const maxShare = topParishes[0]?.share ?? 1;
+                    const barColor = resolveRankedBarColor('infection', index);
+                    return (
+                      <div className="rs-rank-row" key={row.name}>
+                        <span className="rs-rank-name">{row.name}</span>
+                        <span className="rs-rank-track"><i style={{ width: `${maxShare > 0 ? 100 * row.share / maxShare : 0}%`, background: barColor.color, opacity: barColor.opacity }} /></span>
+                        <span className="rs-rank-value num">{(100 * row.share).toFixed(1)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <p className="chart-note rs-side-copy">Ever-infected parish values are not available for day {day}.</p> : (
+                <p className="chart-note rs-side-copy">Ever-infected share by parish is not published by this run.</p>
+              )}
+            </section>
+          </aside>
         </div>
 
-        {/* ------------------------------ tabs ------------------------------ */}
         <TabsBand data={data} day={day} interventions={interventions} />
       </div>
     </section>

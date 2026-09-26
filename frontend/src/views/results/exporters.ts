@@ -10,6 +10,7 @@
  */
 
 import type { DatasetRow } from '../../api';
+import { resolveRankedBarColor, type RankedBarRole } from '../../components/rankedBarColor';
 
 function download(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
@@ -61,7 +62,8 @@ export interface BarSpec {
   name: string;
   count: number;
   share: number;
-  color?: string;
+  /** Rank within its visible panel, used to reproduce first-row emphasis. */
+  rank?: number;
 }
 
 /**
@@ -69,7 +71,7 @@ export interface BarSpec {
  * equivalent standalone SVG (explicit colors resolved from the theme tokens)
  * and rasterizes that instead.
  */
-export function buildBarsSvg(title: string, rows: BarSpec[]): SVGSVGElement {
+export function buildBarsSvg(title: string, rows: BarSpec[], role: RankedBarRole = 'infection'): SVGSVGElement {
   const NS = 'http://www.w3.org/2000/svg';
   const rowH = 26;
   const padT = 44;
@@ -81,11 +83,14 @@ export function buildBarsSvg(title: string, rows: BarSpec[]): SVGSVGElement {
   const barW = width - barX - valueW;
   const maxC = Math.max(...rows.map((r) => r.count), 1);
 
-  const ink = cssVar('--ink', '#1a1a1a');
-  const ink3 = cssVar('--ink-3', '#6b6b6b');
-  const track = cssVar('--panel-2', '#f0efea');
-  const accent = cssVar('--accent', '#20707b');
-  const panel = cssVar('--panel', '#ffffff');
+  // Token values are resolved from the active theme; these Notebook values
+  // are export-only fallbacks for environments where a token is absent.
+  const ink = cssVar('--ink', '#1D2327');
+  const ink3 = cssVar('--ink-3', '#6B6A63');
+  const track = cssVar('--panel-2', '#EFEBE2');
+  const epi = cssVar('--epi', '#B24A26');
+  const neutral = cssVar('--ink-2', '#4F5552');
+  const panel = cssVar('--panel', '#FBFAF6');
 
   const svg = document.createElementNS(NS, 'svg') as SVGSVGElement;
   svg.setAttribute('xmlns', NS);
@@ -108,6 +113,7 @@ export function buildBarsSvg(title: string, rows: BarSpec[]): SVGSVGElement {
   svg.appendChild(heading);
 
   rows.forEach((r, i) => {
+    const barColor = resolveRankedBarColor(role, r.rank ?? i);
     const y = padT + i * rowH;
     const name = document.createElementNS(NS, 'text');
     name.setAttribute('x', String(labelW));
@@ -133,7 +139,8 @@ export function buildBarsSvg(title: string, rows: BarSpec[]): SVGSVGElement {
     bar.setAttribute('width', String(Math.max(2, (barW * r.count) / maxC)));
     bar.setAttribute('height', '11');
     bar.setAttribute('rx', '3');
-    bar.setAttribute('fill', r.color ? cssVar(r.color, accent) : accent);
+    bar.setAttribute('fill', cssVar(barColor.color, role === 'infection' ? epi : neutral));
+    bar.setAttribute('fill-opacity', String(barColor.opacity));
     svg.appendChild(bar);
 
     const value = document.createElementNS(NS, 'text');
@@ -229,7 +236,7 @@ export async function exportSvgAsPng(
     canvas.height = height * scale;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas is unavailable in this browser');
-    ctx.fillStyle = cssVar('--panel', '#ffffff');
+    ctx.fillStyle = cssVar('--panel', '#FBFAF6');
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 

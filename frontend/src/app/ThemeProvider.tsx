@@ -32,7 +32,7 @@ export function useTheme(): ThemeApi {
 }
 
 function systemTheme(): Theme {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
 
 function readStored(): ThemeSetting {
@@ -50,8 +50,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [system, setSystem] = useState<Theme>(systemTheme);
 
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = () => setSystem(mq.matches ? 'dark' : 'light');
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    const onChange = () => setSystem(mq.matches ? 'light' : 'dark');
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, []);

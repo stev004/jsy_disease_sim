@@ -63,10 +63,10 @@ export const PARISH_BY_ID: Record<ParishId, Parish> = Object.fromEntries(
   PARISHES.map((p) => [p.id, p]),
 ) as Record<ParishId, Parish>;
 
-/** 5-bin sequential (infection intensity) ramp; t in [0,1]. */
+/** 6-bin sequential (infection intensity) ramp; t in [0,1]. */
 export function seqColor(t: number): string {
-  const bins = ['--seq0', '--seq1', '--seq2', '--seq3', '--seq4'];
-  return `var(${bins[Math.min(4, Math.max(0, Math.floor(t * 5)))]})`;
+  const bins = ['--seq0', '--seq1', '--seq2', '--seq3', '--seq4', '--seq5'];
+  return `var(${bins[Math.min(5, Math.max(0, Math.floor(t * 6)))]})`;
 }
 
 /** 5-bin diverging (comparison) ramp; t in [0,1] with the midpoint at 0.5. */
