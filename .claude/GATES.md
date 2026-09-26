@@ -4,7 +4,21 @@
 
 ## Open
 
-**2026-09-25:** Phase 0: FAIL (2026-09-24); Phase 0b: not run. **G32 DECIDED 2026-09-26: A** — population-generator fix accepted at `ad37d45` (Sol audit PASS); same-seed Phase-0b rerun executing. **G33 CLOSED 2026-09-26** — UI redesign merged into `main` at `862e440` (frontend mirror PASS on the merge commit). G5 open.
+**2026-09-25:** Phase 0: FAIL (2026-09-24); Phase 0b: not run. **G34 OPEN (default STOP)** — Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26; P0-1 inoculation offset). G32 closed (A executed: fix `ad37d45`, same-seed rerun completed). G33 closed (UI merged `862e440`). G5 open.
+
+### G34 — Phase 0b FAIL: does V1.3 stop before real-data fitting? (§12.1 gate; model owner)
+- **What happened:** the same-seed Phase-0b campaign (G32-A) completed at `ad37d45`, bundle digest `a319c555…`. The independent exit audit gave a determinate FAIL (`docs/audits/2026-09-26-phase0b-exit-audit-sol-FAIL.md`), and its recomputation matches every published status.
+  - P0-2A, P0-2B and P0-3 PASS.
+  - P0-1 FAILS on the inoculation offset. Selections were 4, 4, 0, 2, 0 against a truth of 2, with 4/5 on the grid edges (Phase 0 had 2/5).
+  - Beta and both detection probabilities recover.
+  - Failure mode: `docs/research/v1_3/2026-09-26-phase0b-failure-mode.md`.
+- **Why it's a gate:** §12.1. The one authorized redesign cycle is used, and the standing delegation authorizes no Phase 0c.
+- **Options:**
+  - **A — STOP (declared default).** V1.3 does not proceed to real-data fitting. Written era/holdout synthesis and specification work may continue.
+  - **B — authorize a design memo only** (no execution, no predeclaration yet) on how a successor would treat inoculation timing. For example, treat it as a declared known or nuisance quantity instead of a fitted dimension, or lengthen the observation window. Any successor needs its own frozen predeclaration and synthetic-recovery check before real fitting.
+  - **C — rescope V1.3's fitting target** in a new plan. That is a roadmap change.
+- **Director recommendation:** A now, plus B if you want V1.3 to keep moving. Two campaigns agree that the offset is what fails, and a finer grid made it worse. So a memo, not another campaign, is the honest next step.
+- **Default on no answer:** A (STOP).
 
 ### G33 — CLOSED 2026-09-26 (merged at `862e440cfc311bd2b4f87b2af4b6ab145ddb2a14`; `docs/runs/2026-09-26-g33-merge-mirror.log`) — Merge the UI redesign (`ui/integration` @ `474bb53b9e4fdfccfc84720eeff938564481bb27`) into `main`
 - **What it is:** the Harbour (dark) / Notebook (light) design system approved by Steven 2026-09-25, plus the new Runs & evidence page. Spec: `docs/ui/2026-09-25-jos-redesign-spec.md`; mocks https://claude.ai/artifact/Tav8SdSnyN8EMP1oCkXTNY. The change is frontend only, with no new dependencies; exported builders and tests are unchanged and all verbatim disclaimers are intact.
@@ -12,7 +26,7 @@
 - **Command (SHA-first):** `git -C ~/jsy_disease_sim merge --no-ff 474bb53b9e4fdfccfc84720eeff938564481bb27 -m "G33: merge ui/integration @ 474bb53 (UI redesign)" && git -C ~/jsy_disease_sim push`. Before pushing, the director runs the frontend mirror on the merge commit.
 - **Default on no answer:** HOLD; the branches stay pushed. Say "merge G33" to have the agent execute it.
 
-### G32 — DECIDED A 2026-09-26 (fix `ad37d45`, `docs/audits/2026-09-26-popgen-fix-audit-sol-PASS.md`; rerun in RUN.md) — Phase-0b execution aborted: 4 of 8 fresh seeds cannot build a CI population (model owner + protected module)
+### G32 — CLOSED 2026-09-26: A executed; rerun completed, exit audit FAIL → G34 (fix `ad37d45`, `docs/audits/2026-09-26-popgen-fix-audit-sol-PASS.md`; rerun in RUN.md) — Phase-0b execution aborted: 4 of 8 fresh seeds cannot build a CI population (model owner + protected module)
 - **What happened (2026-09-25):** the one Phase-0b `execute` at the reviewed SHA `024caa09c19bbdad0952b09213ed56e6638ad676` stopped after 3 s at P0-1 population generation: `DataBuildError: age/sex pool cannot satisfy role constraint 0-15 … parish Trinity, household-m2-000784 (Couple with dependent children)`. **No outbreak simulation ran and no bundle was published** (log `docs/runs/2026-09-25-phase0b-campaign-aborted.log`). A read-only diagnostic of `jos structure generate --mode ci` per seed (`docs/runs/2026-09-25-phase0b-seed-population-diagnosis.txt`) found **62001, 62002, 62003 (targets) and 63002 (candidate) fail**, while 62004, 62005, 63001, 63003 and the Phase-0 controls 42001 and 43001 build. This is a latent **population-generator feasibility defect** in CI mode (3,000 residents; small-parish household role/age assignment), not a Phase-0b design issue. It also affects anyone running Quick test with an unlucky seed.
 - **Status (§12.4 vocabulary):** Phase 0: FAIL (2026-09-24); Phase 0b: not run. Per §12.3 an execution that consumed no simulation is not a campaign; nothing is VOID or FAIL.
 - **Constraints:** the frozen predeclaration forbids replacement seeds; the population generator is a protected module (its outputs feed M2/M3 hashes); §12.3 requires Steven's authorization for any corrected rerun, and a rerun must use the SAME seeds.
