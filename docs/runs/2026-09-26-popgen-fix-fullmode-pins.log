@@ -1,0 +1,21 @@
+full-mode pin check: base 024caa0 (/home/steven/jos-idsweep-base) vs head ad37d45df75f28459b1311476128438114c198a6 (/home/steven/jos-idsweep-head)
+pinned M2 ids (docs): jos-population-m2-full-seed-101-cd24533b8dd9, jos-population-m2-full-seed-123-ca3aed04498e
+base HEAD=024caa09c19bbdad0952b09213ed56e6638ad676 clean=yes
+base seed 101 jos-population-m2-full-seed-101-cd24533b8dd9 69c183c2498a4c94fae5a6f6de408b149bfc2962c2ab5edfc3055702eab0bb11 passed
+base seed 123 jos-population-m2-full-seed-123-ca3aed04498e e9df9f0b320d6efff4028dc05f22b6b46f5d1d65e5ce9f915ebe13d03d131854 passed
+head HEAD=ad37d45df75f28459b1311476128438114c198a6 clean=yes
+head seed 101 jos-population-m2-full-seed-101-cd24533b8dd9 69c183c2498a4c94fae5a6f6de408b149bfc2962c2ab5edfc3055702eab0bb11 passed
+head seed 123 jos-population-m2-full-seed-123-ca3aed04498e e9df9f0b320d6efff4028dc05f22b6b46f5d1d65e5ce9f915ebe13d03d131854 passed
+== seed 101 file comparison (non-measurement files):
+  communal_settings.parquet IDENTICAL
+  households.parquet IDENTICAL
+  residents.parquet IDENTICAL
+  diagnostics.json (minus runtime/memory) IDENTICAL
+  fallback key present (head): False
+== seed 123 file comparison (non-measurement files):
+  communal_settings.parquet IDENTICAL
+  households.parquet IDENTICAL
+  residents.parquet IDENTICAL
+  diagnostics.json (minus runtime/memory) IDENTICAL
+  fallback key present (head): False
+FULLPINS_DONE

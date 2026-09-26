@@ -1,0 +1,236 @@
++ uv --version
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv --version
+uv 0.11.30 (x86_64-unknown-linux-gnu)
++ uv sync --locked
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv sync --locked
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+Resolved 77 packages in 1ms
+   Building jersey-outbreak-simulator @ file:///home/steven/jos-popfix-verify
+      Built jersey-outbreak-simulator @ file:///home/steven/jos-popfix-verify
+Prepared 1 package in 433ms
+Installed 75 packages in 202ms
+ + alembic==1.19.1
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio==4.14.2
+ + certifi==2026.7.22
+ + click==8.5.0
+ + colorlog==6.12.0
+ + contourpy==1.3.3
+ + cycler==0.12.1
+ + dill==0.4.1
+ + et-xmlfile==2.0.0
+ + fastapi==0.141.1
+ + fonttools==4.63.0
+ + gitdb==4.0.12
+ + gitpython==3.1.59
+ + greenlet==3.5.5
+ + h11==0.16.0
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + idna==3.19
+ + iniconfig==2.3.0
+ + jellyfish==1.2.1
+ + jersey-outbreak-simulator==1.1.0 (from file:///home/steven/jos-popfix-verify)
+ + jsonpickle==4.1.2
+ + kiwisolver==1.5.0
+ + librt==0.15.0
+ + line-profiler==5.0.2
+ + llvmlite==0.49.0
+ + mako==1.4.1
+ + markdown-it-py==4.2.0
+ + markupsafe==3.0.3
+ + matplotlib==3.11.1
+ + mdurl==0.1.2
+ + memory-profiler==0.61.0
+ + multiprocess==0.70.19
+ + mypy==1.20.2
+ + mypy-extensions==1.1.0
+ + networkx==3.6.1
+ + numba==0.67.0
+ + numpy==2.5.2
+ + openpyxl==3.1.5
+ + optuna==4.9.0
+ + packaging==26.3
+ + pandas==3.0.5
+ + pathspec==1.1.1
+ + pillow==12.3.0
+ + pluggy==1.6.0
+ + psutil==7.2.2
+ + pyarrow==22.0.0
+ + pydantic==2.13.4
+ + pydantic-core==2.46.4
+ + pygments==2.21.0
+ + pyparsing==3.3.2
+ + pytest==8.4.2
+ + python-dateutil==2.9.0.post0
+ + pyyaml==6.0.3
+ + rich==15.0.0
+ + ruff==0.16.4
+ + scipy==1.18.1
+ + sciris==3.3.0
+ + seaborn==0.13.2
+ + setuptools==84.0.0
+ + shellingham==1.5.4
+ + six==1.17.0
+ + smmap==5.0.3
+ + sqlalchemy==2.0.52
+ + starlette==1.6.0
+ + starsim==3.5.2
+ + tqdm==4.70.0
+ + typer==0.27.1
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.4
+ + uvicorn==0.52.4
+ + xlsxwriter==3.2.9
+ + zstandard==0.25.0
++ uv lock --check
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv lock --check
+Resolved 77 packages in 0.92ms
++ uv run python -m compileall -q src
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run python -m compileall -q src
++ uv run pytest
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv run pytest
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/steven/jos-popfix-verify
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collected 472 items
+
+tests/test_b01_portable_artifacts.py ..............                      [  2%]
+tests/test_bench_dynamic_routes.py ......                                [  4%]
+tests/test_c1_identity.py .....                                          [  5%]
+tests/test_c2_network_semantics.py ......                                [  6%]
+tests/test_c3_contracts.py .......                                       [  8%]
+tests/test_c4_contracts.py ..................                            [ 11%]
+tests/test_c5_m7_integrity.py ............................               [ 17%]
+tests/test_calibration.py .....                                          [ 18%]
+tests/test_cli_integration.py ..                                         [ 19%]
+tests/test_contracts.py ....                                             [ 20%]
+tests/test_data_pipeline.py .....................                        [ 24%]
+tests/test_data_sources.py ....                                          [ 25%]
+tests/test_ensemble.py ...........                                       [ 27%]
+tests/test_ensemble_band_horizon.py .                                    [ 27%]
+tests/test_golden_hashes.py .........                                    [ 29%]
+tests/test_hashing.py ...                                                [ 30%]
+tests/test_hashkey_suffix.py ..                                          [ 30%]
+tests/test_init_metadata_boundary.py .                                   [ 31%]
+tests/test_job_liveness.py ....                                          [ 31%]
+tests/test_m3_secondary_jobs_oracle.py ...                               [ 32%]
+tests/test_m4_hash_stream.py ..                                          [ 33%]
+tests/test_m7_interventions.py .....                                     [ 34%]
+tests/test_m8_1_travel_integrity.py ............                         [ 36%]
+tests/test_m8_2_travel_closure.py ......                                 [ 37%]
+tests/test_m8_travel.py ..............                                   [ 40%]
+tests/test_m9_1_job_integrity.py ........................                [ 45%]
+tests/test_m9_2_provenance.py ...............                            [ 49%]
+tests/test_m9_4_calendar_finalization.py .....                           [ 50%]
+tests/test_m9_api.py .......                                             [ 51%]
+tests/test_networks.py ............................                      [ 57%]
+tests/test_observation.py ........                                       [ 59%]
+tests/test_outbreak.py ............                                      [ 61%]
+tests/test_perf10_grid_once.py .                                         [ 62%]
+tests/test_perf4_diagnostics.py .......                                  [ 63%]
+tests/test_perf6_interventions.py ....................                   [ 67%]
+tests/test_perf9_parent_reuse.py .........                               [ 69%]
+tests/test_phase0_campaign.py .......................................... [ 78%]
+                                                                         [ 78%]
+tests/test_phase0b_campaign.py ...............                           [ 81%]
+tests/test_popgen_residual_fallback.py .                                 [ 81%]
+tests/test_population.py .....                                           [ 83%]
+tests/test_population_structure.py ......                                [ 84%]
+tests/test_prov_helpers.py ..........                                    [ 86%]
+tests/test_prov_job_ordering.py .F...                                    [ 87%]
+tests/test_respiratory_attribution_lookup.py ...........                 [ 89%]
+tests/test_route4_weekday_memo.py s                                      [ 90%]
+tests/test_route5_phase2_columns.py ss..                                 [ 90%]
+tests/test_route_snapshot_columns.py ....s                               [ 91%]
+tests/test_scientific_corrections_datafix.py .........                   [ 93%]
+tests/test_staffing.py ..........                                        [ 95%]
+tests/test_starsim_demo.py ..                                            [ 96%]
+tests/test_v121_prov_verifier_fixes.py .......                           [ 97%]
+tests/test_v12_bundle_selftest.py ....                                   [ 98%]
+tests/test_v12_carry_ins.py ..                                           [ 99%]
+tests/test_v12_corr3_dictionary.py ...                                   [ 99%]
+tests/test_v12_corr4_dictionary.py .                                     [100%]
+
+=================================== FAILURES ===================================
+________ test_missing_head_request_fails_alone_and_scheduler_continues _________
+
+tmp_path = PosixPath('/tmp/pytest-of-steven/pytest-622/test_missing_head_request_fail0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7de16abc75f0>
+
+    def test_missing_head_request_fails_alone_and_scheduler_continues(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        manager = JobManager(state_dir=tmp_path, project_root=ROOT, poll_interval=0.01)
+        first = manager.submit(
+            ScenarioRunRequest(kind="scenario_run", mode="ci", seed=601, duration_days=1)
+        )
+        second = manager.submit(
+            ScenarioRunRequest(kind="scenario_run", mode="ci", seed=602, duration_days=1)
+        )
+        first_id = str(first["job_id"])
+        second_id = str(second["job_id"])
+        (manager._job_dir(first_id) / "request.json").unlink()
+        spawned_ids: list[str] = []
+        original_popen = job_manager_module.subprocess.Popen
+    
+        def observe_spawn(*args, **kwargs):
+            command = args[0]
+            job_id = command[command.index("--job-id") + 1]
+            spawned_ids.append(job_id)
+            return original_popen(*args, **kwargs)
+    
+        monkeypatch.setattr(job_manager_module.subprocess, "Popen", observe_spawn)
+        manager.start()
+        try:
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                states = {manager.get(first_id)["state"], manager.get(second_id)["state"]}
+                if states <= {"FAILED", "CANCELLED", "INTERRUPTED", "SUCCEEDED"}:
+                    break
+                time.sleep(0.01)
+            first_job = manager.get(first_id)
+            second_job = manager.get(second_id)
+            assert first_job["state"] == "FAILED", first_job
+            assert first_job["error_code"] == "request_not_persisted"
+            assert any(event["type"] == "job_failed" for event in manager.events(first_id))
+            assert first_id not in spawned_ids
+>           assert second_job["state"] == "SUCCEEDED", second_job
+E           AssertionError: {'bundle_hash': None, 'canonical_request': {'request': {'duration_days': 1, 'kind': 'scenario_run', 'mode': 'ci', 'obs....13', 'starsim_version': '3.5.2'}}, 'created_at': '2026-09-26T10:10:34.658141+00:00', 'dirty_worktree_flag': None, ...}
+E           assert 'RUNNING' == 'SUCCEEDED'
+E             
+E             - SUCCEEDED
+E             + RUNNING
+
+tests/test_prov_job_ordering.py:176: AssertionError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/steven/jos-popfix-verify/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_c1_identity.py: 1 warning
+tests/test_calibration.py: 6 warnings
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-popfix-verify/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+FAILED tests/test_prov_job_ordering.py::test_missing_head_request_fails_alone_and_scheduler_continues
+====== 1 failed, 467 passed, 4 skipped, 15 warnings in 1377.12s (0:22:57) ======
++ rc=1
++ '[' 1 -ne 0 ']'
++ printf 'MIRROR_RESULT=FAIL exit=%s\n' 1
+MIRROR_RESULT=FAIL exit=1
