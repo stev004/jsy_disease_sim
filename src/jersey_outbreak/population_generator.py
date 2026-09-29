@@ -6,6 +6,7 @@ import math
 import resource
 import time
 from collections.abc import Callable
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
@@ -509,7 +510,11 @@ def _draw_non_pensioner_role(
 
 
 def _assign_household_ages(
-    household: dict[str, Any], remaining: dict[tuple[int, str], int], rng: np.random.Generator
+    household: dict[str, Any],
+    remaining: dict[tuple[int, str], int],
+    rng: np.random.Generator,
+    *,
+    defer_other: bool = False,
 ) -> list[tuple[str, tuple[int, str]]]:
     """Assign one household as a relational unit, not as independent role draws."""
 
@@ -577,7 +582,9 @@ def _assign_household_ages(
                     household["_role_relaxations"] = household.get("_role_relaxations", 0) + len(
                         children
                     )
-                    return _assign_household_ages(household, remaining, rng)
+                    return _assign_household_ages(
+                        household, remaining, rng, defer_other=defer_other
+                    )
                 raise DataBuildError("could not form a parent couple for child roles")
             left, right = pair
             remaining[left] -= 1
@@ -613,7 +620,9 @@ def _assign_household_ages(
                     household["_role_relaxations"] = household.get("_role_relaxations", 0) + len(
                         children
                     )
-                    return _assign_household_ages(household, remaining, rng)
+                    return _assign_household_ages(
+                        household, remaining, rng, defer_other=defer_other
+                    )
                 raise DataBuildError("could not form a parent for child roles")
             remaining[chosen_parent] -= 1
             assigned.append((parent_roles[0], chosen_parent))
@@ -657,7 +666,7 @@ def _assign_household_ages(
         assigned.append((role, value))
 
     for role in roles:
-        if role in children or role in parent_roles:
+        if role in children or role in parent_roles or (defer_other and role == "other"):
             continue
         minimum_age, maximum_age = _role_age_bounds(role)
         assigned.append(
@@ -666,7 +675,8 @@ def _assign_household_ages(
                 _draw_age_sex(remaining, rng, minimum_age=minimum_age, maximum_age=maximum_age),
             )
         )
-    if len(assigned) != len(roles):
+    expected_assignments = len(roles) - (roles.count("other") if defer_other else 0)
+    if len(assigned) != expected_assignments:
         raise DataBuildError("household age assignment did not consume every role")
     return assigned
 
@@ -675,53 +685,123 @@ def _assign_private_residents(
     households: list[dict[str, Any]],
     private_counts_by_parish: dict[str, dict[tuple[int, str], int]],
     rng: np.random.Generator,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
     residents: list[dict[str, Any]] = []
+    fallback_parishes: dict[str, int] = {}
+
+    def append_residents(
+        parish: str,
+        household: dict[str, Any],
+        assigned: list[tuple[str, tuple[int, str]]],
+    ) -> None:
+        for role, (age, sex) in assigned:
+            residents.append(
+                {
+                    "agent_id": "",
+                    "age": age,
+                    "sex": sex,
+                    "home_parish": parish,
+                    "household_id": household["household_id"],
+                    "household_role": role,
+                    "dwelling_type": household["dwelling_type"],
+                    "crowding_band": household["crowding_band"],
+                    "car_access": household["car_access"],
+                    "care_setting_id": None,
+                }
+            )
+
     for parish in sorted(private_counts_by_parish):
         remaining = private_counts_by_parish[parish]
         parish_households = [row for row in households if row["home_parish"] == parish]
-        ordered = list(parish_households)
-        rng.shuffle(ordered)
-        # Couple-with-children and other constrained households get first-class
-        # relational assignment; unconstrained households follow.
-        ordered.sort(
-            key=lambda row: (
-                not any(role == "pensioner" for role in row["_roles"]),
-                not any(role == "dependent_child" for role in row["_roles"]),
-                not any(role in {"dependent_child", "adult_child"} for role in row["_roles"]),
-                "partner" not in row["_roles"],
-                row["household_id"],
+        rng_state = deepcopy(rng.bit_generator.state)
+        remaining_snapshot = dict(remaining)
+        household_snapshots = [
+            (
+                household,
+                list(household["_roles"]),
+                "_role_relaxations" in household,
+                household.get("_role_relaxations"),
             )
-        )
-        for household in ordered:
-            try:
-                assigned = _assign_household_ages(household, remaining, rng)
-            except DataBuildError as exc:
-                raise DataBuildError(
-                    f"{exc} in parish {parish}, household {household['household_id']} "
-                    f"({household['household_type']}, roles={household['_roles']})"
-                ) from exc
-            for role, (age, sex) in assigned:
-                residents.append(
-                    {
-                        "agent_id": "",
-                        "age": age,
-                        "sex": sex,
-                        "home_parish": parish,
-                        "household_id": household["household_id"],
-                        "household_role": role,
-                        "dwelling_type": household["dwelling_type"],
-                        "crowding_band": household["crowding_band"],
-                        "car_access": household["car_access"],
-                        "care_setting_id": None,
-                    }
+            for household in parish_households
+        ]
+        residents_length = len(residents)
+        ordered = list(parish_households)
+        try:
+            rng.shuffle(ordered)
+            # Couple-with-children and other constrained households get first-class
+            # relational assignment; unconstrained households follow.
+            ordered.sort(
+                key=lambda row: (
+                    not any(role == "pensioner" for role in row["_roles"]),
+                    not any(role == "dependent_child" for role in row["_roles"]),
+                    not any(role in {"dependent_child", "adult_child"} for role in row["_roles"]),
+                    "partner" not in row["_roles"],
+                    row["household_id"],
                 )
-        if any(count != 0 for count in remaining.values()):
-            raise DataBuildError(f"private resident age/sex pool was not consumed in {parish}")
+            )
+            for household in ordered:
+                try:
+                    assigned = _assign_household_ages(household, remaining, rng)
+                except DataBuildError as exc:
+                    raise DataBuildError(
+                        f"{exc} in parish {parish}, household {household['household_id']} "
+                        f"({household['household_type']}, roles={household['_roles']})"
+                    ) from exc
+                append_residents(parish, household, assigned)
+            if any(count != 0 for count in remaining.values()):
+                raise DataBuildError(f"private resident age/sex pool was not consumed in {parish}")
+        except DataBuildError as original_exc:
+            rng.bit_generator.state = deepcopy(rng_state)
+            remaining.clear()
+            remaining.update(remaining_snapshot)
+            for household, roles, had_relaxations, relaxations in household_snapshots:
+                household["_roles"] = list(roles)
+                if had_relaxations:
+                    household["_role_relaxations"] = relaxations
+                else:
+                    household.pop("_role_relaxations", None)
+            del residents[residents_length:]
+
+            try:
+                for household in ordered:
+                    try:
+                        assigned = _assign_household_ages(
+                            household, remaining, rng, defer_other=True
+                        )
+                    except DataBuildError as exc:
+                        raise DataBuildError(
+                            f"{exc} in parish {parish}, household {household['household_id']} "
+                            f"({household['household_type']}, roles={household['_roles']})"
+                        ) from exc
+                    append_residents(parish, household, assigned)
+                deferred_other_roles = 0
+                for household in ordered:
+                    minimum_age, maximum_age = _role_age_bounds("other")
+                    for role in household["_roles"]:
+                        if role != "other":
+                            continue
+                        age, sex = _draw_age_sex(
+                            remaining,
+                            rng,
+                            minimum_age=minimum_age,
+                            maximum_age=maximum_age,
+                        )
+                        append_residents(parish, household, [(role, (age, sex))])
+                        deferred_other_roles += 1
+                if any(count != 0 for count in remaining.values()):
+                    raise DataBuildError(
+                        f"private resident age/sex pool was not consumed in {parish}"
+                    )
+            except DataBuildError as fallback_exc:
+                raise DataBuildError(
+                    f"initial parish assignment failed: {original_exc}; "
+                    f"residual-last fallback failed: {fallback_exc}"
+                ) from fallback_exc
+            fallback_parishes[parish] = deferred_other_roles
     rng.shuffle(residents)
     for index, resident in enumerate(residents):
         resident["agent_id"] = f"agent-m2-{index:07d}"
-    return residents
+    return residents, fallback_parishes
 
 
 def _communal_age_bounds(setting_type: str) -> tuple[int, int]:
@@ -1475,7 +1555,9 @@ def generate_population(root: Any, config: PopulationGenerationConfig) -> Genera
                 f"could not allocate {remaining_extra} plausible household members in {parish}"
             )
     _assign_housing_attributes(households, controls, rng)
-    private_residents = _assign_private_residents(households, private_age_sex_by_parish, rng)
+    private_residents, residual_fallback_parishes = _assign_private_residents(
+        households, private_age_sex_by_parish, rng
+    )
     residents = private_residents + communal_residents
     rng.shuffle(residents)
     for index, resident in enumerate(residents):
@@ -1505,6 +1587,13 @@ def generate_population(root: Any, config: PopulationGenerationConfig) -> Genera
         target_household_types,
         target_communal_categories,
     )
+    if residual_fallback_parishes:
+        diagnostics["private_assignment_residual_fallback"] = {
+            "parishes": [
+                {"parish": parish, "deferred_other_roles": deferred_roles}
+                for parish, deferred_roles in sorted(residual_fallback_parishes.items())
+            ]
+        }
     if diagnostics["status"] != "passed":
         raise DataBuildError("population diagnostics did not pass")
     runtime_seconds = time.perf_counter() - started
