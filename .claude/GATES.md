@@ -4,9 +4,9 @@
 
 ## Open
 
-**2026-09-26:** **G34 OPEN (default STOP)** — Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26; P0-1 inoculation offset). G32 closed (A executed: fix `ad37d45`, same-seed rerun completed). G33 closed (UI merged `862e440`). G5 open.
+**2026-09-29:** **G34 RESOLVED A+B** (STOP real-data fitting; successor design memo drafting, no execution) — Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26; P0-1 inoculation offset). G32 closed (A executed: fix `ad37d45`, same-seed rerun completed). G33 closed (UI merged `862e440`). G5 open.
 
-### G34 — Phase 0b FAIL: does V1.3 stop before real-data fitting? (§12.1 gate; model owner)
+### G34 — RESOLVED 2026-09-29: A + B (Steven, chat: "G34 A+B, merge the popgen fix") — Phase 0b FAIL: does V1.3 stop before real-data fitting? (§12.1 gate; model owner)
 - **What happened:** the same-seed Phase-0b campaign (G32-A) completed at `ad37d45`, bundle digest `a319c555…`. The independent exit audit gave a determinate FAIL (`docs/audits/2026-09-26-phase0b-exit-audit-sol-FAIL.md`), and its recomputation matches every published status.
   - P0-2A, P0-2B and P0-3 PASS.
   - P0-1 FAILS on the inoculation offset. Selections were 4, 4, 0, 2, 0 against a truth of 2, with 4/5 on the grid edges (Phase 0 had 2/5).
