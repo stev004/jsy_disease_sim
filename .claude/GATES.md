@@ -4,7 +4,7 @@
 
 ## Open
 
-**2026-09-29:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); V1.3 stopped (G34 A+B). **G35 OPEN** (successor: default STOP). **G36 pending** (M3 destination fix merge, after review). G5 open.
+**2026-09-29:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); V1.3 stopped (G34 A+B). **G35 OPEN** (successor: default STOP). **G36 LIVE** (merge the M3 destination fix; default HOLD). G5 open.
 
 ### G35 — V1.3 successor: what, if anything, follows the Phase-0/0b FAILs? (model owner)
 - **Evidence:**
@@ -23,7 +23,12 @@
 - **Default on no answer:** A (STOP).
 
 ### G36 — Merge the M3 destination-share fix (after its review)
-- **Status:** implementation in flight (see RUN.md). This gate becomes live when the Sol audit PASS is filed.
+- **Status: LIVE (2026-09-29).** Branch `codex/m3-destination-fix` @ `f080ed7a22f3f05ffb3b275a3c627dee66ec72ff`, pushed.
+  - Sol audit PASS: `docs/audits/2026-09-29-m3-destfix-audit-sol-PASS.md`.
+  - Director sweep over CI 1–300: 272 IDENTICAL / 22 FIXED / 6 BOTH-FAIL (M2 classes) / 0 DIFFERENT.
+  - Full verify mirror PASS (469 passed, 4 skipped).
+- **Caveat (non-blocking, disclosed):** the 22 repaired seeds land exactly on the published split (949/187/302 of 1,438 physical workers). Only 4 of 272 naturally passing seeds do, so a cross-seed analysis of geographic variation could detect the point mass. Every repaired build carries `destination_reassignment_fallback` in its M3 diagnostics.
+- **Command (SHA-first):** `git -C ~/jsy_disease_sim merge --no-ff f080ed7a22f3f05ffb3b275a3c627dee66ec72ff`, with the full verify mirror on the merge commit before push.
 - **What:** a failure-only reassignment of workplace destinations, weighted by physical primary workers. It fixes 22 of the 28 CI seed build failures in seeds 1–300 (diagnosis: `docs/research/2026-09-29-popgen-residual-failures-diagnosis.md`). Every seed that builds today stays byte-identical.
 - **Not addressed:** the adult-supply (5/300) and household-capacity (1/300) classes. Both need an owner-specified parish-allocation rule. Until one exists, successors check their fresh seeds build before freezing.
 - **Default on no answer:** HOLD (the branch stays pushed).
