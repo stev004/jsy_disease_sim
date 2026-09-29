@@ -1,9 +1,9 @@
-# RUN — Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); awaiting G34 (default STOP)
+# RUN — Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); V1.3 STOPPED before real-data fitting (G34 A+B)
 
-**Current (2026-09-26):**
-- `main` code baseline is `862e440cfc311bd2b4f87b2af4b6ab145ddb2a14` (G33 UI merge; later main commits are state and docs only).
-- The popgen fix `ad37d45` is pushed on `codex/v13-popgen-fix` and not merged.
-- Phase-0b budget used: harness implementation 1/3 (accepted `024caa0`); popgen fix 2 luna attempts plus a director commit.
+**Current (2026-09-29):**
+- G34 RESOLVED A+B: V1.3 stops before real-data fitting. The successor design memo (B, gpt-6-sol) is filed as a DRAFT: `docs/research/v1_3/2026-09-29-successor-offset-design-memo-DRAFT.md`. It recommends profiling inoculation timing as a nuisance (Option 2), with scenario-conditional three-parameter work (Option 5) as the fallback.
+- `main` code baseline is `ece94f546acb19695aed5ea326336e794275dc58`: the popgen fix plus the Phase-0b harness, verify mirror PASS on the merge commit.
+- Nothing is in flight. Awaiting Steven: whether to commission an owner-ruled successor design and predeclaration (memo §'What Steven would need to decide next').
 - The lines below the 'In flight' block are the history of this run, oldest first.
 
 **Authorization history:** 2026-09-22 Steven: "alright keep iterating and working away" (G30, spent). 2026-09-23 Steven: "approve g29 with your rec then keep going with it" — G29 resolved, P0-2 released. Fleet moved to GPT-6 same day (implementation gpt-6-luna @ xhigh, review/consult gpt-6-sol @ high, trail audit = gpt-5.5 since Terra was discontinued (Regulate MODEL_ROUTING v7.1); codex-cli ≥ 0.155 required, 0.156.1 installed in WSL + Windows). No code merge or full-scale authorization.
@@ -17,8 +17,8 @@
 *(historical, 2026-09-25)* **Phase 0: FAIL (2026-09-24); Phase 0b: not run at that date.** G31 → A+C (Steven's delegation 2026-09-25).
 **Phase-0b frozen:** `docs/research/v1_3/2026-09-25-phase0b-predeclaration.md` sha256 `ec8df64630dd50c83b0866a096fba4980453c34232d18114129587274f257451`; ruling `...-phase0b-owner-ruling-ACCEPTED.md` sha256 `ea15ea558bd7b6bea962f55b2cf83f44c13cf6f7b07da1f3bab03598a1f98a39`; commit `ec8868a41d6ad42f3883464479102d32159f0070`. Budget at freeze (historical): P0b implementation 0/3 (units may be one integrated unit per §8), consults 1/2 (design consult spent), reviews as needed; one campaign; one exit audit; CYCLE CAP = this one (§12.1).
 **G31-C DONE:** main = merge `f64c586444ffb5788d90ae3b269cef0469f6c0dd` of 925838a (code tree identical to mirrored merge deec6ed; mirror 452/4; receipt `docs/runs/2026-09-25-g31-merge-push-receipt.txt`).
-**In flight:** the run-end trail audit only (gpt-6-astra @ high; `~/jos-p0b-trail.last.md`). **Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26).** The same-seed rerun at `ad37d45` completed (exit 0, 578 s, bundle `~/jos-phase0b-rerun-20260926T091252Z/bundle`, digest `a319c5557ffa77c56baebb8341b5fc2e1432f367bdb9d0b34169aa079659032a`). The exit audit found P0-1 FAIL on the inoculation offset (selected 4,4,0,2,0 vs truth 2; boundary 4/5); P0-2A/B and P0-3 PASS. §12.1 → **G34** parked, default STOP. Failure mode: `docs/research/v1_3/2026-09-26-phase0b-failure-mode.md`.
-**Resume recipe:** file the trail audit when `~/jos-p0b-trail.last.md` exists (reconcile any Attention items with correction rows). Then await Steven on G34. No campaign, redesign or real-data fitting without his decision. The popgen fix branch `codex/v13-popgen-fix` @ `ad37d45` is pushed but not merged; merging is Steven's call.
+**In flight:** nothing (2026-09-29).
+**Resume recipe:** await Steven on the successor decision. No campaign, predeclaration or real-data fitting without it.
 **Accepted P0-1 candidate:** 367f0324685437c4d2ed4aa0ae4878229da09839 on `codex/v13-p01-numeric-fix`, pushed, Sol numerical PASS (`docs/audits/2026-09-22-phase0-g30-review-sol-PASS.md`). Prior held b5ef032 superseded. Main code remains 3ff37348f88750470be9f1ccda193b3ff31fb9c3.
 **Next after P0-2:** P0-3 (brief draft `C:/Users/StevBeast/.codex/tmp/jos-phase0/p03-brief-draft.md`, refresh to gpt-6-luna and the P0-2 head) → full all-arms code review → one ci campaign → separate Sol scientific exit audit → SHA-first merge gate for Steven. Open disclosed questions for the all-arms review: profile-gap exact boundary and the R_i/E_i computed-quantity boundary (no silent new semantics).
 **Current handoff:** `docs/handoff/2026-09-22-phase0-g30-complete.md` (its step 2 is now done: G29 accepted).

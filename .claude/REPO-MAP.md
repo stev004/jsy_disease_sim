@@ -2,7 +2,7 @@
 
 *A navigation map, not documentation. Module contracts live in `docs/architecture.md`; scientific scope in `docs/scientific_scope.md`. Written 2026-09-21 (code baseline `3ff3734`).*
 
-**Current pickup:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G34 open (default STOP). `main` code baseline `862e440`. RUN/GATES own live status.
+**Current pickup:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G34 resolved A+B (V1.3 stopped; successor memo DRAFT). `main` code baseline `ece94f5`. RUN/GATES own live status.
 
 ## Top level
 
