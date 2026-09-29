@@ -4,7 +4,35 @@
 
 ## Open
 
-**2026-09-29:** **G34 RESOLVED A+B** (STOP real-data fitting; successor design memo drafting, no execution) — Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26; P0-1 inoculation offset). G32 closed (A executed: fix `ad37d45`, same-seed rerun completed). G33 closed (UI merged `862e440`). G5 open.
+**2026-09-29:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); V1.3 stopped (G34 A+B). **G35 OPEN** (successor: default STOP). **G36 pending** (M3 destination fix merge, after review). G5 open.
+
+### G35 — V1.3 successor: what, if anything, follows the Phase-0/0b FAILs? (model owner)
+- **Evidence:**
+  - G34-B memo: `docs/research/v1_3/2026-09-29-successor-offset-design-memo-DRAFT.md`.
+  - Fable consult (trail row `ridge-diagnostic-launch`).
+  - Exploratory ridge diagnostic: `docs/research/v1_3/2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md`. It is not a gate, and it did not run any new simulation.
+- **What the diagnostic shows:**
+  - Along the offset profile, beta rises and symptomatic detection falls in all five targets. This is a joint beta–timing–detection trade-off. A simple detection × start-time confound predicts the opposite direction for detection, so that is not the mechanism.
+  - Monte-Carlo scatter from only three candidate replicates is comparable to most one-day profile steps. Dropping one replicate changes the selected offset for 2 of 5 targets.
+  - The memo's recommended Option 2 (profile timing) would therefore most likely reproduce the ridge. It is withdrawn as the recommendation.
+- **Options:**
+  - **A — STOP (default).** V1.3 stays stopped on real data. JOS keeps its non-identifiability finding as the V1.3 research result.
+  - **B — synthetic design study, no real data.** A new owner-ruled design and frozen predeclaration, with fresh seeds checked buildable before freezing. It tests one factor at a time against a fixed baseline: (i) more candidate replicates, (ii) a longer window crossing the peak, (iii) an independently modelled serosurvey anchor on cumulative infection. The question it answers: does any of these make timing (and beta/detection) recoverable? Pass rules are argued in advance, never tuned to Phase-0b numbers. Rough scale per arm is Phase-0b's (about 1,300 cells, about 10 min at CI); a longer window costs more, amount unmeasured.
+  - **C — labelled demo.** Beta and detection conditional on a stated seeding scenario, titled as conditional. It is not a V1.3 gate and makes no recovery claim.
+- **Director recommendation:** B if you want V1.3 to keep going. It is the only option that can change the answer, and more replicates is its cheapest arm. Otherwise A. C only if a demonstration is useful for its own sake.
+- **Default on no answer:** A (STOP).
+
+### G36 — Merge the M3 destination-share fix (after its review)
+- **Status:** implementation in flight (see RUN.md). This gate becomes live when the Sol audit PASS is filed.
+- **What:** a failure-only reassignment of workplace destinations, weighted by physical primary workers. It fixes 22 of the 28 CI seed build failures in seeds 1–300 (diagnosis: `docs/research/2026-09-29-popgen-residual-failures-diagnosis.md`). Every seed that builds today stays byte-identical.
+- **Not addressed:** the adult-supply (5/300) and household-capacity (1/300) classes. Both need an owner-specified parish-allocation rule. Until one exists, successors check their fresh seeds build before freezing.
+- **Default on no answer:** HOLD (the branch stays pushed).
+
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
 
 ### G34 — RESOLVED 2026-09-29: A + B (Steven, chat: "G34 A+B, merge the popgen fix") — Phase 0b FAIL: does V1.3 stop before real-data fitting? (§12.1 gate; model owner)
 - **What happened:** the same-seed Phase-0b campaign (G32-A) completed at `ad37d45`, bundle digest `a319c555…`. The independent exit audit gave a determinate FAIL (`docs/audits/2026-09-26-phase0b-exit-audit-sol-FAIL.md`), and its recomputation matches every published status.
@@ -20,11 +48,6 @@
 - **Director recommendation:** A now, plus B if you want V1.3 to keep moving. Both campaigns failed on the inoculation offset, 2/5 then 4/5 at the grid boundary. They differ in seeds, tolerances and grid, so this is not a controlled comparison, and its cause is untested. A memo, not another campaign, is the proportionate next step.
 - **Default on no answer:** A (STOP).
 
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
 
 ### G33 — CLOSED 2026-09-26 (merged at `862e440cfc311bd2b4f87b2af4b6ab145ddb2a14`; `docs/runs/2026-09-26-g33-merge-mirror.log`) — Merge the UI redesign (`ui/integration` @ `474bb53b9e4fdfccfc84720eeff938564481bb27`) into `main`
 - **What it is:** the Harbour (dark) / Notebook (light) design system approved by Steven 2026-09-25, plus the new Runs & evidence page. Spec: `docs/ui/2026-09-25-jos-redesign-spec.md`; mocks https://claude.ai/artifact/Tav8SdSnyN8EMP1oCkXTNY. The change is frontend only, with no new dependencies; exported builders and tests are unchanged and all verbatim disclaimers are intact.
