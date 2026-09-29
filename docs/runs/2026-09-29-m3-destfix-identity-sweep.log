@@ -1,0 +1,33 @@
+HEAD_SHA=f080ed7a22f3f05ffb3b275a3c627dee66ec72ff
+TALLY {'IDENTICAL': 272, 'FALLBACK': 22, 'BOTH-FAIL': 6}
+34 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-34-67a56bb5bf12'] status_head_ok
+47 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-47-0d6221887387'] status_head_ok
+54 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-54-1661d1972718'] status_head_ok
+65 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-65-2bce082110ca'] status_head_ok
+73 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-73-9e1786865a14'] status_head_ok
+77 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-77-6f4b2dd49883'] status_head_ok
+79 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-79-f38745215f03'] status_head_ok
+81 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-81-64b14b4cf9d4'] status_head_ok
+93 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-93-521583d118b4'] status_head_ok
+96 BOTH-FAIL
+118 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-118-a49c36ff20b0'] status_head_ok
+119 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-119-31bdb23ba9de'] status_head_ok
+122 BOTH-FAIL
+147 BOTH-FAIL
+156 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-156-bd9f7ba7e029'] status_head_ok
+159 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-159-b2d12dedbc01'] status_head_ok
+163 BOTH-FAIL
+168 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-168-8197b8d156ca'] status_head_ok
+177 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-177-93b1b1cf5c5e'] status_head_ok
+192 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-192-c00c33d81670'] status_head_ok
+218 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-218-495b9b7f44c5'] status_head_ok
+228 BOTH-FAIL
+254 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-254-c74dbef43709'] status_head_ok
+261 BOTH-FAIL
+263 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-263-c8d4b65c1d18'] status_head_ok
+273 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-273-c62410ebaf66'] status_head_ok
+277 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-277-0d4775eff12f'] status_head_ok
+299 FALLBACK disclosure_in=['jos-structure-m3-ci-seed-299-5b5c9d690176'] status_head_ok
+SWEEP_DONE
+MIRROR_EXIT=0
+ALL_DONE
