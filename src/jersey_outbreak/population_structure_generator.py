@@ -390,6 +390,88 @@ def _assign_workplace_parishes(
             )
 
 
+def _physical_destination_shares(
+    workplaces: list[dict[str, Any]], physical_workers_by_workplace: Counter[str]
+) -> dict[str, float]:
+    total = sum(physical_workers_by_workplace.values())
+    generated = {category: 0 for category in DESTINATION_CATEGORIES}
+    for workplace in workplaces:
+        generated[_destination_category(workplace["work_parish"])] += physical_workers_by_workplace[
+            workplace["workplace_id"]
+        ]
+    return {category: count / max(1, total) for category, count in generated.items()}
+
+
+def _destination_shares_pass(shares: dict[str, float], controls: StructureControls) -> bool:
+    return all(
+        abs(shares[category] - controls.destination_controls[category] / 100)
+        <= TOLERANCES["destination_share"]
+        for category in DESTINATION_CATEGORIES
+    )
+
+
+def _reassign_workplace_parishes_by_physical_workers(
+    workplaces: list[dict[str, Any]],
+    physical_workers_by_workplace: Counter[str],
+    controls: StructureControls,
+    rng: np.random.Generator,
+) -> None:
+    """Reallocate destination categories against the primary physical-worker cohort."""
+
+    target_workers = sum(physical_workers_by_workplace.values())
+    target_by_category = allocate_proportional(target_workers, controls.destination_controls)
+    remaining = dict(target_by_category)
+    ordered = sorted(
+        (row for row in workplaces if physical_workers_by_workplace[row["workplace_id"]] > 0),
+        key=lambda row: (
+            -physical_workers_by_workplace[row["workplace_id"]],
+            row["workplace_id"],
+        ),
+    )
+    for row in ordered:
+        worker_count = physical_workers_by_workplace[row["workplace_id"]]
+        candidates = [
+            category for category in DESTINATION_CATEGORIES if remaining[category] >= worker_count
+        ]
+        if not candidates:
+            candidates = [max(DESTINATION_CATEGORIES, key=lambda item: remaining[item])]
+        category = max(
+            candidates, key=lambda item: (remaining[item], -DESTINATION_CATEGORIES.index(item))
+        )
+        row["_destination_category"] = category
+        remaining[category] -= worker_count
+
+    parish_weights = {
+        parish: controls.population.parish_counts[parish]
+        for parish in controls.population.parish_counts
+        if parish != "St Helier"
+    }
+    semi_weights = {parish: parish_weights[parish] for parish in sorted(SEMI_URBAN_PARISHES)}
+    rural_weights = {
+        parish: value
+        for parish, value in parish_weights.items()
+        if parish not in SEMI_URBAN_PARISHES
+    }
+    for row in ordered:
+        category = row.pop("_destination_category")
+        if category == "St Helier":
+            row["work_parish"] = "St Helier"
+        elif category == "Semi-urban parishes":
+            row["work_parish"] = str(
+                rng.choice(
+                    list(semi_weights),
+                    p=np.array(list(semi_weights.values())) / sum(semi_weights.values()),
+                )
+            )
+        else:
+            row["work_parish"] = str(
+                rng.choice(
+                    list(rural_weights),
+                    p=np.array(list(rural_weights.values())) / sum(rural_weights.values()),
+                )
+            )
+
+
 def _mode_weights(
     worker: dict[str, Any], work_parish: str, controls: StructureControls
 ) -> dict[str, float]:
@@ -461,6 +543,7 @@ def _build_diagnostics(
     target_workers: int,
     target_workplaces: dict[str, int],
     target_secondary_jobs: int,
+    destination_reassignment_fallback: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
 
@@ -716,6 +799,21 @@ def _build_diagnostics(
     check("school_geography_is_explicitly_non_geographic", ordinary_school_parishes, 0)
 
     status = "passed" if all(check["status"] == "passed" for check in checks) else "failed"
+    geography = {
+        "physical_workers": len(physical_workers),
+        "destination_target": destination_target,
+        "destination_generated": destination_generated,
+        "st_helier_physical_share": destination_generated["St Helier"]
+        / max(1, len(physical_workers)),
+        "wfh_workers": commute_generated.get("work_from_home", 0),
+        "parish_assignment": (
+            "synthetic work-parish categories weighted by canonical 66/13/21 destination controls"
+        ),
+        "semi_urban_parishes": sorted(SEMI_URBAN_PARISHES),
+    }
+    if destination_reassignment_fallback is not None:
+        geography["destination_reassignment_fallback"] = destination_reassignment_fallback
+
     return {
         "schema_version": "1.0",
         "status": status,
@@ -819,19 +917,7 @@ def _build_diagnostics(
                 "is right-censored."
             ),
         },
-        "geography": {
-            "physical_workers": len(physical_workers),
-            "destination_target": destination_target,
-            "destination_generated": destination_generated,
-            "st_helier_physical_share": destination_generated["St Helier"]
-            / max(1, len(physical_workers)),
-            "wfh_workers": commute_generated.get("work_from_home", 0),
-            "parish_assignment": (
-                "synthetic work-parish categories weighted by canonical 66/13/21 destination "
-                "controls"
-            ),
-            "semi_urban_parishes": sorted(SEMI_URBAN_PARISHES),
-        },
+        "geography": geography,
         "commute": {
             "target": commute_target,
             "generated": commute_generated,
@@ -1148,6 +1234,36 @@ def generate_structure(
         rng,
         workplace_by_id,
     )
+    physical_workers_by_workplace = Counter(
+        job["workplace_id"]
+        for job in jobs
+        if job["job_role"] == "primary" and job["agent_id"] not in wfh_workers
+    )
+    destination_reassignment_fallback: dict[str, Any] | None = None
+    before_destination_shares = _physical_destination_shares(
+        workplaces, physical_workers_by_workplace
+    )
+    if not _destination_shares_pass(before_destination_shares, controls):
+        fallback_rng = np.random.default_rng(
+            np.random.SeedSequence([config.seed, 0x4D335F44455354])
+        )
+        _reassign_workplace_parishes_by_physical_workers(
+            workplaces, physical_workers_by_workplace, controls, fallback_rng
+        )
+        for job in jobs:
+            job["work_parish"] = workplace_by_id[job["workplace_id"]]["work_parish"]
+        after_destination_shares = _physical_destination_shares(
+            workplaces, physical_workers_by_workplace
+        )
+        if not _destination_shares_pass(after_destination_shares, controls):
+            raise DataBuildError(
+                "M3 destination reassignment fallback failed the unchanged 0.01 share check: "
+                f"before={before_destination_shares}, after={after_destination_shares}"
+            )
+        destination_reassignment_fallback = {
+            "before_shares": before_destination_shares,
+            "after_shares": after_destination_shares,
+        }
     if any(slots_by_sector.values()):
         raise DataBuildError("workplace slots were not fully consumed by generated jobs")
     for row in workplaces:
@@ -1231,6 +1347,7 @@ def generate_structure(
         target_workers,
         target_workplaces,
         target_secondary_jobs,
+        destination_reassignment_fallback,
     )
     if diagnostics["status"] != "passed":
         failed_checks = [
