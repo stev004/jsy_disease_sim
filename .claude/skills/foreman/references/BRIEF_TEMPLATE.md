@@ -17,4 +17,4 @@ Launch (backgrounded by the harness, log + clean final report):
 
     ~/.claude/skills/foreman/scripts/fm.sh exec <workdir> <model> <effort> <brief-file> <log-stem>
 
-Model routing: implementation = gpt-5.6-luna @ xhigh (Steven's standing preference) · audit/research/consult = gpt-5.6-sol @ high · trail-audit = whichever family did neither the directing nor the work (typically gpt-5.6-terra). Read `<stem>.last.md` for the report; `<stem>.log` only when debugging the run itself.
+Model routing: implementation = gpt-6-luna @ xhigh (Steven's standing preference) · audit/research/consult = gpt-6.1-sol @ high (effort explicit) · trail-audit = whichever family did neither the directing nor the work (typically gpt-5.6-terra). Read `<stem>.last.md` for the report; `<stem>.log` only when debugging the run itself.
