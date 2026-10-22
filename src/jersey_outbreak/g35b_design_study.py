@@ -18,7 +18,7 @@ import sys
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, cast
@@ -1386,8 +1386,315 @@ def join_arm_i(generation: ArmIGeneration, output_dir: Path) -> RecoveryEvaluati
     return replace(evaluation, rows=serial)
 
 
-def arm_ii(*args: Any, **kwargs: Any) -> Any:
-    raise NotImplementedError("U3: arm (ii)")
+@dataclass(frozen=True)
+class _ArmIIConstructorConfig(StudyConfig):
+    """Constructor-only horizon; the study declaration and B remain at 30 days."""
+
+    duration_days: int = next(row[2] for row in frozen.ARM_CAPS if row[0] == "ii")
+
+    def __post_init__(self) -> None:
+        if type(self.duration_days) is not int or self.duration_days != 49:
+            raise BudgetError("arm (ii) requires frozen H = 49")
+        if len(observation_dates(self.start_date, self.duration_days, 4)) != 53:
+            raise BudgetError("arm (ii) requires the frozen 53-date calendar")
+
+
+@dataclass(frozen=True)
+class ArmIIGeneration(BaselineGeneration):
+    """Own 49-day results and blind fits, retaining B solely for the later join."""
+
+    baseline: BaselineGeneration
+
+
+def arm_ii(
+    baseline: BaselineGeneration,
+    config: StudyConfig,
+    work_dir: Path,
+    *,
+    root: Path,
+) -> ArmIIGeneration:
+    """Extend B's streams to frozen H, without reading any target latent truth."""
+    arm_started = time.perf_counter()
+    plan = plan_workload(config)
+    constructor_config = _ArmIIConstructorConfig(duration_days=plan["arms"]["ii"]["latent_days"])
+    expected_b = {key: plan["arms"]["B"][key] for key in TOTAL_FIELDS}
+    if (
+        baseline.config != config
+        or baseline.measured != expected_b
+        or not _baseline_execution_complete(baseline)
+    ):
+        raise CampaignError("arm (ii) requires completed baseline generation and all 13 parents")
+    for seed in config.target_process_seeds:
+        _verify_blind_readback(
+            baseline.blind_paths[seed], baseline.blind_fits[seed], baseline.blind_file_hashes[seed]
+        )
+    # These are B's actual objects, not rebuilt or copied populations.
+    parents = baseline.generated_parents
+    lineage = baseline.parent_lineage
+    counter = WorkCounter("ii")
+    phase_seconds = {key: 0.0 for key in ("build", "latent", "transform", "scoring")}
+    runtimes: list[dict[str, Any]] = []
+    adapter = _GenerationAdapter(
+        constructor_config,
+        root,
+        load_parameter_set(root),
+        parents,
+        counter,
+        phase_seconds,
+        runtimes,
+    )
+    truth_cell = CandidateCell(0.08, 2, 0.75, 0.25)
+    targets, outputs = {}, {}
+    for seed, obs_seed in zip(
+        config.target_process_seeds, config.target_observation_seeds, strict=True
+    ):
+        # The adapter requires returned result.config == requested config (H = 49)
+        # and result.generated is the exact shared parent; absent metadata fails.
+        latent, run_config = adapter.latent_for(seed, truth_cell)
+        observed, obs, table = adapter.observe(
+            latent, run_config, obs_seed, config.target_observation_config_id, truth_cell
+        )
+        targets[seed] = table
+        outputs[seed] = (latent, observed, run_config, obs)
+    latents = {}
+    for seed in config.candidate_process_seeds:
+        for beta in config.dimensions[0].candidates:
+            for offset in config.dimensions[1].candidates:
+                cell = replace(
+                    config.candidate_grid[0], beta=beta, inoculation_day_offset=int(offset)
+                )
+                latents[seed, beta, int(offset)] = adapter.latent_for(seed, cell)
+    library, hashes = {}, {}
+    provenance = []
+    for cell in config.candidate_grid:
+        counter.dispatch("cells")
+        tables, configs = [], []
+        for seed, obs_seed in zip(
+            config.candidate_process_seeds, config.candidate_observation_seeds, strict=True
+        ):
+            latent, run_config = latents[seed, cell.beta, cell.inoculation_day_offset]
+            observed, obs, table = adapter.observe(
+                latent, run_config, obs_seed, config.candidate_observation_config_id, cell
+            )
+            tables.append(table)
+            run_payload, obs_payload = (
+                run_config.model_dump(mode="json"),
+                obs.model_dump(mode="json"),
+            )
+            configs.append({"run": run_payload, "observation": obs_payload})
+            provenance.append(
+                {
+                    "cell": cell.as_dict(),
+                    "batch": "A",
+                    "process_seed": seed,
+                    "observation_seed": obs_seed,
+                    "run_config": run_payload,
+                    "observation_config": obs_payload,
+                    "table_sha256": hashlib.sha256(
+                        phase0._compact_json_bytes(table.as_dict())
+                    ).hexdigest(),
+                    "population_lineage": lineage[seed],
+                    "observation_rng": observed.diagnostics["observation_rng"],
+                }
+            )
+        library[cell] = tuple(tables)
+        hashes[cell] = hashlib.sha256(phase0._compact_json_bytes(configs)).hexdigest()
+    if not counter.exact():
+        raise BudgetError("arm (ii) measured work differs from exact ii caps")
+    fits, paths, file_hashes = {}, {}, {}
+    started = time.perf_counter()
+    for seed, table in targets.items():
+        fit = fit_blind(
+            table, config.candidate_grid, library, R=3, T=53, candidate_config_hashes=hashes
+        )
+        path = work_dir / "arm_ii" / "blind_estimates" / f"{seed}.json"
+        fits[seed], paths[seed], file_hashes[seed] = fit, path, _persist_fit(path, fit)
+    phase_seconds["scoring"] += time.perf_counter() - started
+    return ArmIIGeneration(
+        config,
+        targets,
+        outputs,
+        library,
+        latents,
+        parents,
+        lineage,
+        hashes,
+        tuple(provenance),
+        fits,
+        paths,
+        file_hashes,
+        dict(counter.measured),
+        {
+            "arm_wall_time_seconds": time.perf_counter() - arm_started,
+            "phase_wall_time_seconds": phase_seconds,
+            "latent_runtimes": runtimes,
+            "fallback_source": frozen.CLARIFICATION_PATH,
+            "fallback_built_targets": baseline.disclosures["fallback_built_targets"],
+            "fallback_built_candidates": baseline.disclosures["fallback_built_candidates"],
+            "measured_counters": dict(counter.measured),
+        },
+        baseline,
+    )
+
+
+def prefix_identity(
+    baseline_events: Sequence[Mapping[str, Any]],
+    extended_events: Sequence[Mapping[str, Any]],
+    baseline_table: ObservedTables,
+    extended_table: ObservedTables,
+    *,
+    start_date: date,
+) -> dict[str, Any]:
+    """Canonical sorted event rows and zero-filled date/channel counts through day 29.
+
+    Hash every retained event field, using the same compact, sorted-key JSON
+    serialization for both runs. Later infections and reports are excluded.
+    A realization mismatch is descriptive only (§4.2 step 5).
+    """
+    last = (start_date + timedelta(days=29)).isoformat()
+
+    def event_hash(events: Sequence[Mapping[str, Any]]) -> str:
+        rows = [dict(event) for event in events if str(event["infection_date"]) <= last]
+        rows.sort(key=phase0._compact_json_bytes)
+        return hashlib.sha256(phase0._compact_json_bytes(rows)).hexdigest()
+
+    def report_hash(table: ObservedTables) -> str:
+        rows = sorted(
+            (when, channel, count)
+            for channel, values in zip(
+                ("symptomatic", "asymptomatic"), table.channel_values, strict=True
+            )
+            for when, count in zip(table.dates, values, strict=True)
+            if when <= last
+        )
+        return hashlib.sha256(phase0._compact_json_bytes(rows)).hexdigest()
+
+    events = {"B": event_hash(baseline_events), "ii": event_hash(extended_events)}
+    reports = {"B": report_hash(baseline_table), "ii": report_hash(extended_table)}
+    identical = events["B"] == events["ii"] and reports["B"] == reports["ii"]
+    return {
+        "prefix_last_date": last,
+        "transmission_sha256": events,
+        "report_count_sha256": reports,
+        "result": "identical" if identical else "not identical",
+        "label": "identical" if identical else "seed-stream matched, realization not matched",
+    }
+
+
+def manipulation_check(daily_epidemic: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Earliest maximum of the 7-day trailing incidence sum; disclosure only."""
+    H = _ArmIIConstructorConfig().duration_days
+    if len(daily_epidemic) != H:
+        raise CampaignError("arm (ii) manipulation check requires 49 daily rows")
+    daily = [row["new_infections"] for row in daily_epidemic]
+    if any(not math.isfinite(value) or value < 0 for value in daily):
+        raise CampaignError("invalid daily new_infections")
+    trailing = [sum(daily[max(0, t - 6) : t + 1]) for t in range(H)]
+    p = trailing.index(max(trailing))
+    return {"latent_peak_day": p, "peak_crossed": p <= H - 8}
+
+
+def join_arm_ii(generation: ArmIIGeneration, output_dir: Path) -> RecoveryEvaluation:
+    """Re-read all blind estimates, then join this arm's own 49-day truth."""
+    config = generation.config
+    plan = plan_workload(config)
+    constructor_config = _ArmIIConstructorConfig(duration_days=plan["arms"]["ii"]["latent_days"])
+    for seed in config.target_process_seeds:
+        _verify_blind_readback(
+            generation.blind_paths[seed],
+            generation.blind_fits[seed],
+            generation.blind_file_hashes[seed],
+        )
+    rows = []
+    for seed in config.target_process_seeds:
+        latent, observed, requested_run, requested_observation = generation.target_outputs[seed]
+        namespace = _namespace_passes(latent, observed, requested_run, requested_observation)
+        diagnostics = _truth_diagnostics_from_result(
+            latent, observed, generation.target_tables[seed], namespace_passed=namespace
+        )
+        fit = generation.blind_fits[seed]
+        rows.append(
+            RecoveryRow(
+                seed,
+                fit.estimate_hash,
+                fit.selected,
+                fit.profiles,
+                fit.numerical_tie,
+                CandidateCell(0.08, 2, 0.75, 0.25),
+                diagnostics,
+                namespace,
+                len(fit.loss_surface),
+            )
+        )
+    dates = observation_dates(config.start_date, constructor_config.duration_days, 4)
+    provenance_verified = (
+        all(table.dates == dates for table in generation.target_tables.values())
+        and all(
+            table.dates == dates
+            for tables in generation.candidate_prediction_library.values()
+            for table in tables
+        )
+        and all(
+            latent.config.duration_days == 49 for latent, _ in generation.candidate_latents.values()
+        )
+        and all(
+            output[0].config.duration_days == 49 for output in generation.target_outputs.values()
+        )
+    )
+    complete = _baseline_execution_complete(generation) and all(
+        generation.generated_parents[seed] is generation.baseline.generated_parents[seed]
+        for seed in generation.generated_parents
+    )
+    evaluation = evaluate_recovery(
+        rows,
+        execution_complete=complete,
+        provenance_verified=provenance_verified,
+        measured_equals_caps=generation.measured
+        == {key: plan["arms"]["ii"][key] for key in TOTAL_FIELDS},
+    )
+    # Descriptive truth access occurs only after the gate; neither check is an input.
+    targets = []
+    for seed in config.target_process_seeds:
+        latent = generation.target_outputs[seed][0]
+        targets.append(
+            {
+                "target_seed": seed,
+                "prefix_identity": prefix_identity(
+                    generation.baseline.target_outputs[seed][0].transmission_events,
+                    latent.transmission_events,
+                    generation.baseline.target_tables[seed],
+                    generation.target_tables[seed],
+                    start_date=config.start_date,
+                ),
+                **manipulation_check(latent.daily_epidemic),
+            }
+        )
+    delivered = sum(target["peak_crossed"] for target in targets)
+    descriptives = {
+        "targets": targets,
+        "factor_delivered": f"factor delivered for {delivered}/10 targets",
+    }
+    # A10 / clarification 1 item 2: the shared parents' fallbacks never gate.
+    serial = tuple(
+        {
+            **row,
+            **{
+                key: str(bool(generation.parent_lineage[row["target_seed"]][key])).upper()
+                for key in ("population_fallback_m2", "population_fallback_m3")
+            },
+        }
+        for row in evaluation.rows
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with (output_dir / "g35b_ii_recovery.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(serial[0]))
+        writer.writeheader()
+        writer.writerows(serial)
+    (output_dir / "g35b_ii_descriptives.json").write_bytes(phase0._compact_json_bytes(descriptives))
+    (output_dir / "g35b_ii_disclosures.json").write_bytes(
+        phase0._compact_json_bytes(generation.disclosures)
+    )
+    return replace(evaluation, rows=serial)
 
 
 def arm_iii(*args: Any, **kwargs: Any) -> Any:

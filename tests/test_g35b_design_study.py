@@ -287,8 +287,8 @@ def test_exact_dry_run_and_no_execute_cli(capsys: Any) -> None:
     "hook,unit", [(study.arm_i, "U2"), (study.arm_ii, "U3"), (study.arm_iii, "U4")]
 )
 def test_factor_hooks_have_explicit_implementation_boundary(hook: Any, unit: str) -> None:
-    if unit == "U2":
-        # Implemented arm (i) requires completed baseline inputs; no implicit campaign.
+    if unit in {"U2", "U3"}:
+        # Implemented arms require completed baseline inputs; no implicit campaign.
         assert set(inspect.signature(hook).parameters) == {"baseline", "config", "work_dir", "root"}
         with pytest.raises(TypeError, match="required positional arguments"):
             hook()
@@ -1254,3 +1254,442 @@ def test_arm_i_rejects_incomplete_baseline_before_new_work(
     with pytest.raises(study.CampaignError, match="completed baseline"):
         study.arm_i(replace(baseline, measured={}), baseline.config, tmp_path / "i", root=ROOT)
     assert len(baseline_fakes["build"]) == 13
+
+
+def _install_arm_ii_fakes(calls: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    def run49(parent: Any, config: OutbreakRunConfig, parameters: Any) -> Any:
+        assert isinstance(config, OutbreakRunConfig)
+        assert config.duration_days == 49 and config.mode == "ci"
+        assert config.seed == parent.config.seed
+        assert config.initial_seed_count == 0 and config.import_rate_per_day == 0.0
+        assert list(config.import_schedule.values()) == [10]
+        assert config.latent_duration.family == "constant" and config.latent_duration.mean_days == 2
+        assert (
+            config.infectious_duration.family == "constant"
+            and config.infectious_duration.mean_days == 5
+        )
+        assert config.symptomatic_probability == 0.6 and not config.waning_enabled
+        assert tuple(config.route_multipliers.values()) == (1.0,) * 11
+        calls["latent"].append(config)
+        calls["events"].append("latent")
+        start = config.start_date
+        return SimpleNamespace(
+            generated=parent,
+            config=config,
+            logical_content_hash="latent49-mocked",
+            transmission_events=tuple(
+                [{"imported": True, "infection_date": (start + timedelta(days=2)).isoformat()}] * 10
+                + [
+                    {
+                        "source_kind": "local",
+                        "infection_date": (start + timedelta(days=8)).isoformat(),
+                    },
+                    {
+                        "source_kind": "local",
+                        "infection_date": (start + timedelta(days=45)).isoformat(),
+                    },
+                ]
+            ),
+            daily_epidemic=[
+                {"date": (start + timedelta(days=t)).isoformat(), "new_infections": int(t == 41)}
+                for t in range(49)
+            ],
+            diagnostics={
+                "natural_history": {"chronology_passed": True},
+                "states": {"conserved": True},
+                "benchmark": {"runtime_seconds": 0.49},
+            },
+        )
+
+    def observe49(latent: Any, config: ObservationConfig) -> Any:
+        assert latent.config.duration_days == 49
+        result = calls["fake_observe"](latent, config)
+        result.observation_events.append({"report_date": "2025-02-27", "symptomatic": True})
+        return result
+
+    monkeypatch.setattr(study, "run_outbreak", run49)
+    monkeypatch.setattr(study, "observe_latent_run", observe49)
+
+
+@pytest.fixture
+def arm_ii_inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, baseline_fakes: Any) -> Any:
+    baseline = study.generate_baseline(CONFIG, PREDECLARATION, tmp_path / "work", root=ROOT)
+    # Supply faithful prefix dates without changing the U1/U2 fixture or its assertions.
+    for output in baseline.target_outputs.values():
+        output[0].transmission_events = tuple(
+            {**event, "infection_date": "2025-01-08" if event.get("imported") else "2025-01-14"}
+            for event in output[0].transmission_events
+        )
+    _install_arm_ii_fakes(baseline_fakes, monkeypatch)
+    return baseline, baseline_fakes
+
+
+@pytest.mark.parametrize("duration", [30, 48, 50, 56])
+def test_arm_ii_rejects_nonfrozen_h_before_dispatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, duration: int
+) -> None:
+    with pytest.raises(study.BudgetError, match="H = 49"):
+        study._ArmIIConstructorConfig(duration_days=duration)
+    # Even a modified declaration with a consistent H+4 calendar cannot dispatch.
+    monkeypatch.setattr(
+        frozen,
+        "ARM_CAPS",
+        tuple(
+            (arm, R, duration, duration + 4, *rest) if arm == "ii" else (arm, R, H, T, *rest)
+            for arm, R, H, T, *rest in frozen.ARM_CAPS
+        ),
+    )
+    with pytest.raises(study.BudgetError, match="H = 49"):
+        study.arm_ii(None, study.StudyConfig(), tmp_path, root=ROOT)  # type: ignore[arg-type]
+
+
+def test_arm_ii_calendar_in_loss_and_fit() -> None:
+    dates = phase0.observation_dates(date(2025, 1, 6), 49, 4)
+    assert len(dates) == 53 and dates[-1] == "2025-02-27"
+    table = phase0.ObservedTables(dates, (0.0,) * 53, (0.0,) * 53)
+    late = replace(table, symptomatic=(0.0,) * 52 + (3.0,))
+    # A contribution on the final tail date is scored with denominator 2*53.
+    expected = (math.sqrt(3.0 + 3.0 / 8.0) - math.sqrt(3.0 / 8.0)) ** 2 / (2.0 * 53)
+    assert study.loss(late, (table,) * 3, 3, 53) == expected
+    fit = study.fit_blind(late, (TRUTH,), {TRUTH: (table,) * 3}, R=3, T=53)
+    assert fit.minimum_objective == expected
+    for wrong in (34, 52, 54):
+        with pytest.raises(study.CampaignError, match="date count"):
+            study.loss(table, (table,) * 3, 3, wrong)
+        with pytest.raises(study.CampaignError, match="date count"):
+            study.fit_blind(table, (TRUTH,), {TRUTH: (table,) * 3}, R=3, T=wrong)
+    shorter = phase0.ObservedTables(dates[:34], (0.0,) * 34, (0.0,) * 34)
+    shifted = replace(table, dates=phase0.observation_dates(date(2025, 1, 7), 49, 4))
+    for other in (shorter, shifted):
+        with pytest.raises(study.CampaignError, match="calendar"):
+            study.fit_blind(table, (TRUTH,), {TRUTH: (other,) * 3}, R=3, T=53)
+
+
+@pytest.mark.parametrize("change", [None, "event", "report", "channel"])
+def test_prefix_identity_sorted_inclusive_cutoff_and_mismatches(change: str | None) -> None:
+    start = date(2025, 1, 6)
+    dates = phase0.observation_dates(start, 30)
+    baseline = phase0.ObservedTables(dates, (0.0,) * 29 + (1.0,) + (0.0,) * 4, (0.0,) * 34)
+    extended = phase0.ObservedTables(
+        phase0.observation_dates(start, 49), baseline.symptomatic[:30] + (9.0,) * 23, (0.0,) * 53
+    )
+    events = [
+        {"infection_date": "2025-01-08", "infected_agent_id": "a", "imported": True},
+        {"infection_date": "2025-02-04", "infected_agent_id": "b", "source_kind": "local"},
+    ]
+    later = [{"infected_agent_id": "later", "infection_date": "2025-02-05"}, *reversed(events)]
+    if change == "event":
+        later[1] = {**later[1], "infected_agent_id": "changed"}
+    if change == "report":
+        extended = replace(extended, symptomatic=(0.0,) * 53)
+    if change == "channel":
+        extended = replace(
+            extended, symptomatic=(0.0,) * 53, asymptomatic=(0.0,) * 29 + (1.0,) + (0.0,) * 23
+        )
+    result = study.prefix_identity(events, later, baseline, extended, start_date=start)
+    assert result["prefix_last_date"] == "2025-02-04"
+    assert result["result"] == ("identical" if change is None else "not identical")
+    assert result["label"] == (
+        "identical" if change is None else "seed-stream matched, realization not matched"
+    )
+    assert (result["transmission_sha256"]["B"] == result["transmission_sha256"]["ii"]) == (
+        change != "event"
+    )
+    assert (result["report_count_sha256"]["B"] == result["report_count_sha256"]["ii"]) == (
+        change not in {"report", "channel"}
+    )
+    # Independently serialize sorted full rows, including the event on day 29.
+    assert (
+        result["transmission_sha256"]["B"]
+        == hashlib.sha256(
+            (
+                json.dumps(
+                    sorted(
+                        events,
+                        key=lambda row: json.dumps(row, sort_keys=True, separators=(",", ":")),
+                    ),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n"
+            ).encode()
+        ).hexdigest()
+    )
+
+
+@pytest.mark.parametrize(
+    "pulses,peak,crossed",
+    [
+        ({0: 3, 1: 2, 7: 3}, 1, True),  # trailing maxima 5 at days 1..6 and 7: earliest wins
+        ({0: 1, 20: 1}, 0, True),  # separated equal maxima
+        ({41: 4}, 41, True),
+        ({42: 4}, 42, False),
+        ({48: 4}, 48, False),
+        ({}, 0, True),
+    ],
+)
+def test_manipulation_check_hand_fixtures(pulses: Any, peak: int, crossed: bool) -> None:
+    daily = [{"new_infections": pulses.get(t, 0)} for t in range(49)]
+    assert study.manipulation_check(daily) == {"latent_peak_day": peak, "peak_crossed": crossed}
+
+
+def test_arm_ii_generation_counts_retention_and_join(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, arm_ii_inputs: Any
+) -> None:
+    baseline, calls = arm_ii_inputs
+    before = {seed: path.read_bytes() for seed, path in baseline.blind_paths.items()}
+    original_fit = study.fit_blind
+    fits, persisted = [], []
+    original_persist = study.persist_blind_estimate
+
+    def recording_fit(*args: Any, **kwargs: Any) -> Any:
+        assert len(calls["latent"]) == 170 and len(calls["observe"]) == 3770
+        assert kwargs["R"] == 3 and kwargs["T"] == 53
+        assert all(len(table.dates) == 53 for tables in args[2].values() for table in tables)
+        fits.append(args)
+        return original_fit(*args, **kwargs)
+
+    def recording_persist(path: Path, fit: Any) -> str:
+        persisted.append(path)
+        return original_persist(path, fit)
+
+    class UnreadTruth(dict):
+        def __getitem__(self, key: Any) -> Any:
+            raise AssertionError("generation must not read target latent truth")
+
+    with monkeypatch.context() as blind:
+        blind.setattr(study, "fit_blind", recording_fit)
+        blind.setattr(study, "persist_blind_estimate", recording_persist)
+        guarded = replace(baseline, target_outputs=UnreadTruth(baseline.target_outputs))
+        generation = study.arm_ii(guarded, baseline.config, tmp_path / "work", root=ROOT)
+    assert generation.baseline is guarded
+    generation = replace(generation, baseline=baseline)
+    assert generation.config == baseline.config == study.StudyConfig()
+    assert generation.generated_parents is baseline.generated_parents
+    assert generation.parent_lineage is baseline.parent_lineage
+    assert len(calls["build"]) == 13
+    assert len(fits) == len(persisted) == 10
+    assert generation.measured == {
+        "cells": 625,
+        "latent_calls": 85,
+        "observation_transforms": 1885,
+        "serosurvey_samples": 0,
+        "builds": 0,
+    }
+    assert len(generation.candidate_latents) == 75
+    assert len(generation.replicate_provenance) == 1875
+    for seed, path in generation.blind_paths.items():
+        assert path == tmp_path / "work/arm_ii/blind_estimates" / f"{seed}.json"
+        study._verify_blind_readback(
+            path, generation.blind_fits[seed], generation.blind_file_hashes[seed]
+        )
+        assert baseline.blind_paths[seed].read_bytes() == before[seed]
+        assert generation.target_tables[seed].dates == phase0.observation_dates(
+            date(2025, 1, 6), 49
+        )
+        assert generation.blind_fits[seed] == original_fit(
+            generation.target_tables[seed],
+            baseline.config.candidate_grid,
+            generation.candidate_prediction_library,
+            R=3,
+            T=53,
+            candidate_config_hashes=generation.candidate_config_hashes,
+        )
+    for seed in (*range(82001, 82011), *range(83001, 83004)):
+        observed = [
+            (latent, obs) for latent, obs in calls["observe"][1885:] if latent.config.seed == seed
+        ]
+        assert len(observed) == (1 if seed < 83000 else 625)
+        assert len({id(latent) for latent, _ in observed}) == (1 if seed < 83000 else 25)
+        for latent, obs in observed:
+            assert latent.generated is baseline.generated_parents[seed]
+            assert latent.config.duration_days == 49
+            assert obs.observation_seed == seed + 10000
+            assert obs.observation_config_id == (
+                "v13-g35b-target" if seed < 83000 else "v13-g35b-fit"
+            )
+    records_by_cell: dict[Any, list[Any]] = {cell: [] for cell in baseline.config.candidate_grid}
+    for record in generation.replicate_provenance:
+        records_by_cell[phase0.CandidateCell(**record["cell"])].append(record)
+    for cell, tables in generation.candidate_prediction_library.items():
+        records = records_by_cell[cell]
+        assert tuple(record["process_seed"] for record in records) == (83001, 83002, 83003)
+        assert tuple(record["observation_seed"] for record in records) == (93001, 93002, 93003)
+        for table, record in zip(tables, records, strict=True):
+            seed = record["process_seed"]
+            latent, run = generation.candidate_latents[seed, cell.beta, cell.inoculation_day_offset]
+            assert record["run_config"] == run.model_dump(mode="json")
+            assert record["run_config"]["duration_days"] == 49
+            assert record["observation_config"]["observation_config_id"] == "v13-g35b-fit"
+            assert record["batch"] == "A"
+            assert record["population_lineage"] is baseline.parent_lineage[seed]
+            assert record["observation_rng"]["stream_fingerprint"]
+            assert (
+                record["table_sha256"]
+                == hashlib.sha256(phase0._compact_json_bytes(table.as_dict())).hexdigest()
+            )
+        assert (
+            generation.candidate_config_hashes[cell]
+            == hashlib.sha256(
+                phase0._compact_json_bytes(
+                    [
+                        {"run": r["run_config"], "observation": r["observation_config"]}
+                        for r in records
+                    ]
+                )
+            ).hexdigest()
+        )
+    assert generation.disclosures["phase_wall_time_seconds"]["build"] == 0.0
+    assert set(generation.disclosures["phase_wall_time_seconds"]) == {
+        "build",
+        "latent",
+        "transform",
+        "scoring",
+    }
+    assert generation.disclosures["arm_wall_time_seconds"] >= sum(
+        generation.disclosures["phase_wall_time_seconds"].values()
+    )
+    assert len(generation.disclosures["latent_runtimes"]) == 85
+    assert all(r["runtime_seconds"] == 0.49 for r in generation.disclosures["latent_runtimes"])
+    assert generation.disclosures["fallback_built_targets"] == 2
+    assert generation.disclosures["fallback_built_candidates"] == 0
+
+    evaluated = []
+    original_evaluate, original_truth = (
+        study.evaluate_recovery,
+        study._truth_diagnostics_from_result,
+    )
+
+    def recording_truth(latent: Any, observed: Any, table: Any, **kwargs: Any) -> Any:
+        seed = latent.config.seed
+        assert latent is generation.target_outputs[seed][0]
+        assert table is generation.target_tables[seed] and len(table.dates) == 53
+        assert latent.config.duration_days == 49
+        return original_truth(latent, observed, table, **kwargs)
+
+    def recording_evaluate(rows: Any, **kwargs: Any) -> Any:
+        assert set(kwargs) == {"execution_complete", "provenance_verified", "measured_equals_caps"}
+        assert all(isinstance(row, phase0.RecoveryRow) for row in rows)
+        evaluated.append((rows, kwargs))
+        return original_evaluate(rows, **kwargs)
+
+    monkeypatch.setattr(study, "evaluate_recovery", recording_evaluate)
+    monkeypatch.setattr(study, "_truth_diagnostics_from_result", recording_truth)
+    evaluation = study.join_arm_ii(generation, tmp_path / "joined")
+    assert evaluation.predicates["1_complete"] and evaluation.predicates["10_measured_caps"]
+    assert evaluation.predicates["2_truth_viability"] and evaluation.predicates["9_provenance"]
+    description = json.loads((tmp_path / "joined/g35b_ii_descriptives.json").read_bytes())
+    assert description["factor_delivered"] == "factor delivered for 10/10 targets"
+    assert all(
+        t["prefix_identity"]["result"] == "identical" and t["latent_peak_day"] == 41
+        for t in description["targets"]
+    )
+    assert "interval" not in json.dumps(description).lower()
+    assert (
+        json.loads((tmp_path / "joined/g35b_ii_disclosures.json").read_bytes())
+        == generation.disclosures
+    )
+    with (tmp_path / "joined/g35b_ii_recovery.csv").open() as handle:
+        serial = list(csv.DictReader(handle))
+    assert len(serial) == 40
+    assert {r["target_seed"] for r in serial if r["population_fallback_m2"] == "TRUE"} == {"82003"}
+    assert {r["target_seed"] for r in serial if r["population_fallback_m3"] == "TRUE"} == {"82007"}
+    # Only the descriptive surfaces change; evaluate_recovery receives identical inputs.
+    for output in baseline.target_outputs.values():
+        output[0].transmission_events = ()
+    for output in generation.target_outputs.values():
+        output[0].daily_epidemic = [{"new_infections": int(t == 42)} for t in range(49)]
+    assert study.join_arm_ii(generation, tmp_path / "changed").predicates == evaluation.predicates
+    assert evaluated[0] == evaluated[1]
+    changed = json.loads((tmp_path / "changed/g35b_ii_descriptives.json").read_bytes())
+    assert changed["factor_delivered"] == "factor delivered for 0/10 targets"
+    assert all(
+        t["prefix_identity"]["label"] == "seed-stream matched, realization not matched"
+        for t in changed["targets"]
+    )
+    assert not study.join_arm_ii(
+        replace(generation, candidate_latents={}), tmp_path / "missing"
+    ).predicates["1_complete"]
+    assert not study.join_arm_ii(
+        replace(generation, measured=baseline.measured), tmp_path / "counts"
+    ).predicates["10_measured_caps"]
+
+    def forbidden_truth(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("every arm-(ii) read-back must precede all truth access")
+
+    monkeypatch.setattr(study, "_truth_diagnostics_from_result", forbidden_truth)
+    generation.blind_paths[82010].write_text("{}")
+    with pytest.raises(study.CampaignError, match="read-back"):
+        study.join_arm_ii(
+            replace(generation, target_outputs=UnreadTruth(generation.target_outputs)),
+            tmp_path / "corrupt",
+        )
+
+
+@pytest.mark.parametrize(
+    "call_index,damage", [(1, "missing"), (1, "duration"), (11, "duration"), (85, "duration")]
+)
+def test_arm_ii_requires_returned_49_day_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    arm_ii_inputs: Any,
+    call_index: int,
+    damage: str,
+) -> None:
+    baseline, calls = arm_ii_inputs
+    original = study.run_outbreak
+    count = 0
+
+    def damaged(*args: Any, **kwargs: Any) -> Any:
+        nonlocal count
+        result = original(*args, **kwargs)
+        count += 1
+        if count == call_index:
+            if damage == "missing":
+                del result.config
+            else:
+                result.config = result.config.model_copy(update={"duration_days": 30})
+        return result
+
+    monkeypatch.setattr(study, "run_outbreak", damaged)
+    with pytest.raises(study.CampaignError, match="returned config/parent metadata"):
+        study.arm_ii(baseline, baseline.config, tmp_path / "ii", root=ROOT)
+    assert count == call_index and len(calls["build"]) == 13
+
+
+def test_arm_ii_preserves_baseline_and_arm_i_records_in_shared_work_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, baseline_fakes: Any
+) -> None:
+    baseline = study.generate_baseline(CONFIG, PREDECLARATION, tmp_path / "B", root=ROOT)
+    first = study.arm_i(baseline, baseline.config, tmp_path, root=ROOT)
+    paths = [
+        *baseline.blind_paths.values(),
+        *first.blind_paths.values(),
+        *first.descriptive_paths.values(),
+        first.descriptives_path,
+    ]
+    content = {path: path.read_bytes() for path in paths}
+    _install_arm_ii_fakes(baseline_fakes, monkeypatch)
+    second = study.arm_ii(baseline, baseline.config, tmp_path, root=ROOT)
+    assert all(path.read_bytes() == original for path, original in content.items())
+    assert not set(second.blind_paths.values()).intersection(paths)
+
+
+@pytest.mark.parametrize("damage", ["measured", "target_parent", "candidate_parent"])
+def test_arm_ii_requires_completed_baseline_before_new_work(
+    tmp_path: Path, arm_ii_inputs: Any, damage: str
+) -> None:
+    baseline, calls = arm_ii_inputs
+    if damage == "measured":
+        baseline = replace(baseline, measured={})
+    else:
+        seed = 82010 if damage == "target_parent" else 83003
+        baseline = replace(
+            baseline,
+            generated_parents={
+                s: parent for s, parent in baseline.generated_parents.items() if s != seed
+            },
+        )
+    with pytest.raises(study.CampaignError, match="completed baseline"):
+        study.arm_ii(baseline, baseline.config, tmp_path / "ii", root=ROOT)
+    assert len(calls["latent"]) == 85 and len(calls["observe"]) == 1885
