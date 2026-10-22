@@ -19,3 +19,12 @@ Traceback (most recent call last):
                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 TypeError: _fixed_run_provenance() missing 1 required positional argument: 'duration_days'
 == worktree after: 0 changes
+== u5_smoke.py (re-run: call updated for C1's duration_days parameter) sha256 04fae89bc729d0b3ee1a732b3ee3dd10c5c646d26d6e434ec7ce0d09668ce9e4 at head 0c689825675aba8d414b6c7bd41951fc97aba6fc
+fixed_run_provenance: True
+obs json round-trip ok: True 123 v13-g35b-fit
+observed.config present: True True
+rng keys: ['event_key_inputs', 'natural_history_resampled', 'stream_fingerprint', 'stream_key_inputs', 'stream_namespace']
+namespace: observation key_inputs: ['latent_replicate_seed', 'observation_seed', 'observation_config_id']
+fingerprint ok: True
+run json equals: True
+== worktree after: 0 changes

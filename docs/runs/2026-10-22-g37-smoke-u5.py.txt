@@ -21,7 +21,7 @@ with tempfile.TemporaryDirectory() as tmp:
     latent = run_outbreak(generated, rc, params)
     obs = p0._observation_config_for_cell(root, cfg, 123, "v13-g35b-fit", cell)
     observed = observe_latent_run(latent, obs)
-    print("fixed_run_provenance:", g._fixed_run_provenance(latent, rc, SEED, cell))
+    print("fixed_run_provenance:", g._fixed_run_provenance(latent, rc, SEED, cell, 30))
     rt = p0.ObservationConfig.model_validate(obs.model_dump(mode="json"))
     print("obs json round-trip ok:", rt == obs, rt.observation_seed, rt.observation_config_id)
     print("observed.config present:", hasattr(observed, "config"), getattr(observed, "config", None) == obs)
