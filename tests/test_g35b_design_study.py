@@ -283,18 +283,12 @@ def test_exact_dry_run_and_no_execute_cli(capsys: Any) -> None:
     assert exc.value.code == 2
 
 
-@pytest.mark.parametrize(
-    "hook,unit", [(study.arm_i, "U2"), (study.arm_ii, "U3"), (study.arm_iii, "U4")]
-)
-def test_factor_hooks_have_explicit_implementation_boundary(hook: Any, unit: str) -> None:
-    if unit in {"U2", "U3"}:
-        # Implemented arms require completed baseline inputs; no implicit campaign.
-        assert set(inspect.signature(hook).parameters) == {"baseline", "config", "work_dir", "root"}
-        with pytest.raises(TypeError, match="required positional arguments"):
-            hook()
-    else:
-        with pytest.raises(NotImplementedError, match=unit):
-            hook()
+@pytest.mark.parametrize("hook", [study.arm_i, study.arm_ii, study.arm_iii])
+def test_factor_hooks_have_explicit_implementation_boundary(hook: Any) -> None:
+    # Implemented arms require completed baseline inputs; no implicit campaign.
+    assert set(inspect.signature(hook).parameters) == {"baseline", "config", "work_dir", "root"}
+    with pytest.raises(TypeError, match="required positional arguments"):
+        hook()
 
 
 @pytest.mark.parametrize("value", [0.0, 7.0, 10**12])
@@ -1693,3 +1687,561 @@ def test_arm_ii_requires_completed_baseline_before_new_work(
     with pytest.raises(study.CampaignError, match="completed baseline"):
         study.arm_ii(baseline, baseline.config, tmp_path / "ii", root=ROOT)
     assert len(calls["latent"]) == 85 and len(calls["observe"]) == 1885
+
+
+def test_serosurvey_a5_golden_digest_order() -> None:
+    """SHA-256 UTF-8 digests for the literal 83001|95001|v13-g35b-sero-fit|serosurvey| prefix.
+
+    a: 8ea8574d6eaeb5714a985e56e26739d36a43ade92b51a7a9e69dcee5ac5de3df
+    b: 8e36fc4e584ced0135c919d0d46496d23413a5190f328d6509c0387165adba8a
+    c: 1d785c7e6d769ba49982d0130bcb9f9759b16e7882bd0b7214f565a22bc9563f
+    d: a2bca54f2a3dc00d69eda00f9edf6c3aa50cacd3e3bac5e88320e8d3c7319038
+    e: f69ba99743b9e0b4b916e6dea3597e5b44b26bf9e4183244fd7fe5192162dda1
+    Ascending hexadecimal order is therefore c, b, a, d, e.
+    """
+    assert study.serosurvey_sample_ids(tuple("abcde"), 83001, 95001, "v13-g35b-sero-fit", 5) == (
+        "c",
+        "b",
+        "a",
+        "d",
+        "e",
+    )
+    assert study.serosurvey_sample_ids(tuple("edcba"), 83001, 95001, "v13-g35b-sero-fit", 3) == (
+        "c",
+        "b",
+        "a",
+    )
+
+
+def test_serosurvey_census_independent_daily_crosscheck_and_inclusive_date() -> None:
+    events = [
+        {"infected_agent_id": "a", "infection_date": "2025-01-06", "seeded": True},
+        {"infected_agent_id": "b", "infection_date": "2025-01-08", "imported": True},
+        {"infected_agent_id": "c", "infection_date": "2025-02-04", "source_kind": "local"},
+        {"infected_agent_id": "d", "infection_date": "2025-02-05", "source_kind": "local"},
+    ]
+    # Eight residents, three unique infected by d: the independent daily fraction is 3/8.
+    latent = SimpleNamespace(
+        generated=SimpleNamespace(agent_ids=tuple("abcdefgh")),
+        transmission_events=events,
+        daily_epidemic=[{"date": "2025-02-04", "ever_infected_fraction": 0.375}],
+    )
+    observed = study.observe_serosurvey(
+        latent,
+        process_seed=82001,
+        serosurvey_seed=94001,
+        config_id="v13-g35b-sero-target",
+        n=8,
+        survey_date=date(2025, 2, 4),
+    )
+    assert observed.k == latent.daily_epidemic[0]["ever_infected_fraction"] * 8 == 3
+    assert dict(zip(observed.sampled_agent_ids, observed.ever_infected, strict=True)) == {
+        "a": True,
+        "b": True,
+        "c": True,
+        "d": False,
+        "e": False,
+        "f": False,
+        "g": False,
+        "h": False,
+    }
+
+
+def test_serosurvey_repeat_episode_counts_unique_identity() -> None:
+    # This deliberately waning-enabled fixture has two episodes of the same resident.
+    parameters = study.load_parameter_set(ROOT)
+    config = phase0._run_config_for_cell(study.StudyConfig(), parameters, 82001, TRUTH)
+    config = config.model_copy(update={"waning_enabled": True})
+    assert isinstance(config, OutbreakRunConfig) and config.waning_enabled
+    latent = SimpleNamespace(
+        config=config,
+        generated=SimpleNamespace(agent_ids=("a", "b", "c", "d")),
+        transmission_events=[
+            {
+                "infected_agent_id": "a",
+                "infection_date": "2025-01-08",
+                "natural_history_episode_index": 0,
+            },
+            {
+                "infected_agent_id": "a",
+                "infection_date": "2025-02-04",
+                "natural_history_episode_index": 1,
+            },
+        ],
+        daily_epidemic=[
+            {"date": "2025-02-04", "ever_infected_fraction": 0.25, "cumulative_infections": 2}
+        ],
+    )
+    observation = study.observe_serosurvey(
+        latent,
+        process_seed=82001,
+        serosurvey_seed=94001,
+        config_id="v13-g35b-sero-target",
+        n=4,
+        survey_date=date(2025, 2, 4),
+    )
+    assert observation.k == latent.daily_epidemic[0]["ever_infected_fraction"] * 4 == 1
+    assert observation.k != latent.daily_epidemic[0]["cumulative_infections"] == 2
+
+
+def test_serosurvey_sampling_depends_only_on_seed_keys_and_resident_frame() -> None:
+    ids = tuple(str(i) for i in range(1000))
+    latent = SimpleNamespace(generated=SimpleNamespace(agent_ids=ids), transmission_events=[])
+    kwargs = dict(
+        process_seed=83001,
+        serosurvey_seed=95001,
+        config_id="v13-g35b-sero-fit",
+        n=400,
+        survey_date=date(2025, 2, 4),
+    )
+    before = study.observe_serosurvey(latent, **kwargs)
+    latent.transmission_events = [
+        {"infected_agent_id": a, "infection_date": "2025-01-06"} for a in ids
+    ]
+    after = study.observe_serosurvey(latent, **kwargs)
+    assert before.sampled_agent_ids == after.sampled_agent_ids
+    assert before.k == 0 and after.k == 400
+    for key, value in (
+        ("process_seed", 83002),
+        ("serosurvey_seed", 95002),
+        ("config_id", "different"),
+    ):
+        changed = study.observe_serosurvey(latent, **{**kwargs, key: value})
+        assert set(changed.sampled_agent_ids) != set(before.sampled_agent_ids)
+    latent.generated.agent_ids = tuple(f"new-{a}" for a in ids)
+    assert set(study.observe_serosurvey(latent, **kwargs).sampled_agent_ids).isdisjoint(
+        before.sampled_agent_ids
+    )
+
+
+def test_anscombe_z_hand_computation_exact() -> None:
+    """For k=100,n=400: math.sqrt(400.5)*math.asin(math.sqrt(100.375/400.75)).
+
+    This gives the binary float literal 10.489326893582062. Independently reduce
+    the rational inputs to sqrt(801/2) * asin(sqrt(803/3206)).
+    """
+    expected = math.sqrt(801 / 2) * math.asin(math.sqrt(803 / 3206))
+    assert study.anscombe_z(100, 400) == expected == 10.489326893582062
+
+
+@pytest.mark.parametrize("k,n", [(-1, 400), (401, 400), (0, 0), (1.0, 400), (True, 400)])
+def test_anscombe_rejects_invalid_counts(k: Any, n: int) -> None:
+    with pytest.raises(study.CampaignError, match="integer"):
+        study.anscombe_z(k, n)
+
+
+def test_augmented_loss_literal_report_loss_plus_one_datum_exactly() -> None:
+    target, grid, library = _library(3, 34)
+    predictions = library[grid[300]]
+    ks = (75, 125, 180)
+
+    # Independently write the transform and the ordered three-replicate mean.
+    def z(k: int) -> float:
+        return math.sqrt(400.5) * math.asin(math.sqrt((k + 0.375) / 400.75))
+
+    S = (z(100) - (z(75) + z(125) + z(180)) / 3) ** 2
+    assert study.serosurvey_squared_residual(100, 400, ks) == S
+    assert study.augmented_loss(target, predictions, 100, 400, ks) == (
+        study.loss(target, predictions, 3, 34) + S / (2 * 34)
+    )
+    with pytest.raises(study.CampaignError, match="three ordered"):
+        study.augmented_loss(target, predictions, 100, 400, ks[:2])
+    with pytest.raises(study.CampaignError, match="replicate count"):
+        study.augmented_loss(target, predictions[:2], 100, 400, ks)
+
+
+@pytest.mark.parametrize("flat", [False, True])
+def test_serosurvey_fitter_blind_signature_and_shared_selection_rules(flat: bool) -> None:
+    assert set(inspect.signature(study.fit_blind_serosurvey).parameters) == {
+        "target_tables",
+        "target_k",
+        "n",
+        "candidate_grid",
+        "candidate_prediction_library",
+        "candidate_k_library",
+    }
+    target, grid, library = _library(3, 34, flat=flat)
+    # Constant exact-zero anchor makes every selection/profile/hash match the report fitter.
+    ks = {cell: (0, 0, 0) for cell in grid}
+    actual = study.fit_blind_serosurvey(target, 0, 400, grid, library, ks)
+    expected = study.fit_blind(target, grid, library, R=3, T=34)
+    assert actual == expected
+    assert actual.numerical_tie is flat
+    with pytest.raises(TypeError, match="unexpected keyword"):
+        study.fit_blind_serosurvey(target, 0, 400, grid, library, ks, latent_run=object())
+    with pytest.raises(study.CampaignError, match="incomplete"):
+        study.fit_blind_serosurvey(target, 0, 400, grid, library, {})
+    with pytest.raises(study.CampaignError, match="Cartesian"):
+        study.fit_blind_serosurvey(
+            target, 0, 400, grid[:-1], library, {c: ks[c] for c in grid[:-1]}
+        )
+
+
+def test_serosurvey_fitter_anchor_can_separate_report_tie() -> None:
+    dates = phase0.observation_dates(date(2025, 1, 6), 30)
+    table = phase0.ObservedTables(dates, (1.0,) * 34, (2.0,) * 34)
+    other = replace(TRUTH, inoculation_day_offset=3)
+    grid = (TRUTH, other)
+    tables = {cell: (table,) * 3 for cell in grid}
+    assert study.fit_blind(table, grid, tables, R=3, T=34).numerical_tie
+    fit = study.fit_blind_serosurvey(
+        table, 100, 400, grid, tables, {TRUTH: (90, 100, 110), other: (300, 300, 300)}
+    )
+    assert fit.selected == TRUTH and not fit.numerical_tie
+    assert [row.objective for row in fit.loss_surface] == [
+        study.augmented_loss(table, tables[cell], 100, 400, ks)
+        for cell, ks in ((TRUTH, (90, 100, 110)), (other, (300, 300, 300)))
+    ]
+
+
+@pytest.fixture
+def arm_iii_inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, baseline_fakes: Any) -> Any:
+    calls = baseline_fakes
+    config = study.StudyConfig()
+    indices = {cell: index for index, cell in enumerate(config.candidate_grid)}
+
+    def faithful_run(parent: Any, run: OutbreakRunConfig, parameters: Any) -> Any:
+        result = calls["fake_run"](parent, run, parameters)
+        offset = (date.fromisoformat(next(iter(run.import_schedule))) - run.start_date).days
+        # Fixed synthetic fixture, independent of the design's scientific assumptions.
+        count = 750 if run.seed < 83000 else 400 + int(run.beta * 1000) + 30 * offset + run.seed % 3
+        result.transmission_events = tuple(
+            {
+                "infected_agent_id": str(i),
+                "infection_date": (
+                    run.start_date + timedelta(days=offset if i < 10 else 10)
+                ).isoformat(),
+                "imported": i < 10,
+                "source_kind": "imported" if i < 10 else "local",
+                "natural_history_episode_index": 0,
+            }
+            for i in range(count)
+        )
+        result.daily_epidemic = [
+            {
+                "date": (run.start_date + timedelta(days=d)).isoformat(),
+                "ever_infected_fraction": (0 if d < offset else 10 if d < 10 else count) / 3000,
+            }
+            for d in range(30)
+        ]
+        return result
+
+    def distinct_observe(latent: Any, obs: ObservationConfig) -> Any:
+        result = calls["fake_observe"](latent, obs)
+        offset = (
+            date.fromisoformat(next(iter(latent.config.import_schedule))) - latent.config.start_date
+        ).days
+        cell = phase0.CandidateCell(
+            latent.config.beta,
+            offset,
+            obs.parameters["symptomatic_detection_probability"].value,
+            obs.parameters["asymptomatic_detection_probability"].value,
+        )
+        result.observation_events *= indices[cell] + 1
+        return result
+
+    monkeypatch.setattr(study, "run_outbreak", faithful_run)
+    monkeypatch.setattr(study, "observe_latent_run", distinct_observe)
+    baseline = study.generate_baseline(CONFIG, PREDECLARATION, tmp_path / "work", root=ROOT)
+
+    # Every further expensive call is forbidden; only B's returned objects are available.
+    def forbidden(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("arm iii must reuse B without dispatch")
+
+    for name in ("build_parent", "run_outbreak", "observe_latent_run", "load_parameter_set"):
+        monkeypatch.setattr(study, name, forbidden)
+    return baseline, calls
+
+
+def test_arm_iii_counts_identity_retention_blind_fit_and_post_gate_descriptives(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, arm_iii_inputs: Any
+) -> None:
+    baseline, calls = arm_iii_inputs
+    before = {path: path.read_bytes() for path in baseline.blind_paths.values()}
+    # Stand-ins for other arms in the shared directory must remain byte unchanged.
+    for name in (
+        "blind_estimates/82001.json",
+        "arm_ii/blind_estimates/82001.json",
+        "g35b_i_descriptives.json",
+    ):
+        path = tmp_path / "work" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path not in before:
+            path.write_text("other-arm-sentinel")
+            before[path] = path.read_bytes()
+    original_observe, original_fit = study.observe_serosurvey, study.fit_blind_serosurvey
+    sampled_latents, fitted = [], []
+
+    def recording_observe(latent: Any, **kwargs: Any) -> Any:
+        sampled_latents.append(latent)
+        return original_observe(latent, **kwargs)
+
+    def recording_fit(*args: Any, **kwargs: Any) -> Any:
+        assert len(sampled_latents) == 85
+        assert (
+            isinstance(args[0], phase0.ObservedTables) and type(args[1]) is int and args[2] == 400
+        )
+        assert args[4] is baseline.candidate_prediction_library
+        fitted.append(args)
+        return original_fit(*args, **kwargs)
+
+    def forbidden_truth(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("no truth diagnostics before join")
+
+    with monkeypatch.context() as blind:
+        blind.setattr(study, "observe_serosurvey", recording_observe)
+        blind.setattr(study, "fit_blind_serosurvey", recording_fit)
+        blind.setattr(study, "_truth_diagnostics_from_result", forbidden_truth)
+        generation = study.arm_iii(baseline, baseline.config, tmp_path / "work", root=ROOT)
+    assert generation.baseline is baseline
+    assert (
+        len(calls["build"]) == 13 and len(calls["latent"]) == 85 and len(calls["observe"]) == 1885
+    )
+    assert len(fitted) == 10
+    assert all(
+        sampled_latents[i] is baseline.target_outputs[s][0]
+        for i, s in enumerate(baseline.config.target_process_seeds)
+    )
+    assert {id(latent) for latent in sampled_latents[10:]} == {
+        id(pair[0]) for pair in baseline.candidate_latents.values()
+    }
+    assert generation.measured == {
+        "cells": 625,
+        "latent_calls": 0,
+        "observation_transforms": 0,
+        "serosurvey_samples": 85,
+        "builds": 0,
+    }
+    assert len(generation.target_samples) == 10 and len(generation.candidate_samples) == 75
+    assert all(path.read_bytes() == content for path, content in before.items())
+    assert not list((tmp_path / "work").rglob("g35b_iii_descriptives.json"))
+    assert study._serosurvey_provenance_verified(generation)
+    for seed in baseline.config.candidate_process_seeds:
+        samples = [
+            s for (process, _, _), s in generation.candidate_samples.items() if process == seed
+        ]
+        assert len(samples) == 25 and len({s.sampled_agent_ids for s in samples}) == 1
+    assert len({sample.k for sample in generation.candidate_samples.values()}) > 1
+    for cell, ks in generation.candidate_k_library.items():
+        assert ks == tuple(
+            generation.candidate_samples[seed, cell.beta, cell.inoculation_day_offset].k
+            for seed in (83001, 83002, 83003)
+        )
+    for seed, fit in generation.blind_fits.items():
+        path = generation.blind_paths[seed]
+        assert path == tmp_path / "work/arm_iii/blind_estimates" / f"{seed}.json"
+        study._verify_blind_readback(path, fit, generation.blind_file_hashes[seed])
+        assert fit == original_fit(
+            baseline.target_tables[seed],
+            generation.target_samples[seed].k,
+            400,
+            baseline.config.candidate_grid,
+            baseline.candidate_prediction_library,
+            generation.candidate_k_library,
+        )
+        assert fit.selected is not None
+    stored = json.loads(generation.samples_path.read_bytes())
+    assert len(stored["targets"]) == 10 and len(stored["candidates"]) == 75
+    assert stored["design"] == generation.design
+    assert stored["targets"][0]["sampled_agent_ids"] == list(
+        generation.target_samples[82001].sampled_agent_ids
+    )
+    assert all(
+        len(sample["ever_infected"]) == sample["n"] == 400
+        and sum(sample["ever_infected"]) == sample["k"]
+        for sample in stored["targets"] + stored["candidates"]
+    )
+    with pytest.raises(FileExistsError):
+        study.arm_iii(baseline, baseline.config, tmp_path / "work", root=ROOT)
+    assert all(path.read_bytes() == content for path, content in before.items())
+
+    evaluated = []
+    original_evaluate, original_truth = (
+        study.evaluate_recovery,
+        study._truth_diagnostics_from_result,
+    )
+
+    def recording_truth(latent: Any, observed: Any, table: Any, **kwargs: Any) -> Any:
+        assert latent is baseline.target_outputs[latent.config.seed][0]
+        return original_truth(latent, observed, table, **kwargs)
+
+    def recording_evaluate(rows: Any, **kwargs: Any) -> Any:
+        assert set(kwargs) == {"execution_complete", "provenance_verified", "measured_equals_caps"}
+        assert all(isinstance(row, phase0.RecoveryRow) for row in rows)
+        evaluated.append((rows, kwargs))
+        return original_evaluate(rows, **kwargs)
+
+    monkeypatch.setattr(study, "evaluate_recovery", recording_evaluate)
+    monkeypatch.setattr(study, "_truth_diagnostics_from_result", recording_truth)
+    evaluation = study.join_arm_iii(generation, tmp_path / "joined")
+    assert all(
+        evaluation.predicates[key]
+        for key in (
+            "1_complete",
+            "2_truth_viability",
+            "3_chronology_conservation",
+            "9_provenance",
+            "10_measured_caps",
+        )
+    )
+    description = json.loads((tmp_path / "joined/g35b_iii_descriptives.json").read_bytes())
+    assert len(description["targets"]) == 10 and len(description["candidates"]) == 75
+    assert all(
+        t["ever_infected_fraction"] == 0.25 and t["n_criterion_premise_met"]
+        for t in description["targets"]
+    )
+    for target in description["targets"]:
+        seed = target["target_seed"]
+        fit = generation.blind_fits[seed]
+        sample = generation.target_samples[seed]
+        assert target["k_over_n"] == sample.k / sample.n
+        assert target["z"] == study.anscombe_z(sample.k, sample.n)
+        term = study.serosurvey_squared_residual(
+            sample.k, 400, generation.candidate_k_library[fit.selected]
+        ) / (2 * 34)
+        assert target["serosurvey_term"] == term
+        assert target["serosurvey_share_of_loss"] == term / fit.minimum_objective
+    assert (
+        json.loads((tmp_path / "joined/g35b_iii_disclosures.json").read_bytes())
+        == generation.disclosures
+    )
+    with (tmp_path / "joined/g35b_iii_recovery.csv").open() as handle:
+        serial = list(csv.DictReader(handle))
+    assert len(serial) == 40
+    assert {r["target_seed"] for r in serial if r["population_fallback_m2"] == "TRUE"} == {"82003"}
+    assert {r["target_seed"] for r in serial if r["population_fallback_m3"] == "TRUE"} == {"82007"}
+    # A7 and A10 values are unavailable until gating and cannot affect its inputs.
+    for seed in baseline.config.target_process_seeds:
+        baseline.target_outputs[seed][0].daily_epidemic[-1]["ever_infected_fraction"] = (
+            math.nextafter(0.25, 0.0)
+        )
+        baseline.parent_lineage[seed]["population_fallback_m2"] = True
+    changed = study.join_arm_iii(generation, tmp_path / "changed")
+    assert evaluated[0] == evaluated[1] and changed.predicates == evaluation.predicates
+    altered = json.loads((tmp_path / "changed/g35b_iii_descriptives.json").read_bytes())
+    assert all(not t["n_criterion_premise_met"] for t in altered["targets"])
+    assert not study.join_arm_iii(
+        replace(generation, measured=baseline.measured), tmp_path / "counts"
+    ).predicates["10_measured_caps"]
+
+
+@pytest.mark.parametrize("damage", ["measured", "latents", "targets", "parents"])
+def test_arm_iii_requires_completed_baseline_before_sampling(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, arm_iii_inputs: Any, damage: str
+) -> None:
+    baseline, _ = arm_iii_inputs
+    changes = {
+        "measured": {"measured": {}},
+        "latents": {"candidate_latents": {}},
+        "targets": {"target_tables": {}},
+        "parents": {"generated_parents": {}},
+    }[damage]
+
+    def forbidden(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("no sampling of incomplete baseline")
+
+    monkeypatch.setattr(study, "observe_serosurvey", forbidden)
+    with pytest.raises(study.CampaignError, match="completed baseline"):
+        study.arm_iii(replace(baseline, **changes), baseline.config, tmp_path / "iii", root=ROOT)
+    assert not (tmp_path / "iii").exists()
+
+
+@pytest.mark.parametrize("record", ["blind", "samples"])
+def test_arm_iii_corrupt_record_blocks_all_truth_access(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, arm_iii_inputs: Any, record: str
+) -> None:
+    baseline, _ = arm_iii_inputs
+    generation = study.arm_iii(baseline, baseline.config, tmp_path / "iii", root=ROOT)
+    path = generation.blind_paths[82010] if record == "blind" else generation.samples_path
+    path.write_text("{}")
+
+    def forbidden(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("all read-backs must precede truth diagnostics")
+
+    monkeypatch.setattr(study, "_truth_diagnostics_from_result", forbidden)
+    with pytest.raises(study.CampaignError, match="read-back"):
+        study.join_arm_iii(generation, tmp_path / "joined")
+
+
+def test_arm_iii_common_random_numbers_assertion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, arm_iii_inputs: Any
+) -> None:
+    baseline, _ = arm_iii_inputs
+    original = study.observe_serosurvey
+    calls = 0
+
+    def changed(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        sample = original(*args, **kwargs)
+        calls += 1
+        if calls == 12:
+            sample = replace(sample, sampled_agent_ids=("changed", *sample.sampled_agent_ids[1:]))
+        return sample
+
+    monkeypatch.setattr(study, "observe_serosurvey", changed)
+    with pytest.raises(study.CampaignError, match="common random numbers"):
+        study.arm_iii(baseline, baseline.config, tmp_path / "iii", root=ROOT)
+    assert calls == 12
+
+
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        ("n", 401),
+        ("survey_day", 28),
+        ("seroconversion_lag_days", 1),
+        ("sensitivity", "0.9"),
+        ("specificity", "0.9"),
+        ("target_serosurvey_config_id", "different"),
+        ("candidate_serosurvey_config_id", "different"),
+        ("target_serosurvey_seeds", list(range(94002, 94012))),
+        ("candidate_serosurvey_seeds", [95002, 95003, 95004]),
+    ],
+)
+def test_arm_iii_provenance_compares_design_to_independent_frozen_controls(
+    tmp_path: Path, arm_iii_inputs: Any, key: str, value: Any
+) -> None:
+    baseline, _ = arm_iii_inputs
+    generation = study.arm_iii(baseline, baseline.config, tmp_path / "iii", root=ROOT)
+    changed = replace(generation, design={**generation.design, key: value})
+    # Retain consistent bytes for the changed input: independent frozen controls must reject it.
+    content = phase0._compact_json_bytes(study._serosurvey_records(changed))
+    changed.samples_path.write_bytes(content)
+    changed = replace(changed, samples_file_hash=hashlib.sha256(content).hexdigest())
+    result = study.join_arm_iii(changed, tmp_path / "joined")
+    assert not result.predicates["9_provenance"]
+    assert result.predicates["10_measured_caps"]
+
+
+def test_arm_iii_provenance_rejects_calendar_counts_and_candidate_k_mismatch(
+    tmp_path: Path, arm_iii_inputs: Any
+) -> None:
+    baseline, _ = arm_iii_inputs
+    generation = study.arm_iii(baseline, baseline.config, tmp_path / "iii", root=ROOT)
+    cell = baseline.config.candidate_grid[0]
+    assert not study._serosurvey_provenance_verified(replace(generation, target_samples={}))
+    assert not study._serosurvey_provenance_verified(replace(generation, candidate_samples={}))
+    assert not study._serosurvey_provenance_verified(
+        replace(generation, measured={**generation.measured, "serosurvey_samples": 84})
+    )
+    assert not study._serosurvey_provenance_verified(
+        replace(generation, candidate_k_library={**generation.candidate_k_library, cell: (0, 0, 0)})
+    )
+    table = baseline.target_tables[82001]
+    altered = replace(
+        baseline,
+        target_tables={
+            **baseline.target_tables,
+            82001: replace(table, dates=tuple(reversed(table.dates))),
+        },
+    )
+    assert not study.join_arm_iii(
+        replace(generation, baseline=altered), tmp_path / "dates"
+    ).predicates["9_provenance"]
+
+
+def test_study_module_has_no_real_serosurvey_or_data_path_reference() -> None:
+    for module in (study, frozen):
+        source = Path(module.__file__).read_text()
+        assert "covid_serosurvey" not in source
+        assert "data/" not in source

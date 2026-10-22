@@ -16,8 +16,8 @@ import math
 import subprocess
 import sys
 import time
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field, replace
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import asdict, dataclass, field, replace
 from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -405,6 +405,21 @@ def fit_blind(
     candidate_config_hashes: Mapping[CandidateCell, str] | None = None,
 ) -> BlindFitResult:
     """Truth-free generalized fitting boundary: tables, grid, library and R/T only."""
+    return _fit_scored_grid(
+        candidate_grid,
+        candidate_prediction_library,
+        lambda cell: loss(target_tables, candidate_prediction_library[cell], R, T),
+        candidate_config_hashes,
+    )
+
+
+def _fit_scored_grid(
+    candidate_grid: Sequence[CandidateCell],
+    candidate_prediction_library: Mapping[CandidateCell, Sequence[ObservedTables]],
+    objective: Callable[[CandidateCell], float],
+    candidate_config_hashes: Mapping[CandidateCell, str] | None = None,
+) -> BlindFitResult:
+    """Shared complete-grid validation, selection, ties, profiles and hashing."""
     grid = tuple(candidate_grid)
     if not grid or len(set(grid)) != len(grid):
         raise CampaignError("candidate grid must be nonempty and unique")
@@ -422,7 +437,7 @@ def fit_blind(
     surface = tuple(
         LossRow(
             cell,
-            loss(target_tables, candidate_prediction_library[cell], R, T),
+            objective(cell),
             candidate_config_hashes[cell]
             if candidate_config_hashes is not None
             else candidate_config_hash(cell),
@@ -1697,8 +1712,484 @@ def join_arm_ii(generation: ArmIIGeneration, output_dir: Path) -> RecoveryEvalua
     return replace(evaluation, rows=serial)
 
 
-def arm_iii(*args: Any, **kwargs: Any) -> Any:
-    raise NotImplementedError("U4: arm (iii)")
+@dataclass(frozen=True)
+class SerosurveySample:
+    """One ideal-assay observation, retaining the full sampled resident evidence."""
+
+    process_seed: int
+    serosurvey_seed: int
+    config_id: str
+    survey_date: str
+    sampled_agent_ids: tuple[str, ...]
+    ever_infected: tuple[bool, ...]
+    k: int
+    n: int
+
+
+def serosurvey_sample_ids(
+    agent_ids: Sequence[str], process_seed: int, serosurvey_seed: int, config_id: str, n: int
+) -> tuple[str, ...]:
+    """A5 byte-exact seed-only SHA-256 ordering, independent of epidemic events."""
+    if (
+        type(n) is not int
+        or not 0 < n <= len(agent_ids)
+        or len(set(agent_ids)) != len(agent_ids)
+        or any(not isinstance(agent_id, str) for agent_id in agent_ids)
+        or type(process_seed) is not int
+        or type(serosurvey_seed) is not int
+    ):
+        raise CampaignError("invalid serosurvey sampling frame, n or seeds")
+    return tuple(
+        sorted(
+            agent_ids,
+            key=lambda agent_id: hashlib.sha256(
+                f"{process_seed}|{serosurvey_seed}|{config_id}|serosurvey|{agent_id}".encode()
+            ).hexdigest(),
+        )[:n]
+    )
+
+
+def observe_serosurvey(
+    latent: Any,
+    *,
+    process_seed: int,
+    serosurvey_seed: int,
+    config_id: str,
+    n: int,
+    survey_date: date,
+) -> SerosurveySample:
+    """Perfect assay, zero lag: some episode by d means ever infected, once per ID."""
+    ids = serosurvey_sample_ids(
+        latent.generated.agent_ids, process_seed, serosurvey_seed, config_id, n
+    )
+    infected = {
+        event["infected_agent_id"]
+        for event in latent.transmission_events
+        if date.fromisoformat(event["infection_date"]) <= survey_date
+    }
+    flags = tuple(agent_id in infected for agent_id in ids)
+    return SerosurveySample(
+        process_seed, serosurvey_seed, config_id, survey_date.isoformat(), ids, flags, sum(flags), n
+    )
+
+
+def anscombe_z(k: int, n: int) -> float:
+    """Frozen §6 binomial Anscombe transform, with no fitted assay parameters."""
+    if type(n) is not int or type(k) is not int or n < 1 or not 0 <= k <= n:
+        raise CampaignError("serosurvey requires integer 0 <= k <= n and n > 0")
+    return math.sqrt(n + 1 / 2) * math.asin(math.sqrt((k + 3 / 8) / (n + 3 / 4)))
+
+
+def serosurvey_squared_residual(target_k: int, n: int, candidate_ks: Sequence[int]) -> float:
+    if len(candidate_ks) != 3:
+        raise CampaignError("serosurvey requires three ordered candidate replicates")
+    mean_z = sum(anscombe_z(k, n) for k in candidate_ks) / 3
+    return (anscombe_z(target_k, n) - mean_z) ** 2
+
+
+def augmented_loss(
+    target: ObservedTables,
+    predictions: Sequence[ObservedTables],
+    target_k: int,
+    n: int,
+    candidate_ks: Sequence[int],
+) -> float:
+    """Literal L^rep + S/(2T), preserving report-loss floating-point arithmetic."""
+    S = serosurvey_squared_residual(target_k, n, candidate_ks)
+    return loss(target, predictions, R=3, T=34) + S / (2 * 34)
+
+
+def fit_blind_serosurvey(
+    target_tables: ObservedTables,
+    target_k: int,
+    n: int,
+    candidate_grid: Sequence[CandidateCell],
+    candidate_prediction_library: Mapping[CandidateCell, Sequence[ObservedTables]],
+    candidate_k_library: Mapping[CandidateCell, Sequence[int]],
+) -> BlindFitResult:
+    """Blind arm-(iii) boundary: observed tables/counts only; no seeds or latent runs."""
+    if set(candidate_k_library) != set(candidate_grid):
+        raise CampaignError("candidate serosurvey library is incomplete")
+    return _fit_scored_grid(
+        candidate_grid,
+        candidate_prediction_library,
+        lambda cell: augmented_loss(
+            target_tables,
+            candidate_prediction_library[cell],
+            target_k,
+            n,
+            candidate_k_library[cell],
+        ),
+    )
+
+
+def _serosurvey_design() -> dict[str, Any]:
+    # These settings and IDs already live in U1's independent frozen payload.
+    payload = frozen_payload()
+    return {
+        **payload["serosurvey"],
+        **{
+            key: payload["seeds"][key]
+            for key in (
+                "target_serosurvey_seeds",
+                "candidate_serosurvey_seeds",
+                "target_serosurvey_config_id",
+                "candidate_serosurvey_config_id",
+            )
+        },
+    }
+
+
+@dataclass(frozen=True)
+class ArmIIIGeneration:
+    """B is retained by identity; only the serosurvey observations and fits are new."""
+
+    baseline: BaselineGeneration
+    design: Mapping[str, Any]
+    target_samples: Mapping[int, SerosurveySample]
+    candidate_samples: Mapping[tuple[int, float, int], SerosurveySample]
+    candidate_k_library: Mapping[CandidateCell, tuple[int, ...]]
+    blind_fits: Mapping[int, BlindFitResult]
+    blind_paths: Mapping[int, Path]
+    blind_file_hashes: Mapping[int, str]
+    samples_path: Path
+    samples_file_hash: str
+    measured: Mapping[str, int]
+    disclosures: Mapping[str, Any]
+
+
+def _serosurvey_records(generation: ArmIIIGeneration) -> dict[str, Any]:
+    return {
+        "design": generation.design,
+        "targets": [asdict(sample) for sample in generation.target_samples.values()],
+        "candidates": [
+            {"beta": beta, "offset": offset, **asdict(sample)}
+            for (_, beta, offset), sample in generation.candidate_samples.items()
+        ],
+    }
+
+
+def arm_iii(
+    baseline: BaselineGeneration,
+    config: StudyConfig,
+    work_dir: Path,
+    *,
+    root: Path,
+) -> ArmIIIGeneration:
+    """Observe B's ten targets and 75 latents, then persist ten augmented blind fits."""
+    started = time.perf_counter()
+    plan = plan_workload(config)
+    if (
+        baseline.config != config
+        or baseline.measured != {key: plan["arms"]["B"][key] for key in TOTAL_FIELDS}
+        or not _baseline_execution_complete(baseline)
+    ):
+        raise CampaignError("arm (iii) requires completed baseline generation")
+    for seed in config.target_process_seeds:
+        _verify_blind_readback(
+            baseline.blind_paths[seed], baseline.blind_fits[seed], baseline.blind_file_hashes[seed]
+        )
+    # A fresh arm namespace prevents overwriting any arm, including a prior iii attempt.
+    destination = work_dir / "arm_iii"
+    destination.mkdir(parents=True, exist_ok=False)
+    counter = WorkCounter("iii")
+    design = _serosurvey_design()
+    survey_date = config.start_date + timedelta(days=design["survey_day"])
+
+    def sample(
+        latent: Any, requested: Any, seed: int, sero_seed: int, config_id: str
+    ) -> SerosurveySample:
+        if (
+            latent.config != requested
+            or latent.config.seed != seed
+            or latent.config.start_date != config.start_date
+            or latent.config.duration_days != config.duration_days
+            or latent.generated is not baseline.generated_parents[seed]
+        ):
+            raise CampaignError("serosurvey latent metadata differs from baseline")
+        counter.dispatch("serosurvey_samples")
+        return observe_serosurvey(
+            latent,
+            process_seed=seed,
+            serosurvey_seed=sero_seed,
+            config_id=config_id,
+            n=design["n"],
+            survey_date=survey_date,
+        )
+
+    targets = {}
+    for seed, sero_seed in zip(
+        config.target_process_seeds, design["target_serosurvey_seeds"], strict=True
+    ):
+        latent, _, requested, _ = baseline.target_outputs[seed]
+        targets[seed] = sample(
+            latent, requested, seed, sero_seed, design["target_serosurvey_config_id"]
+        )
+    candidates = {}
+    for seed, sero_seed in zip(
+        config.candidate_process_seeds, design["candidate_serosurvey_seeds"], strict=True
+    ):
+        common_ids = None
+        for beta in config.dimensions[0].candidates:
+            for offset in config.dimensions[1].candidates:
+                key = (seed, beta, int(offset))
+                latent, requested = baseline.candidate_latents[key]
+                observation = sample(
+                    latent, requested, seed, sero_seed, design["candidate_serosurvey_config_id"]
+                )
+                ids = frozenset(observation.sampled_agent_ids)
+                if common_ids is not None and ids != common_ids:
+                    raise CampaignError("serosurvey common random numbers mismatch across cells")
+                common_ids = ids
+                candidates[key] = observation
+    sampling_seconds = time.perf_counter() - started
+    library = {}
+    for cell in config.candidate_grid:
+        counter.dispatch("cells")
+        library[cell] = tuple(
+            candidates[seed, cell.beta, cell.inoculation_day_offset].k
+            for seed in config.candidate_process_seeds
+        )
+    if not counter.exact():
+        raise BudgetError("arm (iii) measured work differs from exact iii caps")
+    fits, paths, hashes = {}, {}, {}
+    scoring_started = time.perf_counter()
+    for seed, table in baseline.target_tables.items():
+        fit = fit_blind_serosurvey(
+            table,
+            targets[seed].k,
+            design["n"],
+            config.candidate_grid,
+            baseline.candidate_prediction_library,
+            library,
+        )
+        path = destination / "blind_estimates" / f"{seed}.json"
+        fits[seed], paths[seed], hashes[seed] = fit, path, _persist_fit(path, fit)
+    scoring_seconds = time.perf_counter() - scoring_started
+    generation = ArmIIIGeneration(
+        baseline,
+        design,
+        targets,
+        candidates,
+        library,
+        fits,
+        paths,
+        hashes,
+        destination / "serosurvey_samples.json",
+        "",
+        dict(counter.measured),
+        {
+            "arm_wall_time_seconds": time.perf_counter() - started,
+            "phase_wall_time_seconds": {
+                "build": 0.0,
+                "latent": 0.0,
+                "transform": 0.0,
+                "serosurvey": sampling_seconds,
+                "scoring": scoring_seconds,
+            },
+            "latent_runtimes": [],
+            "fallback_source": frozen.CLARIFICATION_PATH,
+            "fallback_built_targets": baseline.disclosures["fallback_built_targets"],
+            "fallback_built_candidates": baseline.disclosures["fallback_built_candidates"],
+            "measured_counters": dict(counter.measured),
+        },
+    )
+    content = phase0._compact_json_bytes(_serosurvey_records(generation))
+    generation.samples_path.write_bytes(content)
+    if generation.samples_path.read_bytes() != content:
+        raise CampaignError("serosurvey samples read-back mismatch")
+    return replace(generation, samples_file_hash=hashlib.sha256(content).hexdigest())
+
+
+def _serosurvey_provenance_verified(generation: ArmIIIGeneration) -> bool:
+    baseline = generation.baseline
+    config = baseline.config
+    design = _serosurvey_design()
+    dates = observation_dates(config.start_date, config.duration_days, 4)
+    if (
+        generation.design != design
+        or len(dates) != 34
+        or any(table.dates != dates for table in baseline.target_tables.values())
+        or any(
+            table.dates != dates
+            for tables in baseline.candidate_prediction_library.values()
+            for table in tables
+        )
+        or set(generation.target_samples) != set(frozen.TARGET_PROCESS_SEEDS)
+        or set(generation.candidate_samples) != set(baseline.candidate_latents)
+        or len(generation.candidate_samples) != 75
+        or generation.measured.get("serosurvey_samples") != 85
+    ):
+        return False
+    survey_date = (config.start_date + timedelta(days=design["survey_day"])).isoformat()
+    for records, seeds, sero_seeds, namespace in (
+        (
+            tuple(generation.target_samples.items()),
+            config.target_process_seeds,
+            design["target_serosurvey_seeds"],
+            design["target_serosurvey_config_id"],
+        ),
+        (
+            tuple((key[0], sample) for key, sample in generation.candidate_samples.items()),
+            config.candidate_process_seeds,
+            design["candidate_serosurvey_seeds"],
+            design["candidate_serosurvey_config_id"],
+        ),
+    ):
+        paired = dict(zip(seeds, sero_seeds, strict=True))
+        for expected_seed, observation in records:
+            if (
+                observation.process_seed != expected_seed
+                or observation.process_seed not in paired
+                or observation.serosurvey_seed != paired[observation.process_seed]
+                or observation.config_id != namespace
+                or observation.survey_date != survey_date
+                or observation.n != design["n"]
+                or len(observation.ever_infected) != design["n"]
+                or observation.k != sum(observation.ever_infected)
+                or observation.sampled_agent_ids
+                != serosurvey_sample_ids(
+                    baseline.generated_parents[observation.process_seed].agent_ids,
+                    observation.process_seed,
+                    observation.serosurvey_seed,
+                    namespace,
+                    design["n"],
+                )
+            ):
+                return False
+    return set(generation.candidate_k_library) == set(config.candidate_grid) and all(
+        generation.candidate_k_library[cell]
+        == tuple(
+            generation.candidate_samples[seed, cell.beta, cell.inoculation_day_offset].k
+            for seed in config.candidate_process_seeds
+        )
+        for cell in config.candidate_grid
+    )
+
+
+def join_arm_iii(generation: ArmIIIGeneration, output_dir: Path) -> RecoveryEvaluation:
+    """Re-verify blind records first; join B's truth, gate, then compute A7 disclosures."""
+    baseline = generation.baseline
+    config = baseline.config
+    plan = plan_workload(config)
+    for seed in config.target_process_seeds:
+        _verify_blind_readback(
+            generation.blind_paths[seed],
+            generation.blind_fits[seed],
+            generation.blind_file_hashes[seed],
+        )
+    try:
+        content = generation.samples_path.read_bytes()
+        if hashlib.sha256(
+            content
+        ).hexdigest() != generation.samples_file_hash or content != phase0._compact_json_bytes(
+            _serosurvey_records(generation)
+        ):
+            raise CampaignError("serosurvey samples read-back mismatch")
+    except OSError as exc:
+        raise CampaignError(f"serosurvey samples read-back failed: {exc}") from exc
+    rows = []
+    for seed in config.target_process_seeds:
+        latent, observed, requested_run, requested_observation = baseline.target_outputs[seed]
+        namespace = _namespace_passes(latent, observed, requested_run, requested_observation)
+        diagnostics = _truth_diagnostics_from_result(
+            latent, observed, baseline.target_tables[seed], namespace_passed=namespace
+        )
+        fit = generation.blind_fits[seed]
+        rows.append(
+            RecoveryRow(
+                seed,
+                fit.estimate_hash,
+                fit.selected,
+                fit.profiles,
+                fit.numerical_tie,
+                CandidateCell(0.08, 2, 0.75, 0.25),
+                diagnostics,
+                namespace,
+                len(fit.loss_surface),
+            )
+        )
+    evaluation = evaluate_recovery(
+        rows,
+        execution_complete=_baseline_execution_complete(baseline),
+        provenance_verified=_serosurvey_provenance_verified(generation),
+        measured_equals_caps=generation.measured
+        == {key: plan["arms"]["iii"][key] for key in TOTAL_FIELDS},
+    )
+    # A7 descriptives are first computed after gating. Decimal(str(fraction))
+    # compares the exported daily fraction to exact 0.25 without an epsilon.
+    targets = []
+    for seed, observation in generation.target_samples.items():
+        latent = baseline.target_outputs[seed][0]
+        daily = [row for row in latent.daily_epidemic if row["date"] == observation.survey_date]
+        if len(daily) != 1:
+            raise CampaignError("serosurvey descriptive requires exactly one survey-date daily row")
+        fraction = daily[0]["ever_infected_fraction"]
+        if not math.isfinite(fraction) or not 0 <= fraction <= 1:
+            raise CampaignError("invalid ever-infected fraction")
+        fit = generation.blind_fits[seed]
+        term = (
+            None
+            if fit.selected is None
+            else serosurvey_squared_residual(
+                observation.k, observation.n, generation.candidate_k_library[fit.selected]
+            )
+            / (2 * 34)
+        )
+        targets.append(
+            {
+                "target_seed": seed,
+                "k": observation.k,
+                "n": observation.n,
+                "k_over_n": observation.k / observation.n,
+                "z": anscombe_z(observation.k, observation.n),
+                "serosurvey_term": term,
+                "serosurvey_share_of_loss": None
+                if term is None or fit.minimum_objective == 0
+                else term / fit.minimum_objective,
+                "ever_infected_fraction": fraction,
+                "n_criterion_premise_met": Decimal(str(fraction)) >= Decimal("0.25"),
+            }
+        )
+    descriptives = {
+        "fraction_comparison": "Decimal(str(exported ever_infected_fraction)) >= Decimal('0.25')",
+        "undefined_share": "null for a tied global minimum or zero augmented loss",
+        "targets": targets,
+        "candidates": [
+            {
+                "process_seed": seed,
+                "beta": beta,
+                "offset": offset,
+                "k": sample.k,
+                "n": sample.n,
+                "k_over_n": sample.k / sample.n,
+                "z": anscombe_z(sample.k, sample.n),
+            }
+            for (seed, beta, offset), sample in generation.candidate_samples.items()
+        ],
+    }
+    serial = tuple(
+        {
+            **row,
+            **{
+                key: str(bool(baseline.parent_lineage[row["target_seed"]][key])).upper()
+                for key in ("population_fallback_m2", "population_fallback_m3")
+            },
+        }
+        for row in evaluation.rows
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with (output_dir / "g35b_iii_recovery.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(serial[0]))
+        writer.writeheader()
+        writer.writerows(serial)
+    (output_dir / "g35b_iii_descriptives.json").write_bytes(
+        phase0._compact_json_bytes(descriptives)
+    )
+    (output_dir / "g35b_iii_disclosures.json").write_bytes(
+        phase0._compact_json_bytes(generation.disclosures)
+    )
+    return replace(evaluation, rows=serial)
 
 
 def dry_run(config_path: Path, predeclaration_path: Path) -> dict[str, Any]:
