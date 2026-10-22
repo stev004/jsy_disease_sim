@@ -1,0 +1,79 @@
+{
+  "H": 49,
+  "prefix_identity": "identical",
+  "records": [
+    {
+      "daily_points_91": 91,
+      "e_s": 41,
+      "local_infections_91": 2281,
+      "observation_seed": 91001,
+      "p_s": 26,
+      "prefix_last_date": "2025-02-04",
+      "prefix_report_count_sha256": {
+        "30": "b997c42341e8cccf954c08e2b1fde46cdf0e5b67cf57b00583b082f41f15fbf4",
+        "91": "b997c42341e8cccf954c08e2b1fde46cdf0e5b67cf57b00583b082f41f15fbf4",
+        "identical": true
+      },
+      "prefix_transmission_sha256": {
+        "30": "fbfb38c576b50417197427aa86787c142a4e80d3d618cfa6c77dc9acb8d80fd6",
+        "91": "fbfb38c576b50417197427aa86787c142a4e80d3d618cfa6c77dc9acb8d80fd6",
+        "identical": true
+      },
+      "process_seed": 81001,
+      "runtime_seconds": {
+        "30": 2.087781798999913,
+        "91": 2.5053208110002743
+      }
+    },
+    {
+      "daily_points_91": 91,
+      "e_s": 38,
+      "local_infections_91": 2272,
+      "observation_seed": 91002,
+      "p_s": 22,
+      "prefix_last_date": "2025-02-04",
+      "prefix_report_count_sha256": {
+        "30": "6a5d87a0ac7b9bbe403a3a956f99106a71b0a230c9e4f013234f30f9d65770d3",
+        "91": "6a5d87a0ac7b9bbe403a3a956f99106a71b0a230c9e4f013234f30f9d65770d3",
+        "identical": true
+      },
+      "prefix_transmission_sha256": {
+        "30": "302dd5de4b19b2deb13fd0ac1864a9fbf60509c6581674f57963a325041c0af2",
+        "91": "302dd5de4b19b2deb13fd0ac1864a9fbf60509c6581674f57963a325041c0af2",
+        "identical": true
+      },
+      "process_seed": 81002,
+      "runtime_seconds": {
+        "30": 0.9799091039999439,
+        "91": 2.6381186100002196
+      }
+    },
+    {
+      "daily_points_91": 91,
+      "e_s": 41,
+      "local_infections_91": 2248,
+      "observation_seed": 91003,
+      "p_s": 23,
+      "prefix_last_date": "2025-02-04",
+      "prefix_report_count_sha256": {
+        "30": "ec7d072a4099fdc5086e2d6ec102fbd0c8b8f4715c7f8af1e37b3059ab78d7e5",
+        "91": "ec7d072a4099fdc5086e2d6ec102fbd0c8b8f4715c7f8af1e37b3059ab78d7e5",
+        "identical": true
+      },
+      "prefix_transmission_sha256": {
+        "30": "2ff1c2f20990e2516b565d321d6740bd9c33940511815e6aa74ab37c5f9cc118",
+        "91": "2ff1c2f20990e2516b565d321d6740bd9c33940511815e6aa74ab37c5f9cc118",
+        "identical": true
+      },
+      "process_seed": 81003,
+      "runtime_seconds": {
+        "30": 0.9733616020002955,
+        "91": 2.7179910049999307
+      }
+    }
+  ],
+  "rule": "H = smallest multiple of 7 >= max(e_s)+8 and >= 35; 10% decline mark; cap 91 (owner ruling A3/A4)",
+  "status": "H DETERMINED",
+  "stop_reasons": [],
+  "stop_rule_fired": false
+}

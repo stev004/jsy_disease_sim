@@ -1,0 +1,29 @@
++ test '!' -e /home/steven/jos-g35b-probe-20261022r2
++ test '!' -e /home/steven/jos-g35b-probe-20261022r2-src
++ git -C /home/steven/jsy_disease_sim log -1 --format=MAIN_HEAD=%H
+MAIN_HEAD=3ad09a759668bc836e738e5a5029818ac0ce9fbc
++ git -C /home/steven/jsy_disease_sim merge-base --is-ancestor 2cfb9f6d249c64fe78e0716a6a6ff6208ac681b5 HEAD
++ echo RULING_COMMIT_ON_MAIN
+RULING_COMMIT_ON_MAIN
++ git clone --quiet /home/steven/jsy_disease_sim /home/steven/jos-g35b-probe-20261022r2-src
++ git -C /home/steven/jos-g35b-probe-20261022r2-src checkout --quiet --detach 2cfb9f6d249c64fe78e0716a6a6ff6208ac681b5
++ git -C /home/steven/jos-g35b-probe-20261022r2-src rev-parse HEAD
+2cfb9f6d249c64fe78e0716a6a6ff6208ac681b5
++ sha256sum /home/steven/jos-g35b-probe-20261022r2-src/docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md
+f84738a9594312f3371f4bb469c5cfaafed265dc5d233ee34f1f0be564d99643  /home/steven/jos-g35b-probe-20261022r2-src/docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md
++ df -h /mnt/c /
++ tail -2
+C:\             466G  443G   23G  96% /mnt/c
+/dev/sdd       1007G   25G  932G   3% /
++ tr -d '\r'
++ sha256sum /home/steven/jos-g35b-probe-20261022r2.py
+c26aec8a9c6d30425c2fd10333db2d084769a6a58255c405b4c579110821fea0  /home/steven/jos-g35b-probe-20261022r2.py
++ cd /home/steven/jos-g35b-probe-20261022r2-src
++ uv sync --locked -q
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv sync --locked -q
++ set +x
+{"process_seed": 81001, "observation_seed": 91001, "daily_points_91": 91, "p_s": 26, "e_s": 41, "local_infections_91": 2281, "prefix_last_date": "2025-02-04", "prefix_transmission_sha256": {"30": "fbfb38c576b50417197427aa86787c142a4e80d3d618cfa6c77dc9acb8d80fd6", "91": "fbfb38c576b50417197427aa86787c142a4e80d3d618cfa6c77dc9acb8d80fd6", "identical": true}, "prefix_report_count_sha256": {"30": "b997c42341e8cccf954c08e2b1fde46cdf0e5b67cf57b00583b082f41f15fbf4", "91": "b997c42341e8cccf954c08e2b1fde46cdf0e5b67cf57b00583b082f41f15fbf4", "identical": true}, "runtime_seconds": {"30": 2.087781798999913, "91": 2.5053208110002743}}
+{"process_seed": 81002, "observation_seed": 91002, "daily_points_91": 91, "p_s": 22, "e_s": 38, "local_infections_91": 2272, "prefix_last_date": "2025-02-04", "prefix_transmission_sha256": {"30": "302dd5de4b19b2deb13fd0ac1864a9fbf60509c6581674f57963a325041c0af2", "91": "302dd5de4b19b2deb13fd0ac1864a9fbf60509c6581674f57963a325041c0af2", "identical": true}, "prefix_report_count_sha256": {"30": "6a5d87a0ac7b9bbe403a3a956f99106a71b0a230c9e4f013234f30f9d65770d3", "91": "6a5d87a0ac7b9bbe403a3a956f99106a71b0a230c9e4f013234f30f9d65770d3", "identical": true}, "runtime_seconds": {"30": 0.9799091039999439, "91": 2.6381186100002196}}
+{"process_seed": 81003, "observation_seed": 91003, "daily_points_91": 91, "p_s": 23, "e_s": 41, "local_infections_91": 2248, "prefix_last_date": "2025-02-04", "prefix_transmission_sha256": {"30": "2ff1c2f20990e2516b565d321d6740bd9c33940511815e6aa74ab37c5f9cc118", "91": "2ff1c2f20990e2516b565d321d6740bd9c33940511815e6aa74ab37c5f9cc118", "identical": true}, "prefix_report_count_sha256": {"30": "ec7d072a4099fdc5086e2d6ec102fbd0c8b8f4715c7f8af1e37b3059ab78d7e5", "91": "ec7d072a4099fdc5086e2d6ec102fbd0c8b8f4715c7f8af1e37b3059ab78d7e5", "identical": true}, "runtime_seconds": {"30": 0.9733616020002955, "91": 2.7179910049999307}}
+SUMMARY {"status": "H DETERMINED", "H": 49, "prefix_identity": "identical", "stop_reasons": []}
+EXIT=0

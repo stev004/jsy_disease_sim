@@ -1,0 +1,39 @@
++ test '!' -e /home/steven/jos-g35b-probe-20261022
++ test '!' -e /home/steven/jos-g35b-probe-20261022-src
++ git -C /home/steven/jsy_disease_sim log -1 --format=MAIN_HEAD=%H
+MAIN_HEAD=3ad09a759668bc836e738e5a5029818ac0ce9fbc
++ git -C /home/steven/jsy_disease_sim merge-base --is-ancestor 2cfb9f6d249c64fe78e0716a6a6ff6208ac681b5 HEAD
++ echo RULING_COMMIT_ON_MAIN
+RULING_COMMIT_ON_MAIN
++ git clone --quiet /home/steven/jsy_disease_sim /home/steven/jos-g35b-probe-20261022-src
++ git -C /home/steven/jos-g35b-probe-20261022-src checkout --quiet --detach 2cfb9f6d249c64fe78e0716a6a6ff6208ac681b5
++ git -C /home/steven/jos-g35b-probe-20261022-src rev-parse HEAD
+2cfb9f6d249c64fe78e0716a6a6ff6208ac681b5
++ sha256sum /home/steven/jos-g35b-probe-20261022-src/docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md
+f84738a9594312f3371f4bb469c5cfaafed265dc5d233ee34f1f0be564d99643  /home/steven/jos-g35b-probe-20261022-src/docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md
++ df -h /mnt/c /
++ tail -2
+C:\             466G  443G   23G  96% /mnt/c
+/dev/sdd       1007G   25G  932G   3% /
++ tr -d '\r'
++ sha256sum /home/steven/jos-g35b-probe-20261022.py
+33fcd7d9133298ca6ac38d29416daae2d24234a78791d8c863b29d4be276f985  /home/steven/jos-g35b-probe-20261022.py
++ cd /home/steven/jos-g35b-probe-20261022-src
++ uv sync --locked -q
++ /home/steven/.local/bin/uv tool run --from uv==0.11.30 uv sync --locked -q
++ set +x
+Traceback (most recent call last):
+  File "/home/steven/jos-g35b-probe-20261022.py", line 147, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/steven/jos-g35b-probe-20261022.py", line 61, in main
+    rc91 = type(rc30).model_validate(d91)  # re-validate the 91-day config through the schema
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/steven/jos-g35b-probe-20261022-src/.venv/lib/python3.12/site-packages/pydantic/main.py", line 732, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for OutbreakRunConfig
+start_date
+  Input should be a valid date [type=date_type, input_value='2025-01-06', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.13/v/date_type
+EXIT=1

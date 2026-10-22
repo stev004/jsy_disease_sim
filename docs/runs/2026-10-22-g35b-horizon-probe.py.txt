@@ -1,0 +1,147 @@
+"""G35-B pre-freeze horizon probe (director evidence, frozen rule: owner ruling A3/A4 + condition 3).
+
+Runs ONLY the truth cell (Phase-0b scenario; beta 0.08, offset 2) on probe seeds at 30 and 91 days and
+records ONLY p_s, e_s, H, the prefix-identity result (with the hash pairs compared) and per-call
+runtime_seconds. No loss, profile, candidate cell or alternative H is computed.
+Usage: python g35b_horizon_probe.py <repo> <out_dir> <process_seed:observation_seed>...
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import sys
+from datetime import timedelta
+from pathlib import Path
+
+PROBE_CONFIG_ID = "v13-g35b-probe"
+LONG_DAYS = 91
+DECLINE_FRACTION = 0.10  # synthetic campaign assumption (A3)
+MARGIN_DAYS = 8  # derived in A3: 2 latent + 0 detection + 2 reporting + 4-day tail
+FLOOR_DAYS = 35
+CAP_DAYS = 91
+MIN_LOCAL_INFECTIONS = 10
+
+
+def _sha(payload) -> str:
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    ).hexdigest()
+
+
+def _event_date(event) -> str:
+    return str(event.get("infection_date", event.get("date")))
+
+
+def main() -> int:
+    repo = Path(sys.argv[1]).resolve()
+    out = Path(sys.argv[2]).resolve()
+    pairs = [tuple(int(x) for x in arg.split(":")) for arg in sys.argv[3:]]
+    sys.path.insert(0, str(repo / "src"))
+    from jersey_outbreak import phase0_campaign as p0
+    from jersey_outbreak.observation import observe_latent_run
+    from jersey_outbreak.outbreak_runner import load_parameter_set, run_outbreak
+    from jersey_outbreak.parent_build import build_parent
+
+    out.mkdir(parents=True, exist_ok=False)
+    config = p0.CampaignConfig.from_yaml(repo / "configs/calibration/v13_phase0b_synthetic.yaml")
+    parameters = load_parameter_set(repo)
+    truth = p0._truth_cell(config)
+    assert (truth.beta, truth.inoculation_day_offset) == (0.08, 2), truth
+    prefix_last = (config.start_date + timedelta(days=config.duration_days - 1)).isoformat()
+
+    records = []
+    for process_seed, observation_seed in pairs:
+        generated = build_parent(repo, "ci", process_seed, out / "parents" / str(process_seed)).generated
+        rc30 = p0._run_config_for_cell(config, parameters, process_seed, truth)
+        rc91 = rc30.model_copy(update={"duration_days": LONG_DAYS})
+        d30 = rc30.model_dump(mode="json")
+        d91 = rc91.model_dump(mode="json")
+        assert {k for k in d30 if d30[k] != d91[k]} == {"duration_days"}, "only duration may differ"
+        rc91 = type(rc30).model_validate(rc91.model_dump())  # re-validate the 91-day config via the schema
+        obs = p0._observation_config_for_cell(repo, config, observation_seed, PROBE_CONFIG_ID, truth)
+        runs = {}
+        for label, rc in (("30", rc30), ("91", rc91)):
+            latent = run_outbreak(generated, rc, parameters)
+            observed = observe_latent_run(latent, obs)
+            runs[label] = (latent, observed)
+        latent30, obs30 = runs["30"]
+        latent91, obs91 = runs["91"]
+
+        def prefix_events(latent):
+            rows = [
+                {k: e.get(k) for k in ("infected_agent_id", "infector_agent_id", "source_kind",
+                                       "imported", "natural_history_episode_index")}
+                | {"date": _event_date(e)}
+                for e in latent.transmission_events
+                if _event_date(e) <= prefix_last
+            ]
+            return sorted(rows, key=lambda r: json.dumps(r, sort_keys=True, default=str))
+
+        def prefix_reports(observed):
+            counts: dict[str, int] = {}
+            for e in observed.observation_events:
+                when = str(e.get("report_date"))
+                if when <= prefix_last:
+                    key = f"{when}|{bool(e.get('symptomatic'))}"
+                    counts[key] = counts.get(key, 0) + 1
+            return dict(sorted(counts.items()))
+
+        ev30, ev91 = _sha(prefix_events(latent30)), _sha(prefix_events(latent91))
+        rp30, rp91 = _sha(prefix_reports(obs30)), _sha(prefix_reports(obs91))
+
+        daily = [int(row["new_infections"]) for row in latent91.daily_epidemic]
+        trailing = [sum(daily[max(0, t - 6): t + 1]) for t in range(len(daily))]
+        peak_value = max(trailing)
+        p_s = trailing.index(peak_value)
+        e_s = next((t for t in range(p_s, len(trailing)) if trailing[t] <= DECLINE_FRACTION * peak_value), None)
+        local91 = sum(str(e.get("source_kind", "")) == "local" for e in latent91.transmission_events)
+        records.append({
+            "process_seed": process_seed,
+            "observation_seed": observation_seed,
+            "daily_points_91": len(daily),
+            "p_s": p_s,
+            "e_s": e_s,
+            "local_infections_91": local91,
+            "prefix_last_date": prefix_last,
+            "prefix_transmission_sha256": {"30": ev30, "91": ev91, "identical": ev30 == ev91},
+            "prefix_report_count_sha256": {"30": rp30, "91": rp91, "identical": rp30 == rp91},
+            "runtime_seconds": {
+                "30": latent30.diagnostics["benchmark"]["runtime_seconds"],
+                "91": latent91.diagnostics["benchmark"]["runtime_seconds"],
+            },
+        })
+        print(json.dumps(records[-1]), flush=True)
+
+    stop_reasons = [
+        f"seed {r['process_seed']}: " + ("no e_s within 91 days" if r["e_s"] is None else "fewer than 10 local infections")
+        for r in records
+        if r["e_s"] is None or r["local_infections_91"] < MIN_LOCAL_INFECTIONS
+    ]
+    H = None
+    if not stop_reasons:
+        need = max(max(r["e_s"] for r in records) + MARGIN_DAYS, FLOOR_DAYS)
+        H = -(-need // 7) * 7
+        if H > CAP_DAYS:
+            stop_reasons.append(f"H={H} exceeds the 91-day cap")
+            H = None
+    prefix_identity = all(
+        r["prefix_transmission_sha256"]["identical"] and r["prefix_report_count_sha256"]["identical"]
+        for r in records
+    )
+    summary = {
+        "rule": "H = smallest multiple of 7 >= max(e_s)+8 and >= 35; 10% decline mark; cap 91 (owner ruling A3/A4)",
+        "records": records,
+        "stop_rule_fired": bool(stop_reasons),
+        "stop_reasons": stop_reasons,
+        "H": H,
+        "prefix_identity": "identical" if prefix_identity else "not identical",
+        "status": "NEEDS OWNER INPUT" if stop_reasons else "H DETERMINED",
+    }
+    (out / "probe.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    print("SUMMARY", json.dumps({k: summary[k] for k in ("status", "H", "prefix_identity", "stop_reasons")}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
