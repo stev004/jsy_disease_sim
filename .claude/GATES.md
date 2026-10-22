@@ -4,9 +4,15 @@
 
 ## Open
 
-**2026-09-29:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); V1.3 stopped (G34 A+B). **G35 OPEN** (successor: default STOP). **G36 LIVE** (merge the M3 destination fix; default HOLD). G5 open.
+**2026-10-22:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); V1.3 stopped on real data (G34 A+B). **G35 RESOLVED B** (synthetic design study; launch awaits Steven's go-ahead). **G36 MERGED** (`cf45153`). G5 open.
 
-### G35 — V1.3 successor: what, if anything, follows the Phase-0/0b FAILs? (model owner)
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G35 — RESOLVED 2026-10-22: B (director under Steven's delegation) — V1.3 successor: what, if anything, follows the Phase-0/0b FAILs? (model owner)
 - **Evidence:**
   - G34-B memo: `docs/research/v1_3/2026-09-29-successor-offset-design-memo-DRAFT.md`.
   - Fable consult (trail row `ridge-diagnostic-launch`).
@@ -21,9 +27,19 @@
   - **C — labelled demo.** Beta and detection conditional on a stated seeding scenario, titled as conditional. It is not a V1.3 gate and makes no recovery claim.
 - **Director recommendation:** B if you want V1.3 to keep going. It is the only option that can change the answer, and more replicates is its cheapest arm. Otherwise A. C only if a demonstration is useful for its own sake.
 - **Default on no answer:** A (STOP).
+- **RESOLVED 2026-10-22: B, by the director under Steven's delegation** (chat: "unsure, you decide or ask fable").
+- **Why B:** the diagnostic gives H3 (Monte-Carlo noise at 3 replicates) substantial support, so the filed FAIL does not yet separate "timing is structurally unrecoverable" from "the design was too noisy to tell". B is the only option that can answer that. It is synthetic-only (no real-data risk), and its cheapest arm (more replicates) costs about one Phase-0b campaign. A would freeze an ambiguous result as the V1.3 finding. C answers no research question.
+- **Real data stays STOPPED.** B authorizes no real-data fitting and changes no filed verdict.
+- **Order of work:**
+  1. Draft the design and predeclaration: arms (i)–(iii) one factor at a time against a fixed baseline, fresh seeds checked buildable on post-G36 `main`, and pass rules argued in advance.
+  2. Owner ruling, then freeze.
+  3. Implement: units are `Class: numerical`, so gpt-6.1-sol@high per fleet v8.2.
+  4. One campaign, then one exit audit.
+- **Not yet launched:** the run starts on Steven's go-ahead.
 
-### G36 — Merge the M3 destination-share fix (after its review)
-- **Status: LIVE (2026-09-29).** Branch `codex/m3-destination-fix` @ `f080ed7a22f3f05ffb3b275a3c627dee66ec72ff`, pushed.
+### G36 — RESOLVED 2026-10-22: MERGED (Steven, chat: "Merge it") — Merge the M3 destination-share fix
+- **Merged 2026-10-22:** `--no-ff` merge `cf4515381e0ccc1f7eb8762894b237518f159c78` (new `main` code baseline). Verify mirror on the merge commit PASS (469 passed, 4 skipped) filed before the push: `docs/runs/2026-10-22-g36-merge-mirror.log`; receipt `docs/runs/2026-10-22-g36-merge-push-receipt.txt`; trail row `g36-merged`.
+- **Was LIVE (2026-09-29).** Branch `codex/m3-destination-fix` @ `f080ed7a22f3f05ffb3b275a3c627dee66ec72ff`, pushed.
   - Sol audit PASS: `docs/audits/2026-09-29-m3-destfix-audit-sol-PASS.md`.
   - Director sweep over CI 1–300: 272 IDENTICAL / 22 FIXED / 6 BOTH-FAIL (M2 classes) / 0 DIFFERENT.
   - Full verify mirror PASS (469 passed, 4 skipped).
@@ -32,12 +48,6 @@
 - **What:** a failure-only reassignment of workplace destinations, weighted by physical primary workers. It fixes 22 of the 28 CI seed build failures in seeds 1–300 (diagnosis: `docs/research/2026-09-29-popgen-residual-failures-diagnosis.md`). Every seed that builds today stays byte-identical.
 - **Not addressed:** the adult-supply (5/300) and household-capacity (1/300) classes. Both need an owner-specified parish-allocation rule. Until one exists, successors check their fresh seeds build before freezing.
 - **Default on no answer:** HOLD (the branch stays pushed).
-
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
 
 ### G34 — RESOLVED 2026-09-29: A + B (Steven, chat: "G34 A+B, merge the popgen fix") — Phase 0b FAIL: does V1.3 stop before real-data fitting? (§12.1 gate; model owner)
 - **What happened:** the same-seed Phase-0b campaign (G32-A) completed at `ad37d45`, bundle digest `a319c555…`. The independent exit audit gave a determinate FAIL (`docs/audits/2026-09-26-phase0b-exit-audit-sol-FAIL.md`), and its recomputation matches every published status.

@@ -1,6 +1,11 @@
-# RUN — Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); V1.3 STOPPED before real-data fitting (G34 A+B)
+# RUN — nothing in flight (2026-10-22): G36 merged at cf45153; G35 = B (synthetic design study) awaiting launch; V1.3 real-data fitting STOPPED (G34 A+B)
 
-**Current (2026-09-29):**
+**Current (2026-10-22):**
+- G36 MERGED: `main` code baseline is `cf4515381e0ccc1f7eb8762894b237518f159c78` (= `ece94f5` + M3 failure-only destination reassignment `f080ed7`); mirror PASS 469/4 on the merge commit, filed before push (`docs/runs/2026-10-22-g36-merge-mirror.log`).
+- G35 RESOLVED B (director under Steven's delegation): synthetic design study, no real data. Not launched. **Resume recipe:** on Steven's go-ahead, frame a foreman run whose first units are (1) design + predeclaration draft (arms: more replicates / longer window / serosurvey anchor, one factor at a time; fresh seeds pre-checked buildable on `cf45153`; pass rules argued in advance), (2) owner ruling + freeze; then implementation as `Class: numerical` units on gpt-6.1-sol@high (fleet v8.2), one campaign, one exit audit.
+- Fleet v8.2 adopted 2026-10-22 (DIRECTOR.md Roles; skills re-vendored from claude-skills `2436a68`); WSL codex-cli 0.163.0.
+
+**Previous block (2026-09-29, historical):**
 - G34 RESOLVED A+B: V1.3 stops before real-data fitting. The successor design memo (B, gpt-6-sol) is filed as a DRAFT: `docs/research/v1_3/2026-09-29-successor-offset-design-memo-DRAFT.md`. It recommends profiling inoculation timing as a nuisance (Option 2), with scenario-conditional three-parameter work (Option 5) as the fallback.
 - `main` code baseline is `ece94f546acb19695aed5ea326336e794275dc58`: the popgen fix plus the Phase-0b harness, verify mirror PASS on the merge commit.
 - Nothing is in flight. Awaiting Steven: whether to commission an owner-ruled successor design and predeclaration (memo §'What Steven would need to decide next').

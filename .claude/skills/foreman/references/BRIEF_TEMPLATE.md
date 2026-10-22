@@ -6,7 +6,7 @@ Fill every field or rescope — a field you cannot fill is a unit you have not s
     ROLE: <who the executor is for this unit: implementer / independent auditor / researcher. Auditors: "implementation claims are things to verify, not evidence">
     GOAL: <one sentence, the outcome, executable by a stranger with no chat access>
     SCOPE: <exact worktree path + branch/SHA; paths it MAY touch; paths it may NOT>
-    CONTEXT: <the defect/feature with file:line quotes; upstream reports pasted in full; which repo docs to read and their authority level>
+    CONTEXT: <line 1 = the problem restated in the director's own words from primary evidence; then the defect/feature with file:line quotes; upstream reports pasted in full; which repo docs to read and their authority level>
     ACCEPTANCE: <shell-checkable criteria, one per line, adjectives banned. Logic bugs: criterion #1 = failing-test-first (fails on base, passes on branch, both directions demonstrated)>
     VERIFY: <exact commands, incl. env quirks (e.g. UV_CACHE_DIR=/tmp/... because the sandbox blocks the default cache)>
     TIMEBOX: <cap; on expiry return partial findings and stop. If the fix needs scope beyond SCOPE, STOP and report why — never expand>
@@ -20,4 +20,4 @@ Launch (backgrounded by the harness, log + clean final report):
 
 Before launch, print `Launching: <TASK> | <ROLE> | <model@effort> | <worktree> | log=<stem>.log`. Reuse the same TASK when reporting its terminal state. TASK must remain the first brief line so CodexBar shows a meaningful session name.
 
-Model routing: implementation = gpt-6-luna @ xhigh (Steven's standing preference) · audit/research/consult = gpt-6-sol @ high · trail-audit = whichever family did neither the directing nor the work (Claude-directed runs: gpt-6-astra @ high; Astra-directed runs: Claude — MODEL_ROUTING v7.3; GPT-6 fleet needs codex-cli ≥ 0.155). Read `<stem>.last.md` for the report; `<stem>.log` only when debugging the run itself.
+Model routing: implementation = gpt-6-luna @ xhigh (Steven's standing preference), except `Class: numerical` units (acceptance includes a numerical tolerance, statistical test, estimator/endpoint/interval computation, or seeded-reproducibility assertion) = gpt-6.1-sol @ high — put a `Class: numerical | standard` line under ROLE · audit/research/consult = gpt-6.1-sol @ high (effort explicit; xhigh only for merge-gate/exit verdicts) · gpt-6-sol retired (v8.2) · trail-audit = whichever family did neither the directing nor the work (Claude-directed runs: gpt-6-astra @ high; Astra-directed runs: Claude — MODEL_ROUTING v8 + v8.2 delegation amendments 2026-10-22; codex-cli ≥ 0.159). Read `<stem>.last.md` for the report; `<stem>.log` only when debugging the run itself.

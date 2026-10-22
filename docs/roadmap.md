@@ -12,10 +12,10 @@
   - Phase 0 FAIL (2026-09-24) and Phase 0b FAIL (2026-09-26): both failed on the P0-1 inoculation offset.
   - Exploratory diagnostic: `docs/research/v1_3/2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md`.
   - Successor memo (DRAFT; its Option 2 is withdrawn): `docs/research/v1_3/2026-09-29-successor-offset-design-memo-DRAFT.md`.
-  - ☐ **G35** — successor: A stop (default) / B synthetic design study (more replicates, longer window, serosurvey anchor) / C labelled demo.
+  - ☑ **G35 = B** (2026-10-22) — synthetic design study (more replicates, longer window, serosurvey anchor), one factor at a time; no real data. ☐ Launch (design + predeclaration draft first) awaits Steven's go-ahead.
 - ☑ **UI redesign** merged (G33, `862e440`, 2026-09-26).
 - ☑ **Popgen residual-last fallback** merged with the Phase-0b harness (`ece94f5`, 2026-09-29).
-- ◐ **M3 destination-share fix**: accepted at `f080ed7`, Sol PASS. ☐ **G36** merge (default HOLD).
+- ☑ **M3 destination-share fix** merged (G36, `cf45153`, 2026-10-22; mirror PASS 469/4).
 - ☐ **Popgen CI classes 2/3** (adult supply 5/300, household capacity 1/300 CI seeds): need an owner-specified parish-allocation rule (`docs/research/2026-09-29-popgen-residual-failures-diagnosis.md`). Until then, a successor checks its fresh seeds build before freezing them.
 - ☐ Known intermittent test `tests/test_prov_job_ordering.py::test_missing_head_request_fails_alone_and_scheduler_continues`, flaky 2/3 in isolation on 2026-09-26. Investigate.
 

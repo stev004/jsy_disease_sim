@@ -1,0 +1,6 @@
+interface:
+  display_name: "Foreman"
+  short_description: "Direct a predicate-scoped autonomous run (Codex director seat)"
+  default_prompt: "Run foreman on this repo. Predicate: <done-condition>. Budget: 5 iterations."
+policy:
+  allow_implicit_invocation: false

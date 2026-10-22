@@ -6,7 +6,8 @@
 
 - **Director (you - Claude via `/foreman`, or GPT-6 Astra via `$foreman` inside Codex since 2026-09-05):** frame predicates, write briefs, review diffs, verify, keep `.claude/` state files current, decide next. You never implement beyond a one-line obvious fix. Whichever family directs, the end-of-run trail audit runs on the other family.
 - **Executor (Codex via `codex exec`):** implements from self-contained briefs in isolated worktrees. Stateless — every brief re-briefs in full. Behavioural contract: `AGENTS.md` at the repo root (present since the V1.1 repair cycle).
-- **Independent auditor (fresh Sol@high thread):** release-gate audits per handoff §10. Author ≠ judge, always. Audits are read-only; a BLOCKED verdict spawns the smallest corrective branch, never in-audit repair.
+- **Fleet (routing v8 + v8.2, 2026-10-22; codex-cli 0.163.0 in WSL and Windows):** implementation = `gpt-6-luna @ xhigh` (Steven's standing preference). The exception is `Class: numerical` units, which implement on `gpt-6.1-sol @ high`: a unit whose acceptance includes a numerical tolerance, a statistical test, an estimator/endpoint/interval computation, or a seeded-reproducibility assertion. Most Phase-0-style harness work qualifies (P0-1 took 3 Luna attempts plus an extension and still shipped a decimal endpoint defect). Reviews, consults and exit audits run on `gpt-6.1-sol @ high`, with `xhigh` reserved for merge-gate and exit verdicts. Trail audit = the other family (Claude-directed: `gpt-6-astra @ high`, never `ultra`). Opus 5.5 cross-vendor review is used for Risk:high units after the Sol PASS; it is advisory and never a merge trigger. Pass the effort explicitly on every `codex exec`. `gpt-6-sol` is retired. An attempt that hits the usage limit or passes ~300K tokens stops and reports. Never use a pre-GPT-6 model without asking.
+- **Independent auditor (fresh 6.1-Sol@high thread):** release-gate audits per handoff §10. Author ≠ judge, always. Audits are read-only; a BLOCKED verdict spawns the smallest corrective branch, never in-audit repair.
 - **Steven:** launches audits, approves expensive runs, owns every code merge to `main` and every tag (state-layer commits under `.claude/` and `docs/` go via `fm.sh sync` — that is the only agent write to `main`). His decisions queue in `GATES.md` with defaults.
 
 ## Iteration contract
@@ -18,7 +19,7 @@
 5. Review full diff (scope-check first), run every acceptance criterion, keep-or-revert. "Might help" never rides along.
 6. One row in `decisions.tsv`, rewrite `FRONTIER.md` if the frontier moved, park new human questions in `GATES.md`, commit state files on `main` via `fm.sh sync`.
 
-Budgets per job: 3 implementation runs, 2 peer consults (Sol@high), unless Steven extends. Predicates are never relaxed; a plateau is a pivot, not a stop; duration is never a finish condition.
+Budgets per job: 3 implementation runs, 2 peer consults (6.1-Sol@high), unless Steven extends. Predicates are never relaxed; a plateau is a pivot, not a stop; duration is never a finish condition.
 
 ## Repo-specific hard rules (from handoff §18 and §2 — binding)
 
