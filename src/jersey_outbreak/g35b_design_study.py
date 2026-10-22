@@ -1,4 +1,4 @@
-"""Frozen synthetic G35-B study machinery (U1); only dry-run is exposed by CLI.
+"""Frozen synthetic G35-B study machinery; only dry-run is exposed by CLI.
 
 Baseline generation and fitting are separated from truth joining so U2–U5 can
 finish *all* arms before any truth join (§6). No calibration artifact is written.
@@ -62,6 +62,9 @@ ARM_FIELDS = (
     "builds",
 )
 TOTAL_FIELDS = ("cells", "latent_calls", "observation_transforms", "serosurvey_samples", "builds")
+# Frozen §4.1/§8 order, including order *within* batches. Float sums use this order.
+ARM_I_REPLICATE_ORDER = tuple(seed for _, seeds, _ in frozen.CANDIDATE_BATCHES for seed in seeds)
+STOCHASTIC_REPLICATE_VARIATION = "stochastic_replicate_variation"
 
 
 def frozen_payload() -> dict[str, Any]:
@@ -672,6 +675,73 @@ def _verify_blind_readback(path: Path, fit: BlindFitResult, file_hash: str) -> N
         raise CampaignError(f"blind estimate read-back failed: {exc}") from exc
 
 
+@dataclass
+class _GenerationAdapter:
+    """Shared U1 simulator adapter; returned metadata is mandatory evidence."""
+
+    config: StudyConfig
+    root: Path
+    parameters: Any
+    parents: Mapping[int, Any]
+    counter: WorkCounter
+    phase_seconds: dict[str, float]
+    runtimes: list[dict[str, Any]]
+
+    @property
+    def constructor_config(self) -> phase0.CampaignConfig:
+        # Unchanged Phase-0 constructors consume only this structural subset.
+        return cast(phase0.CampaignConfig, self.config)
+
+    def latent_for(self, seed: int, cell: CandidateCell) -> tuple[Any, Any]:
+        run_config = _run_config_for_cell(self.constructor_config, self.parameters, seed, cell)
+        self.counter.dispatch("latent_calls")
+        started = time.perf_counter()
+        result = run_outbreak(self.parents[seed], run_config, self.parameters)
+        self.phase_seconds["latent"] += time.perf_counter() - started
+        if (
+            getattr(result, "config", None) != run_config
+            or getattr(result, "generated", None) is not self.parents[seed]
+        ):
+            raise CampaignError("latent result omitted or changed returned config/parent metadata")
+        try:
+            runtime = result.diagnostics["benchmark"]["runtime_seconds"]
+            if not math.isfinite(runtime) or runtime < 0:
+                raise ValueError("invalid runtime")
+            self.runtimes.append(
+                {
+                    "seed": seed,
+                    "beta": cell.beta,
+                    "offset": cell.inoculation_day_offset,
+                    "runtime_seconds": runtime,
+                }
+            )
+        except (KeyError, AttributeError, TypeError, ValueError) as exc:
+            raise CampaignError("latent result missing runtime_seconds disclosure") from exc
+        return result, run_config
+
+    def observe(
+        self, latent: Any, run_config: Any, seed: int, namespace: str, cell: CandidateCell
+    ) -> tuple[Any, Any, ObservedTables]:
+        obs = _observation_config_for_cell(
+            self.root, self.constructor_config, seed, namespace, cell
+        )
+        self.counter.dispatch("observation_transforms")
+        started = time.perf_counter()
+        result = observe_latent_run(latent, obs)
+        self.phase_seconds["transform"] += time.perf_counter() - started
+        if not _namespace_passes(latent, result, run_config, obs):
+            raise CampaignError("observation namespace evidence missing or mismatched")
+        table = observed_tables_from_events(
+            result.observation_events,
+            dates=observation_dates(
+                self.config.start_date,
+                self.config.duration_days,
+                self.config.observation_horizon_tail_days,
+            ),
+        )
+        return result, obs, table
+
+
 def generate_baseline(
     config_path: Path,
     predeclaration_path: Path,
@@ -688,9 +758,6 @@ def generate_baseline(
     validate_predeclaration(predeclaration_path)
     plan_workload(config)
     parameters = load_parameter_set(root)
-    # These unchanged constructors consume this structural subset of CampaignConfig;
-    # they do not consult its Phase-0 profile, declaration, caps, or seed constants.
-    constructor_config = cast(phase0.CampaignConfig, config)
     truth_cell = CandidateCell(
         config.dimensions[0].truth,
         int(config.dimensions[1].truth),
@@ -701,7 +768,7 @@ def generate_baseline(
     parents: dict[int, Any] = {}
     lineage: dict[int, Mapping[str, Any]] = {}
     phase_seconds = {key: 0.0 for key in ("build", "latent", "transform", "scoring")}
-    runtimes = []
+    runtimes: list[dict[str, Any]] = []
     for seed in (*config.target_process_seeds, *config.candidate_process_seeds):
         counter.dispatch("builds")
         started = time.perf_counter()
@@ -713,50 +780,10 @@ def generate_baseline(
         lineage[seed] = verify_parent(parent.generated, seed)
         parents[seed] = parent.generated
 
-    def latent_for(seed: int, cell: CandidateCell) -> tuple[Any, Any]:
-        run_config = _run_config_for_cell(constructor_config, parameters, seed, cell)
-        counter.dispatch("latent_calls")
-        started = time.perf_counter()
-        result = run_outbreak(parents[seed], run_config, parameters)
-        phase_seconds["latent"] += time.perf_counter() - started
-        if (
-            getattr(result, "config", None) != run_config
-            or getattr(result, "generated", None) is not parents[seed]
-        ):
-            raise CampaignError("latent result omitted or changed returned config/parent metadata")
-        try:
-            runtime = result.diagnostics["benchmark"]["runtime_seconds"]
-            if not math.isfinite(runtime) or runtime < 0:
-                raise ValueError("invalid runtime")
-            runtimes.append(
-                {
-                    "seed": seed,
-                    "beta": cell.beta,
-                    "offset": cell.inoculation_day_offset,
-                    "runtime_seconds": runtime,
-                }
-            )
-        except (KeyError, AttributeError, TypeError, ValueError) as exc:
-            raise CampaignError("latent result missing runtime_seconds disclosure") from exc
-        return result, run_config
-
-    def observe(
-        latent: Any, run_config: Any, seed: int, namespace: str, cell: CandidateCell
-    ) -> tuple[Any, Any, ObservedTables]:
-        obs = _observation_config_for_cell(root, constructor_config, seed, namespace, cell)
-        counter.dispatch("observation_transforms")
-        started = time.perf_counter()
-        result = observe_latent_run(latent, obs)
-        phase_seconds["transform"] += time.perf_counter() - started
-        if not _namespace_passes(latent, result, run_config, obs):
-            raise CampaignError("observation namespace evidence missing or mismatched")
-        table = observed_tables_from_events(
-            result.observation_events,
-            dates=observation_dates(
-                config.start_date, config.duration_days, config.observation_horizon_tail_days
-            ),
-        )
-        return result, obs, table
+    adapter = _GenerationAdapter(
+        config, root, parameters, parents, counter, phase_seconds, runtimes
+    )
+    latent_for, observe = adapter.latent_for, adapter.observe
 
     targets = {}
     outputs = {}
@@ -864,6 +891,25 @@ def generate_baseline(
     )
 
 
+def _baseline_execution_complete(generation: BaselineGeneration) -> bool:
+    config = generation.config
+    return (
+        set(generation.target_tables) == set(config.target_process_seeds)
+        and set(generation.target_outputs) == set(config.target_process_seeds)
+        and set(generation.generated_parents)
+        == set((*config.target_process_seeds, *config.candidate_process_seeds))
+        and set(generation.candidate_latents)
+        == {
+            (seed, beta, int(offset))
+            for seed in config.candidate_process_seeds
+            for beta in config.dimensions[0].candidates
+            for offset in config.dimensions[1].candidates
+        }
+        and set(generation.candidate_prediction_library) == set(config.candidate_grid)
+        and all(len(tables) == 3 for tables in generation.candidate_prediction_library.values())
+    )
+
+
 def join_baseline(generation: BaselineGeneration, output_dir: Path) -> RecoveryEvaluation:
     """Post-generation truth join. U5 must call only after all arms finish generation."""
     config = generation.config
@@ -898,21 +944,7 @@ def join_baseline(generation: BaselineGeneration, output_dir: Path) -> RecoveryE
             )
         )
     expected = {key: frozen_payload()["arms"]["B"][key] for key in TOTAL_FIELDS}
-    complete = (
-        set(generation.target_tables) == set(config.target_process_seeds)
-        and set(generation.target_outputs) == set(config.target_process_seeds)
-        and set(generation.generated_parents)
-        == set((*config.target_process_seeds, *config.candidate_process_seeds))
-        and set(generation.candidate_latents)
-        == {
-            (seed, beta, int(offset))
-            for seed in config.candidate_process_seeds
-            for beta in config.dimensions[0].candidates
-            for offset in config.dimensions[1].candidates
-        }
-        and set(generation.candidate_prediction_library) == set(config.candidate_grid)
-        and all(len(tables) == 3 for tables in generation.candidate_prediction_library.values())
-    )
+    complete = _baseline_execution_complete(generation)
     evaluation = evaluate_recovery(
         rows,
         execution_complete=complete,
@@ -949,8 +981,409 @@ def run_baseline_arm(
     return generation, join_baseline(generation, work_dir)
 
 
-def arm_i(*args: Any, **kwargs: Any) -> Any:
-    raise NotImplementedError("U2: arm (i)")
+@dataclass(frozen=True)
+class ArmIGeneration:
+    """Blind arm-(i) results; new work only in parents, latents and provenance.
+
+    Batch A and all targets remain owned by ``baseline``. The twelve-table
+    library holds the original A table objects, followed by B′, C′ and D′.
+    Descriptive records are retained separately from the ten gate estimates.
+    """
+
+    baseline: BaselineGeneration
+    candidate_prediction_library: Mapping[CandidateCell, tuple[ObservedTables, ...]]
+    candidate_latents: Mapping[tuple[int, float, int], tuple[Any, Any]]
+    generated_parents: Mapping[int, Any]
+    parent_lineage: Mapping[int, Mapping[str, Any]]
+    candidate_config_hashes: Mapping[CandidateCell, str]
+    replicate_provenance: tuple[Mapping[str, Any], ...]
+    blind_fits: Mapping[int, BlindFitResult]
+    blind_paths: Mapping[int, Path]
+    blind_file_hashes: Mapping[int, str]
+    descriptive_fits: Mapping[tuple[int, str], BlindFitResult]
+    descriptive_paths: Mapping[tuple[int, str], Path]
+    descriptive_file_hashes: Mapping[tuple[int, str], str]
+    descriptives: Mapping[str, Any]
+    descriptives_path: Path
+    descriptives_file_hash: str
+    measured: Mapping[str, int]
+    disclosures: Mapping[str, Any]
+
+
+def batch_objective_spread(objectives: Sequence[float]) -> dict[str, Any]:
+    """Four-batch range and median: mean of the middle two sorted values."""
+    if len(objectives) != 4:
+        raise CampaignError("batch spread requires exactly four objectives")
+    ordered = sorted(objectives)
+    return {
+        "label": STOCHASTIC_REPLICATE_VARIATION,
+        "range": ordered[-1] - ordered[0],
+        "median": (ordered[1] + ordered[2]) / 2,
+    }
+
+
+def batch_offset_agreement(fits: Sequence[BlindFitResult]) -> bool:
+    """Identical selected offsets across four batches; a global tie never agrees."""
+    return (
+        len(fits) == 4
+        and all(not fit.numerical_tie and fit.selected is not None for fit in fits)
+        and len({fit.selected.inoculation_day_offset for fit in fits if fit.selected is not None})
+        == 1
+    )
+
+
+@dataclass
+class DescriptiveLossCounter:
+    """Separate accounting of scored descriptive surfaces, excluding the gate."""
+
+    cap: int
+    measured: int = 0
+
+    def record(self, fit: BlindFitResult) -> None:
+        self.measured += len(fit.loss_surface)
+        if self.measured > self.cap:
+            raise BudgetError("descriptive loss evaluation cap exceeded")
+
+    def check_exact(self) -> None:
+        if self.measured != self.cap:
+            raise BudgetError("descriptive loss evaluations differ from exact cap")
+
+
+def _persist_fit(path: Path, fit: BlindFitResult) -> str:
+    persist_blind_estimate(path, fit)
+    file_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+    _verify_blind_readback(path, fit, file_hash)
+    return file_hash
+
+
+def arm_i(
+    baseline: BaselineGeneration,
+    config: StudyConfig,
+    work_dir: Path,
+    *,
+    root: Path,
+) -> ArmIGeneration:
+    """Generate B′/C′/D′, then blind-fit the nested 3/6/12 libraries.
+
+    No target latent events or truth diagnostics are read here. U5 must complete
+    every arm's generation before calling any truth join (§6).
+    """
+    plan = plan_workload(config)
+    expected_b = {key: plan["arms"]["B"][key] for key in TOTAL_FIELDS}
+    if (
+        baseline.config != config
+        or baseline.measured != expected_b
+        or not _baseline_execution_complete(baseline)
+    ):
+        raise CampaignError("arm (i) requires completed baseline generation")
+    for seed in config.target_process_seeds:
+        _verify_blind_readback(
+            baseline.blind_paths[seed], baseline.blind_fits[seed], baseline.blind_file_hashes[seed]
+        )
+    counter = WorkCounter("i")
+    parents: dict[int, Any] = {}
+    lineage: dict[int, Mapping[str, Any]] = {}
+    phase_seconds = {key: 0.0 for key in ("build", "latent", "transform", "scoring")}
+    runtimes: list[dict[str, Any]] = []
+    parameters = load_parameter_set(root)
+    extra_seeds = ARM_I_REPLICATE_ORDER[3:]
+    for seed in extra_seeds:
+        counter.dispatch("builds")
+        started = time.perf_counter()
+        try:
+            parent = build_parent(root, "ci", seed, work_dir / "parents" / str(seed), write_m4=True)
+        except Exception as exc:
+            raise CampaignError(f"predicate 1: parent build failed for {seed}: {exc}") from exc
+        phase_seconds["build"] += time.perf_counter() - started
+        lineage[seed] = verify_parent(parent.generated, seed)
+        parents[seed] = parent.generated
+    adapter = _GenerationAdapter(
+        config, root, parameters, parents, counter, phase_seconds, runtimes
+    )
+    latents = {}
+    for seed in extra_seeds:
+        for beta in config.dimensions[0].candidates:
+            for offset in config.dimensions[1].candidates:
+                cell = replace(
+                    config.candidate_grid[0], beta=beta, inoculation_day_offset=int(offset)
+                )
+                latents[seed, beta, int(offset)] = adapter.latent_for(seed, cell)
+
+    # A's requested configs are retained in U1's per-replicate provenance.
+    a_records: dict[CandidateCell, list[Mapping[str, Any]]] = {c: [] for c in config.candidate_grid}
+    for record in baseline.replicate_provenance:
+        a_records[CandidateCell(**record["cell"])].append(record)
+    library = {}
+    hashes: dict[CandidateCell, str] = {}
+    provenance = []
+    # Each slice retains the same ordered requested configs as its tables.
+    slices = (
+        ("A", 0, 3),
+        ("B_prime", 3, 6),
+        ("C_prime", 6, 9),
+        ("D_prime", 9, 12),
+        ("A_union_B_prime", 0, 6),
+    )
+    slice_hashes: dict[str, dict[CandidateCell, str]] = {name: {} for name, _, _ in slices}
+    for cell in config.candidate_grid:
+        counter.dispatch("cells")
+        records = list(a_records[cell])
+        tables = list(baseline.candidate_prediction_library[cell])
+        if tuple(r["process_seed"] for r in records) != ARM_I_REPLICATE_ORDER[:3]:
+            raise CampaignError("baseline batch A replicate order mismatch")
+        for record, table in zip(records, tables, strict=True):
+            if (
+                record["table_sha256"]
+                != hashlib.sha256(phase0._compact_json_bytes(table.as_dict())).hexdigest()
+            ):
+                raise CampaignError("baseline batch A table SHA-256 mismatch")
+        for batch, process_seeds, observation_seeds in frozen.CANDIDATE_BATCHES[1:]:
+            for seed, obs_seed in zip(process_seeds, observation_seeds, strict=True):
+                latent, run_config = latents[seed, cell.beta, cell.inoculation_day_offset]
+                observed, obs, table = adapter.observe(
+                    latent, run_config, obs_seed, config.candidate_observation_config_id, cell
+                )
+                tables.append(table)
+                record = {
+                    "cell": cell.as_dict(),
+                    "batch": batch,
+                    "process_seed": seed,
+                    "observation_seed": obs_seed,
+                    "observation_config": obs.model_dump(mode="json"),
+                    "run_config": run_config.model_dump(mode="json"),
+                    "table_sha256": hashlib.sha256(
+                        phase0._compact_json_bytes(table.as_dict())
+                    ).hexdigest(),
+                    "population_lineage": lineage[seed],
+                    "observation_rng": observed.diagnostics["observation_rng"],
+                }
+                records.append(record)
+                provenance.append(record)
+        if tuple(r["process_seed"] for r in records) != ARM_I_REPLICATE_ORDER:
+            raise CampaignError("arm (i) replicate order mismatch")
+        library[cell] = tuple(tables)
+        configs = [
+            {"run": r["run_config"], "observation": r["observation_config"]} for r in records
+        ]
+        hashes[cell] = hashlib.sha256(phase0._compact_json_bytes(configs)).hexdigest()
+        for name, start, stop in slices:
+            slice_hashes[name][cell] = hashlib.sha256(
+                phase0._compact_json_bytes(configs[start:stop])
+            ).hexdigest()
+        if slice_hashes["A"][cell] != baseline.candidate_config_hashes[cell]:
+            raise CampaignError("baseline batch A config hash mismatch")
+    if not counter.exact():
+        raise BudgetError("arm (i) measured work differs from exact i caps")
+
+    fits, paths, file_hashes = {}, {}, {}
+    descriptive_fits, descriptive_paths, descriptive_hashes = {}, {}, {}
+    descriptive_counter = DescriptiveLossCounter(plan["descriptive_loss_evaluations"])
+    target_descriptives = []
+    agreement = 0
+    started = time.perf_counter()
+    for seed, target in baseline.target_tables.items():
+        fit = fit_blind(
+            target, config.candidate_grid, library, R=12, T=34, candidate_config_hashes=hashes
+        )
+        path = work_dir / "blind_estimates" / f"{seed}.json"
+        fits[seed], paths[seed], file_hashes[seed] = fit, path, _persist_fit(path, fit)
+        target_fits = {"all_twelve": fit}
+        for name, start, stop in slices:
+            batch_library = {cell: tables[start:stop] for cell, tables in library.items()}
+            batch_fit = fit_blind(
+                target,
+                config.candidate_grid,
+                batch_library,
+                R=stop - start,
+                T=34,
+                candidate_config_hashes=slice_hashes[name],
+            )
+            descriptive_counter.record(batch_fit)
+            if name == "A" and batch_fit.loss_surface != baseline.blind_fits[seed].loss_surface:
+                raise CampaignError(
+                    "batch A descriptive surface differs from baseline gate surface"
+                )
+            path = work_dir / "descriptive_estimates" / name / f"{seed}.json"
+            key = (seed, name)
+            descriptive_fits[key], descriptive_paths[key] = batch_fit, path
+            descriptive_hashes[key] = _persist_fit(path, batch_fit)
+            target_fits[name] = batch_fit
+        single_batches = [target_fits[name] for name, _, _ in slices[:4]]
+        agrees = batch_offset_agreement(single_batches)
+        agreement += int(agrees)
+        target_descriptives.append(
+            {
+                "target_seed": seed,
+                "four_batch_offsets_agree": agrees,
+                "reprofiled_offsets": {
+                    name: {
+                        "selected_offset": None
+                        if result.selected is None
+                        else result.selected.inoculation_day_offset,
+                        "numerical_tie": result.numerical_tie,
+                        "estimate_hash": result.estimate_hash,
+                        "profile": next(
+                            p.as_dict()
+                            for p in result.profiles
+                            if p.dimension == "inoculation_day_offset"
+                        ),
+                    }
+                    for name, result in target_fits.items()
+                },
+                "fixed_tuple_spreads": [
+                    {
+                        "cell": cell.as_dict(),
+                        **batch_objective_spread(
+                            [f.loss_surface[index].objective for f in single_batches]
+                        ),
+                    }
+                    for index, cell in enumerate(config.candidate_grid)
+                ],
+            }
+        )
+    descriptive_counter.check_exact()
+    phase_seconds["scoring"] += time.perf_counter() - started
+    descriptives = {
+        "label": STOCHASTIC_REPLICATE_VARIATION,
+        "median_definition": "arithmetic mean of the middle two of four sorted batch objectives",
+        "replicate_order": list(ARM_I_REPLICATE_ORDER),
+        "descriptive_loss_evaluations": descriptive_counter.measured,
+        "four_batch_offset_agreement_count": agreement,
+        "targets": target_descriptives,
+    }
+    work_dir.mkdir(parents=True, exist_ok=True)
+    descriptives_path = work_dir / "g35b_i_descriptives.json"
+    content = phase0._compact_json_bytes(descriptives)
+    descriptives_path.write_bytes(content)
+    if descriptives_path.read_bytes() != content:
+        raise CampaignError("arm (i) descriptives read-back mismatch")
+    return ArmIGeneration(
+        baseline,
+        library,
+        latents,
+        parents,
+        lineage,
+        hashes,
+        tuple(provenance),
+        fits,
+        paths,
+        file_hashes,
+        descriptive_fits,
+        descriptive_paths,
+        descriptive_hashes,
+        descriptives,
+        descriptives_path,
+        hashlib.sha256(content).hexdigest(),
+        dict(counter.measured),
+        {
+            "phase_wall_time_seconds": phase_seconds,
+            "latent_runtimes": runtimes,
+            "fallback_source": frozen.CLARIFICATION_PATH,
+            "fallback_built_targets": baseline.disclosures["fallback_built_targets"],
+            "fallback_built_candidates": baseline.disclosures["fallback_built_candidates"]
+            + sum(
+                any(lineage[s][key] for key in ("population_fallback_m2", "population_fallback_m3"))
+                for s in extra_seeds
+            ),
+            "measured_counters": dict(counter.measured),
+        },
+    )
+
+
+def join_arm_i(generation: ArmIGeneration, output_dir: Path) -> RecoveryEvaluation:
+    """Re-verify every blind record, then join B's target truth to R=12 fits."""
+    baseline = generation.baseline
+    config = baseline.config
+    plan = plan_workload(config)
+    for seed in config.target_process_seeds:
+        for result in (baseline, generation):
+            _verify_blind_readback(
+                result.blind_paths[seed], result.blind_fits[seed], result.blind_file_hashes[seed]
+            )
+        for batch, _, _ in frozen.CANDIDATE_BATCHES:
+            key = (seed, batch)
+            _verify_blind_readback(
+                generation.descriptive_paths[key],
+                generation.descriptive_fits[key],
+                generation.descriptive_file_hashes[key],
+            )
+        key = (seed, "A_union_B_prime")
+        _verify_blind_readback(
+            generation.descriptive_paths[key],
+            generation.descriptive_fits[key],
+            generation.descriptive_file_hashes[key],
+        )
+    try:
+        content = generation.descriptives_path.read_bytes()
+        if (
+            hashlib.sha256(content).hexdigest() != generation.descriptives_file_hash
+            or json.loads(content) != generation.descriptives
+        ):
+            raise CampaignError("arm (i) descriptives read-back mismatch")
+    except (OSError, ValueError) as exc:
+        raise CampaignError(f"arm (i) descriptives read-back failed: {exc}") from exc
+    rows = []
+    for seed in config.target_process_seeds:
+        latent, observed, requested_run, requested_observation = baseline.target_outputs[seed]
+        namespace = _namespace_passes(latent, observed, requested_run, requested_observation)
+        diagnostics = _truth_diagnostics_from_result(
+            latent, observed, baseline.target_tables[seed], namespace_passed=namespace
+        )
+        fit = generation.blind_fits[seed]
+        rows.append(
+            RecoveryRow(
+                seed,
+                fit.estimate_hash,
+                fit.selected,
+                fit.profiles,
+                fit.numerical_tie,
+                CandidateCell(0.08, 2, 0.75, 0.25),
+                diagnostics,
+                namespace,
+                len(fit.loss_surface),
+            )
+        )
+    complete = (
+        _baseline_execution_complete(baseline)
+        and set(generation.generated_parents) == set(ARM_I_REPLICATE_ORDER[3:])
+        and set(generation.candidate_latents)
+        == {
+            (seed, beta, int(offset))
+            for seed in ARM_I_REPLICATE_ORDER[3:]
+            for beta in config.dimensions[0].candidates
+            for offset in config.dimensions[1].candidates
+        }
+        and set(generation.candidate_prediction_library) == set(config.candidate_grid)
+        and all(len(tables) == 12 for tables in generation.candidate_prediction_library.values())
+    )
+    evaluation = evaluate_recovery(
+        rows,
+        execution_complete=complete,
+        provenance_verified=True,
+        measured_equals_caps=generation.measured
+        == {key: plan["arms"]["i"][key] for key in TOTAL_FIELDS},
+    )
+    # A10 / clarification 1 item 2: fallback columns are attached after gating.
+    serial = tuple(
+        {
+            **row,
+            **{
+                key: str(bool(baseline.parent_lineage[row["target_seed"]][key])).upper()
+                for key in ("population_fallback_m2", "population_fallback_m3")
+            },
+        }
+        for row in evaluation.rows
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with (output_dir / "g35b_i_recovery.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(serial[0]))
+        writer.writeheader()
+        writer.writerows(serial)
+    (output_dir / "g35b_i_descriptives.json").write_bytes(content)
+    (output_dir / "g35b_i_disclosures.json").write_bytes(
+        phase0._compact_json_bytes(generation.disclosures)
+    )
+    return replace(evaluation, rows=serial)
 
 
 def arm_ii(*args: Any, **kwargs: Any) -> Any:

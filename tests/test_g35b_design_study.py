@@ -286,9 +286,15 @@ def test_exact_dry_run_and_no_execute_cli(capsys: Any) -> None:
 @pytest.mark.parametrize(
     "hook,unit", [(study.arm_i, "U2"), (study.arm_ii, "U3"), (study.arm_iii, "U4")]
 )
-def test_factor_hooks_are_explicitly_unimplemented(hook: Any, unit: str) -> None:
-    with pytest.raises(NotImplementedError, match=unit):
-        hook()
+def test_factor_hooks_have_explicit_implementation_boundary(hook: Any, unit: str) -> None:
+    if unit == "U2":
+        # Implemented arm (i) requires completed baseline inputs; no implicit campaign.
+        assert set(inspect.signature(hook).parameters) == {"baseline", "config", "work_dir", "root"}
+        with pytest.raises(TypeError, match="required positional arguments"):
+            hook()
+    else:
+        with pytest.raises(NotImplementedError, match=unit):
+            hook()
 
 
 @pytest.mark.parametrize("value", [0.0, 7.0, 10**12])
@@ -861,3 +867,390 @@ def test_corrupt_persisted_estimate_prevents_all_truth_joins(
 def test_runtime_config_mutation_cannot_bypass_caps() -> None:
     with pytest.raises(study.BudgetError, match="frozen"):
         study.plan_workload(replace(study.StudyConfig(), duration_days=49))
+
+
+@pytest.mark.parametrize(
+    "values,expected_range,expected_median",
+    [((9.0, 1.0, 3.0, 5.0), 8.0, 4.0), ((2.0,) * 4, 0.0, 2.0)],
+)
+def test_four_batch_spread_hand_fixture(
+    values: tuple[float, ...], expected_range: float, expected_median: float
+) -> None:
+    assert study.batch_objective_spread(values) == {
+        "label": "stochastic_replicate_variation",
+        "range": expected_range,
+        "median": expected_median,
+    }
+    with pytest.raises(study.CampaignError, match="four"):
+        study.batch_objective_spread(values[:3])
+
+
+def test_four_batch_offset_agreement_including_global_tie() -> None:
+    target = phase0.ObservedTables(("2025-01-06",), (0.0,), (0.0,))
+    high = replace(target, symptomatic=(3.0,), asymptomatic=(3.0,))
+    other = replace(TRUTH, inoculation_day_offset=3)
+    grid = (TRUTH, other)
+    same = study.fit_blind(target, grid, {TRUTH: (target,) * 3, other: (high,) * 3}, R=3, T=1)
+    different = study.fit_blind(target, grid, {TRUTH: (high,) * 3, other: (target,) * 3}, R=3, T=1)
+    # Even when all global minimizers share one offset, a global tie is non-agreement.
+    tie_grid = (TRUTH, replace(TRUTH, beta=0.10))
+    tied = study.fit_blind(target, tie_grid, {c: (target,) * 3 for c in tie_grid}, R=3, T=1)
+    assert tied.numerical_tie
+    assert {c.inoculation_day_offset for c in tied.global_minimizers} == {2}
+    assert study.batch_offset_agreement((same,) * 4)
+    assert not study.batch_offset_agreement((same, same, same, different))
+    assert not study.batch_offset_agreement((same, same, same, tied))
+    groups = [(same,) * 4] * 2 + [(same, same, same, different)] * 3 + [(tied,) * 4] * 5
+    assert sum(study.batch_offset_agreement(group) for group in groups) == 2
+
+
+def test_descriptive_counter_checks_exact_scaled_work() -> None:
+    assert study.plan_workload(study.StudyConfig())["descriptive_loss_evaluations"] == 31250
+    target = phase0.ObservedTables(("2025-01-06",), (0.0,), (0.0,))
+    fit = study.fit_blind(target, (TRUTH,), {TRUTH: (target,) * 3}, R=3, T=1)
+    # Five descriptive fits × two mock targets × one cell; the R=12 gate is separate.
+    counter = study.DescriptiveLossCounter(5 * 2 * 1)
+    with pytest.raises(study.BudgetError, match="exact cap"):
+        counter.check_exact()
+    for _ in range(10):
+        counter.record(fit)
+    counter.check_exact()
+    assert counter.measured == 10
+    with pytest.raises(study.BudgetError, match="cap exceeded"):
+        counter.record(fit)
+
+
+def test_arm_i_generation_nesting_counts_retention_and_blind_join(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, baseline_fakes: Any
+) -> None:
+    calls = baseline_fakes
+    tables_by_transform = {}
+
+    def distinct_observation(latent: Any, config: ObservationConfig) -> Any:
+        result = calls["fake_observe"](latent, config)
+        # Distinct report counts make a misplaced replicate observable in the library.
+        if latent.config.seed >= 83001:
+            result.observation_events *= latent.config.seed - 83000
+        cell = phase0.CandidateCell(
+            latent.config.beta,
+            (date.fromisoformat(next(iter(latent.config.import_schedule))) - date(2025, 1, 6)).days,
+            config.parameters["symptomatic_detection_probability"].value,
+            config.parameters["asymptomatic_detection_probability"].value,
+        )
+        tables_by_transform[cell, latent.config.seed] = phase0.observed_tables_from_events(
+            result.observation_events, dates=phase0.observation_dates(date(2025, 1, 6), 30)
+        )
+        return result
+
+    monkeypatch.setattr(study, "observe_latent_run", distinct_observation)
+    baseline = study.generate_baseline(CONFIG, PREDECLARATION, tmp_path / "B", root=ROOT)
+    baseline_blind_bytes = {seed: path.read_bytes() for seed, path in baseline.blind_paths.items()}
+    observed_before = len(calls["observe"])
+    original_fit, original_loss = study.fit_blind, study.loss
+    fit_inputs, loss_counts = [], {3: 0, 6: 0, 12: 0}
+    persisted = []
+    original_persist = study.persist_blind_estimate
+
+    def counted_loss(target: Any, predictions: Any, R: int, T: int) -> float:
+        loss_counts[R] += 1
+        return original_loss(target, predictions, R, T)
+
+    def recording_fit(*args: Any, **kwargs: Any) -> Any:
+        assert len(calls["observe"]) == observed_before + 5625
+        assert any(args[0] is table for table in baseline.target_tables.values())
+        assert set(kwargs) == {"R", "T", "candidate_config_hashes"}
+        assert kwargs["T"] == 34
+        assert tuple(args[1]) == baseline.config.candidate_grid
+        assert set(args[2]) == set(args[1])
+        assert all(len(tables) == kwargs["R"] for tables in args[2].values())
+        fit_inputs.append((args, kwargs))
+        return original_fit(*args, **kwargs)
+
+    def recording_persist(path: Path, fit: Any) -> str:
+        persisted.append(path)
+        return original_persist(path, fit)
+
+    class UnreadTruth(dict):
+        def __getitem__(self, key: Any) -> Any:
+            raise AssertionError("generation must not read target latent events")
+
+    with monkeypatch.context() as blind:
+        blind.setattr(study, "fit_blind", recording_fit)
+        blind.setattr(study, "loss", counted_loss)
+        blind.setattr(study, "persist_blind_estimate", recording_persist)
+        guarded_baseline = replace(baseline, target_outputs=UnreadTruth(baseline.target_outputs))
+        generation = study.arm_i(guarded_baseline, baseline.config, tmp_path / "i", root=ROOT)
+    assert generation.baseline is guarded_baseline
+    generation = replace(generation, baseline=baseline)
+    assert len(fit_inputs) == len(persisted) == 60  # 10 gate + 50 descriptive, no duplicate R=12.
+    assert [kwargs["R"] for _, kwargs in fit_inputs] == [12, 3, 3, 3, 3, 6] * 10
+    assert loss_counts == {3: 25000, 6: 6250, 12: 6250}
+    assert generation.measured == {
+        "cells": 625,
+        "latent_calls": 225,
+        "observation_transforms": 5625,
+        "serosurvey_samples": 0,
+        "builds": 9,
+    }
+    assert calls["build"][13:] == list(range(83004, 83013))
+    assert len(calls["latent"]) == 85 + 225
+    assert len(calls["observe"]) == 1885 + 5625
+    assert len(generation.generated_parents) == 9
+    assert len(generation.candidate_latents) == 225
+    assert len(generation.replicate_provenance) == 5625
+    assert study.ARM_I_REPLICATE_ORDER == tuple(range(83001, 83013))
+    assert all(
+        baseline.blind_paths[s].read_bytes() == content
+        for s, content in baseline_blind_bytes.items()
+    )
+    by_cell = {cell: [] for cell in baseline.config.candidate_grid}
+    for record in (*baseline.replicate_provenance, *generation.replicate_provenance):
+        by_cell[phase0.CandidateCell(**record["cell"])].append(record)
+    for cell, tables in generation.candidate_prediction_library.items():
+        assert len(tables) == 12
+        assert all(
+            a is b
+            for a, b in zip(tables[:3], baseline.candidate_prediction_library[cell], strict=True)
+        )
+        assert tuple(r["process_seed"] for r in by_cell[cell]) == study.ARM_I_REPLICATE_ORDER
+        assert tuple(r["observation_seed"] for r in by_cell[cell]) == tuple(range(93001, 93013))
+        assert [r["batch"] for r in by_cell[cell]] == [
+            name for name, _, _ in frozen.CANDIDATE_BATCHES for _ in range(3)
+        ]
+        for record, table in zip(by_cell[cell], tables, strict=True):
+            seed = record["process_seed"]
+            assert table == tables_by_transform[cell, seed]
+            assert (
+                record["table_sha256"]
+                == hashlib.sha256(phase0._compact_json_bytes(table.as_dict())).hexdigest()
+            )
+            assert record["observation_config"]["observation_config_id"] == "v13-g35b-fit"
+            assert record["run_config"]["seed"] == seed
+            assert record["observation_rng"]["stream_fingerprint"]
+            assert (
+                tuple(record["population_lineage"][key] for key in ("m2", "m3", "m4"))
+                == frozen.PROCESS_HASHES[seed]
+            )
+            assert record["population_lineage"]["population_fallback_m2"] is False
+            assert record["population_lineage"]["population_fallback_m3"] is False
+    for seed in range(83004, 83013):
+        observed = [
+            (latent, config)
+            for latent, config in calls["observe"][observed_before:]
+            if latent.config.seed == seed
+        ]
+        assert len(observed) == 625
+        assert len({id(latent) for latent, _ in observed}) == 25
+        assert {config.observation_seed for _, config in observed} == {seed + 10000}
+        assert {config.observation_config_id for _, config in observed} == {"v13-g35b-fit"}
+    for seed, fit in generation.blind_fits.items():
+        direct = original_fit(
+            baseline.target_tables[seed],
+            baseline.config.candidate_grid,
+            generation.candidate_prediction_library,
+            R=12,
+            T=34,
+            candidate_config_hashes=generation.candidate_config_hashes,
+        )
+        assert fit == direct
+        assert (
+            generation.descriptive_fits[seed, "A"].loss_surface
+            == baseline.blind_fits[seed].loss_surface
+        )
+        assert generation.descriptive_fits[seed, "A"] == baseline.blind_fits[seed]
+        assert json.loads(generation.blind_paths[seed].read_bytes()) == fit.as_dict()
+    for key, fit in generation.descriptive_fits.items():
+        study._verify_blind_readback(
+            generation.descriptive_paths[key], fit, generation.descriptive_file_hashes[key]
+        )
+        seed, batch = key
+        start, stop = {
+            "A": (0, 3),
+            "B_prime": (3, 6),
+            "C_prime": (6, 9),
+            "D_prime": (9, 12),
+            "A_union_B_prime": (0, 6),
+        }[batch]
+        expected_library = {
+            cell: tables[start:stop]
+            for cell, tables in generation.candidate_prediction_library.items()
+        }
+        expected_hashes = {
+            cell: hashlib.sha256(
+                phase0._compact_json_bytes(
+                    [
+                        {"run": record["run_config"], "observation": record["observation_config"]}
+                        for record in records[start:stop]
+                    ]
+                )
+            ).hexdigest()
+            for cell, records in by_cell.items()
+        }
+        assert fit == original_fit(
+            baseline.target_tables[seed],
+            baseline.config.candidate_grid,
+            expected_library,
+            R=stop - start,
+            T=34,
+            candidate_config_hashes=expected_hashes,
+        )
+    description = generation.descriptives
+    assert json.loads(generation.descriptives_path.read_bytes()) == description
+    assert description["descriptive_loss_evaluations"] == 31250
+    assert len(description["targets"]) == 10
+    assert "interval" not in json.dumps(description).lower()
+    assert (
+        description["four_batch_offset_agreement_count"] == 0
+    )  # Flat detection dimensions tie globally.
+    for target in description["targets"]:
+        assert set(target["reprofiled_offsets"]) == {
+            "A",
+            "B_prime",
+            "C_prime",
+            "D_prime",
+            "A_union_B_prime",
+            "all_twelve",
+        }
+        seed = target["target_seed"]
+        assert (
+            target["reprofiled_offsets"]["all_twelve"]["estimate_hash"]
+            == generation.blind_fits[seed].estimate_hash
+        )
+        for index, spread in enumerate(target["fixed_tuple_spreads"]):
+            values = sorted(
+                generation.descriptive_fits[seed, batch].loss_surface[index].objective
+                for batch, _, _ in frozen.CANDIDATE_BATCHES
+            )
+            assert spread["label"] == "stochastic_replicate_variation"
+            assert spread["range"] == values[3] - values[0]
+            assert spread["median"] == (values[1] + values[2]) / 2
+    assert len(generation.disclosures["latent_runtimes"]) == 225
+    assert generation.disclosures["fallback_built_targets"] == 2
+    assert generation.disclosures["fallback_built_candidates"] == 0
+
+    evaluated = []
+    original_evaluate = study.evaluate_recovery
+
+    def recording_evaluate(rows: Any, **kwargs: Any) -> Any:
+        assert len(rows) == 10 and all(isinstance(row, phase0.RecoveryRow) for row in rows)
+        assert set(kwargs) == {"execution_complete", "provenance_verified", "measured_equals_caps"}
+        assert all(
+            row.estimate_hash == generation.blind_fits[row.target_seed].estimate_hash
+            for row in rows
+        )
+        evaluated.append((rows, kwargs))
+        return original_evaluate(rows, **kwargs)
+
+    monkeypatch.setattr(study, "evaluate_recovery", recording_evaluate)
+    evaluation = study.join_arm_i(generation, tmp_path / "joined")
+    assert len(evaluated) == 1
+    assert evaluation.predicates["1_complete"] and evaluation.predicates["10_measured_caps"]
+    assert evaluation.predicates["2_truth_viability"] and evaluation.predicates["9_provenance"]
+    assert json.loads((tmp_path / "joined/g35b_i_descriptives.json").read_bytes()) == description
+    assert (
+        json.loads((tmp_path / "joined/g35b_i_disclosures.json").read_bytes())["measured_counters"]
+        == generation.measured
+    )
+    with (tmp_path / "joined/g35b_i_recovery.csv").open() as handle:
+        records = list(csv.DictReader(handle))
+    assert len(records) == 40
+    assert {r["target_seed"] for r in records if r["population_fallback_m2"] == "TRUE"} == {"82003"}
+    assert {r["target_seed"] for r in records if r["population_fallback_m3"] == "TRUE"} == {"82007"}
+    # Changing valid descriptives and fallback disclosures cannot feed gating.
+    altered_description = {**description, "four_batch_offset_agreement_count": 10}
+    altered_path = tmp_path / "altered-descriptives.json"
+    altered_bytes = phase0._compact_json_bytes(altered_description)
+    altered_path.write_bytes(altered_bytes)
+    altered_baseline = replace(
+        baseline,
+        parent_lineage={
+            seed: {**lineage, "population_fallback_m2": True, "population_fallback_m3": True}
+            for seed, lineage in baseline.parent_lineage.items()
+        },
+    )
+    altered = replace(
+        generation,
+        baseline=altered_baseline,
+        descriptives=altered_description,
+        descriptives_path=altered_path,
+        descriptives_file_hash=hashlib.sha256(altered_bytes).hexdigest(),
+    )
+    assert study.join_arm_i(altered, tmp_path / "altered").predicates == evaluation.predicates
+    assert evaluated[0] == evaluated[1]
+    incomplete = replace(generation, candidate_latents={})
+    assert not study.join_arm_i(incomplete, tmp_path / "incomplete-i").predicates["1_complete"]
+    wrong_work = replace(generation, measured=baseline.measured)
+    assert not study.join_arm_i(wrong_work, tmp_path / "wrong-work-i").predicates[
+        "10_measured_caps"
+    ]
+
+    # A corrupt final-target record must stop before *any* target truth access.
+    def forbidden_truth(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("all arm-(i) read-backs must precede truth")
+
+    monkeypatch.setattr(study, "_truth_diagnostics_from_result", forbidden_truth)
+    guarded = replace(generation, baseline=guarded_baseline)
+    for path in (
+        generation.blind_paths[82010],
+        generation.descriptive_paths[82010, "D_prime"],
+        generation.descriptive_paths[82010, "A_union_B_prime"],
+        generation.descriptives_path,
+    ):
+        original = path.read_bytes()
+        path.write_text("{}")
+        with pytest.raises(study.CampaignError, match="read-back"):
+            study.join_arm_i(guarded, tmp_path / "corrupt-i")
+        path.write_bytes(original)
+
+
+@pytest.mark.parametrize(
+    "kind,tool",
+    [
+        ("builds", "build_parent"),
+        ("latent_calls", "run_outbreak"),
+        ("observation_transforms", "observe_latent_run"),
+    ],
+)
+def test_arm_i_reserves_exception_slot_without_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, baseline_fakes: Any, kind: str, tool: str
+) -> None:
+    baseline = study.generate_baseline(CONFIG, PREDECLARATION, tmp_path / "B", root=ROOT)
+    counter = study.WorkCounter("i")
+    monkeypatch.setattr(study, "WorkCounter", lambda arm: counter if arm == "i" else None)
+    calls = []
+
+    def fails(*args: Any, **kwargs: Any) -> None:
+        assert counter.measured[kind] == 1
+        calls.append(args)
+        raise RuntimeError("mock dispatch failed")
+
+    monkeypatch.setattr(study, tool, fails)
+    with pytest.raises((study.CampaignError, RuntimeError), match="mock dispatch failed"):
+        study.arm_i(baseline, baseline.config, tmp_path / "i", root=ROOT)
+    assert len(calls) == counter.measured[kind] == 1
+
+
+def test_arm_i_verifies_new_parent_before_latent_dispatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, baseline_fakes: Any
+) -> None:
+    baseline = study.generate_baseline(CONFIG, PREDECLARATION, tmp_path / "B", root=ROOT)
+
+    def damaged(*args: Any, **kwargs: Any) -> Any:
+        result = baseline_fakes["fake_build"](*args, **kwargs)
+        result.generated.logical_content_hash = "wrong"
+        return result
+
+    monkeypatch.setattr(study, "build_parent", damaged)
+    with pytest.raises(study.CampaignError, match="logical hash mismatch for 83004"):
+        study.arm_i(baseline, baseline.config, tmp_path / "i", root=ROOT)
+    assert len(baseline_fakes["latent"]) == 85
+    assert len(baseline_fakes["observe"]) == 1885
+
+
+def test_arm_i_rejects_incomplete_baseline_before_new_work(
+    tmp_path: Path, baseline_fakes: Any
+) -> None:
+    baseline = study.generate_baseline(CONFIG, PREDECLARATION, tmp_path / "B", root=ROOT)
+    with pytest.raises(study.CampaignError, match="completed baseline"):
+        study.arm_i(replace(baseline, measured={}), baseline.config, tmp_path / "i", root=ROOT)
+    assert len(baseline_fakes["build"]) == 13
