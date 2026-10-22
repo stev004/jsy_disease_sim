@@ -1,4 +1,13 @@
-# RUN — nothing in flight (2026-10-22): G36 merged at cf45153; G35 = B (synthetic design study) awaiting launch; V1.3 real-data fitting STOPPED (G34 A+B)
+# RUN — IN FLIGHT: foreman run `g35b-predecl` (G35-B design study → frozen predeclaration)
+
+**Predicate:** an owner-ruled, frozen predeclaration for the G35-B synthetic design study is committed on `main` and its SHA recorded in the trail. The study tests three arms, one factor at a time against a fixed fresh-seed baseline: more candidate replicates, a longer window crossing the peak, and an independently modelled serosurvey anchor. Every declared seed must pass a build pre-check on `cf45153`, and pass rules are argued in advance. Implementation and campaign are OUT of scope unless Steven extends.
+**Authorization:** Steven 2026-10-22: "Launch the G35-B synthetic design study as a foreman run: start with the design + predeclaration draft." Owner rulings come from a Fable model-owner subagent under Steven's 2026-10-22 delegation ("you decide or ask fable"), following the Phase-0b precedent. No real data. No code merge.
+**Budget:** 5 iterations; design consults ≤2 (gpt-6.1-sol@high); owner ruling 1 (+1 re-ruling if amendments are contested); seed pre-check 1 run (+1 if replacements are needed).
+**Unit order:** (1) design draft, gpt-6.1-sol@high, read-only → (2) Fable model-owner ruling → (3) director applies amendments mechanically → (4) seed build pre-check of the exact declared list on `cf45153`, with the declared replacement rule → (5) freeze commit + SHA-256, trail row.
+**In flight:** unit 1. TASK `JOS · g35b-design · draft the G35-B synthetic design-study predeclaration`, gpt-6.1-sol@high. Read-only clone `/home/steven/jos-g35b-design-20261022-ro`, log stem `/home/steven/jos-g35b-design-20261022` (`.log`/`.last.md`), brief `/home/steven/jos-g35b-design-20261022-brief.md`, launcher output `/home/steven/jos-g35b-launch-20261022.out`. ts: trail row `g35b-run-start`.
+**If cold-starting:**
+- If `<stem>.last.md` exists and is newer than the log's start, file it as `docs/research/v1_3/2026-10-22-g35b-design-sol-DRAFT.md` and proceed to unit 2.
+- If there is no `.last.md` and no log writes for 20 minutes, the unit is wedged: kill it and relaunch with the same brief and a new stem. A wedge does not count against the budget.
 
 **Current (2026-10-22):**
 - G36 MERGED: `main` code baseline is `cf4515381e0ccc1f7eb8762894b237518f159c78` (= `ece94f5` + M3 failure-only destination reassignment `f080ed7`); mirror PASS 469/4 on the merge commit, filed before push (`docs/runs/2026-10-22-g36-merge-mirror.log`).
