@@ -1,0 +1,27 @@
+9-        calibration_config=config,
+1210-    )
+1211-    artifact = write_calibration_artifact(result, root, destination)
+1212-    typer.echo(
+1213-        json.dumps(
+1214-            {
+1215-                "artifact_id": artifact.manifest.artifact_id,
+/home/steven/jos-phase0-campaign-20260924T030959Z
+/home/steven/jos-phase0-campaign.exit
+/home/steven/jos-phase0-campaign.log
+/home/steven/jos-phase0-gh-runs.json
+/home/steven/jos-phase0-trail-brief.md
+/home/steven/jos-phase0-trail-launch.log
+/home/steven/jos-phase0-trail-readonly
+/home/steven/jos-phase0-trail-sha.txt
+/home/steven/jos-phase0-trail.last.md
+/home/steven/jos-phase0-trail.log
+/home/steven/jos-phase0b-campaign-20260925T174837Z
+/home/steven/jos-phase0b-campaign.exit
+/home/steven/jos-phase0b-campaign.log
+/home/steven/jos-phase0b-rerun-20260926T091252Z
+/home/steven/jos-phase0b-rerun.log
+
+ERROR: This content was flagged for possible biological risk. If this seems wrong, try rephrasing your request. We are continuously refining our work in detecting biological risk, and you can read more about our approach in our blog post: https://openai.com/index/preparing-for-future-ai-capabilities-in-biology
+ERROR: This content was flagged for possible biological risk. If this seems wrong, try rephrasing your request. We are continuously refining our work in detecting biological risk, and you can read more about our approach in our blog post: https://openai.com/index/preparing-for-future-ai-capabilities-in-biology
+tokens used
+83,276

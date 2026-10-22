@@ -1,0 +1,16 @@
+TASK: JOS · g35b-predecl trail audit · check run trail rows against git and filed artifacts
+ROLE: independent auditor — gpt-6-astra @ high. Read-only provenance audit of a documentation run; no science judgement needed.
+
+GOAL: Audit the foreman run `g35b-predecl` of 2026-10-22. Check whether every trail row's claims resolve against what actually exists in git and on disk, and return an Attention list.
+
+SCOPE: Read-only clone at the path you were launched in (main at the HEAD named there). Read `.claude/decisions.tsv` rows from `g35b-run-start` through the last row, plus `.claude/RUN.md`, `.claude/GATES.md`, `.claude/FRONTIER.md` and `.claude/DIRECTOR.md`. Also read the files these rows cite under `docs/research/v1_3/2026-10-22-*` and `docs/runs/2026-10-22-g35b-*`. You may run read-only git commands (log, show, cat-file, diff, ls-remote) and `sha256sum` over `git show <sha>:<path>` output. You may also read these WSL paths, which the rows cite: `/home/steven/jos-g35b-*`. No edits, commits, pushes, simulations or tests.
+
+CHECKS:
+1. **Evidence.** Every full SHA in an evidence cell exists and is an ancestor of main. Every cited path exists at the cited commit. Every sha256 cited in a row or in the frozen predeclaration equals `sha256sum` of the committed bytes, never of a working copy.
+2. **Ordering.** The declared order was: owner-ruling commit → seed pre-check → horizon probe → frozen text. Confirm it from commit order and file contents. Confirm the disclosed early pre-check is described accurately in the trail and the frozen text. Confirm the probe clone was checked out at the ruling commit.
+3. **Accuracy.** Each row's numbers match the filed JSON records: pre-check tally 37/1, failed seed 82011, fallback seeds; probe p_s, e_s, H = 49, prefix identity. Also check the frozen text's hash table against `docs/runs/2026-10-22-g35b-seed-precheck.json`.
+4. **Mechanical freeze.** Compare `docs/research/v1_3/2026-10-22-g35b-design-opus-DRAFT.md` with `docs/research/v1_3/2026-10-22-g35b-predeclaration.md`. Every change must be either one of the ruling's A1–A11, applied verbatim per `docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md`, or one of the director edits the freeze record lists. Flag any other change.
+5. **State files.** Do the state files agree with each other and with git? Check for stale "in flight" claims, the status phrase "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run", G37 present with a default, and every row using `[skip ci]`.
+6. **Model-routing claims.** Is the filtered OpenAI attempt's re-route to Claude logged honestly? The log tail is in `/home/steven/jos-g35b-design-20261022.log`.
+
+REPORT: The first line states your model name. Then give an Attention list, one line per finding: the row's timestamp/phase, what is wrong, and the artifact that contradicts it. "No flags" is a valid result. Then give one line per check (1–6) as OK or FLAG. Give the final response only.
