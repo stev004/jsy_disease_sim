@@ -1,0 +1,21 @@
+== director real-object smokes at final head 0c689825675aba8d414b6c7bd41951fc97aba6fc (worktree clean: 0 changes)
+== seeds: builds of study seeds 82001/82003/82007 (outcome-blind, verify frozen hashes); simulations only on CI demo seed 123
+== u1_smoke.py sha256 925e4cc047ee3cf4d8d0c6c5a586507cd27349c224b8234751b796f2dfdf765f
+82001 {'m2': '29be3731586fcb88f93edd646c9db8aae1057dc11f7f18a947f67b9ad01f3e19', 'm3': '473a4901f68338392a74c0b3f2df23518f9df1a1c09f01d7508d827e3ebb3f75', 'm4': '0315d935b99761abdfb79eddfd66077d300e056379f47c2af69c033d12779bab', 'population_fallback_m2': False, 'population_fallback_m3': False}
+82003 {'m2': '2e2abec14b86855210b5db41a0f32f1ef26401dcf4a9df87c26460ec78f51c3d', 'm3': 'c8c73f50e6f9db8abcc165bf292390b1067d824a255fb94a0777f92290514233', 'm4': '9f8211d43f9352e6b1c716988695839a7ba10c1781173a6071d7914edd73acfc', 'population_fallback_m2': True, 'population_fallback_m3': False}
+82007 {'m2': 'f857b9bee85696f7d1ddb999e5e92bf9e8d8ef078a050ee853fffac37580b01c', 'm3': '202589ef822273969468ef1b5336a758f7e9738692455ef8f4bf11d21065f258', 'm4': 'ba70c35a4afc547c4ce9960dff3a39907dcc128e1a87214c72d298a3c82ad6bb', 'population_fallback_m2': False, 'population_fallback_m3': True}
+== u3_smoke.py sha256 3fc2c07a33294dc14b9a1393589c21506e9f4f901be1005b8a8b31970a78b508
+RESULT identical identical
+manip {'latent_peak_day': 24, 'peak_crossed': True}
+== u4_smoke.py sha256 d0e6b648781b6e803086272ffcf7113476f5fe085ff79962f74ff8cd6960eeb9
+infection_date type: str '2025-01-08'
+census k 2012 N 3000 fraction*N 2012.0 exact match: True
+n=400 k 266 z 19.076368911211325
+episodes<=d 2012 (>= census k)
+== u5_smoke.py sha256 f352d8317b28c384839d4c7443c0770deffbd2f613c3dca2df48a89f1f86d3b4
+Traceback (most recent call last):
+  File "/tmp/g37_u5_smoke_final.py", line 24, in <module>
+    print("fixed_run_provenance:", g._fixed_run_provenance(latent, rc, SEED, cell))
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: _fixed_run_provenance() missing 1 required positional argument: 'duration_days'
+== worktree after: 0 changes

@@ -1,0 +1,32 @@
+import hashlib
+import sys
+import tempfile
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve()
+sys.path.insert(0, str(root / "src"))
+from jersey_outbreak import g35b_design_study as g  # noqa: E402
+from jersey_outbreak import phase0_campaign as p0  # noqa: E402
+from jersey_outbreak.observation import observe_latent_run  # noqa: E402
+from jersey_outbreak.outbreak_runner import load_parameter_set, run_outbreak  # noqa: E402
+from jersey_outbreak.parent_build import build_parent  # noqa: E402
+
+SEED = 123  # CI demo seed: not a study, probe or earlier-campaign seed
+params = load_parameter_set(root)
+cfg = g.StudyConfig()
+cell = p0.CandidateCell(0.08, 2, 0.75, 0.25)
+with tempfile.TemporaryDirectory() as tmp:
+    generated = build_parent(root, "ci", SEED, Path(tmp) / "p", write_m4=True).generated
+    rc = p0._run_config_for_cell(cfg, params, SEED, cell)
+    latent = run_outbreak(generated, rc, params)
+    obs = p0._observation_config_for_cell(root, cfg, 123, "v13-g35b-fit", cell)
+    observed = observe_latent_run(latent, obs)
+    print("fixed_run_provenance:", g._fixed_run_provenance(latent, rc, SEED, cell))
+    rt = p0.ObservationConfig.model_validate(obs.model_dump(mode="json"))
+    print("obs json round-trip ok:", rt == obs, rt.observation_seed, rt.observation_config_id)
+    print("observed.config present:", hasattr(observed, "config"), getattr(observed, "config", None) == obs)
+    rng = observed.diagnostics["observation_rng"]
+    print("rng keys:", sorted(rng))
+    print("namespace:", rng.get("stream_namespace"), "key_inputs:", rng.get("stream_key_inputs"))
+    print("fingerprint ok:", rng.get("stream_fingerprint") == hashlib.sha256(str(p0.observation_stream_seed(SEED, obs)).encode()).hexdigest())
+    print("run json equals:", latent.config.model_dump(mode="json") == rc.model_dump(mode="json"))

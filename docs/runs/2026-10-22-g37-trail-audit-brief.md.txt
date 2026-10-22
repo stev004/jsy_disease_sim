@@ -1,0 +1,23 @@
+TASK: JOS · g37-impl trail audit · check run trail rows against git and filed artifacts
+ROLE: independent auditor — gpt-6-astra @ high. A read-only provenance audit of foreman run `g37-impl`. No model family did neither the directing (Claude) nor the work (gpt-6.1-sol), so you were chosen as the non-implementer seat. You were also the step-7 reviewer in this run: do not re-judge your own review verdicts. Audit the trail.
+
+GOAL: Audit foreman run `g37-impl` of 2026-10-22 (trail rows `g37-run-start` through `g37-rereview-PASS`, plus the state commit after them). Check that every row's claims resolve against git and disk. Return an Attention list.
+
+SCOPE: the read-only clone you were launched in (main at the HEAD named there). Read:
+- `.claude/decisions.tsv` (the rows above);
+- `.claude/RUN.md`, `.claude/GATES.md`, `.claude/FRONTIER.md`, `.claude/DIRECTOR.md`;
+- `docs/runs/2026-10-22-g37-*`, `docs/audits/2026-10-22-g37-*`, `docs/research/v1_3/2026-10-22-g35b-owner-clarification-2.md`.
+
+You may also read the branch with `git fetch origin codex/g35b-design-study` then `git log`/`git show`, and the WSL paths the rows cite (`/home/steven/jos-g37-*`).
+
+Allowed: read-only git commands, including `ls-remote`, and `sha256sum` over `git show <sha>:<path>`. Forbidden: edits, commits, pushes, simulations and tests.
+
+CHECKS:
+1. **Evidence.** Every full SHA in an evidence cell exists. Unit SHAs are ancestors of the branch head `0c689825675aba8d414b6c7bd41951fc97aba6fc`. Every cited path exists at a commit on main. Every cited token count matches the "tokens used" trailer of the cited log.
+2. **Ordering.** For each unit, the commit was preceded by a director acceptance transcript filed in `docs/runs`. The full mirror was filed and logged BEFORE each review launch: compare the commit timestamps of the mirror filing and the review-launch row. Clarification 2 was filed before the first review launched. The re-review reviewed the same head the second mirror ran on.
+3. **Accuracy.** Numbers in rows match the filed transcripts: test counts per unit, mirror 693/4 and 705/4, dry-run counts, and the BLOCKED findings F1–F4 against the filed review.
+4. **Disclosure.** The reviewer substitution (Opus 5.5 unavailable, so gpt-6-astra under clarification 2 Item 3) is stated in the rows, the reports and GATES. The director-introduced F3 rule is disclosed honestly, and a DIRECTOR.md lesson exists for it.
+5. **State files.** They agree with each other and with git. No stale "in flight" claims. G37 is resolved. G38 and G39 are present with defaults. The status phrase "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run" appears. Every row carries `[skip ci]`.
+6. **No campaign.** Confirm from the logs and rows that no `execute`/`run_all_arms` ran unmocked, and that no study seed was simulated. The director's smoke tests used CI seed 123 and builds of study seeds; builds are outcome-blind. Say whether you agree that those builds are acceptable under the frozen text.
+
+REPORT (final message only): the first line states your model name. Then give an Attention list, one line per finding: row timestamp/phase, what is wrong, and the contradicting artifact. "No flags" is valid. Then one line per check (1–6), OK or FLAG.

@@ -1,0 +1,13 @@
+import sys
+import tempfile
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve()
+sys.path.insert(0, str(root / "src"))
+from jersey_outbreak import g35b_design_study as g  # noqa: E402
+from jersey_outbreak.parent_build import build_parent  # noqa: E402
+
+with tempfile.TemporaryDirectory() as tmp:
+    for seed in (82001, 82003, 82007):
+        parent = build_parent(root, "ci", seed, Path(tmp) / str(seed), write_m4=True)
+        print(seed, g.verify_parent(parent.generated, seed))

@@ -1,0 +1,18 @@
+gpt-6-astra @ high
+
+Attention:
+
+- **19:32 / g37-u5-kept; 20:41 / g37-c1-kept:** feature pushes preceded the mirrors and review PASS. The worktree’s `origin/codex/g35b-design-study` reflog records pushes at **19:32:37** and **20:41:06**; mirror filings were **19:54:30** and **21:03:23**, and PASS filing **21:13:03**. This contradicts the run-start predicate and [DIRECTOR’s ordering rules](/home/steven/jos-g37-trail-20261022-ro/.claude/DIRECTOR.md:79).
+- **18:04–20:41 / all six unit-kept rows:** acceptance transcripts were committed to main **3–4 seconds after** their code commits, so filing-before-commit is not established. Examples: U1 `aafbbb7` 18:04:53 → filing `a89cf58` 18:04:57; C1 `0c68982` 20:41:04 → filing `d70ef52` 20:41:07. The transcripts show acceptance against working changes; this flags durable filing order, not proof that acceptance ran late.
+- **18:33 / g37-u3-kept; 18:55 / g37-u4-kept; 19:32 / g37-u5-kept:** cited acceptance logs omit the claimed real-smoke results—peak day 24, census count 2,012, and provenance/RNG checks. Scripts survive as `/tmp/g37_u{3,4,5}_smoke.py`, but the cited filed artifacts do not substantiate those outputs.
+- **18:04–21:13 / eight executor/reviewer completion rows:** evidence cells omit Codex session IDs required by [DIRECTOR](/home/steven/jos-g37-trail-20261022-ro/.claude/DIRECTOR.md:48), although all eight IDs remain recoverable from the cited log headers.
+- **20:07 / g37-review-BLOCKED; 21:13 / g37-rereview-PASS:** filed review reports omit their own token counts, required by [clarification 2 Item 1(c)](/home/steven/jos-g37-trail-20261022-ro/docs/research/v1_3/2026-10-22-g35b-owner-clarification-2.md:15). The rows correctly record 217,247 and 94,972.
+- **21:13:39 / state commit `651e010`:** [RUN.md:32](/home/steven/jos-g37-trail-20261022-ro/.claude/RUN.md:32) still presents G37 authorization and “one Sol review” as next steps, contradicting resolved G37 and clarification 2.
+- **21:13:39 / state commit `651e010`:** [RUN.md:4](/home/steven/jos-g37-trail-20261022-ro/.claude/RUN.md:4) overstates that each unit received real-object smokes on seed 123. U1’s transcript records builds of 82001/82003/82007; no corresponding real smoke is recorded for U2 or C1.
+
+1. **FLAG** — provenance metadata omissions above; all evidence SHAs exist, unit ancestry passes, repository paths are tracked, WSL citations resolve, and all eight token trailers match: **1,337,720 total**.
+2. **FLAG** — filing/push ordering above; both mirrors were filed and logged before review launch, clarification 2 preceded the first review, and re-review matched the second mirror’s head.
+3. **FLAG** — smoke outputs lack filed substantiation; unit test counts, mirrors **693/4 and 705/4**, dry-run counts and F1–F4 summaries match.
+4. **FLAG** — report token metadata incomplete; reviewer substitution and director responsibility for F3 are disclosed, with a DIRECTOR lesson present.
+5. **FLAG** — stale/overbroad RUN statements above; G37 is resolved, G38/G39 default HOLD, the required status phrase appears in all four state files, and all 17 rows carry `[skip ci]`.
+6. **OK** — retained execution records show no unmocked campaign or study-seed simulation. Real smoke simulations used seed 123. I agree the outcome-blind study-seed builds are acceptable under frozen §§8/12: they verify fixed build hashes without replacement or epidemic-outcome inspection.
