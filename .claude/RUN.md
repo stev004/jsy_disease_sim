@@ -8,6 +8,11 @@
   4. Seed build pre-check on that tree: 37/38 built; reserve 82011 failed in the adult-supply class; every primary built, so no replacement was needed.
   5. Horizon probe: H = 49, prefix identity IDENTICAL.
   6. Mechanical freeze.
+- **Trail audit (gpt-6-astra, `docs/audits/2026-10-22-g35b-trail-audit-astra.md`):** 6 Attention items.
+  - Ordering, accuracy and routing: OK.
+  - Two frozen-text items (ridge-diagnostic CRLF hash; A10 punctuation) were resolved by `docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md`. The frozen file is unchanged.
+  - Fixed: the stale FRONTIER baseline; the status phrase was added to DIRECTOR; the briefs were filed.
+  - Noted: the Phase-0b `SHA256SUMS` bytes live only in the WSL bundle.
 - **Disclosed deviation:** a builds-only pre-check ran before the ruling commit. It is superseded and unused.
 - **Budget used:** 6 iterations' worth of units (design ×2 with one filtered, ruling ×1, pre-check ×1 plus the superseded run, probe ×1 plus one crash before any simulation, freeze ×1). Executor tokens: 83,276 OpenAI (filtered). The Claude subagents are counted in the director session.
 - **Next (Steven's call, G37):** authorize implementation U1–U5 (`Class: numerical` → gpt-6.1-sol@high per fleet v8.2; note the bio-risk filter risk on OpenAI for this content), then one Sol review, then one campaign under a separate authorization, then a fresh exit audit. Nothing on G35-B runs without G37.

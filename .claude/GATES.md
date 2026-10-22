@@ -16,6 +16,7 @@
   - U5 integration.
   
   This is followed by one independent review. **The campaign itself is NOT part of G37**; it needs a separate authorization afterwards (predeclaration §12 step 8).
+- **Binding clarification:** `docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md` (ridge-diagnostic lineage digest = committed-bytes `8cf4c766…`; §10 A10 reading). Implementation briefs must carry it alongside the frozen text.
 - **Routing:** fleet v8.2 puts numerical units on gpt-6.1-sol@high, but OpenAI's bio-risk classifier blocked the design consult for this content (trail row `g35b-design-filtered`). Implementation briefs may hit the same filter. Fallback without retrying on OpenAI: Claude executors (Opus 5.5) with an independent review by the other family where reachable.
 - **Options:** A — authorize U1–U5 + review (director runs it as a foreman run). B — HOLD.
 - **Default on no answer:** B (HOLD).
