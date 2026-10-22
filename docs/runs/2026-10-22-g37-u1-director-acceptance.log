@@ -1,0 +1,32 @@
+== dry-run g35b
+{'cells': 2500, 'latent_calls': 395, 'observation_transforms': 9395, 'serosurvey_samples': 85, 'builds': 22} {'B': (85, 1885, 13, 30, 34), 'i': (225, 5625, 9, 30, 34), 'ii': (85, 1885, 0, 49, 53), 'iii': (0, 0, 0, 30, 34)}
+rc=0
+== dry-run p0
+198 59 599 8
+== dry-run p0b
+1334 107 4007 8
+== negative: tampered predeclaration
+rc=1
+cannot verify committed repository document /tmp/g37-tamper.md: Command '['git', '-C', '/tmp', 'rev-parse', '--show-toplevel']' returned non-zero exit status 128.
+== pytest focused
+....................                                                     [100%]
+164 passed in 29.48s
+== ruff
+All checks passed!
+366 files already formatted
+== mypy
+Success: no issues found in 2 source files
+== protected
+?? configs/calibration/v13_g35b_design_study.yaml
+?? src/jersey_outbreak/g35b_constants.py
+?? src/jersey_outbreak/g35b_design_study.py
+?? tests/test_g35b_design_study.py
+== grep risky
+tests/test_g35b_design_study.py:314:    assert study.loss(target, (low,) * 6 + (high,) * 6, 12, 1) == pytest.approx(9.375, abs=0, rel=0)
+82001 {'m2': '29be3731586fcb88f93edd646c9db8aae1057dc11f7f18a947f67b9ad01f3e19', 'm3': '473a4901f68338392a74c0b3f2df23518f9df1a1c09f01d7508d827e3ebb3f75', 'm4': '0315d935b99761abdfb79eddfd66077d300e056379f47c2af69c033d12779bab', 'population_fallback_m2': False, 'population_fallback_m3': False}
+82003 {'m2': '2e2abec14b86855210b5db41a0f32f1ef26401dcf4a9df87c26460ec78f51c3d', 'm3': 'c8c73f50e6f9db8abcc165bf292390b1067d824a255fb94a0777f92290514233', 'm4': '9f8211d43f9352e6b1c716988695839a7ba10c1781173a6071d7914edd73acfc', 'population_fallback_m2': True, 'population_fallback_m3': False}
+82007 {'m2': 'f857b9bee85696f7d1ddb999e5e92bf9e8d8ef078a050ee853fffac37580b01c', 'm3': '202589ef822273969468ef1b5336a758f7e9738692455ef8f4bf11d21065f258', 'm4': 'ba70c35a4afc547c4ce9960dff3a39907dcc128e1a87214c72d298a3c82ad6bb', 'population_fallback_m2': False, 'population_fallback_m3': True}
+?? configs/calibration/v13_g35b_design_study.yaml
+?? src/jersey_outbreak/g35b_constants.py
+?? src/jersey_outbreak/g35b_design_study.py
+?? tests/test_g35b_design_study.py
