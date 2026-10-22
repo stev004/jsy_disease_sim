@@ -1,14 +1,23 @@
-# RUN — IN FLIGHT: foreman run `g35b-predecl` (G35-B design study → frozen predeclaration)
+# RUN — nothing in flight. Foreman run `g35b-predecl` COMPLETE (predicate met). Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run.
 
-**Predicate:** an owner-ruled, frozen predeclaration for the G35-B synthetic design study is committed on `main` and its SHA recorded in the trail. The study tests three arms, one factor at a time against a fixed fresh-seed baseline: more candidate replicates, a longer window crossing the peak, and an independently modelled serosurvey anchor. Every declared seed must pass a build pre-check on `cf45153`, and pass rules are argued in advance. Implementation and campaign are OUT of scope unless Steven extends.
-**Authorization:** Steven 2026-10-22: "Launch the G35-B synthetic design study as a foreman run: start with the design + predeclaration draft." Owner rulings come from a Fable model-owner subagent under Steven's 2026-10-22 delegation ("you decide or ask fable"), following the Phase-0b precedent. No real data. No code merge.
-**Budget:** 5 iterations; design consults ≤2 (gpt-6.1-sol@high); owner ruling 1 (+1 re-ruling if amendments are contested); seed pre-check 1 run (+1 if replacements are needed).
-**Unit order:** (1) design draft, gpt-6.1-sol@high, read-only → (2) Fable model-owner ruling → (3) director applies amendments mechanically → (4) seed build pre-check of the exact declared list on `cf45153`, with the declared replacement rule → (5) freeze commit + SHA-256, trail row.
-**In flight:** unit 1, design draft, RE-ROUTED. The gpt-6.1-sol@high attempt (stem `/home/steven/jos-g35b-design-20261022`, 83,276 tokens) was stopped by OpenAI's bio-risk classifier with no report. Under the standing no-filter-bypass practice it was not retried on OpenAI. Re-run unchanged in substance as an Opus 5.5 consultant subagent in the director's Claude session (brief sha256 `8f02f80d…bcd`, read-only, Windows checkout = code `cf45153`). It counts as design consult 2 of 2. ts: trail row `g35b-design-filtered`.
-**If cold-starting:**
-- The Opus draft returns only to the director session. If the session died before it was filed, re-run the Opus consult from the same brief. File it as `docs/research/v1_3/2026-10-22-g35b-design-opus-DRAFT.md`, then proceed to unit 2.
-- If there is no `.last.md` and no log writes for 20 minutes, the unit is wedged: kill it and relaunch with the same brief and a new stem. A wedge does not count against the budget.
+**Run `g35b-predecl` (2026-10-22): PREDICATE MET.** The G35-B predeclaration is FROZEN at `3972190bd7cde523860fe303b41427c1c95c57eb`: `docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, committed-bytes sha256 `2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e`. ts: trail row `g35b-frozen`.
+- **Chain:**
+  1. The gpt-6.1-sol design consult was stopped by OpenAI's bio-risk classifier. It was not retried there; the unit was re-routed to Claude.
+  2. Opus 5.5 draft `2026-10-22-g35b-design-opus-DRAFT.md` (sha256 `29492b3d…`).
+  3. Fable model-owner ruling ACCEPT WITH AMENDMENTS A1–A11 at `2cfb9f6` (sha256 `f84738a9…`).
+  4. Seed build pre-check on that tree: 37/38 built; reserve 82011 failed in the adult-supply class; every primary built, so no replacement was needed.
+  5. Horizon probe: H = 49, prefix identity IDENTICAL.
+  6. Mechanical freeze.
+- **Disclosed deviation:** a builds-only pre-check ran before the ruling commit. It is superseded and unused.
+- **Budget used:** 6 iterations' worth of units (design ×2 with one filtered, ruling ×1, pre-check ×1 plus the superseded run, probe ×1 plus one crash before any simulation, freeze ×1). Executor tokens: 83,276 OpenAI (filtered). The Claude subagents are counted in the director session.
+- **Next (Steven's call, G37):** authorize implementation U1–U5 (`Class: numerical` → gpt-6.1-sol@high per fleet v8.2; note the bio-risk filter risk on OpenAI for this content), then one Sol review, then one campaign under a separate authorization, then a fresh exit audit. Nothing on G35-B runs without G37.
+- **Disposable WSL leftovers:**
+  - `~/jos-g35b-design-20261022*` (filtered attempt; log kept as evidence in the trail);
+  - `~/jos-g35b-precheck-20261022*` (superseded) and `~/jos-g35b-precheck-20261022r2*` (filed);
+  - `~/jos-g35b-probe-20261022*` (filed);
+  - `-src` clones.
 
+**Previous block (historical):**
 **Current (2026-10-22):**
 - G36 MERGED: `main` code baseline is `cf4515381e0ccc1f7eb8762894b237518f159c78` (= `ece94f5` + M3 failure-only destination reassignment `f080ed7`); mirror PASS 469/4 on the merge commit, filed before push (`docs/runs/2026-10-22-g36-merge-mirror.log`).
 - G35 RESOLVED B (director under Steven's delegation): synthetic design study, no real data. Not launched. **Resume recipe:** on Steven's go-ahead, frame a foreman run whose first units are (1) design + predeclaration draft (arms: more replicates / longer window / serosurvey anchor, one factor at a time; fresh seeds pre-checked buildable on `cf45153`; pass rules argued in advance), (2) owner ruling + freeze; then implementation as `Class: numerical` units on gpt-6.1-sol@high (fleet v8.2), one campaign, one exit audit.

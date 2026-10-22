@@ -4,7 +4,21 @@
 
 ## Open
 
-**2026-10-22:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); V1.3 stopped on real data (G34 A+B). **G35 RESOLVED B** (synthetic design study; launch awaits Steven's go-ahead). **G36 MERGED** (`cf45153`). G5 open.
+**2026-10-22:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run; real-data fitting STOPPED (G34 A+B). **G37 OPEN** (authorize G35-B implementation; default HOLD). G36 merged (`cf45153`). G5 open.
+
+### G37 — Authorize G35-B implementation (U1–U5) against the frozen predeclaration?
+- **Context:** the G35-B predeclaration is FROZEN at `3972190bd7cde523860fe303b41427c1c95c57eb` (`docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, sha256 `2e8358ab…216e`; trail row `g35b-frozen`). Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run.
+- **What is asked:** five bounded units, all `Class: numerical`:
+  - U1 standalone harness + baseline;
+  - U2 replicates arm;
+  - U3 49-day window arm;
+  - U4 serosurvey arm;
+  - U5 integration.
+  
+  This is followed by one independent review. **The campaign itself is NOT part of G37**; it needs a separate authorization afterwards (predeclaration §12 step 8).
+- **Routing:** fleet v8.2 puts numerical units on gpt-6.1-sol@high, but OpenAI's bio-risk classifier blocked the design consult for this content (trail row `g35b-design-filtered`). Implementation briefs may hit the same filter. Fallback without retrying on OpenAI: Claude executors (Opus 5.5) with an independent review by the other family where reachable.
+- **Options:** A — authorize U1–U5 + review (director runs it as a foreman run). B — HOLD.
+- **Default on no answer:** B (HOLD).
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
@@ -35,7 +49,7 @@
   2. Owner ruling, then freeze.
   3. Implement: units are `Class: numerical`, so gpt-6.1-sol@high per fleet v8.2.
   4. One campaign, then one exit audit.
-- **Not yet launched:** the run starts on Steven's go-ahead.
+- **Launched 2026-10-22** (run `g35b-predecl`): predeclaration FROZEN at `3972190`; implementation is G37.
 
 ### G36 — RESOLVED 2026-10-22: MERGED (Steven, chat: "Merge it") — Merge the M3 destination-share fix
 - **Merged 2026-10-22:** `--no-ff` merge `cf4515381e0ccc1f7eb8762894b237518f159c78` (new `main` code baseline). Verify mirror on the merge commit PASS (469 passed, 4 skipped) filed before the push: `docs/runs/2026-10-22-g36-merge-mirror.log`; receipt `docs/runs/2026-10-22-g36-merge-push-receipt.txt`; trail row `g36-merged`.

@@ -1,0 +1,153 @@
+"""Mechanically produce the frozen G35-B predeclaration from the draft + ruling A1-A11 + filed pre-freeze records."""
+
+import hashlib
+import json
+from pathlib import Path
+
+ROOT = Path(r"C:\Users\StevBeast\Documents\jsy_disease_sim")
+V = ROOT / "docs/research/v1_3"
+draft_path = V / "2026-10-22-g35b-design-opus-DRAFT.md"
+ruling_path = V / "2026-10-22-g35b-owner-ruling-ACCEPTED.md"
+out_path = V / "2026-10-22-g35b-predeclaration.md"
+pre = json.loads((ROOT / "docs/runs/2026-10-22-g35b-seed-precheck.json").read_text(encoding="utf-8"))
+probe = json.loads((ROOT / "docs/runs/2026-10-22-g35b-horizon-probe.json").read_text(encoding="utf-8"))
+
+
+def sha(p):
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+assert sha(draft_path) == "29492b3d161fa7f0e9dbc5ec32f146f530792b3fafdb655d98c03b945176a3b2"
+assert sha(ruling_path) == "f84738a9594312f3371f4bb469c5cfaafed265dc5d233ee34f1f0be564d99643"
+assert probe["H"] == 49 and probe["prefix_identity"] == "identical" and not probe["stop_rule_fired"]
+
+text = draft_path.read_text(encoding="utf-8")
+ruling = ruling_path.read_text(encoding="utf-8")
+
+
+def rep(old, new):
+    global text
+    assert text.count(old) == 1, ("anchor count", text.count(old), old[:90])
+    text = text.replace(old, new)
+
+
+# --- freeze header (director, mechanical) ---
+head, body = text.split("# G35-B synthetic design-study predeclaration (DRAFT for owner ruling, not frozen)", 1)
+text = "# G35-B synthetic design-study predeclaration (FROZEN 2026-10-22)" + body
+rep("**Status:** DRAFT for owner ruling. Nothing in it is frozen. This draft is not a Phase 0c",
+    "**Status:** FROZEN 2026-10-22 after the model-owner ruling (ACCEPT WITH AMENDMENTS, A1–A11 applied verbatim below) and the pre-freeze build pre-check and horizon probe (§8 and §4.2 frozen values). This document is not a Phase 0c")
+
+# --- A1 ---
+rep("- **A PASS in any arm** is a screening result. A decision may rely on it only after a separately owner-ruled, fresh-seed confirmatory campaign (§7.4).",
+    "- **A PASS in any arm** is a screening result. A decision may rely on it only after a separately owner-ruled, fresh-seed confirmatory campaign (§7.4). Any such confirmatory campaign is itself synthetic. Neither this study nor a confirmatory campaign can reopen G34, satisfy the V1.3 plan's Phase-0 gate, or license real-data fitting; reopening real-data fitting would require Steven's explicit chat decision on a new gate and a new owner-ruled predeclaration of its own.")
+# --- A2 ---
+rep(' A two-fold reduction is the smallest step that would plausibly turn a step "comparable to its scatter" into one twice its scatter.', "")
+rep("- **Sampling distribution.** Four independent three-replicate batches give four independent draws, per target, of the baseline objective at every fixed tuple and of the re-profiled offset. This is the measurement the diagnostic says the Phase-0b bundle could not make. Four draws are the minimum that yield a range and a median. They are stochastic replicate variation, never an interval.",
+    "- **Why four batches of three.** Each batch has B's replicate count, so each is an independent draw of a Phase-0b-shaped objective at every fixed tuple, and of its re-profiled offset. Four batches is the smallest number that halves the candidate-mean Monte-Carlo SD (R = 4 × 3); the next halving needs sixteen. The batch spread is stochastic replicate variation, never an interval.")
+# --- A3 ---
+rep('3. **Rule:** H = the smallest multiple of 7 that is ≥ max_s(e_s) + 8, and ≥ 35. The 10% mark and the one-week margin are **synthetic campaign assumptions**. They define "crossed the peak and captured the decline" (diagnostic Q5: "growth, peak and decline"). They are not epidemiological claims.',
+    '3. **Rule:** H = the smallest multiple of 7 that is ≥ max_s(e_s) + 8, and ≥ 35. The 10% mark is a **synthetic campaign assumption** defining "crossed the peak and captured the decline" (diagnostic Q5). The 8-day margin is derived from the frozen observation model, not chosen: infections on day e_s are reported at most 2 (latent) + 0 (detection delay) + 2 (reporting delay) = 4 days later, plus the 4-day observation tail, so the decline through e_s is present in the report series the fitter sees. Rounding to a multiple of 7 is a convention only (weekday factors are 1.0). None of these is an epidemiological claim.')
+# --- A4 ---
+rep("1. **Probe seeds:** process seeds `81001–81003`",
+    "0. **Freeze before probe.** The probe rule (steps 1–6) is fixed by the committed owner ruling before any probe simulation runs; the probe record cites that commit and the ruling's SHA-256. The probe computes and records only p_s, e_s, H, the prefix-identity result and per-call `runtime_seconds`. It computes no loss, no profile and no candidate cell. Probe seeds `81001–81006` and `91001–91003` are retired after the probe and may never serve as target or candidate seeds in this or any later campaign.\n1. **Probe seeds:** process seeds `81001–81003`")
+# --- A5 ---
+rep('- Order residents by SHA-256 of (`process_seed`, `serosurvey_seed`, `serosurvey_config_id`, `"serosurvey"`, `agent_id`) and take the first n.',
+    '- Order residents by the SHA-256 of the UTF-8 bytes of the string `f"{process_seed}|{serosurvey_seed}|{serosurvey_config_id}|serosurvey|{agent_id}"` (seeds as decimal integers, no whitespace), ascending by hex digest, and take the first n. Agent IDs are unique, so the ordering is total.')
+# --- A6 ---
+rep("A FAIL here is therefore decisive against this anchor at this n and timing. A PASS is an upper bound: assay-quality sensitivity work is required before any reliance (§14).",
+    "A FAIL is evidence against this anchor at this n, this date, one survey and this weight; it says nothing about larger n, multiple survey dates or other weights. A PASS is an upper bound: assay-quality sensitivity work is required before any reliance (§15).")
+# --- A7 ---
+rep("- (d) Arm (iii): k/n per target and candidate, z values, and the serosurvey term's share of L at each selected cell.",
+    "- (d) Arm (iii): k/n per target and candidate; z values; the serosurvey term's share of L at each selected cell; and, per target, the realized ever-infected fraction at d from the truth run, with a descriptive flag `n_criterion_premise_met` = (fraction ≥ 0.25). The flag never changes a verdict.")
+# --- A8 ---
+rep('"The fresh-seed baseline recovered at 10 targets: the Phase-0b failure did not replicate. Factor X is not shown to be necessary."',
+    '"The fresh-seed baseline at ten targets passed the recovery gate. Factor X is not shown to be necessary." This is not a replication of the Phase-0b design (five targets, retired seeds) and alters no Phase-0b verdict.')
+# --- A9 ---
+rep('State files use the exact phrase "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: <PASS|FAIL readings per arm | not run>".',
+    'State files use the exact phrase "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run" before the campaign, and afterwards "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B <PASS|FAIL|VOID>, i <PASS|FAIL|VOID>, ii <PASS|FAIL|VOID>, iii <PASS|FAIL|VOID>". PASS/FAIL are recovery-gate verdicts; VOID is a campaign status under §12; the §7.4 readings are descriptive text and never appear in the status phrase.')
+# --- A10 ---
+rep("computed by its own code path, and measured counters.",
+    "computed by its own code path, plus per-target columns `population_fallback_m2` and `population_fallback_m3` (TRUE/FALSE from the build diagnostics) and a per-arm descriptive count of fallback-built targets and candidates. These are disclosures and never gate or subset, and measured counters.")
+# --- A11 ---
+rep("""   - build pre-check of the §17 process-seed list on `cf45153`, then the replacement rule;
+   - horizon probe and prefix-identity check, filed as `docs/runs/*.py.txt` with logs;
+   - fill final seeds, hashes, H and the prefix result mechanically into the text;
+   - commit ruling and frozen predeclaration via `fm.sh sync` `[skip ci]`; record both SHA-256 digests in the trail.""",
+    """   - commit this ruling via `fm.sh sync` `[skip ci]`, record its SHA-256 in the trail, and attest that the code tree at that commit is identical to `cf45153` (`git diff --stat cf45153 HEAD -- src configs tests scripts` empty);
+   - build pre-check of the §17 process-seed list on that tree, then the replacement rule;
+   - horizon probe and prefix-identity check, filed as `docs/runs/*.py.txt` with logs and per-call runtimes;
+   - fill final seeds, hashes, H and the prefix result mechanically into the text; commit the frozen predeclaration via `fm.sh sync` `[skip ci]`; record its SHA-256 in the trail.
+
+   The probe may not start before the ruling commit exists on `main`.""")
+
+# --- frozen values: arm (ii) ---
+runs = "; ".join(
+    f"`{r['process_seed']}`/`{r['observation_seed']}`: p_s {r['p_s']}, e_s {r['e_s']}, local infections {r['local_infections_91']}, runtime_seconds 30 d {r['runtime_seconds']['30']:.3f} / 91 d {r['runtime_seconds']['91']:.3f}"
+    for r in probe["records"]
+)
+rep("**Manipulation check (reported, not gating).**",
+    f"""**Frozen values (filled mechanically from the probe record, 2026-10-22):**
+- **H = 49** days (max e_s = 41; 41 + 8 = 49; ≥ 35; multiple of 7; ≤ 91). Arm (ii) therefore scores T = 53 dates. The stop rule did not fire.
+- **Prefix identity: IDENTICAL** for all three probe seeds. Prefix transmission-event hashes and prefix report-count hashes for dates ≤ 2025-02-04 were byte-identical between the 30-day and 91-day runs. Arm (ii) shares B's realizations on days 0–29 and differs only by extension.
+- Per seed: {runs}.
+- Record: `docs/runs/2026-10-22-g35b-horizon-probe.json` (sha256 `{sha(ROOT / 'docs/runs/2026-10-22-g35b-horizon-probe.json')}`), script `docs/runs/2026-10-22-g35b-horizon-probe.py.txt`, log `docs/runs/2026-10-22-g35b-horizon-probe.log`. The probe ran on ruling commit `2cfb9f6d249c64fe78e0716a6a6ff6208ac681b5` (ruling sha256 `f84738a9594312f3371f4bb469c5cfaafed265dc5d233ee34f1f0be564d99643`). Probe seeds `81001–81006` and `91001–91003` are now retired.
+
+**Manipulation check (reported, not gating).**""")
+
+# --- frozen values: seeds ---
+by_seed = {r["seed"]: r for r in pre}
+primaries = list(range(82001, 82011)) + list(range(83001, 83013))
+assert all(by_seed[s]["status"] == "BUILT" for s in primaries + [81001, 81002, 81003])
+rows = []
+for r in pre:
+    arts = {a[0].split("-")[1]: a for a in r["artifacts"]}
+    fb = ", ".join(r["fallback_disclosures"]) or "none"
+    role = "final (primary)" if r["seed"] in primaries else ("probe (retired)" if r["seed"] < 82000 else "reserve (unused)")
+    if r["status"] == "FAILED":
+        rows.append(f"| `{r['seed']}` | {role} | FAILED: {r['error_class']} (adult-supply class) | — | — | — | — |")
+    else:
+        rows.append(
+            f"| `{r['seed']}` | {role} | BUILT | {fb} | `{arts['population'][1]}` | `{arts['structure'][1]}` | `{arts['networks'][1]}` |"
+        )
+seed_block = (
+    "\n**Frozen pre-check outcome (filled mechanically from the build pre-check record, 2026-10-22):**\n"
+    "- All 38 process seeds were built on `2cfb9f6d249c64fe78e0716a6a6ff6208ac681b5` (code tree identical to `cf45153`): 37 BUILT, 1 FAILED.\n"
+    "- **Every primary seed built, so the replacement rule was not triggered.** Final seeds are exactly the primaries in the table above.\n"
+    "- Excluded: reserve `82011` (`DataBuildError`, adult-supply residual class). It was never a primary and is not used.\n"
+    "- Fallback-built final seeds, kept per owner decision 7 and disclosed under A10: M2 `private_assignment_residual_fallback` on `82003`; M3 `destination_reassignment_fallback` on `82007`. Probe seed `81001` and reserves `81005` (M2) and `83015` (M3) also used fallbacks; they are not study seeds.\n"
+    "- Record: `docs/runs/2026-10-22-g35b-seed-precheck.json` (sha256 `9d15beb0abc7e3e190008dbb1d89aecc8bc3488e926c55f632bbe83b5d2614f5`), with its log and script. The campaign must reproduce the M2/M3/M4 logical content hashes below exactly (§8).\n\n"
+    "| Process seed | Role | Build | Fallback disclosure | M2 logical hash | M3 logical hash | M4 logical hash |\n"
+    "|---|---|---|---|---|---|---|\n" + "\n".join(rows) + "\n"
+)
+rep("- After freezing, there is no replacement of any kind. A build failure at execution fails predicate 1.\n",
+    "- After freezing, there is no replacement of any kind. A build failure at execution fails predicate 1.\n" + seed_block)
+
+# --- owner acceptance + conditions + freeze record ---
+cond = ruling.split("## Conditions on the pre-freeze actions", 1)[1].strip()
+text = text.rstrip() + f"""
+
+## Model-owner acceptance (2026-10-22)
+
+MODEL-OWNER RULING (G35-B): ACCEPT WITH AMENDMENTS. Fable 5.1 model-owner subagent, under Steven's 2026-10-22 delegation. Ruling: `docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md` (sha256 `f84738a9594312f3371f4bb469c5cfaafed265dc5d233ee34f1f0be564d99643`, committed at `2cfb9f6d249c64fe78e0716a6a6ff6208ac681b5`). Amendments A1–A11 appear verbatim at their named locations above. The ruling's conditions on the pre-freeze actions bind, quoted verbatim:
+
+{cond}
+
+## Freeze record (director, mechanical)
+
+- **Source draft:** `docs/research/v1_3/2026-10-22-g35b-design-opus-DRAFT.md` (sha256 `29492b3d161fa7f0e9dbc5ec32f146f530792b3fafdb655d98c03b945176a3b2`).
+- **Director edits, none of them substantive:**
+  - the title and status line now say FROZEN;
+  - the draft's report line and filing comment are removed;
+  - A1–A11 are applied verbatim;
+  - the §4.2 and §8 frozen-value blocks are filled from the filed probe and pre-check records;
+  - this acceptance and freeze record is appended.
+- **Unchanged:** every grid, truth, tolerance, threshold, objective, seed, level and predicate in the draft.
+- **Section cross-references are left as the draft wrote them.** Pointers to "§17" mean the flat seed list at the end. Pointers to "§16" for the owner ruling mean the acceptance section above.
+- **The §16 attestation** is the consultant's, as of the draft.
+- **Order followed** (ruling condition 1): ruling commit `2cfb9f6`, then build pre-check, then horizon probe, then this frozen text.
+- **Disclosed deviation:** one builds-only pre-check ran before the ruling commit. It is superseded and unused, and its hashes were identical to the in-order run's (trail row `g35b-owner-ruling`).
+- **Implementation obligation (ruling condition 5):** this file's SHA-256, as recorded in the trail at the freeze commit, is fixed in the G35-B config and in an independent module constant by unit U1.
+- **Status phrase:** "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run". G34 stays STOPPED.
+"""
+out_path.write_text(text + ("\n" if not text.endswith("\n") else ""), encoding="utf-8", newline="\n")
+print("WROTE", out_path, sha(out_path), len(text.split()), "words")
