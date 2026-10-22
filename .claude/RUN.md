@@ -1,4 +1,27 @@
-# RUN — nothing in flight. Foreman run `g35b-predecl` COMPLETE (predicate met). Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run.
+# RUN — IN FLIGHT: foreman run `g37-impl` (G35-B implementation U1–U5 + independent review). Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run.
+
+**Predicate:** branch `codex/g35b-design-study` carries U1–U5 per the frozen predeclaration (`3972190`, sha256 `2e8358ab…216e`) and owner clarification 1. At the branch head SHA:
+- the director's full CI-verify mirror passes, plus the G35-B, Phase-0 and Phase-0b dry-runs;
+- an independent review (author ≠ judge) passes;
+- the PASS is filed before the push;
+- a merge gate is parked for Steven.
+
+NO campaign. NO real data. No merge.
+**Authorization:** Steven 2026-10-22: "Authorize G37: run the U1-U5 implementation of the frozen G35-B predeclaration as a foreman run, plus the independent review. No campaign yet."
+**Budget:** 12 iterations. Per unit: 3 implementation runs and 2 consults.
+**Routing:**
+- U1–U5 are `Class: numerical`, so they run on gpt-6.1-sol@high (fleet v8.2).
+- If OpenAI's bio-risk classifier stops a unit, it is NOT retried there. The unit and the rest of the run move to Claude executors (`claude -p --model opus` in WSL).
+- The review goes to a family other than the author's.
+**Unit order:** U1 → U2 → U3 → U4 → U5, sequential on one branch with the director committing after each kept unit. Then the full mirror, the independent review, and the merge gate.
+**In flight:** U1. TASK `JOS · g37-u1 · build the G35-B study harness, config, dry-run and baseline arm`, gpt-6.1-sol@high.
+- Worktree `/home/steven/jos-g37-wt` (branch `codex/g35b-design-study`).
+- Log stem `/home/steven/jos-g37-u1-20261022`; brief `/home/steven/jos-g37-u1-20261022-brief.md`; launcher output `/home/steven/jos-g37-u1-launch-20261022.out`.
+- ts: trail row `g37-run-start`.
+**If cold-starting:**
+- If `<stem>.last.md` exists, review the full diff in the worktree against the brief, run the acceptance commands, then commit and push the branch or retry.
+- If the log has had no writes for 20 minutes, the unit is wedged: kill it and relaunch with a new stem.
+- If the log shows "flagged for possible biological risk", switch to the Claude executor with the same brief.
 
 **Run `g35b-predecl` (2026-10-22): PREDICATE MET.** The G35-B predeclaration is FROZEN at `3972190bd7cde523860fe303b41427c1c95c57eb`: `docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, committed-bytes sha256 `2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e`. ts: trail row `g35b-frozen`.
 - **Chain:**
