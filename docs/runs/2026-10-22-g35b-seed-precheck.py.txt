@@ -1,0 +1,83 @@
+"""G35-B pre-freeze build pre-check (director evidence; outcome-blind: builds only, no epidemic runs).
+
+Builds every declared process seed with parent_build.build_parent at mode ci, records success or the
+exception class/message, every manifest's artifact_id and logical_content_hash (M2/M3/M4), and which
+artifacts disclose the reviewed fallbacks. Usage: python g35b_seed_precheck.py <repo> <out_dir> <seed>...
+"""
+
+from __future__ import annotations
+
+import json
+import shutil
+import sys
+import time
+import traceback
+from pathlib import Path
+
+FALLBACK_KEYS = ("private_assignment_residual_fallback", "destination_reassignment_fallback")
+
+
+def _walk_hashes(node, found):
+    if isinstance(node, dict):
+        if "artifact_id" in node and "logical_content_hash" in node:
+            found.append((str(node["artifact_id"]), str(node["logical_content_hash"])))
+        for value in node.values():
+            _walk_hashes(value, found)
+    elif isinstance(node, list):
+        for value in node:
+            _walk_hashes(value, found)
+
+
+def main() -> int:
+    repo = Path(sys.argv[1]).resolve()
+    out = Path(sys.argv[2]).resolve()
+    seeds = [int(s) for s in sys.argv[3:]]
+    sys.path.insert(0, str(repo / "src"))
+    from jersey_outbreak.parent_build import build_parent
+
+    out.mkdir(parents=True, exist_ok=False)
+    results = []
+    for seed in seeds:
+        work = out / "builds" / str(seed)
+        started = time.perf_counter()
+        record: dict = {"seed": seed}
+        try:
+            build_parent(repo, "ci", seed, work, write_m4=True)
+            record["status"] = "BUILT"
+        except Exception as exc:  # noqa: BLE001 - the pre-check records every failure class
+            record["status"] = "FAILED"
+            record["error_class"] = type(exc).__name__
+            record["error_message"] = str(exc)[:500]
+            record["traceback_tail"] = traceback.format_exc().splitlines()[-3:]
+        record["seconds"] = round(time.perf_counter() - started, 2)
+        hashes: list[tuple[str, str]] = []
+        fallbacks: dict[str, list[str]] = {key: [] for key in FALLBACK_KEYS}
+        if work.exists():
+            for path in sorted(work.rglob("*.json")):
+                text = path.read_text(encoding="utf-8", errors="replace")
+                for key in FALLBACK_KEYS:
+                    if key in text:
+                        fallbacks[key].append(str(path.relative_to(work)))
+                if path.name == "manifest.json":
+                    try:
+                        _walk_hashes(json.loads(text), hashes)
+                    except json.JSONDecodeError:
+                        pass
+        record["artifacts"] = sorted(set(hashes))
+        record["fallback_disclosures"] = {k: v for k, v in fallbacks.items() if v}
+        results.append(record)
+        print(json.dumps({k: record[k] for k in ("seed", "status", "seconds")}
+                         | {"fallbacks": sorted(record["fallback_disclosures"]),
+                            "error_class": record.get("error_class")}), flush=True)
+        if work.exists():
+            shutil.rmtree(work)
+    (out / "precheck.json").write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
+    tally: dict[str, int] = {}
+    for r in results:
+        tally[r["status"]] = tally.get(r["status"], 0) + 1
+    print("TALLY", json.dumps(tally, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

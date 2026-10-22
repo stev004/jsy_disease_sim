@@ -1,0 +1,776 @@
+[
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-81001-d8230616eb0d",
+        "915d0d2556c476e7e7fec7b9ae65763b462962c327c34063229433c056268e1b"
+      ],
+      [
+        "jos-population-m2-ci-seed-81001-a51b5a87a323",
+        "835b08b2de3109e6a3aeeff423b8b67f8c931a5352f885d76f6cccee099547ec"
+      ],
+      [
+        "jos-structure-m3-ci-seed-81001-69313c2b3bee",
+        "8eadaa8f621385e0201240cf412ad8995e81f1ae7406ef7d769e744f95505d88"
+      ]
+    ],
+    "fallback_disclosures": {
+      "private_assignment_residual_fallback": [
+        "populations/jos-population-m2-ci-seed-81001-a51b5a87a323/diagnostics.json"
+      ]
+    },
+    "seconds": 2.7,
+    "seed": 81001,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-81002-2e5f51e4e6ef",
+        "c42c13e91d505b7d2e0df3c1f2660b701aa231f73425432d0defcc9925e6f1fc"
+      ],
+      [
+        "jos-population-m2-ci-seed-81002-e0893d99de07",
+        "05bffe224c9f7cc304a2acb2f92c38afc759855b084ba5f990b3fad03a003807"
+      ],
+      [
+        "jos-structure-m3-ci-seed-81002-8af3f78fa240",
+        "32d7f5ab829ff7375bca3b74f1ba232dbf348524ab5174395a42fe9ed6ccbcf5"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 81002,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-81003-4bbdb9bcba2c",
+        "fdef7c1c899e351b4a68c3156ceb126edc98f5c6719dd49f0ca1dcfe41620f1e"
+      ],
+      [
+        "jos-population-m2-ci-seed-81003-dba00808b839",
+        "4cdf6e3b81281765b4e7eab099260bacda36beba30faddce8965131422eca884"
+      ],
+      [
+        "jos-structure-m3-ci-seed-81003-658d3ab004e8",
+        "925a86884cf0121f84731339349ad78bae693914fa2f22b19dee96b7f9ad4c11"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.75,
+    "seed": 81003,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-81004-6afcf9e58e6a",
+        "13eea0970989b8db4ac6b4c9d482f82568257030ec738ff39fdc2c154489164f"
+      ],
+      [
+        "jos-population-m2-ci-seed-81004-8a8b6a56fd19",
+        "badb2068dccc34e1ebd0cfe22ee2847c3d5a11bb18a3acf0c45fc58d2ca48f54"
+      ],
+      [
+        "jos-structure-m3-ci-seed-81004-7deddfd16635",
+        "98b9c883daf8880de4f88acc77ab7c13870eca90e44899db5b103053592b1522"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 81004,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-81005-b3cbeae7ddc4",
+        "ec1d94571565c4dcc267750af3d6f55e6888e57c10e7eb73b3775cf626299123"
+      ],
+      [
+        "jos-population-m2-ci-seed-81005-c80cca333270",
+        "6d46b3279c069d83682bebfced031c3732a70249301fff6a94856f5bc7464d59"
+      ],
+      [
+        "jos-structure-m3-ci-seed-81005-0add384a8014",
+        "7e562541fbcbabe758eb795404b3352f25b2b2fbd360c7819ef942e094906d90"
+      ]
+    ],
+    "fallback_disclosures": {
+      "private_assignment_residual_fallback": [
+        "populations/jos-population-m2-ci-seed-81005-c80cca333270/diagnostics.json"
+      ]
+    },
+    "seconds": 1.66,
+    "seed": 81005,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-81006-0b1fbf63e010",
+        "c5cd5d7574b0ab77e9188a209e7975c67577e457a454f5ef865e41bd3c27139d"
+      ],
+      [
+        "jos-population-m2-ci-seed-81006-e50510a8f83e",
+        "f45b9c82130ca518327ec846940012ae48836ff63a3ecadf3c41d5ef884fbb5a"
+      ],
+      [
+        "jos-structure-m3-ci-seed-81006-79431bd5bbe3",
+        "717861d92efa421c3f5af18ba13a203a4785f32e7cd39e00c337b55f6b71f8c1"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.69,
+    "seed": 81006,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82001-a86cb11e3578",
+        "0315d935b99761abdfb79eddfd66077d300e056379f47c2af69c033d12779bab"
+      ],
+      [
+        "jos-population-m2-ci-seed-82001-5a066557775e",
+        "29be3731586fcb88f93edd646c9db8aae1057dc11f7f18a947f67b9ad01f3e19"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82001-835f2c904ea3",
+        "473a4901f68338392a74c0b3f2df23518f9df1a1c09f01d7508d827e3ebb3f75"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.66,
+    "seed": 82001,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82002-ce2409bfbc74",
+        "1fa4eb9b9f80c013d6c8ca97e72d87d6aaa101e8f1812ec6026af0c26dfc2bc5"
+      ],
+      [
+        "jos-population-m2-ci-seed-82002-6952ef48bc1c",
+        "0fcfa17427521af536c7fc7eddb247b1665acba2ca802be0cb7c9951d7e0b7ea"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82002-8cee31697ef6",
+        "709c123cffb0a8dc8c8fdf79f83347fd038bc1fe2390f85087ebba2a92b1a213"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.75,
+    "seed": 82002,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82003-ab2a879b9679",
+        "9f8211d43f9352e6b1c716988695839a7ba10c1781173a6071d7914edd73acfc"
+      ],
+      [
+        "jos-population-m2-ci-seed-82003-83e3ed44b6da",
+        "2e2abec14b86855210b5db41a0f32f1ef26401dcf4a9df87c26460ec78f51c3d"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82003-899c181f7e91",
+        "c8c73f50e6f9db8abcc165bf292390b1067d824a255fb94a0777f92290514233"
+      ]
+    ],
+    "fallback_disclosures": {
+      "private_assignment_residual_fallback": [
+        "populations/jos-population-m2-ci-seed-82003-83e3ed44b6da/diagnostics.json"
+      ]
+    },
+    "seconds": 1.68,
+    "seed": 82003,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82004-4b63a062c130",
+        "121b6ff4756ed002cc12865f53e47cdf0048e95391ec91b548011f3f9abcc1ca"
+      ],
+      [
+        "jos-population-m2-ci-seed-82004-f3c31b029b37",
+        "4c91addee491fc2ce5efe84b21a3f18ad2822d852f97134f5cec9382835aa2d7"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82004-99088c2a7b1c",
+        "de4114c92f4ed53e33b85f52086ad21797acebbdb1acc6ba25fe6240bb9270aa"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.75,
+    "seed": 82004,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82005-b7f6ef914513",
+        "7b7719d020070878215ddce776005878f281146be7f9c69bf78d2c2fd30694e0"
+      ],
+      [
+        "jos-population-m2-ci-seed-82005-46fa34558d56",
+        "366d6486a4790093e9845b31efc0c79a530fdb22d607db24ac905160b6ddebf2"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82005-f88673dab274",
+        "18d02e1413e81f9bdb295a2dc9a86ca8d005d4ad16a55e98351c3edcb2365bcd"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.65,
+    "seed": 82005,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82006-998c0fc453c6",
+        "0919bc563350669a31672a685324205c19b8c875274e778b27ea572b85b1399d"
+      ],
+      [
+        "jos-population-m2-ci-seed-82006-f533774f9e11",
+        "9a55c6f251af65bf70694b04a1d4030530ff481828eb1435243fc2c6701cfa0d"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82006-c79410e35ff6",
+        "18ecca09b73e9711ca71b52d36b42bc7bf906b22a382fcd53902a16e25d5116b"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 82006,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82007-dac92d207df4",
+        "ba70c35a4afc547c4ce9960dff3a39907dcc128e1a87214c72d298a3c82ad6bb"
+      ],
+      [
+        "jos-population-m2-ci-seed-82007-bccdd9b35cf4",
+        "f857b9bee85696f7d1ddb999e5e92bf9e8d8ef078a050ee853fffac37580b01c"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82007-d20dc1738ac4",
+        "202589ef822273969468ef1b5336a758f7e9738692455ef8f4bf11d21065f258"
+      ]
+    ],
+    "fallback_disclosures": {
+      "destination_reassignment_fallback": [
+        "structures/jos-structure-m3-ci-seed-82007-d20dc1738ac4/diagnostics.json"
+      ]
+    },
+    "seconds": 1.67,
+    "seed": 82007,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82008-8a5a26ff419a",
+        "beb428c9d6a1420444bd60dcc5cb9fdf4e6cad6785672834bc4fc9c262a8c405"
+      ],
+      [
+        "jos-population-m2-ci-seed-82008-e337cb380239",
+        "2e28de397db5a765e0c6484ef4dbe98aaec638eb58f62488656b2b113a36e60e"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82008-b817444764af",
+        "3d0ec001d43734484b31d8a796541fa2958b08ce8e2a2bba13fbb3f6fffe0542"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.69,
+    "seed": 82008,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82009-d1f6a5be3eec",
+        "be0013d9a4a1899316693c1d76a55254ed9b2cd7e4fd0c9fc680158fa8e71e50"
+      ],
+      [
+        "jos-population-m2-ci-seed-82009-a1d68735731d",
+        "a7a472c8e974e065ab8b80d3a638d7b45802dfd03a4c9e238cf671d1cacec24c"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82009-6a55018aff00",
+        "583502f9615196e331b297f062cc534dd78132720260f3159847f0dbbf7eb252"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 82009,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82010-9b522aed2c09",
+        "a277760a2224db3bab4986de9a15ed302c9f3a15b334128209ca3e3cda4c3f52"
+      ],
+      [
+        "jos-population-m2-ci-seed-82010-e1b40f61382a",
+        "beba6277bc836401f506e813d38915ada5932896122bd331882b63f0952aebf1"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82010-2c5206418927",
+        "3df598689ee901d22aac5a0b325e5667ae9e6bfa570a38d7aad79a97176abd9b"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.67,
+    "seed": 82010,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [],
+    "error_class": "DataBuildError",
+    "error_message": "initial parish assignment failed: age/sex pool cannot satisfy role constraint 18-95; remaining=2, oldest=13 in parish St Martin, household household-m2-001276 (Other, roles=['adult', 'other']); residual-last fallback failed: age/sex pool cannot satisfy role constraint 18-95; remaining=3, oldest=15 in parish St Martin, household household-m2-001276 (Other, roles=['adult', 'other'])",
+    "fallback_disclosures": {},
+    "seconds": 0.29,
+    "seed": 82011,
+    "status": "FAILED",
+    "traceback_tail": [
+      "  File \"/home/steven/jos-g35b-precheck-20261022r2-src/src/jersey_outbreak/population_generator.py\", line 796, in _assign_private_residents",
+      "    raise DataBuildError(",
+      "jersey_outbreak.data_pipeline.DataBuildError: initial parish assignment failed: age/sex pool cannot satisfy role constraint 18-95; remaining=2, oldest=13 in parish St Martin, household household-m2-001276 (Other, roles=['adult', 'other']); residual-last fallback failed: age/sex pool cannot satisfy role constraint 18-95; remaining=3, oldest=15 in parish St Martin, household household-m2-001276 (Other, roles=['adult', 'other'])"
+    ]
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82012-bf8e832d0405",
+        "7555dfcee0c64c38137aa04874359631b3d4a5303904def616b6e0d19ef64ddb"
+      ],
+      [
+        "jos-population-m2-ci-seed-82012-4e6502bdfddb",
+        "432ac679849a60a30eb7fb76066d8a20c8e001b1a88b4269577f16e62bbe10bb"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82012-b27924c23f05",
+        "02b0ed56c6aa11b0341ab86397501808ca69d881d53a62e2428e583e4ca52815"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.7,
+    "seed": 82012,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82013-66119fe8de1b",
+        "0eaddae5550cd9b48bd3c6a652216411e97fe61d7c671bf00930952d32ce59c6"
+      ],
+      [
+        "jos-population-m2-ci-seed-82013-90536fa3298f",
+        "ecaac8f6cd9ce7d5bd22fb04beeebb9cc73a73570b07b70ca43f2a2a0f0bc357"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82013-d47b02d2fe0d",
+        "5bc73bfee3d4d1d37a885b6c44f133f08d2d6cc03c65fbc4ffea6f426f09aacc"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.67,
+    "seed": 82013,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82014-e844aa3c020f",
+        "6259368a1a1be79196bb9567c1b4589d93e5557d3530e68c1efea80f1667bce8"
+      ],
+      [
+        "jos-population-m2-ci-seed-82014-d997cefe9afe",
+        "caefa1b1ce3005225e6ce39d4d5a1d51ca4088af4f3062dde62ef76a928fadb2"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82014-d8cc02866eee",
+        "ca945fff0150272a498bd4ba68c359f2a69890bb68c313738f9cc40e99bb92d8"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.67,
+    "seed": 82014,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-82015-634295d4783d",
+        "78a2c8c02da114b349aa025eb67358a33e1a2486c2ce64ee61e7b1d06749b5f1"
+      ],
+      [
+        "jos-population-m2-ci-seed-82015-4d537258502b",
+        "f47c69426912006502635f484a757c51b71ee7b3016de321795c9fe8979638fb"
+      ],
+      [
+        "jos-structure-m3-ci-seed-82015-e1af51a40e41",
+        "bc7a671a07c43562b33a837cf8015d598a653880718c6831cd91828ed1f89c8e"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.69,
+    "seed": 82015,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83001-cd6fab7d26c5",
+        "448920b78f1effdca6236389a14b241d8352a806e4f5f352ec03e0ecba510bd5"
+      ],
+      [
+        "jos-population-m2-ci-seed-83001-f4623c73c1e2",
+        "cd9b3810b7f82c7acc98afb308f292a7a31e9f8439e9e48c4fc9719e8ebf27db"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83001-ce668c59d4fe",
+        "e50724db82ac5475249d7adfa0f779f5e408df78de3f024fc722564269cfb66d"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.65,
+    "seed": 83001,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83002-6a471639a58d",
+        "be6d085971128ec37d95bc92e7b75f3edebe8e7daae78a6359023d2189a4e977"
+      ],
+      [
+        "jos-population-m2-ci-seed-83002-82aa42091b0b",
+        "18576334ad6bbe771a7cbf2efdf44344afd71b104ecdc8125ad2884d22ef53ea"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83002-ecfffd807853",
+        "109bb47e8eafdc912ed7963c316384db5277b36abb088c3570d5d258d0db0df8"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 83002,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83003-97d6e584b221",
+        "6b614984120615ccd78d44aec9c4302bfe691fadc93b6ec93bf1337b79bab0fc"
+      ],
+      [
+        "jos-population-m2-ci-seed-83003-2cd0629436be",
+        "1942929d096e8999dd335d39893f16926bd40aab4b9971b610d3848bc2286617"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83003-873ef091f270",
+        "287fd4b9f23b5bf939658d8793b3067f49468992d49426e81b2205711112209f"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.7,
+    "seed": 83003,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83004-3e1f8336bf59",
+        "79fcdd9aa3ac2d9171d3a81ce70e2862c8dc0f420bc1bd2b49200ae04728cacc"
+      ],
+      [
+        "jos-population-m2-ci-seed-83004-c03f61d367e2",
+        "d791b1cccb554c02cffd88d0887142694e2e64d440fa2bf4aa7bec6bf28e4525"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83004-1611a41b0f52",
+        "a388e9ace447324fad942d6b716d882e9e8a2a69abf1cf5dd1a44e03eb363e0e"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.67,
+    "seed": 83004,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83005-de17ab1baa9b",
+        "cd94b37f3a67a48b3cb3d99bd6f3547aed9632e16abac7bb4d309087c673af81"
+      ],
+      [
+        "jos-population-m2-ci-seed-83005-56de98494cc3",
+        "cdf5d4ef0c1fc113a9c379da9db8dcf5080b8ff2dda0f8f785b8dfa1671a706e"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83005-e2f5376a16c0",
+        "601866c328f023292ac4d488ce5496161f7afd9b018fd9e1fa85724401aed3c3"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 83005,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83006-5d0dc4594d0b",
+        "0af0c44893a755363caeec5474be033c92ebc55d511b735cc7ab98450a7a9acb"
+      ],
+      [
+        "jos-population-m2-ci-seed-83006-4fdcf3459241",
+        "b590f15749a0b9536be85cd646fc6e7cf867baa74f310580fd4c4673b001f5ef"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83006-b788a28ecf4f",
+        "d2608c75efe50704ab46c3d072b56b287726d77494b8fe2db6f3a17188030f1c"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 83006,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83007-0661d17bac62",
+        "8ed53ac6aa78a9fca98004b425e91d2a4c21f0f60e0f5a2ece717a76621cd95b"
+      ],
+      [
+        "jos-population-m2-ci-seed-83007-54232ede035c",
+        "0d51d1f8b9ae6a2ebb4a44935c4d02d99eb309f4a70e50a563ad7aae0d39808e"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83007-0c40600cd91e",
+        "bd40941d56e8f76fb2175e2a430227f283698cda137bcb4e9a7b03e002d163ff"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 83007,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83008-8f7765c9fe2f",
+        "65d1bff09584abb3528d0356a5b5ae7507c2d38f54b2288a8aca97a529d32426"
+      ],
+      [
+        "jos-population-m2-ci-seed-83008-0d5ffa80c1b6",
+        "7453dbf5d3eea512497c995c92f64527534a1c80a0e1d9b7df165affd9587ebe"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83008-d7cfdfd0e29d",
+        "446e5f5722808f335a9c88d7ee3eec4b8242bcb7616d525c9f7865f70472c500"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.65,
+    "seed": 83008,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83009-c6c7e1d2ac80",
+        "5e3562d890207aab01cb3072baa8bdd13654001db93c45b304192c5dab1b9fee"
+      ],
+      [
+        "jos-population-m2-ci-seed-83009-1edb882f42ec",
+        "4c91becbd1d218f4f9c6b76a7e203714f0aefcba5cdf6346f1cc7d9a2591b7ff"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83009-aeecdaff99de",
+        "6538342b86913f0143b9c39c914fbc18f9cd0a2ba69b4f63b95c793cef91d49d"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.69,
+    "seed": 83009,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83010-f37a9959084a",
+        "f21ba813a10683ab8ac7ee60901f4905da951052053a581dd7764d4c362fb224"
+      ],
+      [
+        "jos-population-m2-ci-seed-83010-ec4138b29e9e",
+        "c2d6c43a84cbabc7704482e646535bad0613e378a8ab628114117717093b9752"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83010-4419273be794",
+        "d0bb98138cb48c04ecfabe8e32d06a0230fec6fd041de391bbed23044446b036"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.86,
+    "seed": 83010,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83011-739e490c5752",
+        "42ee89e0306f1d0c699bf4dce1dc7a70aca4df9fd6b9dc285ef301c51750e617"
+      ],
+      [
+        "jos-population-m2-ci-seed-83011-9500eba74bc8",
+        "b9195f7493f6d647d59e92274030c5723d4c0595ee95c2e144fdc8c8b69fbfe7"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83011-bc0d49f7784f",
+        "8e2f646d05eb1de06f532bc0980e2d75b88c61b12ad095386bf5f9b7b3986107"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 83011,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83012-4a671ea46dcc",
+        "3b43297015067c60e3a8e32e6e5181700d3070360c2a98a00cf370db04e8f3b4"
+      ],
+      [
+        "jos-population-m2-ci-seed-83012-5d58707c7632",
+        "969a04909ef4d6385258ab3256e83554aa95d426898547f6df1b0e2486ab6d44"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83012-03b0ee40dfd8",
+        "a6f42c1dbdc8eccd715e041d6c80771534bf22b73cf76a995fe6793e78e04f25"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 83012,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83013-16f78e79180e",
+        "5a85c85482d1cf379f8a249f7915e56774343f71bc9f317b5d41df19e54f5b7b"
+      ],
+      [
+        "jos-population-m2-ci-seed-83013-2cbd06e34e65",
+        "c5a61d4c927869d9b737ec05fe4fe0e57f091c943ca3b8bd4b8beb5372f5007a"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83013-283da8c32179",
+        "6f90d20e98d438c7f1ccd86cccb5c36235ff290eb68d38fdb797d29b774cfe81"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.68,
+    "seed": 83013,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83014-120abd3fa0a8",
+        "d76515301d2e104099a4609f308c36d26100aef2a565daec5fb25a8ba73b907a"
+      ],
+      [
+        "jos-population-m2-ci-seed-83014-d0c794a8eb8c",
+        "eb57b2e73b3184d345bbc937f09fc8b7955831564574a7ad0c8ee5a420f06fc8"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83014-42dc9959d03b",
+        "126a1259047cba92a1862d52e38cf2886bf8be892d765f266555bf7e64f53b0a"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.75,
+    "seed": 83014,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83015-f8ec425a8184",
+        "45a95fe6b9ba5374dc2cb7e1e105fc444de473a9d43f98de512e81f9955c3169"
+      ],
+      [
+        "jos-population-m2-ci-seed-83015-217fdd911029",
+        "345d0394ea67753eff9d50bf505cc4a1a531c62ed7a7d064c6679e28b4823dcf"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83015-9a230466f556",
+        "dda73202a44839291d0b4b03c5c7eacd9ed136f5fb1d4ef5efff2c421f1a6e57"
+      ]
+    ],
+    "fallback_disclosures": {
+      "destination_reassignment_fallback": [
+        "structures/jos-structure-m3-ci-seed-83015-9a230466f556/diagnostics.json"
+      ]
+    },
+    "seconds": 1.77,
+    "seed": 83015,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83016-e6e2fa65131a",
+        "43120fcb6a418f40cfd4448b074b0e7dae127638a41fee91fbf3408ddbfab3e4"
+      ],
+      [
+        "jos-population-m2-ci-seed-83016-b37d90ab6f79",
+        "eb598e65f7689b93ee4f17d28439759a90eb8e47b4c92bc0fcb72b00bc7ec957"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83016-72a048241578",
+        "cc3edfcdf410f0975a9934c15dd3b00169e987790945f8bb8df5ef72b3ce8046"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.69,
+    "seed": 83016,
+    "status": "BUILT"
+  },
+  {
+    "artifacts": [
+      [
+        "jos-networks-m4-ci-seed-83017-e9cf60f77fe8",
+        "4e23e29d1e001a4459171ef8f73b68eff8b690c3e05ace4ce31a3361540f1dbf"
+      ],
+      [
+        "jos-population-m2-ci-seed-83017-3d9dac3af1bb",
+        "c253958d8da53e41e3c1b5acce6089249e0f60ffbd3dbea9c66724338405c399"
+      ],
+      [
+        "jos-structure-m3-ci-seed-83017-309ec0a29a09",
+        "c93e15e0a9783f579302509f34ec872c65e2f03a353e5e08837ae32ce5b7304b"
+      ]
+    ],
+    "fallback_disclosures": {},
+    "seconds": 1.76,
+    "seed": 83017,
+    "status": "BUILT"
+  }
+]
