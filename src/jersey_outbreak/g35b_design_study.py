@@ -167,7 +167,7 @@ def frozen_payload() -> dict[str, Any]:
             for seed, hashes in frozen.PROCESS_HASHES.items()
         },
         "implementation": {
-            "implemented_arms": ["B"],
+            "implemented_arms": ["B", "i", "ii", "iii"],
             "required_arms": ["B", "i", "ii", "iii"],
             "retries": 0,
             "replacement_seeds": False,
@@ -926,7 +926,9 @@ def _baseline_execution_complete(generation: BaselineGeneration) -> bool:
     )
 
 
-def _fixed_run_provenance(latent: Any, requested: Any, seed: int, cell: CandidateCell) -> bool:
+def _fixed_run_provenance(
+    latent: Any, requested: Any, seed: int, cell: CandidateCell, duration_days: int
+) -> bool:
     """Recheck returned metadata against independent frozen controls, without truth access."""
     try:
         run = latent.config
@@ -935,7 +937,7 @@ def _fixed_run_provenance(latent: Any, requested: Any, seed: int, cell: Candidat
             and run.seed == seed
             and latent.generated.config.seed == seed
             and run.mode == "ci"
-            and run.duration_days == 30
+            and run.duration_days == duration_days
             and run.start_date == date(2025, 1, 6)
             and run.beta == cell.beta
             and run.initial_seed_count == 0
@@ -955,9 +957,12 @@ def _fixed_run_provenance(latent: Any, requested: Any, seed: int, cell: Candidat
 
 
 def _report_provenance_verified(
-    generation: BaselineGeneration, extra: ArmIGeneration | None = None
+    generation: BaselineGeneration,
+    extra: ArmIGeneration | None = None,
+    *,
+    duration_days: int = 30,
 ) -> bool:
-    """B/i report provenance, recomputed from returned configs and retained records.
+    """Report provenance, recomputed from returned configs and retained records.
 
     Blind read-back failures remain software errors. Other provenance failures
     produce predicate 9 FALSE, including a mutually consistent but unfrozen seed.
@@ -965,7 +970,7 @@ def _report_provenance_verified(
     config = StudyConfig()
     if generation.config != config:
         return False
-    dates = observation_dates(config.start_date, 30, 4)
+    dates = observation_dates(config.start_date, duration_days, 4)
     owner = generation if extra is None else extra
     seeds = config.candidate_process_seeds if extra is None else ARM_I_REPLICATE_ORDER
     records = generation.replicate_provenance + (
@@ -974,7 +979,7 @@ def _report_provenance_verified(
     latents = {**generation.candidate_latents, **({} if extra is None else extra.candidate_latents)}
     try:
         if (
-            len(dates) != 34
+            len(dates) != duration_days + 4
             or any(table.dates != dates for table in generation.target_tables.values())
             or any(
                 table.dates != dates
@@ -989,7 +994,9 @@ def _report_provenance_verified(
         ):
             latent, observed, requested, obs = generation.target_outputs[seed]
             if not (
-                _fixed_run_provenance(latent, requested, seed, CandidateCell(0.08, 2, 0.75, 0.25))
+                _fixed_run_provenance(
+                    latent, requested, seed, CandidateCell(0.08, 2, 0.75, 0.25), duration_days
+                )
                 and obs.observation_seed == obs_seed
                 and obs.observation_config_id == config.target_observation_config_id
                 and obs.analysis_horizon_tail_days == 4
@@ -1022,7 +1029,7 @@ def _report_provenance_verified(
                 batch, obs_seed = paired[seed]
                 obs = phase0.ObservationConfig.model_validate(record["observation_config"])
                 if not (
-                    _fixed_run_provenance(latent, requested, seed, cell)
+                    _fixed_run_provenance(latent, requested, seed, cell, duration_days)
                     and record["run_config"] == latent.config.model_dump(mode="json")
                     and record["batch"] == batch
                     and record["observation_seed"] == obs.observation_seed == obs_seed
@@ -1192,13 +1199,36 @@ def batch_objective_spread(objectives: Sequence[float]) -> dict[str, Any]:
     }
 
 
+def _offset_descriptive(fit: BlindFitResult) -> dict[str, Any]:
+    """Re-profiled offset and global selection are separate descriptives (§7.2b)."""
+    profile = next(p for p in fit.profiles if p.dimension == "inoculation_day_offset")
+    minimum = min(profile.profiled_objectives)
+    tau = 1e-12 * max(1.0, minimum)
+    offsets = tuple(
+        int(offset)
+        for offset, objective in zip(profile.values, profile.profiled_objectives, strict=True)
+        if abs(objective - minimum) <= tau
+    )
+    return {
+        "reprofiled_offset": offsets[0] if len(offsets) == 1 else None,
+        "offset_profile_tie": len(offsets) > 1,
+        "offset_profile_identified": profile.identified,
+        "global_selected_offset": None
+        if fit.selected is None
+        else fit.selected.inoculation_day_offset,
+        "numerical_tie": fit.numerical_tie,
+        "estimate_hash": fit.estimate_hash,
+        "profile": profile.as_dict(),
+    }
+
+
 def batch_offset_agreement(fits: Sequence[BlindFitResult]) -> bool:
-    """Identical selected offsets across four batches; a global tie never agrees."""
+    """Four non-null re-profiled offsets agree, regardless of global ties."""
+    offsets = tuple(_offset_descriptive(fit)["reprofiled_offset"] for fit in fits)
     return (
-        len(fits) == 4
-        and all(not fit.numerical_tie and fit.selected is not None for fit in fits)
-        and len({fit.selected.inoculation_day_offset for fit in fits if fit.selected is not None})
-        == 1
+        len(offsets) == 4
+        and all(offset is not None for offset in offsets)
+        and len(set(offsets)) == 1
     )
 
 
@@ -1386,19 +1416,7 @@ def arm_i(
                 "target_seed": seed,
                 "four_batch_offsets_agree": agrees,
                 "reprofiled_offsets": {
-                    name: {
-                        "selected_offset": None
-                        if result.selected is None
-                        else result.selected.inoculation_day_offset,
-                        "numerical_tie": result.numerical_tie,
-                        "estimate_hash": result.estimate_hash,
-                        "profile": next(
-                            p.as_dict()
-                            for p in result.profiles
-                            if p.dimension == "inoculation_day_offset"
-                        ),
-                    }
-                    for name, result in target_fits.items()
+                    name: _offset_descriptive(result) for name, result in target_fits.items()
                 },
                 "fixed_tuple_spreads": [
                     {
@@ -1796,20 +1814,8 @@ def join_arm_ii(generation: ArmIIGeneration, output_dir: Path) -> RecoveryEvalua
                 len(fit.loss_surface),
             )
         )
-    dates = observation_dates(config.start_date, constructor_config.duration_days, 4)
-    provenance_verified = (
-        all(table.dates == dates for table in generation.target_tables.values())
-        and all(
-            table.dates == dates
-            for tables in generation.candidate_prediction_library.values()
-            for table in tables
-        )
-        and all(
-            latent.config.duration_days == 49 for latent, _ in generation.candidate_latents.values()
-        )
-        and all(
-            output[0].config.duration_days == 49 for output in generation.target_outputs.values()
-        )
+    provenance_verified = _report_provenance_verified(
+        generation, duration_days=constructor_config.duration_days
     )
     complete = _baseline_execution_complete(generation) and all(
         generation.generated_parents[seed] is generation.baseline.generated_parents[seed]
@@ -2179,20 +2185,41 @@ def _serosurvey_provenance_verified(generation: ArmIIIGeneration) -> bool:
     survey_date = (config.start_date + timedelta(days=design["survey_day"])).isoformat()
     for records, seeds, sero_seeds, namespace in (
         (
-            tuple(generation.target_samples.items()),
+            tuple(
+                (seed, sample, baseline.target_outputs[seed][0])
+                for seed, sample in generation.target_samples.items()
+            ),
             config.target_process_seeds,
             design["target_serosurvey_seeds"],
             design["target_serosurvey_config_id"],
         ),
         (
-            tuple((key[0], sample) for key, sample in generation.candidate_samples.items()),
+            tuple(
+                (key[0], sample, baseline.candidate_latents[key][0])
+                for key, sample in generation.candidate_samples.items()
+            ),
             config.candidate_process_seeds,
             design["candidate_serosurvey_seeds"],
             design["candidate_serosurvey_config_id"],
         ),
     ):
         paired = dict(zip(seeds, sero_seeds, strict=True))
-        for expected_seed, observation in records:
+        for expected_seed, observation, latent in records:
+            ids = serosurvey_sample_ids(
+                baseline.generated_parents[expected_seed].agent_ids,
+                expected_seed,
+                paired[expected_seed],
+                namespace,
+                design["n"],
+            )
+            # The retained latent events are independent of both the sample
+            # record and its persisted bytes. Recompute only after blinding.
+            infected = {
+                event["infected_agent_id"]
+                for event in latent.transmission_events
+                if date.fromisoformat(event["infection_date"]) <= date.fromisoformat(survey_date)
+            }
+            flags = tuple(agent_id in infected for agent_id in ids)
             if (
                 observation.process_seed != expected_seed
                 or observation.process_seed not in paired
@@ -2200,16 +2227,9 @@ def _serosurvey_provenance_verified(generation: ArmIIIGeneration) -> bool:
                 or observation.config_id != namespace
                 or observation.survey_date != survey_date
                 or observation.n != design["n"]
-                or len(observation.ever_infected) != design["n"]
-                or observation.k != sum(observation.ever_infected)
-                or observation.sampled_agent_ids
-                != serosurvey_sample_ids(
-                    baseline.generated_parents[observation.process_seed].agent_ids,
-                    observation.process_seed,
-                    observation.serosurvey_seed,
-                    namespace,
-                    design["n"],
-                )
+                or observation.ever_infected != flags
+                or observation.k != sum(flags)
+                or observation.sampled_agent_ids != ids
             ):
                 return False
     return set(generation.candidate_k_library) == set(config.candidate_grid) and all(
@@ -2267,7 +2287,8 @@ def join_arm_iii(generation: ArmIIIGeneration, output_dir: Path) -> RecoveryEval
     evaluation = evaluate_recovery(
         rows,
         execution_complete=_baseline_execution_complete(baseline),
-        provenance_verified=_serosurvey_provenance_verified(generation),
+        provenance_verified=_report_provenance_verified(baseline)
+        and _serosurvey_provenance_verified(generation),
         measured_equals_caps=generation.measured
         == {key: plan["arms"]["iii"][key] for key in TOTAL_FIELDS},
     )
@@ -2503,7 +2524,7 @@ def _validated_campaign_inputs(
 ) -> dict[str, bytes]:
     # All asserted digests use git blobs, with independent frozen expected values.
     documents = (
-        (config_path, "fab6d05198120e89369480d48cb0ac6401c6926dbe8e972311b6b18ee4d4b5f9"),
+        (config_path, frozen.CONFIG_SHA256),
         (predeclaration_path, frozen.PREDECLARATION_SHA256),
         (owner_ruling_path, frozen.OWNER_RULING_SHA256),
         (clarification_path, frozen.CLARIFICATION_SHA256),

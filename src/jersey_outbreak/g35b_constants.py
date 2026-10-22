@@ -8,6 +8,8 @@ from __future__ import annotations
 
 PREDECLARATION_PATH = "docs/research/v1_3/2026-10-22-g35b-predeclaration.md"
 PREDECLARATION_SHA256 = "2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e"
+# Exact LF bytes of the config with B/i/ii/iii implementation metadata.
+CONFIG_SHA256 = "4259c45f01cf122521f6853dba5059415a0ca6317a02d3f883be18e3263105d0"
 RIDGE_PATH = "docs/research/v1_3/2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md"
 RIDGE_SHA256 = "8cf4c76612434cbd90c5de4ca9dfd1326422b94a72bd4a63ccff71e95f34908a"
 CLARIFICATION_PATH = "docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md"

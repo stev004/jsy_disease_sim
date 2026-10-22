@@ -41,6 +41,25 @@ def _payload() -> dict[str, Any]:
     return yaml.safe_load(CONFIG.read_text())
 
 
+def test_config_lf_bytes_match_independent_digest() -> None:
+    content = CONFIG.read_bytes().replace(b"\r\n", b"\n")
+    assert hashlib.sha256(content).hexdigest() == frozen.CONFIG_SHA256
+    assert _payload()["implementation"]["implemented_arms"] == ["B", "i", "ii", "iii"]
+
+
+@pytest.fixture
+def committed_campaign_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Emulate the director's future commit of the edited config, without committing."""
+    original = study.committed_document_bytes
+
+    def committed(path: Path, **kwargs: Any) -> bytes:
+        if path.resolve() == CONFIG.resolve():
+            return CONFIG.read_bytes().replace(b"\r\n", b"\n")
+        return original(path, **kwargs)
+
+    monkeypatch.setattr(study, "committed_document_bytes", committed)
+
+
 def test_independent_frozen_inputs_and_precheck_hashes() -> None:
     payload = _payload()
     assert payload == study.frozen_payload()
@@ -879,23 +898,49 @@ def test_four_batch_spread_hand_fixture(
         study.batch_objective_spread(values[:3])
 
 
-def test_four_batch_offset_agreement_including_global_tie() -> None:
+def test_four_batch_offset_agreement_uses_offset_profiles() -> None:
     target = phase0.ObservedTables(("2025-01-06",), (0.0,), (0.0,))
     high = replace(target, symptomatic=(3.0,), asymptomatic=(3.0,))
     other = replace(TRUTH, inoculation_day_offset=3)
-    grid = (TRUTH, other)
-    same = study.fit_blind(target, grid, {TRUTH: (target,) * 3, other: (high,) * 3}, R=3, T=1)
-    different = study.fit_blind(target, grid, {TRUTH: (high,) * 3, other: (target,) * 3}, R=3, T=1)
-    # Even when all global minimizers share one offset, a global tie is non-agreement.
-    tie_grid = (TRUTH, replace(TRUTH, beta=0.10))
-    tied = study.fit_blind(target, tie_grid, {c: (target,) * 3 for c in tie_grid}, R=3, T=1)
-    assert tied.numerical_tie
-    assert {c.inoculation_day_offset for c in tied.global_minimizers} == {2}
-    assert study.batch_offset_agreement((same,) * 4)
-    assert not study.batch_offset_agreement((same, same, same, different))
-    assert not study.batch_offset_agreement((same, same, same, tied))
-    groups = [(same,) * 4] * 2 + [(same, same, same, different)] * 3 + [(tied,) * 4] * 5
-    assert sum(study.batch_offset_agreement(group) for group in groups) == 2
+    # Nuisance beta ties globally, but offset 2 uniquely minimizes P(o).
+    grid = tuple(replace(cell, beta=beta) for beta in (0.08, 0.10) for cell in (TRUTH, other))
+
+    def fit_at(offset: int | None) -> Any:
+        return study.fit_blind(
+            target,
+            grid,
+            {
+                c: (target if offset is None or c.inoculation_day_offset == offset else high,) * 3
+                for c in grid
+            },
+            R=3,
+            T=1,
+        )
+
+    tied_global = fit_at(2)
+    tied_profile = fit_at(None)
+    different = fit_at(3)
+    profile = next(p for p in tied_global.profiles if p.dimension == "inoculation_day_offset")
+    assert tied_global.numerical_tie and tied_global.selected is None
+    assert profile.identified and not profile.numerical_tie
+    assert study.batch_offset_agreement((tied_global,) * 4)
+    assert not study.batch_offset_agreement((tied_global,) * 3 + (tied_profile,))
+    assert not study.batch_offset_agreement((tied_global,) * 3 + (different,))
+    assert not study.batch_offset_agreement((tied_global,) * 3)
+    detail = study._offset_descriptive(tied_global)
+    assert detail["reprofiled_offset"] == 2
+    assert not detail["offset_profile_tie"]
+    assert detail["offset_profile_identified"]
+    assert detail["global_selected_offset"] is None
+    assert study._offset_descriptive(tied_profile)["reprofiled_offset"] is None
+    assert study._offset_descriptive(tied_profile)["offset_profile_tie"]
+    # Identification is disclosed, never required for agreement.
+    unidentified = replace(
+        tied_global,
+        profiles=tuple(replace(p, identified=False) for p in tied_global.profiles),
+    )
+    assert study.batch_offset_agreement((unidentified,) * 4)
+    assert not study._offset_descriptive(unidentified)["offset_profile_identified"]
 
 
 def test_descriptive_counter_checks_exact_scaled_work() -> None:
@@ -1093,9 +1138,9 @@ def test_arm_i_generation_nesting_counts_retention_and_blind_join(
     assert description["descriptive_loss_evaluations"] == 31250
     assert len(description["targets"]) == 10
     assert "interval" not in json.dumps(description).lower()
-    assert (
-        description["four_batch_offset_agreement_count"] == 0
-    )  # Flat detection dimensions tie globally.
+    # Flat detection dimensions tie globally, but every batch's offset profile
+    # uniquely minimizes at the same offset for all ten fixture targets.
+    assert description["four_batch_offset_agreement_count"] == 10
     for target in description["targets"]:
         assert set(target["reprofiled_offsets"]) == {
             "A",
@@ -1151,7 +1196,7 @@ def test_arm_i_generation_nesting_counts_retention_and_blind_join(
     assert {r["target_seed"] for r in records if r["population_fallback_m2"] == "TRUE"} == {"82003"}
     assert {r["target_seed"] for r in records if r["population_fallback_m3"] == "TRUE"} == {"82007"}
     # Changing valid descriptives and fallback disclosures cannot feed gating.
-    altered_description = {**description, "four_batch_offset_agreement_count": 10}
+    altered_description = {**description, "four_batch_offset_agreement_count": 0}
     altered_path = tmp_path / "altered-descriptives.json"
     altered_bytes = phase0._compact_json_bytes(altered_description)
     altered_path.write_bytes(altered_bytes)
@@ -2277,6 +2322,96 @@ def test_arm_i_replicate_order_corruption_fails_predicate_9(
     assert result.status == "FAIL"
 
 
+@pytest.mark.parametrize("arm", ["ii", "iii"])
+@pytest.mark.parametrize("damage", ["candidate_seed", "requested_duration", "namespace", "order"])
+def test_extended_arms_report_corruption_fails_predicate_9(
+    tmp_path: Path, request: pytest.FixtureRequest, arm: str, damage: str
+) -> None:
+    baseline, _ = request.getfixturevalue(f"arm_{arm}_inputs")
+    generation = getattr(study, f"arm_{arm}")(baseline, baseline.config, tmp_path / arm, root=ROOT)
+    report = generation if arm == "ii" else baseline
+    if arm == "iii":
+        assert study._serosurvey_provenance_verified(generation)
+        samples_before = generation.samples_path.read_bytes()
+    join = getattr(study, f"join_arm_{arm}")
+    assert join(generation, tmp_path / "valid").predicates["9_provenance"]
+    records = [dict(record) for record in report.replicate_provenance]
+    if damage == "candidate_seed":
+        records[0]["process_seed"] = -1
+    elif damage == "namespace":
+        records[0]["observation_config"] = {
+            **records[0]["observation_config"],
+            "observation_config_id": "wrong-namespace",
+        }
+    elif damage == "order":
+        records[0], records[1] = records[1], records[0]
+    else:
+        # Change only requested duration, leaving returned duration valid. The
+        # old ii check misses this returned/requested disagreement.
+        key = next(iter(report.candidate_latents))
+        latent, requested = report.candidate_latents[key]
+        report = replace(
+            report,
+            candidate_latents={
+                **report.candidate_latents,
+                key: (
+                    latent,
+                    requested.model_copy(update={"duration_days": 48 if arm == "ii" else 29}),
+                ),
+            },
+        )
+    report = replace(report, replicate_provenance=tuple(records))
+    corrupted = report if arm == "ii" else replace(generation, baseline=report)
+    if arm == "iii":
+        assert study._serosurvey_provenance_verified(corrupted)
+        assert corrupted.samples_path.read_bytes() == samples_before
+    result = join(corrupted, tmp_path / "joined")
+    assert not result.predicates["9_provenance"]
+    assert result.status == "FAIL"
+
+
+@pytest.mark.parametrize(
+    "damage", ["target_flag_and_k", "candidate_flag_and_k", "empty_target_events"]
+)
+def test_serosurvey_provenance_requires_independent_latent_events(
+    tmp_path: Path, arm_iii_inputs: Any, damage: str
+) -> None:
+    baseline, _ = arm_iii_inputs
+    generation = study.arm_iii(baseline, baseline.config, tmp_path / "iii", root=ROOT)
+    assert study.join_arm_iii(generation, tmp_path / "valid").predicates["9_provenance"]
+    if damage == "empty_target_events":
+        assert all(sample.k > 0 for sample in generation.target_samples.values())
+        for output in baseline.target_outputs.values():
+            output[0].transmission_events = ()
+    else:
+        targets = damage == "target_flag_and_k"
+        samples = dict(generation.target_samples if targets else generation.candidate_samples)
+        key = next(iter(samples))
+        sample = samples[key]
+        flags = (not sample.ever_infected[0], *sample.ever_infected[1:])
+        samples[key] = replace(sample, ever_infected=flags, k=sum(flags))
+        if targets:
+            generation = replace(generation, target_samples=samples)
+        else:
+            ks = {
+                cell: tuple(
+                    samples[seed, cell.beta, cell.inoculation_day_offset].k
+                    for seed in baseline.config.candidate_process_seeds
+                )
+                for cell in baseline.config.candidate_grid
+            }
+            generation = replace(generation, candidate_samples=samples, candidate_k_library=ks)
+        assert samples[key].k == sum(samples[key].ever_infected)
+        # Persist internally consistent corrupt evidence. Only the independent
+        # latent events can disprove these flags.
+        content = phase0._compact_json_bytes(study._serosurvey_records(generation))
+        generation.samples_path.write_bytes(content)
+        generation = replace(generation, samples_file_hash=hashlib.sha256(content).hexdigest())
+    result = study.join_arm_iii(generation, tmp_path / "joined")
+    assert not result.predicates["9_provenance"]
+    assert result.status == "FAIL"
+
+
 READING_CELLS = {
     ("FAIL", "PASS"): (
         "Factor X, at the declared level, coincided with four-dimensional recovery "
@@ -2343,7 +2478,10 @@ def test_overall_readings_and_exact_a9_status_phrases() -> None:
 
 @pytest.fixture
 def all_arms_fakes(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, baseline_fakes: Any
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    baseline_fakes: Any,
+    committed_campaign_config: None,
 ) -> dict[str, Any]:
     """Mock only execution and the source snapshot of this intentionally dirty tree."""
     calls = baseline_fakes
@@ -2682,7 +2820,10 @@ def test_software_failure_stops_and_seals_void_without_readings(
     ["config", "predeclaration", "owner_ruling", "clarification", "ridge", "precheck", "probe"],
 )
 def test_campaign_document_digest_failure_precedes_output_and_execution(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, document: str
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    document: str,
+    committed_campaign_config: None,
 ) -> None:
     original = study.committed_document_bytes
     names = {
@@ -2706,7 +2847,7 @@ def test_campaign_document_digest_failure_precedes_output_and_execution(
 
 
 def test_campaign_rejects_existing_destination_without_touching_it(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, committed_campaign_config: None
 ) -> None:
     monkeypatch.setattr(study, "_source_snapshot", lambda root: {})
     output = tmp_path / "existing"

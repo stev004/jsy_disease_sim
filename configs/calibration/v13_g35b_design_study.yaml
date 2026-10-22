@@ -335,6 +335,9 @@ process_hashes:
 implementation:
   implemented_arms:
   - B
+  - i
+  - ii
+  - iii
   required_arms:
   - B
   - i
