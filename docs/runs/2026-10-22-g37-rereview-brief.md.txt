@@ -1,0 +1,34 @@
+TASK: JOS · g37-rereview · bounded re-review of G35-B corrective C1 (F1–F4)
+ROLE: independent auditor — gpt-6-astra @ high. Step-7 reviewer, substituted under owner clarification 2 Item 3 (Opus 5.5 unavailable). Bounded re-review; you authored none of this code.
+
+GOAL: Decide whether corrective C1 resolves every finding of your step-7 review and introduces no new departure from the frozen text. Your review is filed at `docs/audits/2026-10-22-g37-implementation-review-astra-BLOCKED.md` on main; read it with `git show origin/main:<path>`.
+- Previous head: `6ca52533ee27be51f2cfd06d8b2c00d887d57913` (BLOCKED).
+- New head: `0c689825675aba8d414b6c7bd41951fc97aba6fc` on `codex/g35b-design-study`.
+- The director's full CI-verify mirror on the new head is at `/home/steven/jos-g37-mirror2.log`. Read its last lines.
+
+SCOPE: the clone you were launched in, at the new head. You may read everything and run read-only commands, plus these:
+- the focused tests `uv run pytest tests/test_g35b_design_study.py -q`;
+- the three dry-runs (G35-B, Phase 0, Phase 0b), exactly as in your first review;
+- `git` read commands;
+- read-only Python probes, like the ones you used for F1–F3.
+
+You may write scratch files only under /tmp. Do NOT edit tracked files, commit, run `execute`/`run_all_arms` unmocked, or run any real build or simulation. `git status --porcelain` must be empty when you finish.
+
+CONTEXT. These bind:
+- the frozen predeclaration `docs/research/v1_3/2026-10-22-g35b-predeclaration.md` (committed sha256 `2e8358ab…216e`);
+- the owner ruling and clarifications 1 and 2 under `docs/research/v1_3/`;
+- `.claude/DIRECTOR.md`, especially the independent-source lesson of 2026-09-23 and the new 2026-10-22 lesson on director-invented rules.
+
+The director's F3 instruction to C1, quoted so you can judge it against the frozen text: the "re-profiled offset" of a fit is the unique minimizer of that fit's offset PROFILE under the unchanged τ tie rule. Agreement means all four single-batch re-profiled offsets are non-null and equal; a global tie does not prevent it. The global selection is reported separately, and the recovery gate is unchanged. Frozen §7.2(b) is the authority: if this reading departs from it, say so.
+
+CHECKS:
+1. **F1:** predicate 9 for arms (ii) and (iii) now verifies complete report provenance: seed pairing, namespaces, replicate order, config/record bindings, durations 49/30 and calendars 53/34, RNG fingerprint, and candidate config hashes. Re-run your earlier probe: the arm-(iii) checker must now reject seed = −1 and duration_days = 999.
+2. **F2:** sampled flags and k are verified against the retained latent `transmission_events` (unique identities, `infection_date` ≤ survey date) at join time. Re-run your probe: flipped flags with k = 400 and empty events must now fail. The fitter still receives only k and n.
+3. **F3:** agreement is derived from offset profiles as quoted above. Re-run your four-cell fixture; expect agreement = true. An offset-profile tie and differing offsets give non-agreement. The gate path (predicate 4, the hit rules) is unchanged.
+4. **F4:** `implemented_arms` lists all four arms. The config-digest constant equals `git show HEAD:configs/calibration/v13_g35b_design_study.yaml | sha256sum`. No other config value changed: check `git diff 6ca5253 0c68982 -- configs`.
+5. **No regression:** `git diff 6ca5253 0c68982` touches only what F1–F4 need. No gate assertion is weakened (inspect the test diff). The dry-run stdout is unchanged, and the Phase-0/0b counts are unchanged. `phase0_campaign.py` is byte-identical to main. The focused tests pass.
+
+REPORT (final message only):
+- The first line is exactly `G35-B IMPLEMENTATION RE-REVIEW: PASS` or `G35-B IMPLEMENTATION RE-REVIEW: BLOCKED`. PASS only with no BLOCKER and no MAJOR findings.
+- The second line names your model and effort, and states "substituted under clarification 2 Item 3".
+- Then one line per check (OK, or finding with file:line evidence), the probe outputs, the commands run with their key outputs, and the final `git status --porcelain` (which must be empty).
