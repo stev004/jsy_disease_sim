@@ -14,10 +14,7 @@ NO campaign. NO real data. No merge.
 - If OpenAI's bio-risk classifier stops a unit, it is NOT retried there. The unit and the rest of the run move to Claude executors (`claude -p --model opus` in WSL).
 - The review goes to a family other than the author's.
 **Unit order:** U1 → U2 → U3 → U4 → U5, sequential on one branch with the director committing after each kept unit. Then the full mirror, the independent review, and the merge gate.
-**In flight:** U1. TASK `JOS · g37-u1 · build the G35-B study harness, config, dry-run and baseline arm`, gpt-6.1-sol@high.
-- Worktree `/home/steven/jos-g37-wt` (branch `codex/g35b-design-study`).
-- Log stem `/home/steven/jos-g37-u1-20261022`; brief `/home/steven/jos-g37-u1-20261022-brief.md`; launcher output `/home/steven/jos-g37-u1-launch-20261022.out`.
-- ts: trail row `g37-run-start`.
+**In flight:** U2 (gpt-6.1-sol@high), worktree `/home/steven/jos-g37-wt`, log stem `/home/steven/jos-g37-u2-20261022`, brief `/home/steven/jos-g37-u2-20261022-brief.md`. Kept so far: see trail rows `g37-*-kept`. ts: trail row `g37-u2-launch`.
 **If cold-starting:**
 - If `<stem>.last.md` exists, review the full diff in the worktree against the brief, run the acceptance commands, then commit and push the branch or retry.
 - If the log has had no writes for 20 minutes, the unit is wedged: kill it and relaunch with a new stem.
