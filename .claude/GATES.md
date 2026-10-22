@@ -4,9 +4,36 @@
 
 ## Open
 
-**2026-10-22:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run; real-data fitting STOPPED (G34 A+B). **G37 OPEN** (authorize G35-B implementation; default HOLD). G36 merged (`cf45153`). G5 open.
+**2026-10-22:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run; real-data fitting STOPPED (G34 A+B). G37 DONE (implementation reviewed PASS at `0c68982`). **G38 OPEN** (merge the G35-B harness; default HOLD). **G39 OPEN** (authorize the one G35-B campaign; default HOLD). G5 open.
 
-### G37 — Authorize G35-B implementation (U1–U5) against the frozen predeclaration?
+### G38 — Merge the G35-B study harness to main?
+- **What:** branch `codex/g35b-design-study` @ `0c689825675aba8d414b6c7bd41951fc97aba6fc` adds only `src/jersey_outbreak/g35b_design_study.py`, `src/jersey_outbreak/g35b_constants.py`, `configs/calibration/v13_g35b_design_study.yaml` and `tests/test_g35b_design_study.py` (research harness, no protected module touched; `phase0_campaign.py` byte-identical).
+- **Evidence:**
+  - step-7 re-review PASS: `docs/audits/2026-10-22-g37-implementation-rereview-astra-PASS.md`;
+  - first review BLOCKED: `docs/audits/2026-10-22-g37-implementation-review-astra-BLOCKED.md`;
+  - mirror: `docs/runs/2026-10-22-g37-c1-head-ci-mirror.log`.
+- **Command (SHA-first):** `git -C ~/jsy_disease_sim merge --no-ff 0c689825675aba8d414b6c7bd41951fc97aba6fc`, with the full verify mirror on the merge commit filed before the push.
+- **Note:** not needed to run the campaign. G39 can run from the reviewed branch head; merging first is tidier.
+- **Default on no answer:** HOLD.
+
+### G39 — Authorize the one G35-B all-arms campaign (§12 step 8)?
+- **What:** `python -m jersey_outbreak.g35b_design_study execute` at the reviewed head (`0c689825675aba8d414b6c7bd41951fc97aba6fc`, or the G38 merge commit). Scale: 22 builds, 395 latent calls (CI scale, 30/49-day runs), 9,395 transforms, 85 serosurvey samples. Rough wall time is 30–60 min (unmeasured; disclosed, never capped). Bundle ≈ 70–120 MB.
+- **Rules:**
+  - one campaign only (§12);
+  - a reviewer-named defect means VOID;
+  - a scientific FAIL is never reclassified;
+  - no second campaign without Steven;
+  - real-data fitting stays STOPPED whatever the result (A1).
+- **Then:** a fresh, independent exit audit (§12 step 9) by a model that is neither the implementer (gpt-6.1-sol) nor the step-7 reviewer (gpt-6-astra). That means Opus 5.5 once the claude CLI is authenticated; otherwise the owner rules on routing.
+- **Default on no answer:** HOLD.
+
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G37 — RESOLVED 2026-10-22: A (Steven, chat: "Authorize G37: run the U1-U5 implementation … plus the independent review. No campaign yet.") — Authorize G35-B implementation (U1–U5)?
 - **Context:** the G35-B predeclaration is FROZEN at `3972190bd7cde523860fe303b41427c1c95c57eb` (`docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, sha256 `2e8358ab…216e`; trail row `g35b-frozen`). Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run.
 - **What is asked:** five bounded units, all `Class: numerical`:
   - U1 standalone harness + baseline;
@@ -20,12 +47,8 @@
 - **Routing:** fleet v8.2 puts numerical units on gpt-6.1-sol@high, but OpenAI's bio-risk classifier blocked the design consult for this content (trail row `g35b-design-filtered`). Implementation briefs may hit the same filter. Fallback without retrying on OpenAI: Claude executors (Opus 5.5) with an independent review by the other family where reachable.
 - **Options:** A — authorize U1–U5 + review (director runs it as a foreman run). B — HOLD.
 - **Default on no answer:** B (HOLD).
+- **Outcome (run `g37-impl`):** U1–U5 on `codex/g35b-design-study`; step-7 review BLOCKED (F1–F4) → corrective C1 → bounded re-review **PASS** at `0c689825675aba8d414b6c7bd41951fc97aba6fc` (`docs/audits/2026-10-22-g37-implementation-rereview-astra-PASS.md`); director full mirror PASS 705/4 on that head. Reviewer gpt-6-astra @ high substituted for Opus 5.5 under clarification 2 Item 3 (claude CLI unauthenticated).
 
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
 
 ### G35 — RESOLVED 2026-10-22: B (director under Steven's delegation) — V1.3 successor: what, if anything, follows the Phase-0/0b FAILs? (model owner)
 - **Evidence:**
