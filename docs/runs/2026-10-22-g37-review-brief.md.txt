@@ -1,0 +1,54 @@
+TASK: JOS · g37-review · independent review of G35-B implementation U1–U5 vs frozen text
+ROLE: independent auditor — gpt-6-astra @ high. Step-7 reviewer, substituted under owner clarification 2 Item 3 because Claude Opus 5.5 was unavailable (CLI not authenticated on this machine). Read-only review; you authored none of this code.
+
+GOAL: Review the complete G35-B implementation, branch `codex/g35b-design-study` at head `6ca52533ee27be51f2cfd06d8b2c00d887d57913`, against the frozen predeclaration, the owner ruling and owner clarifications 1 and 2. Report every departure. Return a determinate verdict. This review is §12 step 7. A defect you name returns the implementation to the executor before any campaign is authorized.
+
+SCOPE: the clone you were launched in, at that head. You may read everything and run read-only commands, plus these:
+- the focused tests `uv run pytest tests/test_g35b_design_study.py -q`;
+- the dry-runs (`uv run python -m jersey_outbreak.g35b_design_study dry-run --config configs/calibration/v13_g35b_design_study.yaml --predeclaration docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, and the two `phase0_campaign dry-run` commands for the Phase-0 and Phase-0b configs);
+- `git` read commands.
+
+You may write scratch files only under /tmp. Do NOT edit, add or delete tracked files. Do NOT commit. Do NOT run `execute` or `run_all_arms` unmocked, and do not run any real build or simulation. `git status --porcelain` must be empty when you finish.
+
+CONTEXT. These bind, so read them in full:
+1. `docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, FROZEN. Committed sha256 `2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e`; verify it with `git show HEAD:<path> | sha256sum`.
+2. `docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md` (amendments A1–A11 are applied in the frozen text).
+3. `docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md` (ridge digest; committed-bytes hashing; §10/A10 reading).
+4. `docs/research/v1_3/2026-10-22-g35b-owner-clarification-2.md`, which defines this review.
+5. `.claude/DIRECTOR.md`, the binding hard rules:
+   - explicit unknown beats false precision;
+   - never conflate episode incidence with ever-infected;
+   - replicate spread is never a confidence interval;
+   - PASS/FAIL gate vocabulary;
+   - the lessons, especially 2026-09-22 (exact decimal endpoints; faithful metadata) and 2026-09-23 (every integrity check needs an INDEPENDENT source of truth: an expected value derived from the input under test is a defect).
+6. The implementation: `src/jersey_outbreak/g35b_design_study.py`, `src/jersey_outbreak/g35b_constants.py`, `configs/calibration/v13_g35b_design_study.yaml`, `tests/test_g35b_design_study.py`. `src/jersey_outbreak/phase0_campaign.py` must be byte-identical to `main` (check this).
+7. The unit reports and director acceptance logs, which are claims to verify, not evidence: `docs/runs/2026-10-22-g37-u{1..5}-report.md` and `docs/runs/2026-10-22-g37-u{1..5}-director-acceptance.log` on `main` (`git show origin/main:<path>`).
+
+REVIEW CHECKLIST (cover each item and report OK or a finding):
+1. **Frozen numbers:** grids, truths, tolerances, bias limits, seeds and pairing (§8), namespaces, H = 49 and T = 53, n = 400, survey day 29, assay 1/1 and lag 0, caps (§9 per arm and in total, 31,250 descriptive), with the M2/M3/M4 hashes equal to the §8 frozen table. All of these must equal the frozen text and come from independent constants, never from the supplied config.
+2. **Objective (§6):** the loss is the Phase-0b one at R = 3, T = 34 (bit-for-bit); the generalized R and T; the Anscombe z; L^iii = L^rep + S/(2T) with weight 1/(2T); the tie rule, profile rule, identification rule and tied-minimum failure are unchanged.
+3. **Predicates (§7.1):** integer arithmetic (8/10, 6/10, ≤2/10); bias in `Decimal` at the exact limit; predicate 8 on its own code path; predicate 9 COMPUTED for every arm; predicate 10 against the caps; no epsilons.
+4. **Blind boundary and ordering:**
+   - fitters receive no truth, seed or latent run;
+   - every arm's generation and blind fit finish, and every record is read back, before ANY truth join (`run_all_arms` barrier);
+   - arm (iii) reading target latent events to compute k is an observation step, so judge whether it leaks truth into the fit beyond the declared datum;
+   - descriptives never feed predicates.
+5. **Arm specifics:**
+   - (i) batch A is byte-shared, the replicate order is fixed, the nested 3/6/12 sets and spreads are correct, and the median is the mean of the middle two;
+   - (ii) a dedicated 49-day constructor with B staying at 30, the returned durations asserted, prefix identity and the manipulation check run after gating;
+   - (iii) A5 sampling byte-exact, unique ever-infected identities by `infection_date`, common random numbers across cells, no reference to real data.
+6. **Outcome text:** `readings()` and `overall_readings()` reproduce the §7.4 table as amended by A8, the overall readings and the multiplicity handling exactly; the A9 status phrase and the verdict lines match; VOID and FAIL follow the §12 rules; nothing can be read as unlocking real-data fitting (A1).
+7. **Bundle (§10 + A10 + clarification 1):**
+   - input digests from committed bytes, with independent expected values;
+   - the ridge digest `8cf4c766…` binding, with the CRLF alias non-binding;
+   - the seed ledger, retained tables and lineage, the per-arm directories (no overwrite), SHA256SUMS and the read-only seal.
+8. **Tests:** do the tests exercise the real code paths with faithful metadata, or are any assertions tautological (expected value derived from the input under test)? Were any earlier assertions weakened between `aafbbb7` and the head? Check `git log -p -- tests/`.
+9. **Protected contracts (§11):** `phase0_campaign.py` and the protected modules are unchanged; the Phase-0 and Phase-0b dry-runs still give 198/59/599/8 and 1334/107/4007/8.
+
+Classify each finding as BLOCKER (a departure from the frozen text, a wrong number, a blind-boundary or ordering breach, or a check without an independent source of truth), MAJOR, or MINOR, and give the file:line evidence for each.
+
+REPORT (final message only):
+- The first line is exactly `G35-B IMPLEMENTATION REVIEW: PASS` or `G35-B IMPLEMENTATION REVIEW: BLOCKED`. PASS only if there are no BLOCKER and no MAJOR findings.
+- The second line names your model and effort.
+- Then the checklist, one line per item (OK or finding IDs), the findings with evidence, and the commands you ran with their key outputs.
+- Then the final `git status --porcelain` output, which must be empty.
