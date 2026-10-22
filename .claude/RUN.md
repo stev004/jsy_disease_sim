@@ -4,9 +4,9 @@
 **Authorization:** Steven 2026-10-22: "Launch the G35-B synthetic design study as a foreman run: start with the design + predeclaration draft." Owner rulings come from a Fable model-owner subagent under Steven's 2026-10-22 delegation ("you decide or ask fable"), following the Phase-0b precedent. No real data. No code merge.
 **Budget:** 5 iterations; design consults ≤2 (gpt-6.1-sol@high); owner ruling 1 (+1 re-ruling if amendments are contested); seed pre-check 1 run (+1 if replacements are needed).
 **Unit order:** (1) design draft, gpt-6.1-sol@high, read-only → (2) Fable model-owner ruling → (3) director applies amendments mechanically → (4) seed build pre-check of the exact declared list on `cf45153`, with the declared replacement rule → (5) freeze commit + SHA-256, trail row.
-**In flight:** unit 1. TASK `JOS · g35b-design · draft the G35-B synthetic design-study predeclaration`, gpt-6.1-sol@high. Read-only clone `/home/steven/jos-g35b-design-20261022-ro`, log stem `/home/steven/jos-g35b-design-20261022` (`.log`/`.last.md`), brief `/home/steven/jos-g35b-design-20261022-brief.md`, launcher output `/home/steven/jos-g35b-launch-20261022.out`. ts: trail row `g35b-run-start`.
+**In flight:** unit 1, design draft, RE-ROUTED. The gpt-6.1-sol@high attempt (stem `/home/steven/jos-g35b-design-20261022`, 83,276 tokens) was stopped by OpenAI's bio-risk classifier with no report. Under the standing no-filter-bypass practice it was not retried on OpenAI. Re-run unchanged in substance as an Opus 5.5 consultant subagent in the director's Claude session (brief sha256 `8f02f80d…bcd`, read-only, Windows checkout = code `cf45153`). It counts as design consult 2 of 2. ts: trail row `g35b-design-filtered`.
 **If cold-starting:**
-- If `<stem>.last.md` exists and is newer than the log's start, file it as `docs/research/v1_3/2026-10-22-g35b-design-sol-DRAFT.md` and proceed to unit 2.
+- The Opus draft returns only to the director session. If the session died before it was filed, re-run the Opus consult from the same brief. File it as `docs/research/v1_3/2026-10-22-g35b-design-opus-DRAFT.md`, then proceed to unit 2.
 - If there is no `.last.md` and no log writes for 20 minutes, the unit is wedged: kill it and relaunch with the same brief and a new stem. A wedge does not count against the budget.
 
 **Current (2026-10-22):**
