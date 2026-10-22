@@ -1,0 +1,26 @@
+== HEAD 6ca52533ee27be51f2cfd06d8b2c00d887d57913 + working changes
+ configs/calibration/v13_g35b_design_study.yaml |   3 +
+ src/jersey_outbreak/g35b_constants.py          |   2 +
+ src/jersey_outbreak/g35b_design_study.py       | 133 ++++++++++--------
+ tests/test_g35b_design_study.py                | 183 ++++++++++++++++++++++---
+ 4 files changed, 244 insertions(+), 77 deletions(-)
+== dry-run g35b
+e5919d2b9e70cea09b8c49cb8f73ba6d187bf2403462b3dc11549c55dd094ce5  -
+== dry-run p0
+198 59 599 8
+== dry-run p0b
+1334 107 4007 8
+== pytest focused
+293 passed in 450.62s (0:07:30)
+== ruff
+All checks passed!
+366 files already formatted
+== mypy
+Success: no issues found in 2 source files
+== protected
+ configs/calibration/v13_g35b_design_study.yaml | 3 +++
+ 1 file changed, 3 insertions(+)
+ M configs/calibration/v13_g35b_design_study.yaml
+ M src/jersey_outbreak/g35b_constants.py
+ M src/jersey_outbreak/g35b_design_study.py
+ M tests/test_g35b_design_study.py
