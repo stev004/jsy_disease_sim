@@ -1,7 +1,7 @@
 # RUN — nothing in flight. Foreman run `g37-impl` COMPLETE (predicate met). Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run.
 
 **Run `g37-impl` (2026-10-22): PREDICATE MET.** U1–U5 on `codex/g35b-design-study` @ `0c689825675aba8d414b6c7bd41951fc97aba6fc`; director full CI mirror PASS (705 passed / 4 skipped); step-7 independent re-review PASS. ts: trail row `g37-rereview-PASS`.
-- **Chain:** each unit was implemented by gpt-6.1-sol @ high (`Class: numerical`; no classifier stops) and kept after director re-acceptance plus real-object smokes on non-study seed 123:
+- **Chain:** each unit was implemented by gpt-6.1-sol @ high (`Class: numerical`; no classifier stops) and kept after director re-acceptance. Real-object smokes were run for U1 (builds of study seeds 82001/82003/82007, outcome-blind) and U3/U4/U5 (simulations only on CI seed 123); there were none for U2 or C1. All four were re-run at the final head and filed in `docs/runs/2026-10-22-g37-director-real-object-smokes.log`.
   - U1 `aafbbb7`, U2 `fe83668`, U3 `6489e26`, U4 `1224c55`, U5 `6ca5253`;
   - mirror PASS 693/4;
   - step-7 review BLOCKED (F1 provenance for ii/iii; F2 serosurvey flags lacked an independent source; F3 offset-agreement rule invented by the director's U2 brief; F4 metadata);
@@ -12,6 +12,7 @@
   - G38: merge the harness. Default HOLD.
   - G39: authorize the single campaign. Default HOLD.
   - The exit audit after any campaign needs a model that is neither the implementer nor the reviewer: Opus 5.5 once `claude /login` is done in WSL.
+- **Trail audit (gpt-6-astra, `docs/audits/2026-10-22-g37-trail-audit-astra.md`):** 7 Attention items; check 6 OK (no campaign, no study-seed simulation). Dispositions are in trail row `g37-trail-audit`. The one substantive deviation: per-unit pushes of the feature branch preceded the mirror and review PASS filing, contrary to the run-start predicate's "filed before the push". Nothing merged. A lesson has been added.
 - **Disposable:** the worktree `/home/steven/jos-g37-wt` (keep until G38), the clones `~/jos-g37-*-verify`, `~/jos-g37-*review*-clone`, and `/tmp` scratch.
 
 **Run `g35b-predecl` (2026-10-22): PREDICATE MET.** The G35-B predeclaration is FROZEN at `3972190bd7cde523860fe303b41427c1c95c57eb`: `docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, committed-bytes sha256 `2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e`. ts: trail row `g35b-frozen`.
@@ -29,7 +30,7 @@
   - Noted: the Phase-0b `SHA256SUMS` bytes live only in the WSL bundle.
 - **Disclosed deviation:** a builds-only pre-check ran before the ruling commit. It is superseded and unused.
 - **Budget used:** 6 iterations' worth of units (design ×2 with one filtered, ruling ×1, pre-check ×1 plus the superseded run, probe ×1 plus one crash before any simulation, freeze ×1). Executor tokens: 83,276 OpenAI (filtered). The Claude subagents are counted in the director session.
-- **Next (Steven's call, G37):** authorize implementation U1–U5 (`Class: numerical` → gpt-6.1-sol@high per fleet v8.2; note the bio-risk filter risk on OpenAI for this content), then one Sol review, then one campaign under a separate authorization, then a fresh exit audit. Nothing on G35-B runs without G37.
+- *(historical — done: G37 was authorized and run as `g37-impl`; the step-7 reviewer was routed by clarification 2, not Sol.)*
 - **Disposable WSL leftovers:**
   - `~/jos-g35b-design-20261022*` (filtered attempt; log kept as evidence in the trail);
   - `~/jos-g35b-precheck-20261022*` (superseded) and `~/jos-g35b-precheck-20261022r2*` (filed);
