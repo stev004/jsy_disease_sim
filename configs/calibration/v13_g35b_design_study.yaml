@@ -1,0 +1,350 @@
+schema_version: '1.0'
+campaign_id: v13-g35b
+expected_predeclaration_sha256: 2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e
+lineage:
+  ridge_diagnostic_sha256: 8cf4c76612434cbd90c5de4ca9dfd1326422b94a72bd4a63ccff71e95f34908a
+  ridge_digest_source: docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md
+mode: ci
+start_date: '2025-01-06'
+observation_horizon_tail_days: 4
+dimensions:
+  beta:
+    truth: '0.08'
+    candidates:
+    - '0.04'
+    - '0.06'
+    - '0.08'
+    - '0.10'
+    - '0.12'
+    tolerance: '0.02'
+    bias_limit: '0.01'
+  inoculation_day_offset:
+    truth: '2'
+    candidates:
+    - '0'
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+    tolerance: '1'
+    bias_limit: '0.5'
+  symptomatic_detection_probability:
+    truth: '0.75'
+    candidates:
+    - '0.50'
+    - '0.625'
+    - '0.75'
+    - '0.875'
+    - '1.00'
+    tolerance: '0.125'
+    bias_limit: '0.0625'
+  asymptomatic_detection_probability:
+    truth: '0.25'
+    candidates:
+    - '0.10'
+    - '0.175'
+    - '0.25'
+    - '0.325'
+    - '0.40'
+    tolerance: '0.075'
+    bias_limit: '0.0375'
+fixed_scenario:
+  population_size: 3000
+  initial_seed_count: 0
+  inoculation_attempts: 10
+  inoculation_schedule: start_date_plus_offset
+  import_schedule: empty_except_inoculation
+  background_import_rate_per_day: '0.0'
+  route_multipliers:
+    household: '1.0'
+    school_class: '1.0'
+    school_cross_class: '1.0'
+    workplace_team: '1.0'
+    workplace_transient: '1.0'
+    care_resident: '1.0'
+    care_staff: '1.0'
+    shared_vehicle: '1.0'
+    bus: '1.0'
+    community_indoor: '1.0'
+    community_outdoor: '1.0'
+  symptomatic_probability: '0.6'
+  latent_duration_days: 2
+  infectious_duration_days: 5
+  waning_enabled: false
+  seasonality: absent
+  interventions: absent
+  detection_delay_days: 0
+  reporting_delay_days: 2
+  weekday_effect:
+  - '1.0'
+  - '1.0'
+  - '1.0'
+  - '1.0'
+  - '1.0'
+  - '1.0'
+  - '1.0'
+observation:
+  channels:
+  - symptomatic
+  - asymptomatic
+  source: observation_events_only
+  common_random_numbers: true
+seeds:
+  target_process_seeds:
+  - 82001
+  - 82002
+  - 82003
+  - 82004
+  - 82005
+  - 82006
+  - 82007
+  - 82008
+  - 82009
+  - 82010
+  target_observation_seeds:
+  - 92001
+  - 92002
+  - 92003
+  - 92004
+  - 92005
+  - 92006
+  - 92007
+  - 92008
+  - 92009
+  - 92010
+  target_serosurvey_seeds:
+  - 94001
+  - 94002
+  - 94003
+  - 94004
+  - 94005
+  - 94006
+  - 94007
+  - 94008
+  - 94009
+  - 94010
+  target_observation_config_id: v13-g35b-target
+  candidate_observation_config_id: v13-g35b-fit
+  target_serosurvey_config_id: v13-g35b-sero-target
+  candidate_serosurvey_config_id: v13-g35b-sero-fit
+  candidate_batches:
+    A:
+      process_seeds:
+      - 83001
+      - 83002
+      - 83003
+      observation_seeds:
+      - 93001
+      - 93002
+      - 93003
+    B_prime:
+      process_seeds:
+      - 83004
+      - 83005
+      - 83006
+      observation_seeds:
+      - 93004
+      - 93005
+      - 93006
+    C_prime:
+      process_seeds:
+      - 83007
+      - 83008
+      - 83009
+      observation_seeds:
+      - 93007
+      - 93008
+      - 93009
+    D_prime:
+      process_seeds:
+      - 83010
+      - 83011
+      - 83012
+      observation_seeds:
+      - 93010
+      - 93011
+      - 93012
+  candidate_serosurvey_seeds:
+  - 95001
+  - 95002
+  - 95003
+  optimizer_seed: null
+serosurvey:
+  n: 400
+  survey_day: 29
+  seroconversion_lag_days: 0
+  sensitivity: '1'
+  specificity: '1'
+objective:
+  name: square_root_minimum_distance
+  poisson_variance_stabilizer: '0.375'
+  candidate_replicate_mean: arithmetic_mean_of_roots
+  channel_weight: equal
+  date_weight: equal
+  all_cells_scored_before_selection: true
+identifiability:
+  tie_scale: '0.000000000001'
+  profile_gap: '0.05'
+  profile_denominator_floor: '0.000000000001'
+  tied_global_minimum: fail
+  lexicographic_tie_break: forbidden
+acceptance:
+  targets: 10
+  hits_multiplier: 5
+  hits_required_multiplier: 4
+  joint_multiplier: 5
+  joint_required_multiplier: 3
+  boundary_multiplier: 5
+  boundary_maximum_multiplier: 1
+  inoculation_acquisitions: 10
+  minimum_local_secondary_infections: 1
+  minimum_reports_per_channel: 1
+  minimum_nonzero_combined_dates: 3
+arms:
+  B:
+    replicates: 3
+    latent_days: 30
+    calendar_dates: 34
+    cells: 625
+    latent_calls: 85
+    observation_transforms: 1885
+    serosurvey_samples: 0
+    builds: 13
+  i:
+    replicates: 12
+    latent_days: 30
+    calendar_dates: 34
+    cells: 625
+    latent_calls: 225
+    observation_transforms: 5625
+    serosurvey_samples: 0
+    builds: 9
+  ii:
+    replicates: 3
+    latent_days: 49
+    calendar_dates: 53
+    cells: 625
+    latent_calls: 85
+    observation_transforms: 1885
+    serosurvey_samples: 0
+    builds: 0
+  iii:
+    replicates: 3
+    latent_days: 30
+    calendar_dates: 34
+    cells: 625
+    latent_calls: 0
+    observation_transforms: 0
+    serosurvey_samples: 85
+    builds: 0
+budget_caps:
+  cells: 2500
+  latent_calls: 395
+  observation_transforms: 9395
+  serosurvey_samples: 85
+  builds: 22
+process_hashes:
+  82001:
+    m2: 29be3731586fcb88f93edd646c9db8aae1057dc11f7f18a947f67b9ad01f3e19
+    m3: 473a4901f68338392a74c0b3f2df23518f9df1a1c09f01d7508d827e3ebb3f75
+    m4: 0315d935b99761abdfb79eddfd66077d300e056379f47c2af69c033d12779bab
+  82002:
+    m2: 0fcfa17427521af536c7fc7eddb247b1665acba2ca802be0cb7c9951d7e0b7ea
+    m3: 709c123cffb0a8dc8c8fdf79f83347fd038bc1fe2390f85087ebba2a92b1a213
+    m4: 1fa4eb9b9f80c013d6c8ca97e72d87d6aaa101e8f1812ec6026af0c26dfc2bc5
+  82003:
+    m2: 2e2abec14b86855210b5db41a0f32f1ef26401dcf4a9df87c26460ec78f51c3d
+    m3: c8c73f50e6f9db8abcc165bf292390b1067d824a255fb94a0777f92290514233
+    m4: 9f8211d43f9352e6b1c716988695839a7ba10c1781173a6071d7914edd73acfc
+  82004:
+    m2: 4c91addee491fc2ce5efe84b21a3f18ad2822d852f97134f5cec9382835aa2d7
+    m3: de4114c92f4ed53e33b85f52086ad21797acebbdb1acc6ba25fe6240bb9270aa
+    m4: 121b6ff4756ed002cc12865f53e47cdf0048e95391ec91b548011f3f9abcc1ca
+  82005:
+    m2: 366d6486a4790093e9845b31efc0c79a530fdb22d607db24ac905160b6ddebf2
+    m3: 18d02e1413e81f9bdb295a2dc9a86ca8d005d4ad16a55e98351c3edcb2365bcd
+    m4: 7b7719d020070878215ddce776005878f281146be7f9c69bf78d2c2fd30694e0
+  82006:
+    m2: 9a55c6f251af65bf70694b04a1d4030530ff481828eb1435243fc2c6701cfa0d
+    m3: 18ecca09b73e9711ca71b52d36b42bc7bf906b22a382fcd53902a16e25d5116b
+    m4: 0919bc563350669a31672a685324205c19b8c875274e778b27ea572b85b1399d
+  82007:
+    m2: f857b9bee85696f7d1ddb999e5e92bf9e8d8ef078a050ee853fffac37580b01c
+    m3: 202589ef822273969468ef1b5336a758f7e9738692455ef8f4bf11d21065f258
+    m4: ba70c35a4afc547c4ce9960dff3a39907dcc128e1a87214c72d298a3c82ad6bb
+  82008:
+    m2: 2e28de397db5a765e0c6484ef4dbe98aaec638eb58f62488656b2b113a36e60e
+    m3: 3d0ec001d43734484b31d8a796541fa2958b08ce8e2a2bba13fbb3f6fffe0542
+    m4: beb428c9d6a1420444bd60dcc5cb9fdf4e6cad6785672834bc4fc9c262a8c405
+  82009:
+    m2: a7a472c8e974e065ab8b80d3a638d7b45802dfd03a4c9e238cf671d1cacec24c
+    m3: 583502f9615196e331b297f062cc534dd78132720260f3159847f0dbbf7eb252
+    m4: be0013d9a4a1899316693c1d76a55254ed9b2cd7e4fd0c9fc680158fa8e71e50
+  82010:
+    m2: beba6277bc836401f506e813d38915ada5932896122bd331882b63f0952aebf1
+    m3: 3df598689ee901d22aac5a0b325e5667ae9e6bfa570a38d7aad79a97176abd9b
+    m4: a277760a2224db3bab4986de9a15ed302c9f3a15b334128209ca3e3cda4c3f52
+  83001:
+    m2: cd9b3810b7f82c7acc98afb308f292a7a31e9f8439e9e48c4fc9719e8ebf27db
+    m3: e50724db82ac5475249d7adfa0f779f5e408df78de3f024fc722564269cfb66d
+    m4: 448920b78f1effdca6236389a14b241d8352a806e4f5f352ec03e0ecba510bd5
+  83002:
+    m2: 18576334ad6bbe771a7cbf2efdf44344afd71b104ecdc8125ad2884d22ef53ea
+    m3: 109bb47e8eafdc912ed7963c316384db5277b36abb088c3570d5d258d0db0df8
+    m4: be6d085971128ec37d95bc92e7b75f3edebe8e7daae78a6359023d2189a4e977
+  83003:
+    m2: 1942929d096e8999dd335d39893f16926bd40aab4b9971b610d3848bc2286617
+    m3: 287fd4b9f23b5bf939658d8793b3067f49468992d49426e81b2205711112209f
+    m4: 6b614984120615ccd78d44aec9c4302bfe691fadc93b6ec93bf1337b79bab0fc
+  83004:
+    m2: d791b1cccb554c02cffd88d0887142694e2e64d440fa2bf4aa7bec6bf28e4525
+    m3: a388e9ace447324fad942d6b716d882e9e8a2a69abf1cf5dd1a44e03eb363e0e
+    m4: 79fcdd9aa3ac2d9171d3a81ce70e2862c8dc0f420bc1bd2b49200ae04728cacc
+  83005:
+    m2: cdf5d4ef0c1fc113a9c379da9db8dcf5080b8ff2dda0f8f785b8dfa1671a706e
+    m3: 601866c328f023292ac4d488ce5496161f7afd9b018fd9e1fa85724401aed3c3
+    m4: cd94b37f3a67a48b3cb3d99bd6f3547aed9632e16abac7bb4d309087c673af81
+  83006:
+    m2: b590f15749a0b9536be85cd646fc6e7cf867baa74f310580fd4c4673b001f5ef
+    m3: d2608c75efe50704ab46c3d072b56b287726d77494b8fe2db6f3a17188030f1c
+    m4: 0af0c44893a755363caeec5474be033c92ebc55d511b735cc7ab98450a7a9acb
+  83007:
+    m2: 0d51d1f8b9ae6a2ebb4a44935c4d02d99eb309f4a70e50a563ad7aae0d39808e
+    m3: bd40941d56e8f76fb2175e2a430227f283698cda137bcb4e9a7b03e002d163ff
+    m4: 8ed53ac6aa78a9fca98004b425e91d2a4c21f0f60e0f5a2ece717a76621cd95b
+  83008:
+    m2: 7453dbf5d3eea512497c995c92f64527534a1c80a0e1d9b7df165affd9587ebe
+    m3: 446e5f5722808f335a9c88d7ee3eec4b8242bcb7616d525c9f7865f70472c500
+    m4: 65d1bff09584abb3528d0356a5b5ae7507c2d38f54b2288a8aca97a529d32426
+  83009:
+    m2: 4c91becbd1d218f4f9c6b76a7e203714f0aefcba5cdf6346f1cc7d9a2591b7ff
+    m3: 6538342b86913f0143b9c39c914fbc18f9cd0a2ba69b4f63b95c793cef91d49d
+    m4: 5e3562d890207aab01cb3072baa8bdd13654001db93c45b304192c5dab1b9fee
+  83010:
+    m2: c2d6c43a84cbabc7704482e646535bad0613e378a8ab628114117717093b9752
+    m3: d0bb98138cb48c04ecfabe8e32d06a0230fec6fd041de391bbed23044446b036
+    m4: f21ba813a10683ab8ac7ee60901f4905da951052053a581dd7764d4c362fb224
+  83011:
+    m2: b9195f7493f6d647d59e92274030c5723d4c0595ee95c2e144fdc8c8b69fbfe7
+    m3: 8e2f646d05eb1de06f532bc0980e2d75b88c61b12ad095386bf5f9b7b3986107
+    m4: 42ee89e0306f1d0c699bf4dce1dc7a70aca4df9fd6b9dc285ef301c51750e617
+  83012:
+    m2: 969a04909ef4d6385258ab3256e83554aa95d426898547f6df1b0e2486ab6d44
+    m3: a6f42c1dbdc8eccd715e041d6c80771534bf22b73cf76a995fe6793e78e04f25
+    m4: 3b43297015067c60e3a8e32e6e5181700d3070360c2a98a00cf370db04e8f3b4
+implementation:
+  implemented_arms:
+  - B
+  - i
+  - ii
+  - iii
+  required_arms:
+  - B
+  - i
+  - ii
+  - iii
+  retries: 0
+  replacement_seeds: false
+  adaptive_grid: false
+  pruning: false
+  early_stopping: false
