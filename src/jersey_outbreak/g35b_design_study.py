@@ -1,4 +1,4 @@
-"""Frozen synthetic G35-B study machinery; only dry-run is exposed by CLI.
+"""Frozen synthetic G35-B study machinery and all-arms research bundle.
 
 Baseline generation and fitting are separated from truth joining so U2–U5 can
 finish *all* arms before any truth join (§6). No calibration artifact is written.
@@ -13,6 +13,7 @@ import csv
 import hashlib
 import json
 import math
+import os
 import subprocess
 import sys
 import time
@@ -925,10 +926,164 @@ def _baseline_execution_complete(generation: BaselineGeneration) -> bool:
     )
 
 
+def _fixed_run_provenance(latent: Any, requested: Any, seed: int, cell: CandidateCell) -> bool:
+    """Recheck returned metadata against independent frozen controls, without truth access."""
+    try:
+        run = latent.config
+        return bool(
+            run == requested
+            and run.seed == seed
+            and latent.generated.config.seed == seed
+            and run.mode == "ci"
+            and run.duration_days == 30
+            and run.start_date == date(2025, 1, 6)
+            and run.beta == cell.beta
+            and run.initial_seed_count == 0
+            and run.import_rate_per_day == 0
+            and run.import_schedule
+            == {(run.start_date + timedelta(days=cell.inoculation_day_offset)).isoformat(): 10}
+            and run.symptomatic_probability == 0.6
+            and not run.waning_enabled
+            and run.latent_duration.family == "constant"
+            and run.latent_duration.mean_days == 2
+            and run.infectious_duration.family == "constant"
+            and run.infectious_duration.mean_days == 5
+            and run.route_multipliers == dict(StudyConfig().route_multipliers)
+        )
+    except (AttributeError, TypeError, ValueError):
+        return False
+
+
+def _report_provenance_verified(
+    generation: BaselineGeneration, extra: ArmIGeneration | None = None
+) -> bool:
+    """B/i report provenance, recomputed from returned configs and retained records.
+
+    Blind read-back failures remain software errors. Other provenance failures
+    produce predicate 9 FALSE, including a mutually consistent but unfrozen seed.
+    """
+    config = StudyConfig()
+    if generation.config != config:
+        return False
+    dates = observation_dates(config.start_date, 30, 4)
+    owner = generation if extra is None else extra
+    seeds = config.candidate_process_seeds if extra is None else ARM_I_REPLICATE_ORDER
+    records = generation.replicate_provenance + (
+        () if extra is None else extra.replicate_provenance
+    )
+    latents = {**generation.candidate_latents, **({} if extra is None else extra.candidate_latents)}
+    try:
+        if (
+            len(dates) != 34
+            or any(table.dates != dates for table in generation.target_tables.values())
+            or any(
+                table.dates != dates
+                for tables in owner.candidate_prediction_library.values()
+                for table in tables
+            )
+            or len(records) != 625 * len(seeds)
+        ):
+            return False
+        for seed, obs_seed in zip(
+            config.target_process_seeds, config.target_observation_seeds, strict=True
+        ):
+            latent, observed, requested, obs = generation.target_outputs[seed]
+            if not (
+                _fixed_run_provenance(latent, requested, seed, CandidateCell(0.08, 2, 0.75, 0.25))
+                and obs.observation_seed == obs_seed
+                and obs.observation_config_id == config.target_observation_config_id
+                and obs.analysis_horizon_tail_days == 4
+                and obs.reporting_delay.days == (2,)
+                and obs.detection_delay.days == (0,)
+                and obs.day_of_week_effect == (1.0,) * 7
+                and obs.parameters["symptomatic_detection_probability"].value == 0.75
+                and obs.parameters["asymptomatic_detection_probability"].value == 0.25
+                and _namespace_passes(latent, observed, requested, obs)
+            ):
+                return False
+        by_cell: dict[CandidateCell, list[Mapping[str, Any]]] = {
+            cell: [] for cell in config.candidate_grid
+        }
+        for record in records:
+            by_cell[CandidateCell(**record["cell"])].append(record)
+        paired = {
+            seed: (batch, obs_seed)
+            for batch, process, obs in frozen.CANDIDATE_BATCHES
+            for seed, obs_seed in zip(process, obs, strict=True)
+        }
+        for cell, tables in owner.candidate_prediction_library.items():
+            cell_records = by_cell[cell]
+            if tuple(r["process_seed"] for r in cell_records) != seeds:
+                return False
+            configs = []
+            for record, table in zip(cell_records, tables, strict=True):
+                seed = record["process_seed"]
+                latent, requested = latents[seed, cell.beta, cell.inoculation_day_offset]
+                batch, obs_seed = paired[seed]
+                obs = phase0.ObservationConfig.model_validate(record["observation_config"])
+                if not (
+                    _fixed_run_provenance(latent, requested, seed, cell)
+                    and record["run_config"] == latent.config.model_dump(mode="json")
+                    and record["batch"] == batch
+                    and record["observation_seed"] == obs.observation_seed == obs_seed
+                    and obs.observation_config_id == config.candidate_observation_config_id
+                    and obs.analysis_horizon_tail_days == 4
+                    and obs.reporting_delay.days == (2,)
+                    and obs.detection_delay.days == (0,)
+                    and obs.day_of_week_effect == (1.0,) * 7
+                    and obs.parameters["symptomatic_detection_probability"].value
+                    == cell.symptomatic_detection_probability
+                    and obs.parameters["asymptomatic_detection_probability"].value
+                    == cell.asymptomatic_detection_probability
+                    and record["table_sha256"]
+                    == hashlib.sha256(phase0._compact_json_bytes(table.as_dict())).hexdigest()
+                    and record["observation_rng"]["stream_namespace"] == "observation"
+                    and record["observation_rng"]["stream_key_inputs"]
+                    == ["latent_replicate_seed", "observation_seed", "observation_config_id"]
+                    and record["observation_rng"]["stream_fingerprint"]
+                    == hashlib.sha256(
+                        str(phase0.observation_stream_seed(seed, obs)).encode()
+                    ).hexdigest()
+                ):
+                    return False
+                configs.append(
+                    {"run": record["run_config"], "observation": record["observation_config"]}
+                )
+            if (
+                owner.candidate_config_hashes[cell]
+                != hashlib.sha256(phase0._compact_json_bytes(configs)).hexdigest()
+            ):
+                return False
+        for seed in config.target_process_seeds:
+            _verify_blind_readback(
+                owner.blind_paths[seed], owner.blind_fits[seed], owner.blind_file_hashes[seed]
+            )
+        return True
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+
+
+def _arm_i_provenance_verified(generation: ArmIGeneration) -> bool:
+    baseline = generation.baseline
+    if not _report_provenance_verified(baseline) or not _report_provenance_verified(
+        baseline, generation
+    ):
+        return False
+    return all(
+        len(tables) == 12
+        and all(
+            table is original
+            for table, original in zip(
+                tables[:3], baseline.candidate_prediction_library[cell], strict=True
+            )
+        )
+        for cell, tables in generation.candidate_prediction_library.items()
+    )
+
+
 def join_baseline(generation: BaselineGeneration, output_dir: Path) -> RecoveryEvaluation:
     """Post-generation truth join. U5 must call only after all arms finish generation."""
     config = generation.config
-    plan_workload(config)
     # Re-read *all* blind records before looking at any target's latent events.
     for seed in config.target_process_seeds:
         _verify_blind_readback(
@@ -963,7 +1118,7 @@ def join_baseline(generation: BaselineGeneration, output_dir: Path) -> RecoveryE
     evaluation = evaluate_recovery(
         rows,
         execution_complete=complete,
-        provenance_verified=True,
+        provenance_verified=_report_provenance_verified(generation),
         measured_equals_caps=generation.measured == expected,
     )
     # A10 / clarification 1 item 2: add fallback disclosures *after* gating.
@@ -1309,7 +1464,7 @@ def join_arm_i(generation: ArmIGeneration, output_dir: Path) -> RecoveryEvaluati
     """Re-verify every blind record, then join B's target truth to R=12 fits."""
     baseline = generation.baseline
     config = baseline.config
-    plan = plan_workload(config)
+    plan = plan_workload(StudyConfig())
     for seed in config.target_process_seeds:
         for result in (baseline, generation):
             _verify_blind_readback(
@@ -1374,7 +1529,7 @@ def join_arm_i(generation: ArmIGeneration, output_dir: Path) -> RecoveryEvaluati
     evaluation = evaluate_recovery(
         rows,
         execution_complete=complete,
-        provenance_verified=True,
+        provenance_verified=_arm_i_provenance_verified(generation),
         measured_equals_caps=generation.measured
         == {key: plan["arms"]["i"][key] for key in TOTAL_FIELDS},
     )
@@ -2192,6 +2347,589 @@ def join_arm_iii(generation: ArmIIIGeneration, output_dir: Path) -> RecoveryEval
     return replace(evaluation, rows=serial)
 
 
+MULTIPLICITY_CAVEAT = (
+    "Three arms raise the chance that at least one passes when no factor matters. "
+    "Thresholds are not adjusted, because that would require numbers not justified "
+    "independently of Phase 0b. Instead, a PASS reading is screening evidence only. "
+    "Any later decision relying on it requires Steven's decision and a new "
+    "owner-ruled, fresh-seed confirmatory predeclaration."
+)
+STATUS_PREFIX = "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: "
+
+
+def readings(B_status: str, X_status: str, arm: str) -> str | None:
+    """Frozen §7.4/A8 text; a software VOID has no scientific reading."""
+    if arm not in ("i", "ii", "iii") or any(
+        status not in ("PASS", "FAIL", "VOID") for status in (B_status, X_status)
+    ):
+        raise ValueError("readings require a declared factor arm and PASS/FAIL/VOID statuses")
+    if "VOID" in (B_status, X_status):
+        return None
+    if (B_status, X_status) == ("FAIL", "PASS"):
+        reading = (
+            "Factor X, at the declared level, coincided with four-dimensional recovery "
+            "in this one synthetic campaign. Screening result only."
+        )
+    elif (B_status, X_status) == ("FAIL", "FAIL"):
+        reading = "Factor X alone, at the declared level, did not produce recovery. " + (
+            "Arm (i): evidence against Monte-Carlo noise as the sole cause."
+            if arm == "i"
+            else "Arms (ii)/(iii): that factor did not break the ridge at this level."
+        )
+    elif (B_status, X_status) == ("PASS", "PASS"):
+        reading = (
+            "The fresh-seed baseline at ten targets passed the recovery gate. "
+            "Factor X is not shown to be necessary. This is not a replication of the "
+            "Phase-0b design (five targets, retired seeds) and alters no Phase-0b verdict."
+        )
+    else:
+        reading = (
+            "Factor X coincided with loss of recovery. Reported as an anomaly; no causal reading."
+        )
+    return reading + (" " + MULTIPLICITY_CAVEAT if X_status == "PASS" else "")
+
+
+def overall_readings(statuses: Mapping[str, str]) -> str | dict[str, str] | None:
+    """Exactly the declared overall readings; no ranking or cross-factor comparison."""
+    if any(status == "VOID" for status in statuses.values()):
+        return None
+    passed = {
+        arm: cast(str, readings(statuses["B"], statuses[arm], arm))
+        for arm in ("i", "ii", "iii")
+        if statuses[arm] == "PASS"
+    }
+    if passed:
+        return passed
+    if statuses["B"] == "FAIL":
+        return (
+            "None of the three factors, one at a time at the declared levels, made the "
+            "recovery gate pass. The ridge hypothesis (H2) is not contradicted."
+        )
+    return None
+
+
+def status_phrase(statuses: Mapping[str, str] | None = None) -> str:
+    if statuses is None:
+        return STATUS_PREFIX + "not run"
+    if set(statuses) != {"B", "i", "ii", "iii"} or any(
+        status not in ("PASS", "FAIL", "VOID") for status in statuses.values()
+    ):
+        raise ValueError("status phrase requires all four PASS/FAIL/VOID statuses")
+    return STATUS_PREFIX + ", ".join(f"{arm} {statuses[arm]}" for arm in ("B", "i", "ii", "iii"))
+
+
+def _lineage_block() -> dict[str, Any]:
+    """§1 lineage, apart from this study's results; clarification 1 item 1 binds."""
+    return {
+        "phase0_verdict": "FAIL",
+        "phase0_audit": "docs/audits/2026-09-24-phase0-exit-audit-sol-FAIL.md",
+        "phase0_bundle_sha256sums_sha256": (
+            "72cd9a568598530923e08ce20b013d60eb7a3b26553b87c31685ad623f3faa80"
+        ),
+        "phase0_predeclaration_sha256": (
+            "ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104"
+        ),
+        "phase0b_verdict": "FAIL",
+        "phase0b_audit": "docs/audits/2026-09-26-phase0b-exit-audit-sol-FAIL.md",
+        "phase0b_bundle_sha256sums_sha256": (
+            "a319c5557ffa77c56baebb8341b5fc2e1432f367bdb9d0b34169aa079659032a"
+        ),
+        "phase0b_predeclaration_sha256": (
+            "ec8df64630dd50c83b0866a096fba4980453c34232d18114129587274f257451"
+        ),
+        "phase0b_failing_predicates": [5, 6, 8],
+        "phase0b_offset_selections": [4, 4, 0, 2, 0],
+        "phase0b_offset_truth": 2,
+        "phase0b_boundary_count": "4/5",
+        "phase0b_joint_count": "1/5",
+        "ridge_diagnostic_path": frozen.RIDGE_PATH,
+        "ridge_diagnostic_sha256": frozen.RIDGE_SHA256,
+        "ridge_digest_source": frozen.CLARIFICATION_PATH,
+        "ridge_crlf_alias": {
+            "sha256": "de13913b85afa3578f3fcea2e460448909132133a30735eb3cae2609780079d6",
+            "binding": False,
+        },
+        "g34b_memo": "docs/research/v1_3/2026-09-29-successor-offset-design-memo-DRAFT.md",
+        "g34b_option_2": "withdrawn",
+        "real_data_fitting": "STOPPED (G34 A+B)",
+    }
+
+
+def _require_clean_worktree(root: Path) -> None:
+    status = subprocess.check_output(
+        ["git", "-C", str(root), "status", "--porcelain", "--untracked-files=all"],
+        stderr=subprocess.PIPE,
+    )
+    if status:
+        raise CampaignError("campaign requires a clean worktree")
+
+
+def _source_snapshot(root: Path) -> dict[str, Any]:
+    _require_clean_worktree(root)
+    head = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"]).decode().strip()
+    paths = (
+        subprocess.check_output(
+            [
+                "git",
+                "-C",
+                str(root),
+                "ls-tree",
+                "-r",
+                "--name-only",
+                head,
+                "--",
+                "src/jersey_outbreak",
+                "configs",
+            ]
+        )
+        .decode()
+        .splitlines()
+    )
+    hashes = {
+        path: hashlib.sha256(committed_document_bytes(root / path, commit=head)).hexdigest()
+        for path in paths
+        if path.startswith("configs/") or path.endswith(".py")
+    }
+    return {"git_head": head, "worktree_clean": True, "source_and_config_sha256": hashes}
+
+
+def _validated_campaign_inputs(
+    config_path: Path,
+    predeclaration_path: Path,
+    owner_ruling_path: Path,
+    clarification_path: Path,
+    *,
+    root: Path,
+) -> dict[str, bytes]:
+    # All asserted digests use git blobs, with independent frozen expected values.
+    documents = (
+        (config_path, "fab6d05198120e89369480d48cb0ac6401c6926dbe8e972311b6b18ee4d4b5f9"),
+        (predeclaration_path, frozen.PREDECLARATION_SHA256),
+        (owner_ruling_path, frozen.OWNER_RULING_SHA256),
+        (clarification_path, frozen.CLARIFICATION_SHA256),
+        (root / frozen.RIDGE_PATH, frozen.RIDGE_SHA256),
+        (
+            root / "docs/runs/2026-10-22-g35b-seed-precheck.json",
+            "9d15beb0abc7e3e190008dbb1d89aecc8bc3488e926c55f632bbe83b5d2614f5",
+        ),
+        (
+            root / "docs/runs/2026-10-22-g35b-horizon-probe.json",
+            "03ac0906e68e424277538c9e938bb68e88db96406269cab692c39d384846a3d7",
+        ),
+    )
+    inputs = {}
+    for path, expected in documents:
+        content = committed_document_bytes(path)
+        if hashlib.sha256(content).hexdigest() != expected:
+            raise CampaignError(f"committed SHA-256 mismatch: {path}")
+        inputs[path.name] = content
+    return inputs
+
+
+def _campaign_seed_ledger() -> list[dict[str, Any]]:
+    seeds = frozen_payload()["seeds"]
+    ledger = []
+    for arm in ("B", "i", "ii", "iii"):
+        for process, obs, sero in zip(
+            frozen.TARGET_PROCESS_SEEDS,
+            frozen.TARGET_OBSERVATION_SEEDS,
+            frozen.TARGET_SEROSURVEY_SEEDS,
+            strict=True,
+        ):
+            ledger.append(
+                {
+                    "arm": arm,
+                    "role": "target",
+                    "batch": None,
+                    "process_seed": process,
+                    "observation_seed": obs,
+                    "observation_config_id": seeds["target_observation_config_id"],
+                    "serosurvey_seed": sero if arm == "iii" else None,
+                    "serosurvey_config_id": seeds["target_serosurvey_config_id"]
+                    if arm == "iii"
+                    else None,
+                }
+            )
+        for batch, processes, observations in frozen.CANDIDATE_BATCHES:
+            if arm != "i" and batch != "A":
+                continue
+            for index, (process, obs) in enumerate(zip(processes, observations, strict=True)):
+                ledger.append(
+                    {
+                        "arm": arm,
+                        "role": "candidate",
+                        "batch": batch,
+                        "process_seed": process,
+                        "observation_seed": obs,
+                        "observation_config_id": seeds["candidate_observation_config_id"],
+                        "serosurvey_seed": frozen.FIT_SEROSURVEY_SEEDS[index]
+                        if arm == "iii"
+                        else None,
+                        "serosurvey_config_id": seeds["candidate_serosurvey_config_id"]
+                        if arm == "iii"
+                        else None,
+                    }
+                )
+    return ledger
+
+
+Generation = BaselineGeneration | ArmIGeneration | ArmIIIGeneration
+
+
+def _verify_arm_blind_records(generation: Generation) -> None:
+    if set(generation.blind_fits) != set(frozen.TARGET_PROCESS_SEEDS):
+        raise CampaignError("incomplete blind record set")
+    for seed, fit in generation.blind_fits.items():
+        _verify_blind_readback(
+            generation.blind_paths[seed], fit, generation.blind_file_hashes[seed]
+        )
+    if isinstance(generation, ArmIGeneration):
+        expected = {
+            (seed, batch)
+            for seed in frozen.TARGET_PROCESS_SEEDS
+            for batch in ("A", "B_prime", "C_prime", "D_prime", "A_union_B_prime")
+        }
+        if set(generation.descriptive_fits) != expected:
+            raise CampaignError("incomplete descriptive blind record set")
+        for key, fit in generation.descriptive_fits.items():
+            _verify_blind_readback(
+                generation.descriptive_paths[key], fit, generation.descriptive_file_hashes[key]
+            )
+
+
+def _retain_arm_inputs(generation: Generation, destination: Path) -> None:
+    """Write the observation-only inputs needed to recompute every retained surface."""
+    baseline = (
+        generation.baseline
+        if isinstance(generation, (ArmIGeneration, ArmIIIGeneration))
+        else generation
+    )
+    owner = generation.baseline if isinstance(generation, ArmIIIGeneration) else generation
+    targets = baseline.target_tables
+    library = owner.candidate_prediction_library
+    records = (
+        baseline.replicate_provenance + generation.replicate_provenance
+        if isinstance(generation, ArmIGeneration)
+        else owner.replicate_provenance
+    )
+    by_cell: dict[CandidateCell, list[Mapping[str, Any]]] = {cell: [] for cell in library}
+    for record in records:
+        by_cell[CandidateCell(**record["cell"])].append(record)
+    for seed, table in targets.items():
+        _write_json(destination / "target_tables" / f"{seed}.json", table.as_dict())
+    _write_json(
+        destination / "target_provenance.json",
+        [
+            {
+                "process_seed": seed,
+                "returned_run_config": latent.config.model_dump(mode="json"),
+                "requested_run_config": requested_run.model_dump(mode="json"),
+                "returned_observation_config": observed.config.model_dump(mode="json"),
+                "requested_observation_config": requested_obs.model_dump(mode="json"),
+                "observation_rng": observed.diagnostics["observation_rng"],
+                "population_lineage": baseline.parent_lineage[seed],
+            }
+            for seed, (
+                latent,
+                observed,
+                requested_run,
+                requested_obs,
+            ) in baseline.target_outputs.items()
+        ],
+    )
+    for index, (cell, tables) in enumerate(library.items()):
+        for record, table in zip(by_cell[cell], tables, strict=True):
+            if (
+                record["table_sha256"]
+                != hashlib.sha256(phase0._compact_json_bytes(table.as_dict())).hexdigest()
+            ):
+                raise CampaignError("retained replicate table SHA-256 mismatch")
+            _write_json(
+                destination / "candidate_tables" / str(index) / f"{record['process_seed']}.json",
+                {**record, "table": table.as_dict()},
+            )
+    index_records = []
+    for seed, fit in generation.blind_fits.items():
+        path = generation.blind_paths[seed]
+        index_records.append(
+            {
+                "role": "gate",
+                "target_seed": seed,
+                "path": path.relative_to(destination).as_posix(),
+                "sha256": generation.blind_file_hashes[seed],
+                "estimate_hash": fit.estimate_hash,
+            }
+        )
+    if isinstance(generation, ArmIGeneration):
+        for (seed, batch), fit in generation.descriptive_fits.items():
+            index_records.append(
+                {
+                    "role": "descriptive",
+                    "target_seed": seed,
+                    "batch": batch,
+                    "path": generation.descriptive_paths[seed, batch]
+                    .relative_to(destination)
+                    .as_posix(),
+                    "sha256": generation.descriptive_file_hashes[seed, batch],
+                    "estimate_hash": fit.estimate_hash,
+                }
+            )
+    _write_json(destination / "blind_readback_hashes.json", index_records)
+
+
+def _write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(phase0._compact_json_bytes(value))
+
+
+def _measured_work(generations: Mapping[str, Generation]) -> dict[str, Any]:
+    plan = plan_workload(StudyConfig())
+    arms = {
+        arm: {
+            "planned": {key: plan["arms"][arm][key] for key in TOTAL_FIELDS},
+            "measured": dict(generations[arm].measured) if arm in generations else None,
+            "measured_equals_planned": arm in generations
+            and generations[arm].measured == {key: plan["arms"][arm][key] for key in TOTAL_FIELDS},
+        }
+        for arm in ("B", "i", "ii", "iii")
+    }
+    totals = {key: sum(g.measured[key] for g in generations.values()) for key in TOTAL_FIELDS}
+    gate_losses = sum(
+        len(fit.loss_surface) for g in generations.values() for fit in g.blind_fits.values()
+    )
+    descriptive_losses = sum(
+        len(fit.loss_surface)
+        for g in generations.values()
+        if isinstance(g, ArmIGeneration)
+        for fit in g.descriptive_fits.values()
+    )
+    exact = (
+        all(item["measured_equals_planned"] for item in arms.values())
+        and totals == plan["totals"]
+        and gate_losses == plan["gate_loss_evaluations"]
+        and descriptive_losses == plan["descriptive_loss_evaluations"]
+    )
+    return {
+        "arms": arms,
+        "total": {
+            "planned": plan["totals"],
+            "measured": totals if len(generations) == 4 else None,
+            "completed_generation_subtotal": totals,
+            "measured_equals_planned": exact,
+        },
+        "gate_loss_evaluations": gate_losses,
+        "descriptive_loss_evaluations": descriptive_losses,
+    }
+
+
+def _seal_bundle(output_dir: Path) -> None:
+    """The manifest covers every other regular file; re-read after removing write bits."""
+    paths = sorted(
+        path
+        for path in output_dir.rglob("*")
+        if path.is_file() and path != output_dir / "SHA256SUMS"
+    )
+    manifest = "".join(
+        f"{hashlib.sha256(path.read_bytes()).hexdigest()}  "
+        f"{path.relative_to(output_dir).as_posix()}\n"
+        for path in paths
+    )
+    (output_dir / "SHA256SUMS").write_text(manifest, encoding="utf-8")
+    for path in [*output_dir.rglob("*"), output_dir]:
+        os.chmod(path, path.stat().st_mode & ~0o222)
+    verify_bundle(output_dir)
+
+
+def verify_bundle(output_dir: Path) -> None:
+    entries = (output_dir / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
+    expected = {
+        path.relative_to(output_dir).as_posix()
+        for path in output_dir.rglob("*")
+        if path.is_file() and path != output_dir / "SHA256SUMS"
+    }
+    actual = set()
+    for line in entries:
+        digest, relative = line.split("  ", 1)
+        path = output_dir / relative
+        if path.resolve().is_relative_to(output_dir.resolve()) and relative not in actual:
+            if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+                raise CampaignError(f"bundle SHA256SUMS mismatch: {relative}")
+            actual.add(relative)
+        else:
+            raise CampaignError("invalid bundle manifest path")
+    if actual != expected:
+        raise CampaignError("bundle SHA256SUMS file set mismatch")
+
+
+def run_all_arms(
+    config_path: Path,
+    predeclaration_path: Path,
+    owner_ruling_path: Path,
+    clarification_path: Path,
+    output_dir: Path,
+    *,
+    root: Path,
+) -> dict[str, Any]:
+    """One run: B/i/ii/iii blind generation, global read-back barrier, joins, seal.
+
+    Validation occurs before the run starts. Once the destination is created,
+    every software exception stops work and seals a partial VOID bundle. There
+    is no retry, replacement, resume, or scientific reclassification.
+    """
+    config = StudyConfig.from_yaml(config_path)
+    plan_workload(config)
+    inputs = _validated_campaign_inputs(
+        config_path, predeclaration_path, owner_ruling_path, clarification_path, root=root
+    )
+    snapshot = _source_snapshot(root)
+    if output_dir.exists():
+        raise CampaignError("campaign output_dir must not exist")
+    output_dir.mkdir(parents=True, exist_ok=False)
+    started = time.perf_counter()
+    generations: dict[str, Generation] = {}
+    evaluations: dict[str, RecoveryEvaluation] = {}
+    arm_seconds: dict[str, float] = {}
+    summary: dict[str, Any] = {
+        "lineage": _lineage_block(),
+        "source": snapshot,
+        "frozen_input_sha256": {
+            name: hashlib.sha256(content).hexdigest() for name, content in inputs.items()
+        },
+        "spread_label": STOCHASTIC_REPLICATE_VARIATION,
+    }
+
+    def finish_summary(error: Exception | None = None) -> None:
+        statuses = {
+            arm: evaluations[arm].status if arm in evaluations else "VOID"
+            for arm in ("B", "i", "ii", "iii")
+        }
+        summary.update(
+            {
+                "software_status": "PASS" if error is None else "VOID",
+                "arms": {
+                    arm: {
+                        "status": statuses[arm],
+                        "software_status": "PASS" if arm in evaluations else "VOID",
+                        "scientific_status": evaluations[arm].status
+                        if arm in evaluations
+                        else "NOT_ESTABLISHED",
+                        "predicates": dict(evaluations[arm].predicates)
+                        if arm in evaluations
+                        else {},
+                        "verdict_line": f"G35-B ARM {arm} RECOVERY GATE: {statuses[arm]}"
+                        if arm in evaluations
+                        else None,
+                    }
+                    for arm in statuses
+                },
+                "status_phrase": status_phrase(statuses),
+                "measured_work": _measured_work(generations),
+                "disclosures": {
+                    arm: {**g.disclosures, "arm_wall_time_seconds": arm_seconds[arm]}
+                    for arm, g in generations.items()
+                },
+                "campaign_wall_time_seconds": time.perf_counter() - started,
+            }
+        )
+        if error is None:
+            summary["readings"] = {
+                arm: readings(statuses["B"], statuses[arm], arm) for arm in ("i", "ii", "iii")
+            }
+            ii_descriptives = json.loads(
+                (output_dir / "arm_ii/g35b_ii_descriptives.json").read_bytes()
+            )
+            if sum(target["peak_crossed"] for target in ii_descriptives["targets"]) < 10:
+                summary["readings"]["ii"] += " " + ii_descriptives["factor_delivered"]
+            summary["overall_reading"] = overall_readings(statuses)
+            if isinstance(summary["overall_reading"], dict):
+                summary["overall_reading"] = {
+                    arm: summary["readings"][arm] for arm in summary["overall_reading"]
+                }
+        else:
+            summary.pop("readings", None)
+            summary.pop("overall_reading", None)
+            summary["error"] = {"class": type(error).__name__, "message": str(error)}
+        _write_json(output_dir / "campaign_summary.json", summary)
+
+    try:
+        for name, content in inputs.items():
+            destination = output_dir / "frozen_inputs" / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(content)
+        _write_json(output_dir / "source_and_config_hashes.json", snapshot)
+        _write_json(output_dir / "seed_ledger.json", _campaign_seed_ledger())
+        arm_started = time.perf_counter()
+        baseline = generate_baseline(config_path, predeclaration_path, output_dir / "B", root=root)
+        generations["B"] = baseline
+        arm_seconds["B"] = time.perf_counter() - arm_started
+        for name, generate in (("i", arm_i), ("ii", arm_ii), ("iii", arm_iii)):
+            arm_started = time.perf_counter()
+            generations[name] = generate(baseline, config, output_dir / f"arm_{name}", root=root)
+            arm_seconds[name] = time.perf_counter() - arm_started
+        # Global barrier: even the last descriptive record is checked before B's join.
+        for name, generation in generations.items():
+            _verify_arm_blind_records(generation)
+            _retain_arm_inputs(generation, output_dir / ("B" if name == "B" else f"arm_{name}"))
+        if not _measured_work(generations)["total"]["measured_equals_planned"]:
+            raise BudgetError("campaign measured work differs from exact caps")
+        for name, join in (
+            ("B", join_baseline),
+            ("i", join_arm_i),
+            ("ii", join_arm_ii),
+            ("iii", join_arm_iii),
+        ):
+            arm_started = time.perf_counter()
+            evaluation = cast(Callable[[Any, Path], RecoveryEvaluation], join)(
+                generations[name], output_dir / ("B" if name == "B" else f"arm_{name}")
+            )
+            arm_seconds[name] += time.perf_counter() - arm_started
+            evaluations[name] = evaluation
+            _write_json(
+                output_dir / ("B" if name == "B" else f"arm_{name}") / "recovery_evaluation.json",
+                {
+                    "status": evaluation.status,
+                    "predicates": dict(evaluation.predicates),
+                    "hits": dict(evaluation.hits),
+                    "joint_hits": evaluation.joint_hits,
+                    "boundary_counts": dict(evaluation.boundary_counts),
+                    "mean_bias": {
+                        key: None if value is None else str(value)
+                        for key, value in evaluation.mean_bias.items()
+                    },
+                },
+            )
+            # A10 counters and predicate values are attached after evaluation only.
+            rows = [
+                {
+                    **row,
+                    **{f"predicate_{key}": value for key, value in evaluation.predicates.items()},
+                    **{
+                        f"measured_{key}": value
+                        for key, value in generations[name].measured.items()
+                    },
+                }
+                for row in evaluation.rows
+            ]
+            destination = (
+                output_dir / ("B" if name == "B" else f"arm_{name}") / f"g35b_{name}_recovery.csv"
+            )
+            with destination.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+                writer.writeheader()
+                writer.writerows(rows)
+        finish_summary()
+        _seal_bundle(output_dir)
+    except Exception as exc:
+        # A failure during sealing can leave write bits removed. Reopen only the
+        # new bundle so its summary/manifest can record the software failure.
+        for path in [output_dir, *output_dir.rglob("*")]:
+            os.chmod(path, path.stat().st_mode | 0o200)
+        finish_summary(exc)
+        _seal_bundle(output_dir)
+        raise CampaignError(f"G35-B campaign VOID: {type(exc).__name__}: {exc}") from exc
+    return summary
+
+
 def dry_run(config_path: Path, predeclaration_path: Path) -> dict[str, Any]:
     config = StudyConfig.from_yaml(config_path)
     digest = validate_predeclaration(predeclaration_path)
@@ -2201,15 +2939,31 @@ def dry_run(config_path: Path, predeclaration_path: Path) -> dict[str, Any]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Frozen G35-B study dry-run (U1)")
+    parser = argparse.ArgumentParser(description="Frozen G35-B synthetic design study")
     commands = parser.add_subparsers(dest="command", required=True)
     dry = commands.add_parser("dry-run")
     dry.add_argument("--config", required=True, type=Path)
     dry.add_argument("--predeclaration", required=True, type=Path)
+    execute = commands.add_parser("execute")
+    for option in ("config", "predeclaration", "owner-ruling", "clarification", "output-dir"):
+        execute.add_argument(f"--{option}", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
-        dry_run(args.config, args.predeclaration)
-    except (CampaignError, OSError) as exc:
+        if args.command == "dry-run":
+            dry_run(args.config, args.predeclaration)
+        else:
+            summary = run_all_arms(
+                args.config,
+                args.predeclaration,
+                args.owner_ruling,
+                args.clarification,
+                args.output_dir,
+                root=Path(__file__).resolve().parents[2],
+            )
+            for arm in summary["arms"].values():
+                print(arm["verdict_line"])
+            print(summary["status_phrase"])
+    except (CampaignError, OSError, subprocess.CalledProcessError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
     return 0

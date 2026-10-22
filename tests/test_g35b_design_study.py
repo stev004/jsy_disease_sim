@@ -219,7 +219,7 @@ def test_new_unknown_setting_or_seed_is_rejected() -> None:
         study.validate_frozen_payload(payload)
 
 
-def test_exact_dry_run_and_no_execute_cli(capsys: Any) -> None:
+def test_exact_dry_run_and_execute_requires_arguments(capsys: Any) -> None:
     assert (
         study.main(["dry-run", "--config", str(CONFIG), "--predeclaration", str(PREDECLARATION)])
         == 0
@@ -2245,3 +2245,611 @@ def test_study_module_has_no_real_serosurvey_or_data_path_reference() -> None:
         source = Path(module.__file__).read_text()
         assert "covid_serosurvey" not in source
         assert "data/" not in source
+
+
+OWNER_RULING = ROOT / "docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md"
+CLARIFICATION = ROOT / frozen.CLARIFICATION_PATH
+
+
+def test_baseline_candidate_returned_duration_corruption_fails_predicate_9(
+    tmp_path: Path, baseline_fakes: Any
+) -> None:
+    generation = study.generate_baseline(CONFIG, PREDECLARATION, tmp_path / "B", root=ROOT)
+    latent, _ = next(iter(generation.candidate_latents.values()))
+    latent.config = latent.config.model_copy(update={"duration_days": 29})
+    result = study.join_baseline(generation, tmp_path / "joined")
+    assert not result.predicates["9_provenance"]
+    assert result.status == "FAIL"
+
+
+def test_arm_i_replicate_order_corruption_fails_predicate_9(
+    tmp_path: Path, baseline_fakes: Any
+) -> None:
+    baseline = study.generate_baseline(CONFIG, PREDECLARATION, tmp_path / "B", root=ROOT)
+    generation = study.arm_i(baseline, baseline.config, tmp_path / "i", root=ROOT)
+    # Swapping different seed records preserves every config, seed set and table;
+    # only the frozen order changes. The U2 literal-True check misses this.
+    records = list(generation.replicate_provenance)
+    records[0], records[1] = records[1], records[0]
+    corrupted = replace(generation, replicate_provenance=tuple(records))
+    result = study.join_arm_i(corrupted, tmp_path / "joined")
+    assert not result.predicates["9_provenance"]
+    assert result.status == "FAIL"
+
+
+READING_CELLS = {
+    ("FAIL", "PASS"): (
+        "Factor X, at the declared level, coincided with four-dimensional recovery "
+        "in this one synthetic campaign. Screening result only."
+    ),
+    ("PASS", "PASS"): (
+        "The fresh-seed baseline at ten targets passed the recovery gate. "
+        "Factor X is not shown to be necessary. This is not a replication of the "
+        "Phase-0b design (five targets, retired seeds) and alters no Phase-0b verdict."
+    ),
+    ("PASS", "FAIL"): (
+        "Factor X coincided with loss of recovery. Reported as an anomaly; no causal reading."
+    ),
+}
+MULTIPLICITY_TEXT = (
+    "Three arms raise the chance that at least one passes when no factor matters. "
+    "Thresholds are not adjusted, because that would require numbers not justified "
+    "independently of Phase 0b. Instead, a PASS reading is screening evidence only. "
+    "Any later decision relying on it requires Steven's decision and a new "
+    "owner-ruled, fresh-seed confirmatory predeclaration."
+)
+
+
+@pytest.mark.parametrize("arm", ["i", "ii", "iii"])
+@pytest.mark.parametrize("B_status", ["PASS", "FAIL", "VOID"])
+@pytest.mark.parametrize("X_status", ["PASS", "FAIL", "VOID"])
+def test_readings_every_frozen_cell_including_void(arm: str, B_status: str, X_status: str) -> None:
+    if "VOID" in (B_status, X_status):
+        assert study.readings(B_status, X_status, arm) is None
+        return
+    if (B_status, X_status) == ("FAIL", "FAIL"):
+        expected = "Factor X alone, at the declared level, did not produce recovery. " + (
+            "Arm (i): evidence against Monte-Carlo noise as the sole cause."
+            if arm == "i"
+            else "Arms (ii)/(iii): that factor did not break the ridge at this level."
+        )
+    else:
+        expected = READING_CELLS[B_status, X_status]
+    if X_status == "PASS":
+        expected += " " + MULTIPLICITY_TEXT
+    assert study.readings(B_status, X_status, arm) == expected
+
+
+def test_overall_readings_and_exact_a9_status_phrases() -> None:
+    prefix = "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: "
+    assert study.status_phrase() == prefix + "not run"
+    statuses = {"B": "FAIL", "i": "PASS", "ii": "FAIL", "iii": "VOID"}
+    assert study.status_phrase(statuses) == prefix + "B FAIL, i PASS, ii FAIL, iii VOID"
+    assert study.overall_readings(statuses) is None
+    statuses["iii"] = "FAIL"
+    assert study.overall_readings(statuses) == {"i": study.readings("FAIL", "PASS", "i")}
+    statuses["i"] = "FAIL"
+    assert study.overall_readings(statuses) == (
+        "None of the three factors, one at a time at the declared levels, made the "
+        "recovery gate pass. The ridge hypothesis (H2) is not contradicted."
+    )
+    statuses["B"] = "PASS"
+    assert study.overall_readings(statuses) is None
+    with pytest.raises(ValueError):
+        study.readings("SOFTWARE FAIL", "FAIL", "i")
+    with pytest.raises(ValueError):
+        study.status_phrase({"B": "PASS"})
+
+
+@pytest.fixture
+def all_arms_fakes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, baseline_fakes: Any
+) -> dict[str, Any]:
+    """Mock only execution and the source snapshot of this intentionally dirty tree."""
+    calls = baseline_fakes
+    calls.update({"persist": [], "truth_reads": [], "sampling": False, "generations": {}})
+    original_observe_sero = study.observe_serosurvey
+    original_persist = study.persist_blind_estimate
+    original_diagnostics = study._truth_diagnostics_from_result
+    # Acquire the existing 49-day fake, then install a dispatcher for both windows.
+    _install_arm_ii_fakes(calls, monkeypatch)
+    run49 = study.run_outbreak
+    observe49 = study.observe_latent_run
+
+    class GuardedLatent(SimpleNamespace):
+        def __getattribute__(self, name: str) -> Any:
+            if name in ("transmission_events", "daily_epidemic"):
+                # Sampling is the declared observation model (§5.2), not a truth
+                # join. All other reads, including ii/iii descriptives, must wait.
+                if not (name == "transmission_events" and calls["sampling"]):
+                    assert len(calls["persist"]) == 90, "truth before last blind record"
+                    calls["truth_reads"].append(name)
+            return super().__getattribute__(name)
+
+    def fake_run(parent: Any, run: OutbreakRunConfig, parameters: Any) -> Any:
+        result = (run49 if run.duration_days == 49 else calls["fake_run"])(parent, run, parameters)
+        offset = (date.fromisoformat(next(iter(run.import_schedule))) - run.start_date).days
+        count = 750
+        result.transmission_events = tuple(
+            {
+                "infected_agent_id": str(i),
+                "infection_date": (
+                    run.start_date + timedelta(days=offset if i < 10 else 10)
+                ).isoformat(),
+                "imported": i < 10,
+                "source_kind": "imported" if i < 10 else "local",
+                "natural_history_episode_index": 0,
+            }
+            for i in range(count)
+        )
+        result.daily_epidemic = [
+            {
+                "date": (run.start_date + timedelta(days=d)).isoformat(),
+                "ever_infected_fraction": 0.25 if d >= 10 else 0,
+                # A late peak deliberately exercises the required ii reading suffix.
+                "new_infections": int(d == 45),
+            }
+            for d in range(run.duration_days)
+        ]
+        return GuardedLatent(**vars(result))
+
+    def fake_observe(latent: Any, obs: ObservationConfig) -> Any:
+        return (observe49 if latent.config.duration_days == 49 else calls["fake_observe"])(
+            latent, obs
+        )
+
+    def observe_sero(*args: Any, **kwargs: Any) -> Any:
+        calls["sampling"] = True
+        try:
+            return original_observe_sero(*args, **kwargs)
+        finally:
+            calls["sampling"] = False
+
+    def persist(path: Path, fit: Any) -> Any:
+        result = original_persist(path, fit)
+        calls["persist"].append(path)
+        return result
+
+    def diagnostics(*args: Any, **kwargs: Any) -> Any:
+        assert len(calls["persist"]) == 90
+        return original_diagnostics(*args, **kwargs)
+
+    for name in ("generate_baseline", "arm_i", "arm_ii", "arm_iii"):
+        original = getattr(study, name)
+
+        def capture(*args: Any, _generate: Any = original, _name: str = name, **kwargs: Any) -> Any:
+            generation = _generate(*args, **kwargs)
+            calls["generations"][_name] = generation
+            return generation
+
+        monkeypatch.setattr(study, name, capture)
+    monkeypatch.setattr(study, "run_outbreak", fake_run)
+    monkeypatch.setattr(study, "observe_latent_run", fake_observe)
+    monkeypatch.setattr(study, "observe_serosurvey", observe_sero)
+    monkeypatch.setattr(study, "persist_blind_estimate", persist)
+    monkeypatch.setattr(study, "_truth_diagnostics_from_result", diagnostics)
+    monkeypatch.setattr(
+        study,
+        "_source_snapshot",
+        lambda root: {
+            "git_head": "mocked-source-snapshot",
+            "worktree_clean": True,
+            "source_and_config_sha256": {},
+        },
+    )
+    return calls
+
+
+def _run_mock_campaign(output: Path) -> dict[str, Any]:
+    return study.run_all_arms(
+        CONFIG, PREDECLARATION, OWNER_RULING, CLARIFICATION, output, root=ROOT
+    )
+
+
+def _unseal_for_test_cleanup(output: Path) -> None:
+    import os
+
+    for path in [output, *output.rglob("*")]:
+        os.chmod(path, path.stat().st_mode | 0o200)
+
+
+def _recompute_one_target_from_bundle(directory: Path, arm: str) -> Any:
+    """Cold replay of every cell, using only the retained bundle and pure fitters."""
+
+    def table(payload: Any) -> Any:
+        return phase0.ObservedTables(**{key: tuple(value) for key, value in payload.items()})
+
+    target = table(json.loads((directory / "target_tables/82001.json").read_bytes()))
+    library, hashes, grid = {}, {}, []
+    for cell_dir in sorted((directory / "candidate_tables").iterdir(), key=lambda p: int(p.name)):
+        records = [json.loads(path.read_bytes()) for path in sorted(cell_dir.glob("*.json"))]
+        cell = phase0.CandidateCell(**records[0]["cell"])
+        grid.append(cell)
+        library[cell] = tuple(table(record["table"]) for record in records)
+        hashes[cell] = hashlib.sha256(
+            phase0._compact_json_bytes(
+                [
+                    {"run": record["run_config"], "observation": record["observation_config"]}
+                    for record in records
+                ]
+            )
+        ).hexdigest()
+    if arm != "iii":
+        return study.fit_blind(
+            target,
+            grid,
+            library,
+            R=12 if arm == "i" else 3,
+            T=53 if arm == "ii" else 34,
+            candidate_config_hashes=hashes,
+        )
+    samples = json.loads((directory / "arm_iii/serosurvey_samples.json").read_bytes())
+    target_sample = next(sample for sample in samples["targets"] if sample["process_seed"] == 82001)
+    counts = {
+        (sample["process_seed"], sample["beta"], sample["offset"]): sample["k"]
+        for sample in samples["candidates"]
+    }
+    k_library = {
+        cell: tuple(
+            counts[seed, cell.beta, cell.inoculation_day_offset] for seed in (83001, 83002, 83003)
+        )
+        for cell in grid
+    }
+    return study.fit_blind_serosurvey(
+        target, target_sample["k"], target_sample["n"], grid, library, k_library
+    )
+
+
+def test_all_arms_barrier_distinct_records_bundle_and_scientific_fail(
+    tmp_path: Path, all_arms_fakes: Any
+) -> None:
+    calls = all_arms_fakes
+    output = tmp_path / "campaign"
+    try:
+        summary = _run_mock_campaign(output)
+        assert summary == json.loads((output / "campaign_summary.json").read_bytes())
+        assert summary["software_status"] == "PASS"
+        # Flat observation fixture is a scientific FAIL; all arms still finish.
+        assert summary["arms"]["B"]["scientific_status"] == "FAIL"
+        assert summary["arms"]["B"]["status"] == "FAIL"
+        assert calls["truth_reads"] and len(calls["persist"]) == 90
+        assert len(set(calls["persist"])) == 90
+        assert len(calls["build"]) == 22
+        assert len(calls["latent"]) == 395 and len(calls["observe"]) == 9395
+        for arm, function in (
+            ("B", "generate_baseline"),
+            ("i", "arm_i"),
+            ("ii", "arm_ii"),
+            ("iii", "arm_iii"),
+        ):
+            generation = calls["generations"][function]
+            directory = output / ("B" if arm == "B" else f"arm_{arm}")
+            assert len(generation.blind_paths) == 10
+            for seed, path in generation.blind_paths.items():
+                assert path.is_relative_to(directory)
+                study._verify_blind_readback(
+                    path, generation.blind_fits[seed], generation.blind_file_hashes[seed]
+                )
+            index = json.loads((directory / "blind_readback_hashes.json").read_bytes())
+            assert len(index) == (60 if arm == "i" else 10)
+            for record in index:
+                assert (
+                    hashlib.sha256((directory / record["path"]).read_bytes()).hexdigest()
+                    == record["sha256"]
+                )
+            replay = _recompute_one_target_from_bundle(directory, arm)
+            gate_record = next(
+                record
+                for record in index
+                if record["role"] == "gate" and record["target_seed"] == 82001
+            )
+            assert replay.as_dict() == json.loads((directory / gate_record["path"]).read_bytes())
+            assert summary["arms"][arm]["predicates"]["10_measured_caps"]
+            assert summary["measured_work"]["arms"][arm]["measured_equals_planned"]
+            assert summary["arms"][arm]["verdict_line"] == f"G35-B ARM {arm} RECOVERY GATE: FAIL"
+            assert len(list((directory / "candidate_tables").rglob("*.json"))) == (
+                7500 if arm == "i" else 1875
+            )
+            with (directory / f"g35b_{arm}_recovery.csv").open() as handle:
+                rows = list(csv.DictReader(handle))
+            assert len(rows) == 40
+            assert {
+                "population_fallback_m2",
+                "population_fallback_m3",
+                "measured_cells",
+                "predicate_9_provenance",
+            } <= set(rows[0])
+            disclosure = summary["disclosures"][arm]
+            assert disclosure["arm_wall_time_seconds"] >= 0
+            assert set(disclosure["phase_wall_time_seconds"]) >= {
+                "build",
+                "latent",
+                "transform",
+                "scoring",
+            }
+            assert (
+                len(disclosure["latent_runtimes"]) == {"B": 85, "i": 225, "ii": 85, "iii": 0}[arm]
+            )
+        assert summary["measured_work"]["total"]["measured_equals_planned"]
+        assert summary["measured_work"]["total"]["measured"] == dict(
+            zip(study.TOTAL_FIELDS, (2500, 395, 9395, 85, 22), strict=True)
+        )
+        assert summary["measured_work"]["gate_loss_evaluations"] == 25000
+        assert summary["measured_work"]["descriptive_loss_evaluations"] == 31250
+        assert summary["readings"]["ii"].endswith("factor delivered for 0/10 targets")
+        assert summary["lineage"]["ridge_diagnostic_sha256"] == frozen.RIDGE_SHA256
+        assert summary["lineage"]["ridge_crlf_alias"]["binding"] is False
+        assert summary["spread_label"] == "stochastic_replicate_variation"
+        ledger = json.loads((output / "seed_ledger.json").read_bytes())
+        assert len(ledger) == 61  # 40 targets + 3 + 12 + 3 + 3 candidates.
+        assert sum(row["serosurvey_seed"] is not None for row in ledger) == 13
+        for path in (
+            CONFIG,
+            PREDECLARATION,
+            OWNER_RULING,
+            CLARIFICATION,
+            ROOT / "docs/runs/2026-10-22-g35b-seed-precheck.json",
+            ROOT / "docs/runs/2026-10-22-g35b-horizon-probe.json",
+        ):
+            content = (output / "frozen_inputs" / path.name).read_bytes()
+            assert content == study.committed_document_bytes(path)
+            assert hashlib.sha256(content).hexdigest() == summary["frozen_input_sha256"][path.name]
+        samples = json.loads((output / "arm_iii/arm_iii/serosurvey_samples.json").read_bytes())
+        assert len(samples["targets"]) == 10 and len(samples["candidates"]) == 75
+        for sample in samples["targets"] + samples["candidates"]:
+            assert (
+                sample["n"]
+                == len(sample["sampled_agent_ids"])
+                == len(sample["ever_infected"])
+                == 400
+            )
+            assert sample["k"] == sum(sample["ever_infected"])
+        study.verify_bundle(output)
+        assert all(path.stat().st_mode & 0o222 == 0 for path in [output, *output.rglob("*")])
+    finally:
+        if output.exists():
+            _unseal_for_test_cleanup(output)
+
+
+@pytest.mark.parametrize("failed_phase", ["generation", "join", "readback", "measured"])
+def test_software_failure_stops_and_seals_void_without_readings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, all_arms_fakes: Any, failed_phase: str
+) -> None:
+    calls = all_arms_fakes
+    output = tmp_path / "void"
+    failures = []
+
+    def fail(*args: Any, **kwargs: Any) -> None:
+        failures.append("failed")
+        raise RuntimeError("injected software exception")
+
+    if failed_phase in ("generation", "join"):
+        monkeypatch.setattr(study, "arm_i" if failed_phase == "generation" else "join_arm_i", fail)
+    else:
+        original = study.arm_iii
+
+        def corrupt(*args: Any, **kwargs: Any) -> Any:
+            generation = original(*args, **kwargs)
+            failures.append("failed")
+            if failed_phase == "readback":
+                generation.blind_paths[82010].write_text("{}")
+                return generation
+            return replace(generation, measured={**generation.measured, "cells": 624})
+
+        monkeypatch.setattr(study, "arm_iii", corrupt)
+    try:
+        with pytest.raises(study.CampaignError, match="campaign VOID"):
+            _run_mock_campaign(output)
+        assert failures == ["failed"]
+        summary = json.loads((output / "campaign_summary.json").read_bytes())
+        assert summary["software_status"] == "VOID"
+        assert "readings" not in summary and "overall_reading" not in summary
+        if failed_phase in ("generation", "join"):
+            assert summary["error"] == {
+                "class": "RuntimeError",
+                "message": "injected software exception",
+            }
+        elif failed_phase == "readback":
+            assert summary["error"]["message"] == (
+                "blind estimate read-back failed: blind estimate read-back mismatch"
+            )
+            assert not calls["truth_reads"]
+        else:
+            assert summary["error"]["class"] == "BudgetError"
+            assert not summary["measured_work"]["arms"]["iii"]["measured_equals_planned"]
+            assert not summary["measured_work"]["total"]["measured_equals_planned"]
+            assert not calls["truth_reads"]
+        if failed_phase == "generation":
+            assert len(calls["persist"]) == 10
+            assert not calls["truth_reads"]
+            assert set(calls["generations"]) == {"generate_baseline"}
+            assert summary["measured_work"]["total"]["measured"] is None
+            assert summary["measured_work"]["arms"]["i"]["measured"] is None
+        elif failed_phase == "join":
+            # The already established scientific FAIL is never rewritten as VOID.
+            assert summary["arms"]["B"]["scientific_status"] == "FAIL"
+            assert summary["arms"]["B"]["status"] == "FAIL"
+            assert summary["arms"]["i"]["status"] == "VOID"
+        study.verify_bundle(output)
+        assert all(path.stat().st_mode & 0o222 == 0 for path in [output, *output.rglob("*")])
+    finally:
+        if output.exists():
+            _unseal_for_test_cleanup(output)
+
+
+@pytest.mark.parametrize(
+    "document",
+    ["config", "predeclaration", "owner_ruling", "clarification", "ridge", "precheck", "probe"],
+)
+def test_campaign_document_digest_failure_precedes_output_and_execution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, document: str
+) -> None:
+    original = study.committed_document_bytes
+    names = {
+        "config": CONFIG.name,
+        "predeclaration": PREDECLARATION.name,
+        "owner_ruling": OWNER_RULING.name,
+        "clarification": CLARIFICATION.name,
+        "ridge": Path(frozen.RIDGE_PATH).name,
+        "precheck": "2026-10-22-g35b-seed-precheck.json",
+        "probe": "2026-10-22-g35b-horizon-probe.json",
+    }
+
+    def corrupted(path: Path, **kwargs: Any) -> bytes:
+        content = original(path, **kwargs)
+        return content + b"changed" if path.name == names[document] else content
+
+    monkeypatch.setattr(study, "committed_document_bytes", corrupted)
+    with pytest.raises(study.CampaignError, match="committed SHA-256 mismatch"):
+        _run_mock_campaign(tmp_path / "rejected")
+    assert not (tmp_path / "rejected").exists()
+
+
+def test_campaign_rejects_existing_destination_without_touching_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(study, "_source_snapshot", lambda root: {})
+    output = tmp_path / "existing"
+    output.mkdir()
+    with pytest.raises(study.CampaignError, match="output_dir must not exist"):
+        _run_mock_campaign(output)
+    assert list(output.iterdir()) == []
+
+
+def test_source_snapshot_uses_clean_head_committed_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    files = {
+        "src/jersey_outbreak/a.py": b"x = 1\n",
+        "src/jersey_outbreak/nested/b.py": b"y = 2\n",
+        "configs/example.yaml": b"example: frozen\n",
+    }
+    calls = []
+    dirty = False
+
+    def git_output(command: Any, **kwargs: Any) -> bytes:
+        calls.append(command)
+        if "status" in command:
+            return b" M src/jersey_outbreak/a.py\n" if dirty else b""
+        if "rev-parse" in command:
+            return b"fixed-head\n"
+        assert "ls-tree" in command and "fixed-head" in command
+        return "\n".join(files).encode()
+
+    def committed(path: Path, *, commit: str = "HEAD") -> bytes:
+        assert commit == "fixed-head"
+        return files[path.relative_to(tmp_path).as_posix()]
+
+    monkeypatch.setattr(study.subprocess, "check_output", git_output)
+    monkeypatch.setattr(study, "committed_document_bytes", committed)
+    snapshot = study._source_snapshot(tmp_path)
+    assert snapshot["source_and_config_sha256"] == {
+        name: hashlib.sha256(content).hexdigest() for name, content in files.items()
+    }
+    assert snapshot["git_head"] == "fixed-head"
+    assert snapshot["worktree_clean"]
+    assert "status" in calls[0]
+    dirty = True
+    with pytest.raises(study.CampaignError, match="clean worktree"):
+        study._source_snapshot(tmp_path)
+
+
+@pytest.mark.parametrize("failure", [False, True])
+def test_execute_cli_calls_orchestrator_and_reports_validation_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: Any, failure: bool
+) -> None:
+    calls = []
+
+    def mocked(*args: Any, **kwargs: Any) -> Any:
+        calls.append((args, kwargs))
+        if failure:
+            raise study.CampaignError("frozen input rejected")
+        return {
+            "arms": {"B": {"verdict_line": "G35-B ARM B RECOVERY GATE: FAIL"}},
+            "status_phrase": study.status_phrase({arm: "FAIL" for arm in ("B", "i", "ii", "iii")}),
+        }
+
+    monkeypatch.setattr(study, "run_all_arms", mocked)
+    args = [
+        "execute",
+        "--config",
+        str(CONFIG),
+        "--predeclaration",
+        str(PREDECLARATION),
+        "--owner-ruling",
+        str(OWNER_RULING),
+        "--clarification",
+        str(CLARIFICATION),
+        "--output-dir",
+        str(tmp_path / "output"),
+    ]
+    assert study.main(args) == int(failure)
+    assert calls == [
+        ((CONFIG, PREDECLARATION, OWNER_RULING, CLARIFICATION, tmp_path / "output"), {"root": ROOT})
+    ]
+    captured = capsys.readouterr()
+    if failure:
+        assert captured.err == "frozen input rejected\n"
+    else:
+        assert "G35-B ARM B RECOVERY GATE: FAIL" in captured.out
+    with pytest.raises(SystemExit) as exc:
+        study.main(args[:7] + args[9:])  # Omit the binding --clarification pair.
+    assert exc.value.code == 2
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize(
+    "profile,expected", [("phase0", (198, 59, 599, 8)), ("phase0b", (1334, 107, 4007, 8))]
+)
+def test_frozen_earlier_profiles_still_dry_run_without_execution(
+    monkeypatch: pytest.MonkeyPatch, capsys: Any, profile: str, expected: tuple[int, ...]
+) -> None:
+    def forbidden(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("frozen-profile regression must only dry-run")
+
+    for name in ("build_parent", "run_outbreak", "observe_latent_run"):
+        monkeypatch.setattr(phase0, name, forbidden)
+    date_prefix = "2026-09-21" if profile == "phase0" else "2026-09-25"
+    plan = phase0.dry_run(
+        ROOT / f"configs/calibration/v13_{profile}_synthetic.yaml",
+        ROOT / f"docs/research/v1_3/{date_prefix}-{profile}-predeclaration.md",
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert (
+        plan.total_cells,
+        payload["total_latent_outbreak_calls"],
+        payload["total_observation_transforms"],
+        payload["distinct_population_network_seed_builds"],
+    ) == expected
+    assert payload == {**payload, **plan.as_dict()}
+
+
+def test_phase0_campaign_is_byte_identical_to_main() -> None:
+    import subprocess
+
+    path = "src/jersey_outbreak/phase0_campaign.py"
+    assert (ROOT / path).read_bytes() == subprocess.check_output(
+        ["git", "show", f"main:{path}"], cwd=ROOT
+    )
+
+
+def test_bundle_manifest_rechecks_bytes_and_every_file(tmp_path: Path) -> None:
+    output = tmp_path / "bundle"
+    (output / "nested").mkdir(parents=True)
+    (output / "value.json").write_text('{"value":1}\n')
+    # Even an existing nested manifest is an ordinary file in the outer manifest.
+    (output / "nested/SHA256SUMS").write_text("retained nested manifest\n")
+    try:
+        study._seal_bundle(output)
+        study.verify_bundle(output)
+        _unseal_for_test_cleanup(output)
+        original = (output / "value.json").read_bytes()
+        (output / "value.json").write_text('{"value":2}\n')
+        with pytest.raises(study.CampaignError, match="SHA256SUMS mismatch"):
+            study.verify_bundle(output)
+        (output / "value.json").write_bytes(original)
+        (output / "unlisted.json").write_text("{}")
+        with pytest.raises(study.CampaignError, match="file set mismatch"):
+            study.verify_bundle(output)
+    finally:
+        _unseal_for_test_cleanup(output)
