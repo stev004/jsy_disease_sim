@@ -9,13 +9,12 @@ disease biology, interventions, observations and provenance separate.
 
 V1.0 and V1.1 are released and frozen. The V1.2 evidence exit gate passed,
 and the V1.2.1 engineering backlog closed on 2026-09-21. Main's code baseline
-is `3ff37348f88750470be9f1ccda193b3ff31fb9c3`.
+is `ece94f546acb19695aed5ea326336e794275dc58` (2026-09-29).
 
-V1.3 Phase 0 remains incomplete. The P0-1 numerical correction passed its bounded independent
-review; P0-2 and P0-3 are not implemented. No Phase-0 campaign or
-real-data fit has run. Steven resumed work on 2026-09-22, and the G30
-correction/review extension is complete. G29 (unknown-result reporting) remains
-awaiting a ruling. See the [current run](.claude/RUN.md),
+V1.3 is stopped before any real-data fitting (owner ruling G34, 2026-09-29). Its synthetic-recovery gate failed twice: Phase 0 on 2026-09-24 and Phase 0b on 2026-09-26. Both times the inoculation offset was not recovered; beta and detection were. An exploratory diagnostic
+found a joint beta–timing–detection trade-off plus Monte-Carlo scatter. Whether a synthetic
+successor design study follows is open as G35. The redesigned UI (Harbour/Notebook themes plus a Runs &
+evidence page) is on main. See the [current run](.claude/RUN.md),
 [live plan](docs/research/v1_3/2026-09-21-v13-plan.md), and
 [current state](.claude/FRONTIER.md). The living backlog is
 [docs/roadmap.md](docs/roadmap.md); agents start at `CLAUDE.md`.

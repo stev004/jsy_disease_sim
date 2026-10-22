@@ -3,6 +3,32 @@
 Newest first. History only — current truth lives in the docs named by
 `.claude/CLOSEOUT.md`.
 
+## 2026-09-25→29 (closed out 2026-10-22) — UI redesign merged · Phase 0b FAIL · V1.3 stopped · popgen fixes (director Claude Opus 5.5; luna@xhigh; sol@high; astra@high trail)
+
+- **Fleet:** GPT-6 (luna xhigh implements, sol high reviews, astra high fallback and trail audit; never pre-GPT-6 without asking). Regulate MODEL_ROUTING v7.3; codex-cli 0.156.1.
+- **UI redesign (G33, Steven "merge G33"):**
+  - Harbour/Notebook themes plus a Runs & evidence page; spec `docs/ui/2026-09-25-jos-redesign-spec.md`.
+  - Units U1–U5 plus integration correctives; Sol re-review 3 PASS at `474bb53`.
+  - Merged `862e440` with frontend mirror PASS.
+- **G32-A (Steven):** the population-generator defect was diagnosed. `other`-role draws consumed scarce age bands: Trinity under-16s for 62001/62003/63002, St Peter adults for 62002.
+  - Fix: a parish residual-last fallback (`ad37d45`). Identity: 133 IDENTICAL / 19 FALLBACK / 14 BOTH-FAIL / 0 DIFFERENT; full pins 101/123 identical; Sol PASS.
+  - Same-seed Phase-0b rerun: exit 0, bundle `a319c555…`.
+  - Exit audit: **Phase 0b FAIL**. P0-1 offset 4,4,0,2,0 vs truth 2, boundary 4/5; P0-2A/B and P0-3 PASS.
+- **Trail audit (astra) ATTENTION 9:** reconciled. Full verify mirror filed, state files fixed, token corrections, failure-mode wording corrected, UI evidence archived to `docs/runs/2026-09-25-ui-evidence/`.
+- **G34 A+B (Steven):** V1.3 STOPS before real-data fitting. Memo filed as DRAFT. Steven: "merge the popgen fix" → `ece94f5`, which brings the Phase-0b harness. The evidence `.py` was renamed `.py.txt` after a lint failure.
+- **Steven: "do what you think is best, even consult fable".**
+  - Fable: drop Option 2. The Sol exploratory ridge diagnostic confirmed a joint beta–timing–detection trade-off plus 3-replicate Monte-Carlo scatter, and corrected Fable's p·t0 mechanism.
+  - G35 parked (default STOP).
+  - Luna diagnosis: 28/300 CI build failures, in 3 classes.
+  - Class 1 (M3 destination share, 22 seeds) fixed failure-only at `f080ed7`: 272 IDENTICAL / 22 FIXED / 6 BOTH-FAIL / 0 DIFFERENT; mirror PASS; Sol PASS with a non-blocking exact-share point-mass caveat. G36 live.
+- **Open threads:**
+  - G35 (Steven; default STOP).
+  - G36 (Steven; merge `f080ed7`; default HOLD).
+  - Popgen classes 2/3 need an owner rule (roadmap).
+  - The prov-ordering flaky test (roadmap).
+  - G5 branch cleanup (unchanged).
+- **User needs to run:** nothing. Decide G35/G36 in chat.
+
 ## 2026-09-22 — G30 correction reviewed/pushed; Phase 0 awaiting G29
 
 - **Resumed-run closeout:** Terra high trail audit ATTENTION corroborated source/verification/push evidence and found two stale phrases implying G30 was still preparing/available; both corrected. Reports `docs/audits/2026-09-22-phase0-g30-trail-terra.md` and `...-g30-trail-disposition.md`. G30 allowances spent, no workers active. G29 explicit UNKNOWN reporting proposal still awaits Steven; no further dependent implementation. Current handoff `docs/handoff/2026-09-22-phase0-g30-complete.md`.

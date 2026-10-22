@@ -2,7 +2,7 @@
 
 *Snapshot, not history. Rewritten each time the frontier moves. Lives on `main` (folded from `docs/frontier` 2026-09-01; that branch is now historical). Cold-start: read this, then `docs/handoff/2026-08-31-sol-handoff.md` for deep history.*
 
-**Updated:** 2026-09-26 (Phase 0b FAIL, G34 parked; G33 UI merged; G32 closed; G31 resolved A+C 2026-09-25) · earlier 2026-09-24 (Phase-0 exit FAIL; G31 parked; G29 accepted 2026-09-23; G28 merged — V1.2.1 backlog CLOSED; V1.3 plan written; director hand-over to Astra prepared; trail rows `validation-launch` of 2026-09-19 → `g28-merge`) · **Updated by:** Astra (Phase-0 launch; prior closeout Fable)
+**Updated:** 2026-10-22 closeout (state as of 2026-09-29: V1.3 stopped G34 A+B; G35/G36 open; popgen merged ece94f5; M3 destination fix accepted f080ed7) · 2026-09-26 (Phase 0b FAIL, G34 parked; G33 UI merged; G32 closed; G31 resolved A+C 2026-09-25) · earlier 2026-09-24 (Phase-0 exit FAIL; G31 parked; G29 accepted 2026-09-23; G28 merged — V1.2.1 backlog CLOSED; V1.3 plan written; director hand-over to Astra prepared; trail rows `validation-launch` of 2026-09-19 → `g28-merge`) · **Updated by:** Astra (Phase-0 launch; prior closeout Fable)
 
 ## Where the project is
 

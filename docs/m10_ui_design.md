@@ -1,5 +1,7 @@
 # M10 interactive application — UI/UX design
 
+> **2026-09-26: superseded visually.** The UI was redesigned to the Harbour (dark) / Notebook (light) system plus a Runs & evidence page. Spec: `docs/ui/2026-09-25-jos-redesign-spec.md`; merged to main at `862e440` (G33). The colours, tokens and layout below describe the earlier M10 design. The API-gap and contract notes remain valid.
+
 Status: M10.2 implementation PASS; independent final audit pending.
 Verified backend baseline: current M9 artifact/API contracts. Interactive mockup:
 <https://claude.ai/code/artifact/bbcad36a-b4bf-4936-a6a3-d5bf84a359b1>
