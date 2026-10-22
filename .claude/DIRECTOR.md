@@ -23,6 +23,8 @@ Budgets per job: 3 implementation runs, 2 peer consults (6.1-Sol@high), unless S
 
 ## Repo-specific hard rules (from handoff §18 and §2 — binding)
 
+- **Current status phrase (2026-10-22, G35-B ruling condition 6):** "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run". Real-data fitting STOPPED (G34 A+B). Update this line only when a G35-B campaign completes (A9 vocabulary).
+
 - **Released state (2026-09-01):** `main` = tag `jos-v1.1.0` = `e502ebfd366743db8ecbb65f580159bfa1d2a70c` + state-layer commits. Tags `jos-v1.0.0` (`9e9ce3abc4201cd8303c723015462d21ca237800`) and `jos-v1.1.0` are immutable. Code reaches `main` only by Steven's SHA-first merge; agents never merge code or tag by default. The 2026-09-01 G3 merge was executed by an agent on a one-time explicit chat instruction and is not a standing authorization.
 - Any release candidate under audit is immutable while the audit is pending; a new head voids the verdict.
 - **Forward scope authority:** `docs/audits/2026-09-01-solpro-deep-audit-BLOCKED.md` §9–§11 (V1.2 evidence foundation → V1.2.1 synthetic recovery → V1.3 first calibration → V1.3.1 → V1.4 → V2). §11's cut list is binding. Calibration never happens in the same milestone as the evidence foundation.
