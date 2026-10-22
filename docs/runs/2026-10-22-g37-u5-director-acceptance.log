@@ -1,0 +1,22 @@
+== HEAD 1224c55e491a0fd49c738c09f048ccf367bc9a31 + working changes
+ src/jersey_outbreak/g35b_constants.py    |   2 +
+ src/jersey_outbreak/g35b_design_study.py | 770 ++++++++++++++++++++++++++++++-
+ tests/test_g35b_design_study.py          | 610 +++++++++++++++++++++++-
+ 3 files changed, 1373 insertions(+), 9 deletions(-)
+== dry-run g35b
+e5919d2b9e70cea09b8c49cb8f73ba6d187bf2403462b3dc11549c55dd094ce5  -
+== dry-run p0
+198 59 599 8
+== dry-run p0b
+1334 107 4007 8
+== pytest focused
+281 passed in 390.36s (0:06:30)
+== ruff
+All checks passed!
+366 files already formatted
+== mypy
+Success: no issues found in 2 source files
+== protected
+ M src/jersey_outbreak/g35b_constants.py
+ M src/jersey_outbreak/g35b_design_study.py
+ M tests/test_g35b_design_study.py
