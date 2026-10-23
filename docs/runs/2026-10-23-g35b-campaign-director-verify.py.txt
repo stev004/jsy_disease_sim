@@ -1,0 +1,42 @@
+import hashlib
+import json
+import os
+import stat
+import sys
+from pathlib import Path
+
+out = Path(sys.argv[1])
+# 1) independent SHA256SUMS verification (not the harness's verifier)
+lines = (out / "SHA256SUMS").read_text().splitlines()
+listed = {}
+for line in lines:
+    digest, rel = line.split("  ", 1)
+    listed[rel] = digest
+actual_files = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file() and p.name != "SHA256SUMS"}
+bad = [r for r, d in listed.items() if hashlib.sha256((out / r).read_bytes()).hexdigest() != d]
+print("files listed", len(listed), "files on disk", len(actual_files), "set equal", set(listed) == actual_files, "mismatches", len(bad))
+writable = [p for p in [out, *out.rglob("*")] if os.stat(p).st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)]
+print("writable entries", len(writable))
+print("SHA256SUMS sha256", hashlib.sha256((out / "SHA256SUMS").read_bytes()).hexdigest())
+size = sum(p.stat().st_size for p in out.rglob("*") if p.is_file())
+print("bundle bytes", size)
+s = json.loads((out / "campaign_summary.json").read_text())
+print("software_status", s.get("software_status"))
+print("status_phrase", s.get("status_phrase"))
+for arm, a in s["arms"].items():
+    failed = [k for k, v in a["predicates"].items() if not v]
+    print(f"ARM {arm}: {a['status']} failed_predicates={failed}")
+print("readings", json.dumps(s.get("readings"), indent=1))
+print("overall_reading", json.dumps(s.get("overall_reading"), indent=1))
+mw = s["measured_work"]
+print("measured_equals_planned", mw["total"]["measured_equals_planned"], "gate", mw["gate_loss_evaluations"], "desc", mw["descriptive_loss_evaluations"])
+print("campaign_wall_time_seconds", round(s["campaign_wall_time_seconds"], 1))
+for arm in ("B", "arm_i", "arm_ii", "arm_iii"):
+    ev = json.loads((out / arm / "recovery_evaluation.json").read_text())
+    print(arm, "hits", ev["hits"], "joint", ev["joint_hits"], "boundary", ev["boundary_counts"], "bias", ev["mean_bias"])
+d = json.loads((out / "arm_i" / "g35b_i_descriptives.json").read_text())
+print("arm_i four-batch offset agreement count", d.get("four_batch_offset_agreement_count"))
+d2 = json.loads((out / "arm_ii" / "g35b_ii_descriptives.json").read_text())
+print("arm_ii", d2.get("factor_delivered"), "prefix identical", sum(t["prefix_identity"]["result"] == "identical" for t in d2["targets"]))
+d3 = json.loads((out / "arm_iii" / "g35b_iii_descriptives.json").read_text())
+print("arm_iii premise met", sum(t["n_criterion_premise_met"] for t in d3["targets"]), "/10")

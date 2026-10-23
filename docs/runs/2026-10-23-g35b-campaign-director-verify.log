@@ -1,0 +1,27 @@
+files listed 13927 files on disk 13927 set equal True mismatches 0
+writable entries 0
+SHA256SUMS sha256 e6649a4b32289ad32cec7862ed79ea75a5123d0231178bebf0db78f0fd54c8fc
+bundle bytes 103716527
+software_status PASS
+status_phrase Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL
+ARM B: FAIL failed_predicates=['5_dimension_hits', '8_boundaries']
+ARM i: PASS failed_predicates=[]
+ARM ii: FAIL failed_predicates=['5_dimension_hits', '6_joint_hits']
+ARM iii: FAIL failed_predicates=['5_dimension_hits', '8_boundaries']
+readings {
+ "i": "Factor X, at the declared level, coincided with four-dimensional recovery in this one synthetic campaign. Screening result only. Three arms raise the chance that at least one passes when no factor matters. Thresholds are not adjusted, because that would require numbers not justified independently of Phase 0b. Instead, a PASS reading is screening evidence only. Any later decision relying on it requires Steven's decision and a new owner-ruled, fresh-seed confirmatory predeclaration.",
+ "ii": "Factor X alone, at the declared level, did not produce recovery. Arms (ii)/(iii): that factor did not break the ridge at this level.",
+ "iii": "Factor X alone, at the declared level, did not produce recovery. Arms (ii)/(iii): that factor did not break the ridge at this level."
+}
+overall_reading {
+ "i": "Factor X, at the declared level, coincided with four-dimensional recovery in this one synthetic campaign. Screening result only. Three arms raise the chance that at least one passes when no factor matters. Thresholds are not adjusted, because that would require numbers not justified independently of Phase 0b. Instead, a PASS reading is screening evidence only. Any later decision relying on it requires Steven's decision and a new owner-ruled, fresh-seed confirmatory predeclaration."
+}
+measured_equals_planned True gate 25000 desc 31250
+campaign_wall_time_seconds 1577.1
+B hits {'asymptomatic_detection_probability': 10, 'beta': 10, 'inoculation_day_offset': 7, 'symptomatic_detection_probability': 9} joint 7 boundary {'asymptomatic_detection_probability': 0, 'beta': 0, 'inoculation_day_offset': 3, 'symptomatic_detection_probability': 0} bias {'asymptomatic_detection_probability': '-0.0075', 'beta': '0.002', 'inoculation_day_offset': '0.1', 'symptomatic_detection_probability': '-0.0125'}
+arm_i hits {'asymptomatic_detection_probability': 10, 'beta': 10, 'inoculation_day_offset': 8, 'symptomatic_detection_probability': 8} joint 6 boundary {'asymptomatic_detection_probability': 0, 'beta': 0, 'inoculation_day_offset': 2, 'symptomatic_detection_probability': 0} bias {'asymptomatic_detection_probability': '0.00', 'beta': '0.00', 'inoculation_day_offset': '-0.2', 'symptomatic_detection_probability': '0.00'}
+arm_ii hits {'asymptomatic_detection_probability': 9, 'beta': 10, 'inoculation_day_offset': 5, 'symptomatic_detection_probability': 9} joint 5 boundary {'asymptomatic_detection_probability': 0, 'beta': 0, 'inoculation_day_offset': 2, 'symptomatic_detection_probability': 0} bias {'asymptomatic_detection_probability': '-0.0075', 'beta': '0.002', 'inoculation_day_offset': '0.4', 'symptomatic_detection_probability': '-0.0125'}
+arm_iii hits {'asymptomatic_detection_probability': 9, 'beta': 9, 'inoculation_day_offset': 7, 'symptomatic_detection_probability': 9} joint 7 boundary {'asymptomatic_detection_probability': 0, 'beta': 0, 'inoculation_day_offset': 3, 'symptomatic_detection_probability': 0} bias {'asymptomatic_detection_probability': '-0.0075', 'beta': '0.002', 'inoculation_day_offset': '0.1', 'symptomatic_detection_probability': '-0.0125'}
+arm_i four-batch offset agreement count 0
+arm_ii factor delivered for 10/10 targets prefix identical 10
+arm_iii premise met 10 /10
