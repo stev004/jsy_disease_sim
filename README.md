@@ -13,7 +13,7 @@ is `cf4515381e0ccc1f7eb8762894b237518f159c78` (2026-10-22, G36 M3 destination fi
 
 V1.3 is stopped before any real-data fitting (owner ruling G34, 2026-09-29). Its synthetic-recovery gate failed twice: Phase 0 on 2026-09-24 and Phase 0b on 2026-09-26. Both times the inoculation offset was not recovered; beta and detection were. An exploratory diagnostic
 found a joint beta–timing–detection trade-off plus Monte-Carlo scatter. G35 (2026-10-22) chose a synthetic
-successor design study (no real data); its predeclaration is frozen and its harness is implemented and independently reviewed on a branch; merging (G38) and the single campaign (G39) await the owner. The redesigned UI (Harbour/Notebook themes plus a Runs &
+successor design study (no real data); its harness is merged and its single campaign ran on 2026-10-23 (B FAIL, i PASS, ii FAIL, iii FAIL). That is screening evidence only, and real-data fitting stays stopped. The independent exit audit (G40) is pending. The redesigned UI (Harbour/Notebook themes plus a Runs &
 evidence page) is on main. See the [current run](.claude/RUN.md),
 [live plan](docs/research/v1_3/2026-09-21-v13-plan.md), and
 [current state](.claude/FRONTIER.md). The living backlog is

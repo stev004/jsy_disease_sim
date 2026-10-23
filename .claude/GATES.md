@@ -4,9 +4,22 @@
 
 ## Open
 
-**2026-10-22:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run; real-data fitting STOPPED (G34 A+B). G37 DONE (implementation reviewed PASS at `0c68982`). **G38 OPEN** (merge the G35-B harness; default HOLD). **G39 OPEN** (authorize the one G35-B campaign; default HOLD). G5 open.
+**2026-10-23:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (exit audit pending, not final); real-data fitting STOPPED (G34 A+B). G38 MERGED (`0c9c371`), G39 RUN. **G40 OPEN** (exit-audit seat; default HOLD). G5 open.
 
-### G38 — Merge the G35-B study harness to main?
+### G40 — Exit-audit seat for the G35-B campaign (§12 step 9)
+- **Why it's open:** frozen §12 step 9 and clarification 2 require a fresh, independent exit audit by a model that is neither the implementer (gpt-6.1-sol) nor the step-7 reviewer (gpt-6-astra). Opus 5.5 is the natural seat, but the `claude` CLI is not logged in on Windows or WSL, and logging in is Steven's credential step. Until the audit files, the G35-B results are **not final**.
+- **Options:**
+  - **A (recommended):** Steven runs `claude /login` in WSL. The director then dispatches the Opus 5.5 @ high exit audit, recomputing everything from the bundle.
+  - **B:** an owner clarification names another non-author, non-reviewer seat.
+- **Default on no answer:** HOLD. The results stay labelled "exit audit pending".
+
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G38 — RESOLVED 2026-10-23: MERGED (Steven, chat: "G38: merge codex/g35b-design-study @ 0c68982 SHA-first with the full mirror on the merge commit") — Merge the G35-B study harness to main?
 - **What:** branch `codex/g35b-design-study` @ `0c689825675aba8d414b6c7bd41951fc97aba6fc` adds only `src/jersey_outbreak/g35b_design_study.py`, `src/jersey_outbreak/g35b_constants.py`, `configs/calibration/v13_g35b_design_study.yaml` and `tests/test_g35b_design_study.py` (research harness, no protected module touched; `phase0_campaign.py` byte-identical).
 - **Evidence:**
   - step-7 re-review PASS: `docs/audits/2026-10-22-g37-implementation-rereview-astra-PASS.md`;
@@ -15,8 +28,9 @@
 - **Command (SHA-first):** `git -C ~/jsy_disease_sim merge --no-ff 0c689825675aba8d414b6c7bd41951fc97aba6fc`, with the full verify mirror on the merge commit filed before the push.
 - **Note:** not needed to run the campaign. G39 can run from the reviewed branch head; merging first is tidier.
 - **Default on no answer:** HOLD.
+- **Outcome:** merge `0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8`. The full mirror on the merge commit passed (705 passed, 4 skipped; `docs/runs/2026-10-23-g38-merge-mirror.log`). It reached GitHub after a recovery: the first script built the merge on a stale local main and recorded a push that was rejected (trail row `g38-merged`, superseded by `g38-merge-correction`). The docs-only origin commit `3ddbb61` was merged in with the code tree asserted unchanged. No force push and no reset.
 
-### G39 — Authorize the one G35-B all-arms campaign (§12 step 8)?
+### G39 — RESOLVED 2026-10-23: RUN (Steven, chat: "G39: then authorize the one G35-B campaign at the merge commit") — Authorize the one G35-B all-arms campaign (§12 step 8)?
 - **What:** `python -m jersey_outbreak.g35b_design_study execute` at the reviewed head (`0c689825675aba8d414b6c7bd41951fc97aba6fc`, or the G38 merge commit). Scale: 22 builds, 395 latent calls (CI scale, 30/49-day runs), 9,395 transforms, 85 serosurvey samples. Rough wall time is 30–60 min (unmeasured; disclosed, never capped). Bundle ≈ 70–120 MB.
 - **Rules:**
   - one campaign only (§12);
@@ -26,15 +40,16 @@
   - real-data fitting stays STOPPED whatever the result (A1).
 - **Then:** a fresh, independent exit audit (§12 step 9) by a model that is neither the implementer (gpt-6.1-sol) nor the step-7 reviewer (gpt-6-astra). That means Opus 5.5 once the claude CLI is authenticated; otherwise the owner rules on routing.
 - **Default on no answer:** HOLD.
+- **Outcome:** the campaign ran at `0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8` from 23:42 to 00:09Z (1,577 s), rc 0, software PASS.
+  - **Status:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL.
+  - **Failed predicates:** B 5 and 8; ii 5 and 6; iii 5 and 8.
+  - **Arm i:** passed with every offset-related count exactly at its threshold (offset hits 8/10, joint 6/10, offset boundary 2/10, symptomatic hits 8/10). Its four-batch offset agreement was 0/10 (descriptive only).
+  - **Bundle:** `/home/steven/jos-g35b-campaign-20261022T234254Z`, 13,927 files, read-only. SHA256SUMS sha256 `e6649a4b32289ad32cec7862ed79ea75a5123d0231178bebf0db78f0fd54c8fc`, verified independently.
+  - **Evidence:** `docs/runs/2026-10-23-g35b-campaign-*`.
 
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
 
 ### G37 — RESOLVED 2026-10-22: A (Steven, chat: "Authorize G37: run the U1-U5 implementation … plus the independent review. No campaign yet.") — Authorize G35-B implementation (U1–U5)?
-- **Context:** the G35-B predeclaration is FROZEN at `3972190bd7cde523860fe303b41427c1c95c57eb` (`docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, sha256 `2e8358ab…216e`; trail row `g35b-frozen`). Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run.
+- **Context:** the G35-B predeclaration is FROZEN at `3972190bd7cde523860fe303b41427c1c95c57eb` (`docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, sha256 `2e8358ab…216e`; trail row `g35b-frozen`). Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL.
 - **What is asked:** five bounded units, all `Class: numerical`:
   - U1 standalone harness + baseline;
   - U2 replicates arm;

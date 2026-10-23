@@ -1,5 +1,11 @@
-# RUN — nothing in flight. Foreman run `g37-impl` COMPLETE (predicate met). Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: not run.
+# RUN — nothing in flight. G38 merged, G39 campaign complete; exit audit (G40) pending. Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (not final).
 
+**2026-10-23 — G38 + G39 (Steven):**
+- **G38 merge:** `0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8`. Mirror PASS 705/4. It reached GitHub after a recovery: the bash `( step ) ||` pattern disabled `set -e`. Trail rows `g38-merged` and `g38-merge-correction`.
+- **G39 campaign:** at `0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8`, rc 0, 1,577 s, bundle `/home/steven/jos-g35b-campaign-20261022T234254Z` (read-only; SHA256SUMS sha256 `e6649a4b…c8fc`, verified independently). Gate lines: B FAIL, i PASS, ii FAIL, iii FAIL. Arm i's PASS sits exactly at every offset threshold, and its four-batch offset agreement is 0/10. Trail row `g39-campaign-done`.
+- **Resume recipe:** on G40-A (the CLI is authenticated), dispatch a fresh Opus 5.5 @ high exit audit. It recomputes every arm's predicates from the bundle, checks the readings against frozen §7.4/A8 and clarifications 1–2, and returns `JOS G35-B CAMPAIGN EXIT AUDIT: CONFIRMED | DISCREPANCY | VOID`. File it, log it, and update the status phrase to final. Nothing else runs on G35-B: there is no second campaign, and real-data fitting stays STOPPED.
+
+**Previous (historical):**
 **Run `g37-impl` (2026-10-22): PREDICATE MET.** U1–U5 on `codex/g35b-design-study` @ `0c689825675aba8d414b6c7bd41951fc97aba6fc`; director full CI mirror PASS (705 passed / 4 skipped); step-7 independent re-review PASS. ts: trail row `g37-rereview-PASS`.
 - **Chain:** each unit was implemented by gpt-6.1-sol @ high (`Class: numerical`; no classifier stops) and kept after director re-acceptance. Real-object smokes were run for U1 (builds of study seeds 82001/82003/82007, outcome-blind) and U3/U4/U5 (simulations only on CI seed 123); there were none for U2 or C1. All four were re-run at the final head and filed in `docs/runs/2026-10-22-g37-director-real-object-smokes.log`.
   - U1 `aafbbb7`, U2 `fe83668`, U3 `6489e26`, U4 `1224c55`, U5 `6ca5253`;
