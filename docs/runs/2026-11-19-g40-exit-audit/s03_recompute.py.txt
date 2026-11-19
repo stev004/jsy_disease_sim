@@ -1,0 +1,383 @@
+"""G40 independent exit-audit recomputation for the G35-B campaign bundle.
+
+Reads only raw per-replicate tables, target tables and serosurvey samples from
+the READ-ONLY bundle; recomputes every loss surface, selection, profile and
+§7.1 predicate from the frozen text; then compares to the bundle's claims.
+No project imports. Pure standard library.
+"""
+import csv
+import json
+import math
+import os
+import sys
+from decimal import Decimal
+
+BUNDLE = "/home/steven/jos-g35b-campaign-20261022T234254Z"
+OUT = "/tmp/g40audit/recompute_results.json"
+
+# ---- frozen text §3 table (decimal strings, typed from the predeclaration) ----
+DIMS = [
+    # name, truth, grid, tolerance, bias limit
+    ("beta", "0.08", ["0.04", "0.06", "0.08", "0.10", "0.12"], "0.02", "0.01"),
+    ("inoculation_day_offset", "2", ["0", "1", "2", "3", "4"], "1", "0.5"),
+    ("symptomatic_detection_probability", "0.75", ["0.50", "0.625", "0.75", "0.875", "1.00"], "0.125", "0.0625"),
+    ("asymptomatic_detection_probability", "0.25", ["0.10", "0.175", "0.25", "0.325", "0.40"], "0.075", "0.0375"),
+]
+DIM_NAMES = [d[0] for d in DIMS]
+TARGETS = list(range(82001, 82011))
+BATCH = {
+    "A": [83001, 83002, 83003],
+    "B_prime": [83004, 83005, 83006],
+    "C_prime": [83007, 83008, 83009],
+    "D_prime": [83010, 83011, 83012],
+}
+START_DATES_30 = 34
+H = 49
+SERO_N = 400
+
+
+def to_dec(name, value):
+    """Map a float grid value to its declared decimal string (exact)."""
+    for d in DIMS:
+        if d[0] == name:
+            matches = [s for s in d[2] if float(s) == float(value)]
+            if len(matches) != 1:
+                raise SystemExit(f"value {value!r} not on declared grid for {name}")
+            return Decimal(matches[0])
+    raise KeyError(name)
+
+
+def cell_key(cell):
+    return tuple(float(cell[n]) for n in DIM_NAMES)
+
+
+def load_json(path):
+    with open(path) as fh:
+        return json.load(fh)
+
+
+def load_arm_tables(arm_dir):
+    targets = {}
+    for s in TARGETS:
+        targets[s] = load_json(os.path.join(arm_dir, "target_tables", f"{s}.json"))
+    lib = {}  # cell_key -> {seed: record}
+    cdir = os.path.join(arm_dir, "candidate_tables")
+    for idx in os.listdir(cdir):
+        for fn in os.listdir(os.path.join(cdir, idx)):
+            rec = load_json(os.path.join(cdir, idx, fn))
+            k = cell_key(rec["cell"])
+            seed = int(fn.split(".")[0])
+            if seed != rec["process_seed"]:
+                raise SystemExit(f"file/seed mismatch {idx}/{fn}")
+            lib.setdefault(k, {})
+            if seed in lib[k]:
+                raise SystemExit(f"duplicate replicate {k} {seed}")
+            lib[k][seed] = rec
+    return targets, lib
+
+
+def channels(table):
+    return [table["symptomatic"], table["asymptomatic"]]
+
+
+def rep_sum(target, preds, T):
+    """Σ_c Σ_t (sqrt(y+3/8) - mean_j sqrt(x_j+3/8))^2 in Phase-0 order (sym, asym)."""
+    tch = channels(target)
+    pch = [channels(p) for p in preds]
+    R = len(preds)
+    total = 0.0
+    for c in range(2):
+        if len(tch[c]) != T:
+            raise SystemExit("target T mismatch")
+        for t in range(T):
+            m = sum(math.sqrt(p[c][t] + 3.0 / 8.0) for p in pch) / R
+            total += (math.sqrt(tch[c][t] + 3.0 / 8.0) - m) ** 2
+    return total
+
+
+def anscombe_z(k, n):
+    return math.sqrt(n + 0.5) * math.asin(math.sqrt((k + 3.0 / 8.0) / (n + 3.0 / 4.0)))
+
+
+def fit(surface):
+    """surface: dict cell_key -> objective. Frozen §6 rules."""
+    if len(surface) != 625:
+        raise SystemExit("surface not 625")
+    L_min = min(surface.values())
+    tau = 1e-12 * max(1.0, L_min)
+    minimizers = [k for k, v in surface.items() if abs(v - L_min) <= tau]
+    tied = len(minimizers) > 1
+    selected = None if tied else minimizers[0]
+    profiles = {}
+    for i, (name, truth, grid, tol, bias) in enumerate(DIMS):
+        vals = [float(g) for g in grid]
+        P = [min(v for k, v in surface.items() if k[i] == gv) for gv in vals]
+        Pmin = min(P)
+        n_at_min = sum(1 for p in P if abs(p - Pmin) <= tau)
+        above = sorted(p for p in P if p > Pmin + tau)
+        second = above[0] if above else None
+        gap = None if second is None else (second - Pmin) / max(Pmin, 1e-12)
+        ident = n_at_min == 1 and gap is not None and gap >= 0.05
+        profiles[name] = {
+            "P": P, "Pmin": Pmin, "argmin": vals[P.index(Pmin)], "unique": n_at_min == 1,
+            "second": second, "gap": gap, "identified": ident,
+        }
+    return {"L_min": L_min, "tau": tau, "tied": tied, "selected": selected,
+            "minimizers": minimizers, "profiles": profiles}
+
+
+def predicates(fits):
+    """§7.1 predicates 4-8 with exact integer and decimal arithmetic."""
+    hits = {n: 0 for n in DIM_NAMES}
+    boundary = {n: 0 for n in DIM_NAMES}
+    errs = {n: [] for n in DIM_NAMES}
+    joint = 0
+    per_target = {}
+    for s in TARGETS:
+        f = fits[s]
+        all_hit = True
+        row = {}
+        for i, (name, truth, grid, tol, bias) in enumerate(DIMS):
+            sel = f["selected"]
+            if sel is None:
+                err = None
+                within = False
+                atb = False
+            else:
+                est = to_dec(name, sel[i])
+                err = est - Decimal(truth)
+                within = abs(err) <= Decimal(tol)
+                atb = est in (Decimal(grid[0]), Decimal(grid[-1]))
+                errs[name].append(err)
+            ident = (not f["tied"]) and f["profiles"][name]["identified"]
+            hit = ident and within
+            hits[name] += int(hit)
+            boundary[name] += int(atb)
+            all_hit = all_hit and hit
+            row[name] = {"est": None if sel is None else str(to_dec(name, sel[i])),
+                         "err": None if err is None else str(err),
+                         "identified": ident, "within": within, "hit": hit,
+                         "boundary": atb, "gap": f["profiles"][name]["gap"]}
+        joint += int(all_hit)
+        row["joint"] = all_hit
+        row["tied"] = f["tied"]
+        per_target[s] = row
+    mean_bias = {n: (sum(errs[n], Decimal(0)) / Decimal(10) if len(errs[n]) == 10 else None) for n in DIM_NAMES}
+    p = {
+        "4_no_global_tie": all(not fits[s]["tied"] for s in TARGETS),
+        "5_dimension_hits": all(hits[n] * 5 >= 4 * 10 for n in DIM_NAMES),
+        "6_joint_hits": joint * 5 >= 3 * 10,
+        "7_bias": all(mean_bias[n] is not None and abs(mean_bias[n]) <= Decimal(d[4]) for n, d in zip(DIM_NAMES, DIMS)),
+        "8_boundaries": all(boundary[n] * 5 <= 1 * 10 for n in DIM_NAMES),
+    }
+    return {"hits": hits, "boundary": boundary, "joint": joint,
+            "mean_bias": {n: (None if v is None else str(v)) for n, v in mean_bias.items()},
+            "predicates": p, "per_target": per_target}
+
+
+def compare_surface(arm_dir, sub, s, surface):
+    """Compare recomputed surface with the stored blind estimate surface."""
+    path = os.path.join(arm_dir, sub, f"{s}.json")
+    blind = load_json(path)
+    stored = {cell_key(r): r["objective"] for r in blind["loss_surface"]}
+    if set(stored) != set(surface):
+        raise SystemExit(f"cell set mismatch {path}")
+    maxdiff = max(abs(stored[k] - surface[k]) for k in surface)
+    exact = sum(1 for k in surface if stored[k] == surface[k])
+    stored_sel = None if blind["selected"] is None else cell_key(blind["selected"])
+    return blind, stored, maxdiff, exact, stored_sel
+
+
+def truth_viability(target_table):
+    sym = sum(target_table["symptomatic"])
+    asym = sum(target_table["asymptomatic"])
+    nz = sum(1 for a, b in zip(target_table["symptomatic"], target_table["asymptomatic"]) if a + b > 0)
+    return {"sym_reports": sym, "asym_reports": asym, "nonzero_dates": nz,
+            "table_part_ok": sym > 0 and asym > 0 and nz >= 3}
+
+
+def run_arm(label, arm_dir, blind_sub, T, R_seeds, sero=None):
+    targets, lib = load_arm_tables(arm_dir)
+    # completeness
+    complete_cells = len(lib) == 625
+    expected_seeds = sorted(R_seeds)
+    reps_ok = all(sorted(v) == expected_seeds for v in lib.values())
+    calendars_ok = all(len(t["dates"]) == T for t in targets.values()) and all(
+        r["table"]["dates"] == targets[TARGETS[0]]["dates"] for v in lib.values() for r in v.values())
+    fits, comps = {}, {}
+    sero_terms = {}
+    for s in TARGETS:
+        surface = {}
+        for k, reps in lib.items():
+            preds = [reps[seed]["table"] for seed in R_seeds]
+            total = rep_sum(targets[s], preds, T)
+            if sero is not None:
+                zt = anscombe_z(sero["target_k"][s], SERO_N)
+                zbar = sum(anscombe_z(sero["cand_k"][(seed, k[0], k[1])], SERO_N) for seed in R_seeds) / len(R_seeds)
+                total = total + (zt - zbar) ** 2
+            surface[k] = total / (2.0 * T)
+        f = fit(surface)
+        fits[s] = f
+        blind, stored, maxdiff, exact, stored_sel = compare_surface(arm_dir, blind_sub, s, surface)
+        # also compute fit on the stored surface (as-claimed) to see whether any decision differs
+        f_stored = fit(stored)
+        comps[s] = {"max_abs_objective_diff": maxdiff, "bit_exact_cells": exact,
+                    "selected_recomputed": f["selected"], "selected_stored": stored_sel,
+                    "selection_agrees": f["selected"] == stored_sel,
+                    "identified_flags_agree": all(
+                        f["profiles"][n]["identified"] == next(p["identified"] for p in blind["profiles"] if p["dimension"] == n)
+                        for n in DIM_NAMES),
+                    "stored_surface_fit_selected": f_stored["selected"],
+                    "stored_minimum": blind["minimum_objective"], "recomputed_minimum": f["L_min"],
+                    "estimate_hash": blind["estimate_hash"]}
+    pred = predicates(fits)
+    tv = {s: truth_viability(targets[s]) for s in TARGETS}
+    return {"label": label, "complete_cells": complete_cells, "replicates_ok": reps_ok,
+            "calendars_ok": calendars_ok, "T": T, "R": len(R_seeds),
+            "fits": {s: {"selected": f["selected"], "tied": f["tied"], "L_min": f["L_min"],
+                         "profiles": f["profiles"]} for s, f in fits.items()},
+            "comparison": comps, "pred": pred, "truth_tables": tv, "lib": lib, "targets": targets}
+
+
+def load_claims(arm_dir, code):
+    ev = load_json(os.path.join(arm_dir, "recovery_evaluation.json"))
+    rows = list(csv.DictReader(open(os.path.join(arm_dir, f"g35b_{code}_recovery.csv"))))
+    return ev, rows
+
+
+def main():
+    os.chdir(BUNDLE)
+    results = {}
+    summary = load_json("campaign_summary.json")
+    # serosurvey inputs
+    ss = load_json("arm_iii/arm_iii/serosurvey_samples.json")
+    target_k, cand_k, sero_issues = {}, {}, []
+    for t in ss["targets"]:
+        k = sum(1 for x in t["ever_infected"] if x is True)
+        if k != t["k"] or t["n"] != SERO_N or len(t["sampled_agent_ids"]) != SERO_N or len(set(t["sampled_agent_ids"])) != SERO_N:
+            sero_issues.append(("target", t["process_seed"]))
+        target_k[t["process_seed"]] = k
+    for c in ss["candidates"]:
+        k = sum(1 for x in c["ever_infected"] if x is True)
+        if k != c["k"] or c["n"] != SERO_N or len(set(c["sampled_agent_ids"])) != SERO_N:
+            sero_issues.append(("cand", c["process_seed"], c["beta"], c["offset"]))
+        cand_k[(c["process_seed"], float(c["beta"]), float(c["offset"]))] = k
+    arms = {
+        "B": ("B", "blind_estimates", 34, BATCH["A"], None, "B"),
+        "i": ("arm_i", "blind_estimates", 34, sum(BATCH.values(), []), None, "i"),
+        "ii": ("arm_ii", "arm_ii/blind_estimates", H + 4, BATCH["A"], None, "ii"),
+        "iii": ("arm_iii", "arm_iii/blind_estimates", 34, BATCH["A"], {"target_k": target_k, "cand_k": cand_k}, "iii"),
+    }
+    store = {}
+    for a, (d, sub, T, seeds, sero, code) in arms.items():
+        r = run_arm(a, d, sub, T, seeds, sero)
+        ev, rows = load_claims(d, code)
+        r["claim_eval"] = ev
+        # per-target CSV claims
+        csv_check = []
+        for row in rows:
+            s = int(row["target_seed"]); n = row["dimension"]
+            mine = r["pred"]["per_target"][s][n]
+            csv_check.append({
+                "seed": s, "dim": n,
+                "est_match": (mine["est"] is None and row["estimate"] in ("", "None")) or (mine["est"] is not None and Decimal(mine["est"]) == to_dec(n, row["estimate"])),
+                "ident_match": str(mine["identified"]) == row["identified"],
+                "within_match": str(mine["within"]) == row["within_tolerance_hit"],
+                "boundary_match": str(mine["boundary"]) == row["selected_at_grid_boundary"],
+                "joint_match": str(r["pred"]["per_target"][s]["joint"]) == row["joint_hit"],
+                "err_match": mine["err"] is not None and Decimal(mine["err"]) == Decimal(row["signed_error"]),
+            })
+        r["csv_rows"] = len(rows)
+        r["csv_all_match"] = all(all(v for k, v in c.items() if k.endswith("_match")) for c in csv_check)
+        r["csv_mismatches"] = [c for c in csv_check if not all(v for k, v in c.items() if k.endswith("_match"))]
+        store[a] = r
+    # print report
+    for a, r in store.items():
+        p = r["pred"]
+        ev = r["claim_eval"]
+        print(f"\n===== ARM {a}  (T={r['T']}, R={r['R']}) =====")
+        print("cells complete:", r["complete_cells"], " replicates per cell exact:", r["replicates_ok"], " calendar ok:", r["calendars_ok"])
+        print("hits:", p["hits"], " claim:", ev["hits"])
+        print("boundary:", p["boundary"], " claim:", ev["boundary_counts"])
+        print("joint:", p["joint"], " claim:", ev["joint_hits"])
+        print("mean bias:", p["mean_bias"], " claim:", ev["mean_bias"])
+        print("predicates 4-8:", p["predicates"])
+        print("claimed predicates:", ev["predicates"], ev["status"])
+        print("csv rows", r["csv_rows"], "all match:", r["csv_all_match"], r["csv_mismatches"][:5])
+        md = max(c["max_abs_objective_diff"] for c in r["comparison"].values())
+        be = min(c["bit_exact_cells"] for c in r["comparison"].values())
+        print("max |objective diff| vs stored:", md, " min bit-exact cells/target:", be)
+        print("selection agrees all:", all(c["selection_agrees"] for c in r["comparison"].values()),
+              " identified flags agree all:", all(c["identified_flags_agree"] for c in r["comparison"].values()))
+        print("per-target: seed | selected (beta,off,sym,asym) | tied | gaps beta/off/sym/asym | joint")
+        for s in TARGETS:
+            f = r["fits"][s]; pt = p["per_target"][s]
+            gaps = "/".join("NA" if pt[n]["gap"] is None else f"{pt[n]['gap']:.4f}" for n in DIM_NAMES)
+            idf = "".join("I" if pt[n]["identified"] else "-" for n in DIM_NAMES)
+            hit = "".join("H" if pt[n]["hit"] else "-" for n in DIM_NAMES)
+            bd = "".join("b" if pt[n]["boundary"] else "." for n in DIM_NAMES)
+            print(f"  {s} | {f['selected']} | {f['tied']} | {gaps} | id {idf} hit {hit} bnd {bd} | joint {pt['joint']}")
+        print("truth tables (predicate-2 table part):", {s: (v["sym_reports"], v["asym_reports"], v["nonzero_dates"], v["table_part_ok"]) for s, v in r["truth_tables"].items()})
+        # closest calls to thresholds
+        near = []
+        for s in TARGETS:
+            for n in DIM_NAMES:
+                g = p["per_target"][s][n]["gap"]
+                if g is not None and abs(g - 0.05) < 0.005:
+                    near.append((s, n, g))
+        print("gaps within 0.005 of 0.05:", near)
+        tied_any = [(s, c["stored_minimum"], c["recomputed_minimum"]) for s, c in r["comparison"].items()]
+    print("\nserosurvey issues:", sero_issues)
+    # Cross-arm byte-sharing checks
+    B, I, II, III = store["B"], store["i"], store["ii"], store["iii"]
+    share = {}
+    share["targets_B_eq_i"] = all(B["targets"][s] == I["targets"][s] for s in TARGETS)
+    share["targets_B_eq_iii"] = all(B["targets"][s] == III["targets"][s] for s in TARGETS)
+    share["candA_B_eq_i"] = all(B["lib"][k][sd]["table"] == I["lib"][k][sd]["table"] and B["lib"][k][sd]["table_sha256"] == I["lib"][k][sd]["table_sha256"] for k in B["lib"] for sd in BATCH["A"])
+    share["candA_B_eq_iii"] = all(B["lib"][k][sd]["table"] == III["lib"][k][sd]["table"] for k in B["lib"] for sd in BATCH["A"])
+    # arm ii prefix: report dates <= 2025-02-04 equal B
+    pref = []
+    for s in TARGETS:
+        bt, it = B["targets"][s], II["targets"][s]
+        n = bt["dates"].index("2025-02-04") + 1
+        pref.append(it["dates"][:n] == bt["dates"][:n] and it["symptomatic"][:n] == bt["symptomatic"][:n] and it["asymptomatic"][:n] == bt["asymptomatic"][:n])
+    share["ii_target_report_prefix_eq_B_through_2025-02-04"] = all(pref)
+    cpref = 0; ctot = 0
+    for k in B["lib"]:
+        for sd in BATCH["A"]:
+            bt = B["lib"][k][sd]["table"]; it = II["lib"][k][sd]["table"]
+            n = bt["dates"].index("2025-02-04") + 1
+            ctot += 1
+            cpref += int(it["symptomatic"][:n] == bt["symptomatic"][:n] and it["asymptomatic"][:n] == bt["asymptomatic"][:n])
+    share["ii_candidate_prefix_eq_B"] = f"{cpref}/{ctot}"
+    share["ii_dates"] = (II["targets"][82001]["dates"][0], II["targets"][82001]["dates"][-1], len(II["targets"][82001]["dates"]))
+    # candidate run configs: duration, seeds, obs ids
+    dur = {}
+    for a, r in store.items():
+        ds = set(); obs = set(); bad = []
+        for k, reps in r["lib"].items():
+            for sd, rec in reps.items():
+                ds.add(rec["run_config"]["duration_days"])
+                obs.add((sd, rec["observation_seed"], rec["observation_config"]["observation_config_id"], rec["batch"]))
+                oc = rec["observation_config"]["parameters"]
+                if float(oc["symptomatic_detection_probability"]["value"]) != k[2] or float(oc["asymptomatic_detection_probability"]["value"]) != k[3]:
+                    bad.append(("det", k, sd))
+                if float(rec["run_config"]["beta"]) != k[0]:
+                    bad.append(("beta", k, sd))
+                sched = rec["run_config"]["import_schedule"]
+                exp_date = "2025-01-%02d" % (6 + int(k[1]))
+                if sched != {exp_date: 10} or rec["run_config"]["import_rate_per_day"] != 0.0 or rec["run_config"]["initial_seed_count"] != 0:
+                    bad.append(("imports", k, sd, sched))
+        dur[a] = {"durations": sorted(ds), "obs_pairs": sorted(obs), "bad": bad[:5], "n_bad": len(bad)}
+    share["candidate_config"] = dur
+    print("\nSHARING / CONFIG:", json.dumps(share, indent=1, default=str))
+    out = {a: {"pred": r["pred"], "claim": r["claim_eval"], "csv_all_match": r["csv_all_match"],
+               "comparison": r["comparison"]} for a, r in store.items()}
+    out["share"] = share
+    with open(OUT, "w") as fh:
+        json.dump(out, fh, indent=1, default=str)
+    globals()["STORE"] = store
+
+
+if __name__ == "__main__":
+    main()

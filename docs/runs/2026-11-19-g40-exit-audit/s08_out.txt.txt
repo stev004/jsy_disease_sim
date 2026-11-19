@@ -1,0 +1,5 @@
+B readback entries 10 hash failures [] | gate hashes == CSV: True | latest blind write before CSV/eval: True (1254.4s)
+arm_i readback entries 60 hash failures [] | gate hashes == CSV: True | latest blind write before CSV/eval: True (387.7s)
+arm_ii readback entries 10 hash failures [] | gate hashes == CSV: True | latest blind write before CSV/eval: True (5.7s)
+arm_iii readback entries 10 hash failures [] | gate hashes == CSV: True | latest blind write before CSV/eval: True (5.3s)
+all-arm blind records written before first truth join (mtime): True gap 3.0s

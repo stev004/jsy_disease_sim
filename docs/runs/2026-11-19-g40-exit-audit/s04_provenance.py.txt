@@ -1,0 +1,245 @@
+"""G40 audit: seed ledger, truth diagnostics, lineage hashes, frozen inputs,
+serosurvey sampling order, arm-(i)/(ii)/(iii) descriptives, readings text,
+float-margin robustness. Run with the project uv env (needs pyarrow)."""
+import csv
+import glob
+import hashlib
+import json
+import math
+import os
+import subprocess
+import sys
+
+sys.path.insert(0, "/tmp/g40audit")
+import s03_recompute as R  # noqa: E402
+
+BUNDLE = R.BUNDLE
+os.chdir(BUNDLE)
+J = R.load_json
+
+print("#### 1. seed ledger")
+ledger = J("seed_ledger.json")
+print("rows:", len(ledger))
+from collections import Counter
+print(Counter((r["arm"], r["role"], r["batch"]) for r in ledger))
+exp_targets = [(82000 + i, 92000 + i, 94000 + i) for i in range(1, 11)]
+exp_cand = [(83000 + i, 93000 + i) for i in range(1, 13)]
+proc = sorted({r["process_seed"] for r in ledger})
+obs = sorted({r["observation_seed"] for r in ledger if r["observation_seed"] is not None})
+sero = sorted({r["serosurvey_seed"] for r in ledger if r.get("serosurvey_seed") is not None})
+print("process seeds:", proc)
+print("obs seeds:", obs)
+print("sero seeds:", sero)
+bad = []
+for r in ledger:
+    ps = r["process_seed"]
+    if 82001 <= ps <= 82010:
+        if r["observation_seed"] != ps + 10000 or r["observation_config_id"] != "v13-g35b-target":
+            bad.append(r)
+        if r["arm"] == "iii" and (r["serosurvey_seed"] != ps + 12000 or r["serosurvey_config_id"] != "v13-g35b-sero-target"):
+            bad.append(r)
+    elif 83001 <= ps <= 83012:
+        if r["observation_seed"] != ps + 10000 or r["observation_config_id"] != "v13-g35b-fit":
+            bad.append(r)
+        if r["arm"] == "iii" and (r["serosurvey_seed"] != ps + 12000 or r["serosurvey_config_id"] != "v13-g35b-sero-fit"):
+            bad.append(r)
+    else:
+        bad.append(r)
+print("ledger pairing violations:", bad)
+earlier = set(range(42001, 42006)) | set(range(52001, 52006)) | set(range(43001, 43004)) | set(range(53001, 53004)) | \
+    set(range(62001, 62006)) | set(range(72001, 72006)) | set(range(63001, 63004)) | set(range(73001, 73004)) | \
+    set(range(81001, 81007)) | set(range(91001, 91004))
+allseeds = set(proc) | set(obs) | set(sero)
+print("overlap with earlier/probe sets:", sorted(allseeds & earlier))
+print("reserves used:", sorted(s for s in proc if s in set(range(82011, 82016)) | set(range(83013, 83018))))
+print("ledger keys sample:", ledger[0])
+
+print("\n#### 2. target provenance / truth diagnostics (predicates 2,3,9)")
+pre = J("frozen_inputs/2026-10-22-g35b-seed-precheck.json")
+# find lineage hashes in precheck record
+def find_seed_records(node, out):
+    if isinstance(node, dict):
+        if "process_seed" in node or "seed" in node:
+            out.append(node)
+        for v in node.values():
+            find_seed_records(v, out)
+    elif isinstance(node, list):
+        for v in node:
+            find_seed_records(v, out)
+recs = []
+find_seed_records(pre, recs)
+print("precheck top keys:", list(pre)[:10] if isinstance(pre, dict) else type(pre))
+FROZEN_LINEAGE = {}
+for line in open("frozen_inputs/2026-10-22-g35b-predeclaration.md", encoding="utf-8"):
+    if line.startswith("| `8") and "BUILT" in line and "FAILED" not in line:
+        cols = [c.strip().strip("`") for c in line.strip().strip("|").split("|")]
+        FROZEN_LINEAGE[int(cols[0])] = (cols[3], cols[4], cols[5], cols[6])
+print("frozen lineage rows parsed:", len(FROZEN_LINEAGE))
+for arm, d in [("B", "B"), ("i", "arm_i"), ("ii", "arm_ii"), ("iii", "arm_iii")]:
+    prov = J(f"{d}/target_provenance.json")
+    rows = list(csv.DictReader(open(f"{d}/g35b_{arm}_recovery.csv")))
+    issues = []
+    diag_summary = []
+    for p in prov:
+        s = p["process_seed"]
+        lin = p["population_lineage"]
+        fb = FROZEN_LINEAGE[s]
+        exp_m2 = fb[0] == "private_assignment_residual_fallback"
+        exp_m3 = fb[0] == "destination_reassignment_fallback"
+        if (lin["m2"], lin["m3"], lin["m4"]) != fb[1:]:
+            issues.append(("lineage", s))
+        if lin["population_fallback_m2"] != exp_m2 or lin["population_fallback_m3"] != exp_m3:
+            issues.append(("fallback flag", s, lin))
+        rc = p["requested_run_config"]; oc = p["requested_observation_config"]
+        exp_dur = 49 if arm == "ii" else 30
+        if rc["beta"] != 0.08 or rc["import_schedule"] != {"2025-01-08": 10} or rc["duration_days"] != exp_dur \
+                or rc["import_rate_per_day"] != 0.0 or rc["initial_seed_count"] != 0:
+            issues.append(("run_config", s))
+        if oc["observation_seed"] != s + 10000 or oc["observation_config_id"] != "v13-g35b-target" \
+                or oc["parameters"]["symptomatic_detection_probability"]["value"] != 0.75 \
+                or oc["parameters"]["asymptomatic_detection_probability"]["value"] != 0.25 \
+                or oc["reporting_delay"]["days"] != [2] or oc["detection_delay"]["days"] != [0] \
+                or oc["analysis_horizon_tail_days"] != 4 or oc["day_of_week_effect"] != [1.0] * 7:
+            issues.append(("obs_config", s))
+        for key in ("symptomatic_probability",):
+            pass
+    for row in rows:
+        if row["dimension"] != "beta":
+            continue
+        td = eval(row["truth_diagnostics"], {"True": True, "False": False, "None": None})  # repr of dict in CSV
+        diag_summary.append((int(row["target_seed"]), td["inoculation_acquisitions"], td["local_secondary_infections"],
+                             td["symptomatic_reports"], td["asymptomatic_reports"], td["nonzero_combined_report_dates"],
+                             td["chronology_passed"], td["latent_incidence_conservation_passed"], td["namespace_passed"],
+                             row["population_fallback_m2"], row["population_fallback_m3"]))
+        nh = td["raw_values"]["natural_history"]
+        if nh["symptomatic_probability"] != 0.6 or nh["waning_enabled"] is not False:
+            issues.append(("nh", row["target_seed"]))
+        if nh["configured_durations"]["latent"]["mean_days"] != 2.0 or nh["configured_durations"]["infectious"]["mean_days"] != 5.0:
+            issues.append(("durations", row["target_seed"]))
+    # cross check CSV report sums against target tables
+    for t in diag_summary:
+        tab = J(f"{d}/target_tables/{t[0]}.json")
+        if sum(tab["symptomatic"]) != t[3] or sum(tab["asymptomatic"]) != t[4]:
+            issues.append(("report sums vs table", t[0]))
+    print(arm, "issues:", issues)
+    for t in diag_summary:
+        print("  ", t)
+
+print("\n#### 3. candidate population lineage vs frozen table")
+for arm, d in [("B", "B"), ("i", "arm_i"), ("ii", "arm_ii"), ("iii", "arm_iii")]:
+    bad = set(); seen = {}
+    for f in glob.glob(f"{d}/candidate_tables/*/*.json"):
+        rec = J(f)
+        s = rec["process_seed"]; lin = rec["population_lineage"]
+        seen[s] = (lin["m2"], lin["m3"], lin["m4"], lin["population_fallback_m2"], lin["population_fallback_m3"])
+        if (lin["m2"], lin["m3"], lin["m4"]) != FROZEN_LINEAGE[s][1:] or lin["population_fallback_m2"] or lin["population_fallback_m3"]:
+            bad.add(s)
+        if rec["run_config"].get("network_seed", s) != s:
+            bad.add(("netseed", s))
+    print(arm, "candidate seeds:", sorted(seen), "lineage mismatches:", sorted(bad, key=str))
+
+print("\n#### 4. frozen inputs vs repo committed bytes; source hashes vs git 0c9c371")
+REPO = "/home/steven/jsy_disease_sim"
+def git_show(commit, path):
+    return subprocess.run(["git", "-C", REPO, "show", f"{commit}:{path}"], capture_output=True, check=True).stdout
+fi = {
+    "2026-10-22-g35b-predeclaration.md": ("3972190", "docs/research/v1_3/2026-10-22-g35b-predeclaration.md"),
+    "2026-10-22-g35b-owner-ruling-ACCEPTED.md": ("0c9c371", "docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md"),
+    "2026-10-22-g35b-owner-clarification-1.md": ("0c9c371", "docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md"),
+    "2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md": ("3972190", "docs/research/v1_3/2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md"),
+    "2026-10-22-g35b-horizon-probe.json": ("0c9c371", "docs/runs/2026-10-22-g35b-horizon-probe.json"),
+    "2026-10-22-g35b-seed-precheck.json": ("0c9c371", "docs/runs/2026-10-22-g35b-seed-precheck.json"),
+    "v13_g35b_design_study.yaml": ("0c9c371", "configs/calibration/v13_g35b_design_study.yaml"),
+}
+print("repo HEAD in WSL:", subprocess.run(["git", "-C", REPO, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip())
+for name, (c, p) in fi.items():
+    b = open(f"frozen_inputs/{name}", "rb").read()
+    try:
+        g = git_show(c, p)
+        print(f"  {name}: bundle {hashlib.sha256(b).hexdigest()[:16]} git[{c}] {hashlib.sha256(g).hexdigest()[:16]} equal={b == g}")
+    except subprocess.CalledProcessError as e:
+        print(f"  {name}: git show failed {e.stderr[:120]}")
+try:
+    g = git_show("0c9c371", "docs/research/v1_3/2026-10-22-g35b-owner-clarification-2.md")
+    print("  clarification-2 at 0c9c371 sha256:", hashlib.sha256(g).hexdigest(), "(NOT in frozen_inputs)")
+except subprocess.CalledProcessError as e:
+    print("  clarification-2 not at 0c9c371", e.stderr[:200])
+summ = J("campaign_summary.json")
+sc = J("source_and_config_hashes.json")
+print("source_and_config_hashes top keys:", list(sc)[:10])
+files = summ["source"]["source_and_config_sha256"]
+mism = []
+for path, h in files.items():
+    g = git_show("0c9c371", path)
+    if hashlib.sha256(g).hexdigest() != h:
+        mism.append(path)
+ls = subprocess.run(["git", "-C", REPO, "ls-tree", "-r", "--name-only", "0c9c371", "src/jersey_outbreak", "configs"], capture_output=True, text=True).stdout.split()
+ls = [p for p in ls if p.endswith((".py", ".yaml", ".json"))]
+print("source hash entries:", len(files), "mismatches vs git 0c9c371:", mism)
+print("tracked src/configs files not covered:", sorted(set(ls) - set(files))[:20])
+print("summary frozen_input_sha256 vs recomputed:")
+for name, h in summ["frozen_input_sha256"].items():
+    print("  ", name, hashlib.sha256(open(f"frozen_inputs/{name}", "rb").read()).hexdigest() == h)
+
+print("\n#### 5. serosurvey sampling order (SHA-256 rule) and frame")
+import pyarrow.parquet as pq
+ss = J("arm_iii/arm_iii/serosurvey_samples.json")
+print("design:", ss["design"])
+def frame(seed):
+    d = glob.glob(f"*/parents/{seed}/populations/*/residents.parquet")[0]
+    t = pq.read_table(d)
+    col = "agent_id" if "agent_id" in t.column_names else t.column_names[0]
+    return [str(x) for x in t.column(col).to_pylist()], col
+order_bad = []
+for rec in ss["targets"] + ss["candidates"]:
+    ids, col = frame(rec["process_seed"])
+    key = lambda a: hashlib.sha256(f"{rec['process_seed']}|{rec['serosurvey_seed']}|{rec['config_id']}|serosurvey|{a}".encode()).hexdigest()
+    exp = sorted(ids, key=key)[:400]
+    if exp != rec["sampled_agent_ids"] or len(ids) != 3000 or rec["survey_date"] != "2025-02-04":
+        order_bad.append((rec["process_seed"], rec.get("beta"), rec.get("offset"), len(ids), rec["survey_date"]))
+print("frame column:", col, " records:", len(ss["targets"]) + len(ss["candidates"]), " order/frame/date violations:", order_bad)
+pairs = sorted({(r["process_seed"], r["serosurvey_seed"], r["config_id"]) for r in ss["targets"] + ss["candidates"]})
+print("serosurvey seed pairs:", pairs)
+cand_cells = Counter((r["process_seed"]) for r in ss["candidates"])
+print("candidate samples per seed:", cand_cells, " distinct (seed,beta,offset):", len({(r['process_seed'], r['beta'], r['offset']) for r in ss['candidates']}))
+same_sample = all(len({tuple(r["sampled_agent_ids"]) for r in ss["candidates"] if r["process_seed"] == s}) == 1 for s in (83001, 83002, 83003))
+print("candidate sample identical across cells of one seed (CRN):", same_sample)
+
+print("\n#### 6. arm (iii) descriptives")
+desc = J("arm_iii/g35b_iii_descriptives.json")
+for t in desc["targets"]:
+    k = next(x["k"] for x in ss["targets"] if x["process_seed"] == t["target_seed"])
+    z = R.anscombe_z(k, 400)
+    flag = t["ever_infected_fraction"] >= 0.25
+    print(f"  {t['target_seed']} k={t['k']}({k}) z={t['z']:.6f}({z:.6f}) F={t['ever_infected_fraction']:.4f} premise={t['n_criterion_premise_met']}({flag}) share={t['serosurvey_share_of_loss']}")
+for c in desc["candidates"][:0]:
+    pass
+zc_bad = [c for c in desc["candidates"] if abs(c["z"] - R.anscombe_z(c["k"], 400)) > 1e-12]
+print("candidate z mismatches:", len(zc_bad))
+# sample k/n vs truth fraction plausibility
+for t in desc["targets"]:
+    print("   k/n - F:", t["target_seed"], round(t["k_over_n"] - t["ever_infected_fraction"], 4))
+
+print("\n#### 7. arm (ii) descriptives")
+d2 = J("arm_ii/g35b_ii_descriptives.json")
+print(d2["factor_delivered"])
+for t in d2["targets"]:
+    pi = t["prefix_identity"]
+    print("  ", t["target_seed"], "peak", t["latent_peak_day"], "crossed", t["peak_crossed"], "(<=41:", t["latent_peak_day"] <= 41, ")",
+          pi["result"], pi["transmission_sha256"]["B"] == pi["transmission_sha256"]["ii"], pi["report_count_sha256"]["B"] == pi["report_count_sha256"]["ii"])
+
+print("\n#### 8. readings / labels")
+print(json.dumps(summ["readings"], indent=1))
+print(json.dumps(summ["overall_reading"], indent=1))
+print("spread_label:", summ.get("spread_label"))
+txt = open("campaign_summary.json").read().lower()
+for w in ["confidence interval", "confidence", " ci ", "credible", "significan"]:
+    print(f"  occurrences of '{w}':", txt.count(w))
+for f in glob.glob("*/g35b_*_descriptives.json"):
+    t = open(f).read().lower()
+    print("  ", f, "confidence:", t.count("confidence"), "interval:", t.count("interval"))
+print("lineage keys:", list(summ["lineage"]))
+print("summary top keys:", list(summ))
+print("iii disclosure wall time file vs summary:", J("arm_iii/g35b_iii_disclosures.json")["arm_wall_time_seconds"], summ["disclosures"]["iii"]["arm_wall_time_seconds"])
+for a, d in [("B", "B"), ("i", "arm_i"), ("ii", "arm_ii")]:
+    print(f"  {a} disclosure wall time file vs summary:", J(f"{d}/g35b_{a}_disclosures.json").get("arm_wall_time_seconds"), summ["disclosures"][a]["arm_wall_time_seconds"])

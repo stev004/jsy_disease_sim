@@ -1,0 +1,154 @@
+#### 1. seed ledger
+rows: 61
+Counter({('B', 'target', None): 10, ('i', 'target', None): 10, ('ii', 'target', None): 10, ('iii', 'target', None): 10, ('B', 'candidate', 'A'): 3, ('i', 'candidate', 'A'): 3, ('i', 'candidate', 'B_prime'): 3, ('i', 'candidate', 'C_prime'): 3, ('i', 'candidate', 'D_prime'): 3, ('ii', 'candidate', 'A'): 3, ('iii', 'candidate', 'A'): 3})
+process seeds: [82001, 82002, 82003, 82004, 82005, 82006, 82007, 82008, 82009, 82010, 83001, 83002, 83003, 83004, 83005, 83006, 83007, 83008, 83009, 83010, 83011, 83012]
+obs seeds: [92001, 92002, 92003, 92004, 92005, 92006, 92007, 92008, 92009, 92010, 93001, 93002, 93003, 93004, 93005, 93006, 93007, 93008, 93009, 93010, 93011, 93012]
+sero seeds: [94001, 94002, 94003, 94004, 94005, 94006, 94007, 94008, 94009, 94010, 95001, 95002, 95003]
+ledger pairing violations: []
+overlap with earlier/probe sets: []
+reserves used: []
+ledger keys sample: {'arm': 'B', 'batch': None, 'observation_config_id': 'v13-g35b-target', 'observation_seed': 92001, 'process_seed': 82001, 'role': 'target', 'serosurvey_config_id': None, 'serosurvey_seed': None}
+
+#### 2. target provenance / truth diagnostics (predicates 2,3,9)
+precheck top keys: <class 'list'>
+frozen lineage rows parsed: 37
+B issues: []
+   (82001, 10, 2152, 967, 198, 28, True, True, True, 'FALSE', 'FALSE')
+   (82002, 10, 2069, 961, 215, 28, True, True, True, 'FALSE', 'FALSE')
+   (82003, 10, 2067, 951, 196, 28, True, True, True, 'TRUE', 'FALSE')
+   (82004, 10, 2065, 960, 194, 27, True, True, True, 'FALSE', 'FALSE')
+   (82005, 10, 1999, 909, 202, 28, True, True, True, 'FALSE', 'FALSE')
+   (82006, 10, 2006, 870, 217, 27, True, True, True, 'FALSE', 'FALSE')
+   (82007, 10, 2048, 897, 214, 26, True, True, True, 'FALSE', 'TRUE')
+   (82008, 10, 2099, 914, 208, 28, True, True, True, 'FALSE', 'FALSE')
+   (82009, 10, 2030, 925, 189, 27, True, True, True, 'FALSE', 'FALSE')
+   (82010, 10, 2078, 954, 224, 29, True, True, True, 'FALSE', 'FALSE')
+i issues: []
+   (82001, 10, 2152, 967, 198, 28, True, True, True, 'FALSE', 'FALSE')
+   (82002, 10, 2069, 961, 215, 28, True, True, True, 'FALSE', 'FALSE')
+   (82003, 10, 2067, 951, 196, 28, True, True, True, 'TRUE', 'FALSE')
+   (82004, 10, 2065, 960, 194, 27, True, True, True, 'FALSE', 'FALSE')
+   (82005, 10, 1999, 909, 202, 28, True, True, True, 'FALSE', 'FALSE')
+   (82006, 10, 2006, 870, 217, 27, True, True, True, 'FALSE', 'FALSE')
+   (82007, 10, 2048, 897, 214, 26, True, True, True, 'FALSE', 'TRUE')
+   (82008, 10, 2099, 914, 208, 28, True, True, True, 'FALSE', 'FALSE')
+   (82009, 10, 2030, 925, 189, 27, True, True, True, 'FALSE', 'FALSE')
+   (82010, 10, 2078, 954, 224, 29, True, True, True, 'FALSE', 'FALSE')
+ii issues: []
+   (82001, 10, 2271, 1021, 211, 42, True, True, True, 'FALSE', 'FALSE')
+   (82002, 10, 2303, 1057, 246, 41, True, True, True, 'FALSE', 'FALSE')
+   (82003, 10, 2288, 1041, 225, 44, True, True, True, 'TRUE', 'FALSE')
+   (82004, 10, 2275, 1055, 215, 41, True, True, True, 'FALSE', 'FALSE')
+   (82005, 10, 2261, 1033, 219, 41, True, True, True, 'FALSE', 'FALSE')
+   (82006, 10, 2266, 973, 249, 43, True, True, True, 'FALSE', 'FALSE')
+   (82007, 10, 2257, 993, 237, 42, True, True, True, 'FALSE', 'TRUE')
+   (82008, 10, 2270, 989, 225, 42, True, True, True, 'FALSE', 'FALSE')
+   (82009, 10, 2321, 1059, 219, 43, True, True, True, 'FALSE', 'FALSE')
+   (82010, 10, 2277, 1041, 254, 45, True, True, True, 'FALSE', 'FALSE')
+iii issues: []
+   (82001, 10, 2152, 967, 198, 28, True, True, True, 'FALSE', 'FALSE')
+   (82002, 10, 2069, 961, 215, 28, True, True, True, 'FALSE', 'FALSE')
+   (82003, 10, 2067, 951, 196, 28, True, True, True, 'TRUE', 'FALSE')
+   (82004, 10, 2065, 960, 194, 27, True, True, True, 'FALSE', 'FALSE')
+   (82005, 10, 1999, 909, 202, 28, True, True, True, 'FALSE', 'FALSE')
+   (82006, 10, 2006, 870, 217, 27, True, True, True, 'FALSE', 'FALSE')
+   (82007, 10, 2048, 897, 214, 26, True, True, True, 'FALSE', 'TRUE')
+   (82008, 10, 2099, 914, 208, 28, True, True, True, 'FALSE', 'FALSE')
+   (82009, 10, 2030, 925, 189, 27, True, True, True, 'FALSE', 'FALSE')
+   (82010, 10, 2078, 954, 224, 29, True, True, True, 'FALSE', 'FALSE')
+
+#### 3. candidate population lineage vs frozen table
+B candidate seeds: [83001, 83002, 83003] lineage mismatches: []
+i candidate seeds: [83001, 83002, 83003, 83004, 83005, 83006, 83007, 83008, 83009, 83010, 83011, 83012] lineage mismatches: []
+ii candidate seeds: [83001, 83002, 83003] lineage mismatches: []
+iii candidate seeds: [83001, 83002, 83003] lineage mismatches: []
+
+#### 4. frozen inputs vs repo committed bytes; source hashes vs git 0c9c371
+repo HEAD in WSL: 229d38f369c1b0d129229e0d0f82a161c28bd8b8
+  2026-10-22-g35b-predeclaration.md: bundle 2e8358abd9e275a5 git[3972190] 2e8358abd9e275a5 equal=True
+  2026-10-22-g35b-owner-ruling-ACCEPTED.md: bundle f84738a9594312f3 git[0c9c371] f84738a9594312f3 equal=True
+  2026-10-22-g35b-owner-clarification-1.md: bundle 2b1d4a5ee6bbab96 git[0c9c371] 2b1d4a5ee6bbab96 equal=True
+  2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md: bundle 8cf4c76612434cbd git[3972190] 8cf4c76612434cbd equal=True
+  2026-10-22-g35b-horizon-probe.json: bundle 03ac0906e68e4242 git[0c9c371] 03ac0906e68e4242 equal=True
+  2026-10-22-g35b-seed-precheck.json: bundle 9d15beb0abc7e3e1 git[0c9c371] 9d15beb0abc7e3e1 equal=True
+  v13_g35b_design_study.yaml: bundle 4259c45f01cf1225 git[0c9c371] 4259c45f01cf1225 equal=True
+  clarification-2 at 0c9c371 sha256: ccae8721871b78b22d84451202ff541cb5836f06f402e176fe97308e296215e0 (NOT in frozen_inputs)
+source_and_config_hashes top keys: ['git_head', 'source_and_config_sha256', 'worktree_clean']
+source hash entries: 90 mismatches vs git 0c9c371: []
+tracked src/configs files not covered: []
+summary frozen_input_sha256 vs recomputed:
+   2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md True
+   2026-10-22-g35b-horizon-probe.json True
+   2026-10-22-g35b-owner-clarification-1.md True
+   2026-10-22-g35b-owner-ruling-ACCEPTED.md True
+   2026-10-22-g35b-predeclaration.md True
+   2026-10-22-g35b-seed-precheck.json True
+   v13_g35b_design_study.yaml True
+
+#### 5. serosurvey sampling order (SHA-256 rule) and frame
+design: {'candidate_serosurvey_config_id': 'v13-g35b-sero-fit', 'candidate_serosurvey_seeds': [95001, 95002, 95003], 'n': 400, 'sensitivity': '1', 'seroconversion_lag_days': 0, 'specificity': '1', 'survey_day': 29, 'target_serosurvey_config_id': 'v13-g35b-sero-target', 'target_serosurvey_seeds': [94001, 94002, 94003, 94004, 94005, 94006, 94007, 94008, 94009, 94010]}
+frame column: agent_id  records: 85  order/frame/date violations: []
+serosurvey seed pairs: [(82001, 94001, 'v13-g35b-sero-target'), (82002, 94002, 'v13-g35b-sero-target'), (82003, 94003, 'v13-g35b-sero-target'), (82004, 94004, 'v13-g35b-sero-target'), (82005, 94005, 'v13-g35b-sero-target'), (82006, 94006, 'v13-g35b-sero-target'), (82007, 94007, 'v13-g35b-sero-target'), (82008, 94008, 'v13-g35b-sero-target'), (82009, 94009, 'v13-g35b-sero-target'), (82010, 94010, 'v13-g35b-sero-target'), (83001, 95001, 'v13-g35b-sero-fit'), (83002, 95002, 'v13-g35b-sero-fit'), (83003, 95003, 'v13-g35b-sero-fit')]
+candidate samples per seed: Counter({83001: 25, 83002: 25, 83003: 25})  distinct (seed,beta,offset): 75
+candidate sample identical across cells of one seed (CRN): True
+
+#### 6. arm (iii) descriptives
+  82001 k=282(282) z=19.936541(19.936541) F=0.7207 premise=True(True) share=0.11139370420046853
+  82002 k=286(286) z=20.156565(20.156565) F=0.6930 premise=True(True) share=0.012533357808201646
+  82003 k=269(269) z=19.235484(19.235484) F=0.6923 premise=True(True) share=0.007283332431001828
+  82004 k=281(281) z=19.881878(19.881878) F=0.6917 premise=True(True) share=0.001969300946148599
+  82005 k=276(276) z=19.610484(19.610484) F=0.6697 premise=True(True) share=0.00016963809254445913
+  82006 k=281(281) z=19.881878(19.881878) F=0.6720 premise=True(True) share=0.03673131626499921
+  82007 k=275(275) z=19.556573(19.556573) F=0.6860 premise=True(True) share=0.0007873188120776814
+  82008 k=286(286) z=20.156565(20.156565) F=0.7030 premise=True(True) share=0.027944586272181507
+  82009 k=278(278) z=19.718667(19.718667) F=0.6800 premise=True(True) share=0.023873978175164488
+  82010 k=280(280) z=19.827346(19.827346) F=0.6960 premise=True(True) share=0.001368433671623711
+candidate z mismatches: 0
+   k/n - F: 82001 -0.0157
+   k/n - F: 82002 0.022
+   k/n - F: 82003 -0.0198
+   k/n - F: 82004 0.0108
+   k/n - F: 82005 0.0203
+   k/n - F: 82006 0.0305
+   k/n - F: 82007 0.0015
+   k/n - F: 82008 0.012
+   k/n - F: 82009 0.015
+   k/n - F: 82010 0.004
+
+#### 7. arm (ii) descriptives
+factor delivered for 10/10 targets
+   82001 peak 21 crossed True (<=41: True ) identical True True
+   82002 peak 23 crossed True (<=41: True ) identical True True
+   82003 peak 24 crossed True (<=41: True ) identical True True
+   82004 peak 23 crossed True (<=41: True ) identical True True
+   82005 peak 24 crossed True (<=41: True ) identical True True
+   82006 peak 24 crossed True (<=41: True ) identical True True
+   82007 peak 23 crossed True (<=41: True ) identical True True
+   82008 peak 23 crossed True (<=41: True ) identical True True
+   82009 peak 26 crossed True (<=41: True ) identical True True
+   82010 peak 24 crossed True (<=41: True ) identical True True
+
+#### 8. readings / labels
+{
+ "i": "Factor X, at the declared level, coincided with four-dimensional recovery in this one synthetic campaign. Screening result only. Three arms raise the chance that at least one passes when no factor matters. Thresholds are not adjusted, because that would require numbers not justified independently of Phase 0b. Instead, a PASS reading is screening evidence only. Any later decision relying on it requires Steven's decision and a new owner-ruled, fresh-seed confirmatory predeclaration.",
+ "ii": "Factor X alone, at the declared level, did not produce recovery. Arms (ii)/(iii): that factor did not break the ridge at this level.",
+ "iii": "Factor X alone, at the declared level, did not produce recovery. Arms (ii)/(iii): that factor did not break the ridge at this level."
+}
+{
+ "i": "Factor X, at the declared level, coincided with four-dimensional recovery in this one synthetic campaign. Screening result only. Three arms raise the chance that at least one passes when no factor matters. Thresholds are not adjusted, because that would require numbers not justified independently of Phase 0b. Instead, a PASS reading is screening evidence only. Any later decision relying on it requires Steven's decision and a new owner-ruled, fresh-seed confirmatory predeclaration."
+}
+spread_label: stochastic_replicate_variation
+  occurrences of 'confidence interval': 0
+  occurrences of 'confidence': 0
+  occurrences of ' ci ': 0
+  occurrences of 'credible': 0
+  occurrences of 'significan': 0
+   arm_ii/g35b_ii_descriptives.json confidence: 0 interval: 0
+   arm_iii/g35b_iii_descriptives.json confidence: 0 interval: 0
+   arm_i/g35b_i_descriptives.json confidence: 0 interval: 0
+lineage keys: ['g34b_memo', 'g34b_option_2', 'phase0_audit', 'phase0_bundle_sha256sums_sha256', 'phase0_predeclaration_sha256', 'phase0_verdict', 'phase0b_audit', 'phase0b_boundary_count', 'phase0b_bundle_sha256sums_sha256', 'phase0b_failing_predicates', 'phase0b_joint_count', 'phase0b_offset_selections', 'phase0b_offset_truth', 'phase0b_predeclaration_sha256', 'phase0b_verdict', 'real_data_fitting', 'ridge_crlf_alias', 'ridge_diagnostic_path', 'ridge_diagnostic_sha256', 'ridge_digest_source']
+summary top keys: ['arms', 'campaign_wall_time_seconds', 'disclosures', 'frozen_input_sha256', 'lineage', 'measured_work', 'overall_reading', 'readings', 'software_status', 'source', 'spread_label', 'status_phrase']
+iii disclosure wall time file vs summary: 0.8154607989999931 1.2829234979999455
+  B disclosure wall time file vs summary: None 320.66107380100016
+  i disclosure wall time file vs summary: None 868.9950373320003
+  ii disclosure wall time file vs summary: 382.702853368 383.449673868

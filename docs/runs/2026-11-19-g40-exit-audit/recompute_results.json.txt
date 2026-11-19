@@ -1,0 +1,3135 @@
+{
+ "B": {
+  "pred": {
+   "hits": {
+    "beta": 10,
+    "inoculation_day_offset": 7,
+    "symptomatic_detection_probability": 9,
+    "asymptomatic_detection_probability": 10
+   },
+   "boundary": {
+    "beta": 0,
+    "inoculation_day_offset": 3,
+    "symptomatic_detection_probability": 0,
+    "asymptomatic_detection_probability": 0
+   },
+   "joint": 7,
+   "mean_bias": {
+    "beta": "0.002",
+    "inoculation_day_offset": "0.1",
+    "symptomatic_detection_probability": "-0.0125",
+    "asymptomatic_detection_probability": "-0.0075"
+   },
+   "predicates": {
+    "4_no_global_tie": true,
+    "5_dimension_hits": false,
+    "6_joint_hits": true,
+    "7_bias": true,
+    "8_boundaries": false
+   },
+   "per_target": {
+    "82001": {
+     "beta": {
+      "est": "0.10",
+      "err": "0.02",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1511540329983652
+     },
+     "inoculation_day_offset": {
+      "est": "0",
+      "err": "-2",
+      "identified": false,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.005476150094774886
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.625",
+      "err": "-0.125",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.049122842629044115
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.175",
+      "err": "-0.075",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.08348715436707049
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82002": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.5158041951675945
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.06179839148780504
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.10764588161874243
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.27643410325685813
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82003": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.559322334781141
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.16414762335611577
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.14134178757373816
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.06049589557031451
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82004": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.14562937861990793
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.14562937861990793
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.11005949337773226
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.07173306581554958
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82005": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.426211521129665
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2814536144986479
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.26724472906868985
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.08595083397814092
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82006": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.3296932791514411
+     },
+     "inoculation_day_offset": {
+      "est": "4",
+      "err": "2",
+      "identified": true,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.3296932791514411
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2436242175405665
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.0585953884508287
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82007": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.6828827407054918
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2698901070667853
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1931703018072063
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2884283488491073
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82008": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.46414980187581056
+     },
+     "inoculation_day_offset": {
+      "est": "1",
+      "err": "-1",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.103892218611411
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1480739876891987
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.22959006058070877
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82009": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.793969054853527
+     },
+     "inoculation_day_offset": {
+      "est": "4",
+      "err": "2",
+      "identified": true,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.4344185299322054
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.15732613198803247
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2552260947591631
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82010": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.7854430672075886
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.07755402819634118
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.17338243353271632
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.18686704932240145
+     },
+     "joint": true,
+     "tied": false
+    }
+   }
+  },
+  "claim": {
+   "boundary_counts": {
+    "asymptomatic_detection_probability": 0,
+    "beta": 0,
+    "inoculation_day_offset": 3,
+    "symptomatic_detection_probability": 0
+   },
+   "hits": {
+    "asymptomatic_detection_probability": 10,
+    "beta": 10,
+    "inoculation_day_offset": 7,
+    "symptomatic_detection_probability": 9
+   },
+   "joint_hits": 7,
+   "mean_bias": {
+    "asymptomatic_detection_probability": "-0.0075",
+    "beta": "0.002",
+    "inoculation_day_offset": "0.1",
+    "symptomatic_detection_probability": "-0.0125"
+   },
+   "predicates": {
+    "10_measured_caps": true,
+    "1_complete": true,
+    "2_truth_viability": true,
+    "3_chronology_conservation": true,
+    "4_no_global_tie": true,
+    "5_dimension_hits": false,
+    "6_joint_hits": true,
+    "7_bias": true,
+    "8_boundaries": false,
+    "9_provenance": true
+   },
+   "status": "FAIL"
+  },
+  "csv_all_match": true,
+  "comparison": {
+   "82001": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.1,
+     0.0,
+     0.625,
+     0.175
+    ],
+    "selected_stored": [
+     0.1,
+     0.0,
+     0.625,
+     0.175
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.1,
+     0.0,
+     0.625,
+     0.175
+    ],
+    "stored_minimum": 0.5000184094696418,
+    "recomputed_minimum": 0.5000184094696418,
+    "estimate_hash": "d640629a64fcbf374b4e2fab55f6080b8334b3824a1d62e5041715f449ba0b59"
+   },
+   "82002": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.27736755269367325,
+    "recomputed_minimum": 0.27736755269367325,
+    "estimate_hash": "82eacdbf611fd76e4393eeb11f60885b052f9bf4c37f2d06a03ea23424427a4f"
+   },
+   "82003": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.37373233354353064,
+    "recomputed_minimum": 0.37373233354353064,
+    "estimate_hash": "61af25b95fa79673741384a7994f44eb97cadbefa25b5b2cab3048ae3e5555bc"
+   },
+   "82004": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.3431936141698872,
+    "recomputed_minimum": 0.3431936141698872,
+    "estimate_hash": "95d964c3aa4399fa8cc0e2a41e612f8936cadcf6fe9d76585791f155d2150365"
+   },
+   "82005": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.2796770852373494,
+    "recomputed_minimum": 0.2796770852373494,
+    "estimate_hash": "5afc0c42140efb275381f0babb7441eeb1ac21137e9f7dafda1244bd63e5351e"
+   },
+   "82006": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.27181745706796817,
+    "recomputed_minimum": 0.27181745706796817,
+    "estimate_hash": "f252066df2165b86924549b794f54e1f7b7835b860153fa99db1dad6eda9fbda"
+   },
+   "82007": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.22877819011090683,
+    "recomputed_minimum": 0.22877819011090683,
+    "estimate_hash": "ed2cb70d6362bd54b2c9a3e0bb4633de9cc4af82de2dd5f357f88e3ae7db85dc"
+   },
+   "82008": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     1.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     1.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     1.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.2730155194194371,
+    "recomputed_minimum": 0.2730155194194371,
+    "estimate_hash": "7e9a56e3e14d009a1e00120863eb98fe162156a9cacade805efc3c7f501eeea5"
+   },
+   "82009": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.27502917930653326,
+    "recomputed_minimum": 0.27502917930653326,
+    "estimate_hash": "b3c53b60c2d7f1f5b64be13ff72d9edc69837712ca8b3e18081ddfee5768d38c"
+   },
+   "82010": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.2749311478459888,
+    "recomputed_minimum": 0.2749311478459888,
+    "estimate_hash": "4a262258799da6776095f819fc6a6bc401e4b64a7afbe153cfd3b30fb24ead56"
+   }
+  }
+ },
+ "i": {
+  "pred": {
+   "hits": {
+    "beta": 10,
+    "inoculation_day_offset": 8,
+    "symptomatic_detection_probability": 8,
+    "asymptomatic_detection_probability": 10
+   },
+   "boundary": {
+    "beta": 0,
+    "inoculation_day_offset": 2,
+    "symptomatic_detection_probability": 0,
+    "asymptomatic_detection_probability": 0
+   },
+   "joint": 6,
+   "mean_bias": {
+    "beta": "0.00",
+    "inoculation_day_offset": "-0.2",
+    "symptomatic_detection_probability": "0.00",
+    "asymptomatic_detection_probability": "0.00"
+   },
+   "predicates": {
+    "4_no_global_tie": true,
+    "5_dimension_hits": true,
+    "6_joint_hits": true,
+    "7_bias": true,
+    "8_boundaries": true
+   },
+   "per_target": {
+    "82001": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.0786608810891579
+     },
+     "inoculation_day_offset": {
+      "est": "0",
+      "err": "-2",
+      "identified": true,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.0786608810891579
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.0786608810891579
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.0786608810891579
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82002": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.8659413863657152
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.5191240509474822
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.04428657792091819
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.21957661726158623
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82003": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.5525985683793729
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.3150292590042903
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1203030485833444
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.17127242369501466
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82004": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.29099800587927166
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.29099800587927166
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.039598187217345635
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.18915944708668106
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82005": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.5723197860394146
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.4225007162307874
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.34394827549362406
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.23586916616353668
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82006": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2370135118364662
+     },
+     "inoculation_day_offset": {
+      "est": "3",
+      "err": "1",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2370135118364662
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2370135118364662
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.10701639948299345
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82007": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.7365416573056199
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.7365416573056199
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.42125813823323593
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.146456026637043
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82008": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.8404628700159242
+     },
+     "inoculation_day_offset": {
+      "est": "0",
+      "err": "-2",
+      "identified": false,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.035406982946842754
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.26611192944176193
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.23958732243922243
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82009": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.07500382348959993
+     },
+     "inoculation_day_offset": {
+      "est": "3",
+      "err": "1",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.07500382348959993
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.07500382348959993
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.07500382348959993
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82010": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.7816645754791397
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.17921031228554865
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1059221479969667
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.0709190164751311
+     },
+     "joint": true,
+     "tied": false
+    }
+   }
+  },
+  "claim": {
+   "boundary_counts": {
+    "asymptomatic_detection_probability": 0,
+    "beta": 0,
+    "inoculation_day_offset": 2,
+    "symptomatic_detection_probability": 0
+   },
+   "hits": {
+    "asymptomatic_detection_probability": 10,
+    "beta": 10,
+    "inoculation_day_offset": 8,
+    "symptomatic_detection_probability": 8
+   },
+   "joint_hits": 6,
+   "mean_bias": {
+    "asymptomatic_detection_probability": "0.00",
+    "beta": "0.00",
+    "inoculation_day_offset": "-0.2",
+    "symptomatic_detection_probability": "0.00"
+   },
+   "predicates": {
+    "10_measured_caps": true,
+    "1_complete": true,
+    "2_truth_viability": true,
+    "3_chronology_conservation": true,
+    "4_no_global_tie": true,
+    "5_dimension_hits": true,
+    "6_joint_hits": true,
+    "7_bias": true,
+    "8_boundaries": true,
+    "9_provenance": true
+   },
+   "status": "PASS"
+  },
+  "csv_all_match": true,
+  "comparison": {
+   "82001": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     0.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     0.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     0.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.4194146736511048,
+    "recomputed_minimum": 0.4194146736511048,
+    "estimate_hash": "252a38b08646f429d90e57c0724f388acf1d7fd96ebc9deb00fd52164ee43bbb"
+   },
+   "82002": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.22470889577897002,
+    "recomputed_minimum": 0.22470889577897002,
+    "estimate_hash": "7e6932d799b8a94ab1c4e882979f1f1270ff0f044698643a2bbb752ae8f491b9"
+   },
+   "82003": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.3263816287146007,
+    "recomputed_minimum": 0.3263816287146007,
+    "estimate_hash": "88a33d80aefc4f28d6b748a3710a086b8f4cd837fd904fa07f86732f1d46f39f"
+   },
+   "82004": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.3199205089260365,
+    "recomputed_minimum": 0.3199205089260365,
+    "estimate_hash": "7fe8bd1685b478047a9796819c996916a9fa01c497570416bc144e3eee0e48ba"
+   },
+   "82005": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.24128722214875667,
+    "recomputed_minimum": 0.24128722214875667,
+    "estimate_hash": "d210a90fe6bcd56f5825e5215f4043ff607277c6102ee869afb2e55491fda0ae"
+   },
+   "82006": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     3.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     3.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     3.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.21252240813991305,
+    "recomputed_minimum": 0.21252240813991305,
+    "estimate_hash": "258a58e1d7c4377cee8938e7936d7203a36e9b8f936431555c330789ea7f9d5d"
+   },
+   "82007": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.1955938655137126,
+    "recomputed_minimum": 0.1955938655137126,
+    "estimate_hash": "bc4bcb618ccf360d11d256e85c420127866c666397aa67991ef7cfa98bc71dfe"
+   },
+   "82008": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     0.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     0.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     0.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.2591061697352019,
+    "recomputed_minimum": 0.2591061697352019,
+    "estimate_hash": "82dbcc428c503f8b50460270ba2bfc73a3d096bdf841f7b33cc0e5229f1f8efa"
+   },
+   "82009": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     3.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     3.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     3.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.26754373732256975,
+    "recomputed_minimum": 0.26754373732256975,
+    "estimate_hash": "5b4de3a37a4f76e7b40ecdc4d4d12f36fad8d08137ff21e42e67bdeedbf042ef"
+   },
+   "82010": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.2622650382079927,
+    "recomputed_minimum": 0.2622650382079927,
+    "estimate_hash": "79fd508bcaddab7705b93cba507840a7edc6235cf6ad8d348f7dc58095b0d796"
+   }
+  }
+ },
+ "ii": {
+  "pred": {
+   "hits": {
+    "beta": 10,
+    "inoculation_day_offset": 5,
+    "symptomatic_detection_probability": 9,
+    "asymptomatic_detection_probability": 9
+   },
+   "boundary": {
+    "beta": 0,
+    "inoculation_day_offset": 2,
+    "symptomatic_detection_probability": 0,
+    "asymptomatic_detection_probability": 0
+   },
+   "joint": 5,
+   "mean_bias": {
+    "beta": "0.002",
+    "inoculation_day_offset": "0.4",
+    "symptomatic_detection_probability": "-0.0125",
+    "asymptomatic_detection_probability": "-0.0075"
+   },
+   "predicates": {
+    "4_no_global_tie": true,
+    "5_dimension_hits": false,
+    "6_joint_hits": false,
+    "7_bias": true,
+    "8_boundaries": true
+   },
+   "per_target": {
+    "82001": {
+     "beta": {
+      "est": "0.10",
+      "err": "0.02",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.14604093540204766
+     },
+     "inoculation_day_offset": {
+      "est": "3",
+      "err": "1",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.045776043428283356
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.625",
+      "err": "-0.125",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.005902224961429149
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.175",
+      "err": "-0.075",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.0519241522566536
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82002": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.48630127752062363
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.04354957001023556
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.08835960385273375
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1659209464918565
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82003": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.6995517729660983
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1861284133613787
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1431499681725581
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.08184590805147099
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82004": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2519182154524383
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2519182154524383
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.10121884763126922
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.053099681187310906
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82005": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 1.0306679666540224
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.014576247986852904
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1703222049951264
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.024257735811411586
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82006": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 1.2679560126358633
+     },
+     "inoculation_day_offset": {
+      "est": "4",
+      "err": "2",
+      "identified": true,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.2598200778357304
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.11127280431328906
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.05522089763502555
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82007": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.7898021654484251
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.28398616541940885
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.20121708835481372
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1939151332398961
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82008": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.46524739091703776
+     },
+     "inoculation_day_offset": {
+      "est": "1",
+      "err": "-1",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.08264003175364637
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.10795011956448071
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.18279095379666876
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82009": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 1.3849814613469293
+     },
+     "inoculation_day_offset": {
+      "est": "4",
+      "err": "2",
+      "identified": true,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.3980952513904145
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.15568853533251578
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.21567067978134352
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82010": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.6531765284899393
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1707989477080207
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.12992068354171737
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.09772586855140084
+     },
+     "joint": true,
+     "tied": false
+    }
+   }
+  },
+  "claim": {
+   "boundary_counts": {
+    "asymptomatic_detection_probability": 0,
+    "beta": 0,
+    "inoculation_day_offset": 2,
+    "symptomatic_detection_probability": 0
+   },
+   "hits": {
+    "asymptomatic_detection_probability": 9,
+    "beta": 10,
+    "inoculation_day_offset": 5,
+    "symptomatic_detection_probability": 9
+   },
+   "joint_hits": 5,
+   "mean_bias": {
+    "asymptomatic_detection_probability": "-0.0075",
+    "beta": "0.002",
+    "inoculation_day_offset": "0.4",
+    "symptomatic_detection_probability": "-0.0125"
+   },
+   "predicates": {
+    "10_measured_caps": true,
+    "1_complete": true,
+    "2_truth_viability": true,
+    "3_chronology_conservation": true,
+    "4_no_global_tie": true,
+    "5_dimension_hits": false,
+    "6_joint_hits": false,
+    "7_bias": true,
+    "8_boundaries": true,
+    "9_provenance": true
+   },
+   "status": "FAIL"
+  },
+  "csv_all_match": true,
+  "comparison": {
+   "82001": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.1,
+     3.0,
+     0.625,
+     0.175
+    ],
+    "selected_stored": [
+     0.1,
+     3.0,
+     0.625,
+     0.175
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.1,
+     3.0,
+     0.625,
+     0.175
+    ],
+    "stored_minimum": 0.4156113466353672,
+    "recomputed_minimum": 0.4156113466353672,
+    "estimate_hash": "84c8e5e541b56c4e0c8993fd9ab9688b4ae0df71fe46e88d112a5ed53bf0d542"
+   },
+   "82002": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.300653198519145,
+    "recomputed_minimum": 0.300653198519145,
+    "estimate_hash": "ace8bb43a02f38b1320ef7d3f3fdc7544d867ffdd1e272c5eec3bc5469586c4d"
+   },
+   "82003": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.3023466878826135,
+    "recomputed_minimum": 0.3023466878826135,
+    "estimate_hash": "e8767a648c422396a80b610febd1ddc9ec4be88e32a13d12ee1ee67af2442cbd"
+   },
+   "82004": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.3020240262317668,
+    "recomputed_minimum": 0.3020240262317668,
+    "estimate_hash": "8d16b5b86651a452d5047d15e083ada89b8acb31711ba5cf48a3e43209cb7247"
+   },
+   "82005": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.3082228093186074,
+    "recomputed_minimum": 0.3082228093186074,
+    "estimate_hash": "1eaf04717774e946814b764007a755602948c2494c098a721013c687bccea694"
+   },
+   "82006": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.25275880225013997,
+    "recomputed_minimum": 0.25275880225013997,
+    "estimate_hash": "a3f8676df4b9142312f36a1fecf5061eabeceecec3f29a698859a50968d3cf5d"
+   },
+   "82007": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.21797742190319286,
+    "recomputed_minimum": 0.21797742190319286,
+    "estimate_hash": "d49b7302720f9c3b311e0c89054b5c2878c6550801ee0f0e13b6adfbab9e9264"
+   },
+   "82008": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     1.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     1.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     1.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.23281084915076455,
+    "recomputed_minimum": 0.23281084915076455,
+    "estimate_hash": "c8d18c93bd53be9a4a487ca0c20347eb67826c1d2b392e34e7113150f1feeb0f"
+   },
+   "82009": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.2684086059913538,
+    "recomputed_minimum": 0.2684086059913538,
+    "estimate_hash": "327784e7743767eb8ea5753f274ec0710a4c7c907793b8286aa702d4a654c7a0"
+   },
+   "82010": {
+    "max_abs_objective_diff": 0.0,
+    "bit_exact_cells": 625,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.2667213677501996,
+    "recomputed_minimum": 0.2667213677501996,
+    "estimate_hash": "7da0769ddf412d8120a51930388d08c15cb8fcf8bd7ef6303115d69b1ad68597"
+   }
+  }
+ },
+ "iii": {
+  "pred": {
+   "hits": {
+    "beta": 9,
+    "inoculation_day_offset": 7,
+    "symptomatic_detection_probability": 9,
+    "asymptomatic_detection_probability": 9
+   },
+   "boundary": {
+    "beta": 0,
+    "inoculation_day_offset": 3,
+    "symptomatic_detection_probability": 0,
+    "asymptomatic_detection_probability": 0
+   },
+   "joint": 7,
+   "mean_bias": {
+    "beta": "0.002",
+    "inoculation_day_offset": "0.1",
+    "symptomatic_detection_probability": "-0.0125",
+    "asymptomatic_detection_probability": "-0.0075"
+   },
+   "predicates": {
+    "4_no_global_tie": true,
+    "5_dimension_hits": false,
+    "6_joint_hits": true,
+    "7_bias": true,
+    "8_boundaries": false
+   },
+   "per_target": {
+    "82001": {
+     "beta": {
+      "est": "0.10",
+      "err": "0.02",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.029734405810825166
+     },
+     "inoculation_day_offset": {
+      "est": "0",
+      "err": "-2",
+      "identified": false,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.029734405810825166
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.625",
+      "err": "-0.125",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.029734405810825166
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.175",
+      "err": "-0.075",
+      "identified": false,
+      "within": true,
+      "hit": false,
+      "boundary": false,
+      "gap": 0.029734405810825166
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82002": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.6325067586111555
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.06495866698830972
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1062967172678354
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.27296945573035053
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82003": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.7982016478698896
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1607378188934188
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.14031234834844655
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.06005528385216458
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82004": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.29527091374960185
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.22956378408650177
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.10984275311329088
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.0715918018211689
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82005": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 1.3354766251246555
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.29820576383403324
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2671993941826083
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.08593625344261248
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82006": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 1.303931377479378
+     },
+     "inoculation_day_offset": {
+      "est": "4",
+      "err": "2",
+      "identified": true,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.3019126563371767
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.23467557935627098
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.05644310270597063
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82007": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.9952443003406635
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.2858745286386497
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.193018215194659
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.28820126378412214
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82008": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.5589469545075031
+     },
+     "inoculation_day_offset": {
+      "est": "1",
+      "err": "-1",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.0855788303003889
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.14393612136555192
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.22317426132557577
+     },
+     "joint": true,
+     "tied": false
+    },
+    "82009": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 1.1995195237328187
+     },
+     "inoculation_day_offset": {
+      "est": "4",
+      "err": "2",
+      "identified": true,
+      "within": false,
+      "hit": false,
+      "boundary": true,
+      "gap": 0.4003110301604278
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.15357013134656716
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.24913283254315036
+     },
+     "joint": false,
+     "tied": false
+    },
+    "82010": {
+     "beta": {
+      "est": "0.08",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.9838644576813368
+     },
+     "inoculation_day_offset": {
+      "est": "2",
+      "err": "0",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.0789452896153715
+     },
+     "symptomatic_detection_probability": {
+      "est": "0.75",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.17314517117260209
+     },
+     "asymptomatic_detection_probability": {
+      "est": "0.25",
+      "err": "0.00",
+      "identified": true,
+      "within": true,
+      "hit": true,
+      "boundary": false,
+      "gap": 0.1866113341599917
+     },
+     "joint": true,
+     "tied": false
+    }
+   }
+  },
+  "claim": {
+   "boundary_counts": {
+    "asymptomatic_detection_probability": 0,
+    "beta": 0,
+    "inoculation_day_offset": 3,
+    "symptomatic_detection_probability": 0
+   },
+   "hits": {
+    "asymptomatic_detection_probability": 9,
+    "beta": 9,
+    "inoculation_day_offset": 7,
+    "symptomatic_detection_probability": 9
+   },
+   "joint_hits": 7,
+   "mean_bias": {
+    "asymptomatic_detection_probability": "-0.0075",
+    "beta": "0.002",
+    "inoculation_day_offset": "0.1",
+    "symptomatic_detection_probability": "-0.0125"
+   },
+   "predicates": {
+    "10_measured_caps": true,
+    "1_complete": true,
+    "2_truth_viability": true,
+    "3_chronology_conservation": true,
+    "4_no_global_tie": true,
+    "5_dimension_hits": false,
+    "6_joint_hits": true,
+    "7_bias": true,
+    "8_boundaries": false,
+    "9_provenance": true
+   },
+   "status": "FAIL"
+  },
+  "csv_all_match": true,
+  "comparison": {
+   "82001": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 405,
+    "selected_recomputed": [
+     0.1,
+     0.0,
+     0.625,
+     0.175
+    ],
+    "selected_stored": [
+     0.1,
+     0.0,
+     0.625,
+     0.175
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.1,
+     0.0,
+     0.625,
+     0.175
+    ],
+    "stored_minimum": 0.5626996025497949,
+    "recomputed_minimum": 0.5626996025497948,
+    "estimate_hash": "4560182e46d08422ceca70979d25628359ec7248a6b4ddf47aff58ad09517b03"
+   },
+   "82002": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 429,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.28088802278730485,
+    "recomputed_minimum": 0.28088802278730485,
+    "estimate_hash": "39e204826ed09526d20af83d254ec2785be11c8e80edf6578c8651a1ee952bc4"
+   },
+   "82003": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 421,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.37647432117639407,
+    "recomputed_minimum": 0.3764743211763941,
+    "estimate_hash": "c690343f123a9477b39d766f4158e85fdee960e7cd6af6389c353c0b3f3f9111"
+   },
+   "82004": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 433,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.34387079926022324,
+    "recomputed_minimum": 0.3438707992602232,
+    "estimate_hash": "aa7ffd0d648074d60f425cc97c66da9bf0b6591e802fc20b62f927d855e41f97"
+   },
+   "82005": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 393,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.27972453717427354,
+    "recomputed_minimum": 0.2797245371742735,
+    "estimate_hash": "a8a374eb3120c8ef8f908be80e786489de5750edf4f69132c50f5db7a83caf28"
+   },
+   "82006": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 410,
+    "selected_recomputed": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.28218238759098524,
+    "recomputed_minimum": 0.28218238759098524,
+    "estimate_hash": "aec809d0245fe4d5ffb842d612eb6406c6e380eb2f35a32f50afcef2f337c1c3"
+   },
+   "82007": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 371,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.22895845340845952,
+    "recomputed_minimum": 0.2289584534084595,
+    "estimate_hash": "7e8a02c70aa7542c829f0227a215f1839ebe03e5c9f427d8a25964fab2ace34f"
+   },
+   "82008": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 425,
+    "selected_recomputed": [
+     0.08,
+     1.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     1.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     1.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.280864151944205,
+    "recomputed_minimum": 0.280864151944205,
+    "estimate_hash": "f99524dc91a2af0480fca35f380dd0008009135bc953c024198771d2bf01e661"
+   },
+   "82009": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 423,
+    "selected_recomputed": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     4.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.2817558113985889,
+    "recomputed_minimum": 0.2817558113985889,
+    "estimate_hash": "093f5be44ca600f98e370276519799cecb610596c19f930f189f1175b7fc35f7"
+   },
+   "82010": {
+    "max_abs_objective_diff": 1.7763568394002505e-15,
+    "bit_exact_cells": 457,
+    "selected_recomputed": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selected_stored": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "selection_agrees": true,
+    "identified_flags_agree": true,
+    "stored_surface_fit_selected": [
+     0.08,
+     2.0,
+     0.75,
+     0.25
+    ],
+    "stored_minimum": 0.27530788843058085,
+    "recomputed_minimum": 0.27530788843058085,
+    "estimate_hash": "ffdd6cc210eedaf05ff95786d8e56593cbbd5c30156ac7b2ef1456b53740597d"
+   }
+  }
+ },
+ "share": {
+  "targets_B_eq_i": true,
+  "targets_B_eq_iii": true,
+  "candA_B_eq_i": true,
+  "candA_B_eq_iii": true,
+  "ii_target_report_prefix_eq_B_through_2025-02-04": true,
+  "ii_candidate_prefix_eq_B": "1875/1875",
+  "ii_dates": [
+   "2025-01-06",
+   "2025-02-27",
+   53
+  ],
+  "candidate_config": {
+   "B": {
+    "durations": [
+     30
+    ],
+    "obs_pairs": [
+     [
+      83001,
+      93001,
+      "v13-g35b-fit",
+      "A"
+     ],
+     [
+      83002,
+      93002,
+      "v13-g35b-fit",
+      "A"
+     ],
+     [
+      83003,
+      93003,
+      "v13-g35b-fit",
+      "A"
+     ]
+    ],
+    "bad": [],
+    "n_bad": 0
+   },
+   "i": {
+    "durations": [
+     30
+    ],
+    "obs_pairs": [
+     [
+      83001,
+      93001,
+      "v13-g35b-fit",
+      "A"
+     ],
+     [
+      83002,
+      93002,
+      "v13-g35b-fit",
+      "A"
+     ],
+     [
+      83003,
+      93003,
+      "v13-g35b-fit",
+      "A"
+     ],
+     [
+      83004,
+      93004,
+      "v13-g35b-fit",
+      "B_prime"
+     ],
+     [
+      83005,
+      93005,
+      "v13-g35b-fit",
+      "B_prime"
+     ],
+     [
+      83006,
+      93006,
+      "v13-g35b-fit",
+      "B_prime"
+     ],
+     [
+      83007,
+      93007,
+      "v13-g35b-fit",
+      "C_prime"
+     ],
+     [
+      83008,
+      93008,
+      "v13-g35b-fit",
+      "C_prime"
+     ],
+     [
+      83009,
+      93009,
+      "v13-g35b-fit",
+      "C_prime"
+     ],
+     [
+      83010,
+      93010,
+      "v13-g35b-fit",
+      "D_prime"
+     ],
+     [
+      83011,
+      93011,
+      "v13-g35b-fit",
+      "D_prime"
+     ],
+     [
+      83012,
+      93012,
+      "v13-g35b-fit",
+      "D_prime"
+     ]
+    ],
+    "bad": [],
+    "n_bad": 0
+   },
+   "ii": {
+    "durations": [
+     49
+    ],
+    "obs_pairs": [
+     [
+      83001,
+      93001,
+      "v13-g35b-fit",
+      "A"
+     ],
+     [
+      83002,
+      93002,
+      "v13-g35b-fit",
+      "A"
+     ],
+     [
+      83003,
+      93003,
+      "v13-g35b-fit",
+      "A"
+     ]
+    ],
+    "bad": [],
+    "n_bad": 0
+   },
+   "iii": {
+    "durations": [
+     30
+    ],
+    "obs_pairs": [
+     [
+      83001,
+      93001,
+      "v13-g35b-fit",
+      "A"
+     ],
+     [
+      83002,
+      93002,
+      "v13-g35b-fit",
+      "A"
+     ],
+     [
+      83003,
+      93003,
+      "v13-g35b-fit",
+      "A"
+     ]
+    ],
+    "bad": [],
+    "n_bad": 0
+   }
+  }
+ }
+}

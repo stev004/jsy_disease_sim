@@ -1,0 +1,16 @@
+#!/bin/bash
+B=/home/steven/jos-g35b-campaign-20261022T234254Z
+cd "$B"
+echo "SHA256SUMS digest: $(sha256sum SHA256SUMS)"
+echo "entries: $(wc -l < SHA256SUMS)"
+echo "files on disk (excluding SHA256SUMS): $(find . -type f ! -path ./SHA256SUMS | wc -l)"
+echo "--- sha256sum -c (failures only) ---"
+sha256sum -c --quiet SHA256SUMS && echo "ALL OK"
+echo "--- files on disk not listed ---"
+find . -type f ! -path ./SHA256SUMS | sed 's|^\./||' | sort > /tmp/g40audit/ondisk.txt
+awk '{print $2}' SHA256SUMS | sed 's|^\*||; s|^\./||' | sort > /tmp/g40audit/listed.txt
+comm -3 /tmp/g40audit/ondisk.txt /tmp/g40audit/listed.txt | head
+echo "--- writable files/dirs ---"
+find . -perm -u+w | head
+echo "--- tree ---"
+for d in B arm_i arm_ii arm_iii frozen_inputs; do echo "== $d"; find $d -maxdepth 2 | head -25; echo "count: $(find $d -type f | wc -l)"; done

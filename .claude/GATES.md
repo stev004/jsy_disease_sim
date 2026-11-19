@@ -4,20 +4,29 @@
 
 ## Open
 
-**2026-10-23:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (exit audit pending, not final); real-data fitting STOPPED (G34 A+B). G38 MERGED (`0c9c371`), G39 RUN. **G40 OPEN** (exit-audit seat; default HOLD). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. **G41 OPEN** (what follows G35-B; default A STOP). G5 open.
 
-### G40 — Exit-audit seat for the G35-B campaign (§12 step 9)
-- **Why it's open:** frozen §12 step 9 and clarification 2 require a fresh, independent exit audit by a model that is neither the implementer (gpt-6.1-sol) nor the step-7 reviewer (gpt-6-astra). Opus 5.5 is the natural seat, but the `claude` CLI is not logged in on Windows or WSL, and logging in is Steven's credential step. Until the audit files, the G35-B results are **not final**.
+### G41 — What, if anything, follows G35-B? (model owner)
+- **Why it's open:** the exit audit CONFIRMED B FAIL, i PASS, ii FAIL, iii FAIL. Arm i (more replicates per candidate) passed only at threshold on four counts (offset hits 8/10, symptomatic hits 8/10, joint 6/10, offset boundary 2/10), its four-batch offset agreement was 0/10, and three arms raise the chance of one chance pass. The frozen text says any reliance on arm i needs Steven's decision and a new owner-ruled, fresh-seed confirmatory predeclaration. Real-data fitting stays STOPPED either way.
 - **Options:**
-  - **A (recommended):** Steven runs `claude /login` in WSL. The director then dispatches the Opus 5.5 @ high exit audit, recomputing everything from the bundle.
-  - **B:** an owner clarification names another non-author, non-reviewer seat.
-- **Default on no answer:** HOLD. The results stay labelled "exit audit pending".
+  - **A — STOP (default).** Record G35-B as the final synthetic design study. JOS keeps the offset non-identifiability finding; arm i stays a screening result only.
+  - **B — Confirmatory study of the replicate factor.** Owner-ruled predeclaration first, fresh seeds pre-checked buildable, one campaign, same pass/fail rules. Only after B passes could real-data fitting be reconsidered, as a separate gate.
+  - **C — Labelled demo.** Ship the simulator as scenario-only research software with the identifiability finding stated; no calibration claim.
+- **Default on no answer:** A.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G40 — RESOLVED 2026-11-19: audit run, CONFIRMED (Steven, chat: "Yes, run audit") — Exit-audit seat for the G35-B campaign (§12 step 9)
+- **Why it's open:** frozen §12 step 9 and clarification 2 require a fresh, independent exit audit by a model that is neither the implementer (gpt-6.1-sol) nor the step-7 reviewer (gpt-6-astra). Opus 5.5 is the natural seat, but the `claude` CLI is not logged in on Windows or WSL, and logging in is Steven's credential step. Until the audit files, the G35-B results are **not final**.
+- **Options:**
+  - **A (recommended):** Steven runs `claude /login` in WSL. The director then dispatches the Opus 5.5 @ high exit audit, recomputing everything from the bundle.
+  - **B:** an owner clarification names another non-author, non-reviewer seat.
+- **Default on no answer:** HOLD. The results stay labelled "exit audit pending".
+- **Ruling/execution:** instead of `claude /login` in WSL, a fresh Claude Opus 5.5 @ high subagent was dispatched from the Claude desktop app (paths-only brief, no director conclusions; 234,898 tokens). It recomputed every predicate from the raw bundle and returned `JOS G35-B CAMPAIGN EXIT AUDIT: CONFIRMED`: `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`. Scripts and outputs: `docs/runs/2026-11-19-g40-exit-audit/`. Disclosed: the auditor shares a model family with the run's director and the design consultant; the frozen independence rule (not implementer, not step-7 reviewer) is met.
 
 ### G38 — RESOLVED 2026-10-23: MERGED (Steven, chat: "G38: merge codex/g35b-design-study @ 0c68982 SHA-first with the full mirror on the merge commit") — Merge the G35-B study harness to main?
 - **What:** branch `codex/g35b-design-study` @ `0c689825675aba8d414b6c7bd41951fc97aba6fc` adds only `src/jersey_outbreak/g35b_design_study.py`, `src/jersey_outbreak/g35b_constants.py`, `configs/calibration/v13_g35b_design_study.yaml` and `tests/test_g35b_design_study.py` (research harness, no protected module touched; `phase0_campaign.py` byte-identical).

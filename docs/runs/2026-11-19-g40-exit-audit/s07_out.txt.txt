@@ -1,0 +1,5 @@
+B candidate files 1875 fixed-param violations 0 | target violations 0
+arm_i candidate files 7500 fixed-param violations 0 | target violations 0
+arm_ii candidate files 1875 fixed-param violations 0 | target violations 0
+arm_iii candidate files 1875 fixed-param violations 0 | target violations 0
+route ids: ['bus', 'care_resident', 'care_staff', 'community_indoor', 'community_outdoor', 'household', 'school_class', 'school_cross_class', 'shared_vehicle', 'workplace_team', 'workplace_transient']

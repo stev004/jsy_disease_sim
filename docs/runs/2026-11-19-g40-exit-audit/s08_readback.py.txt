@@ -1,0 +1,22 @@
+"""G40 audit: blind read-back hashes, estimate-hash consistency, write order (mtime)."""
+import hashlib, json, os, csv
+os.chdir("/home/steven/jos-g35b-campaign-20261022T234254Z")
+for d, code in [("B", "B"), ("arm_i", "i"), ("arm_ii", "ii"), ("arm_iii", "iii")]:
+    rb = json.load(open(f"{d}/blind_readback_hashes.json"))
+    bad = []
+    for r in rb:
+        p = os.path.join(d, r["path"])
+        b = open(p, "rb").read()
+        if hashlib.sha256(b).hexdigest() != r["sha256"] or json.loads(b)["estimate_hash"] != r["estimate_hash"]:
+            bad.append(r["path"])
+    gate = {r["target_seed"]: r["estimate_hash"] for r in rb if r["role"] == "gate"}
+    csvh = {int(x["target_seed"]): x["estimate_hash"] for x in csv.DictReader(open(f"{d}/g35b_{code}_recovery.csv"))}
+    blind_mt = max(os.path.getmtime(os.path.join(d, r["path"])) for r in rb)
+    csv_mt = os.path.getmtime(f"{d}/g35b_{code}_recovery.csv")
+    ev_mt = os.path.getmtime(f"{d}/recovery_evaluation.json")
+    print(d, "readback entries", len(rb), "hash failures", bad, "| gate hashes == CSV:", gate == csvh,
+          "| latest blind write before CSV/eval:", blind_mt <= min(csv_mt, ev_mt), f"({csv_mt - blind_mt:.1f}s)")
+# global barrier: all arms' blind records before any arm's join
+blind_all = max(os.path.getmtime(os.path.join(d, r["path"])) for d in ["B", "arm_i", "arm_ii", "arm_iii"] for r in json.load(open(f"{d}/blind_readback_hashes.json")))
+joins = min(os.path.getmtime(f"{d}/g35b_{c}_recovery.csv") for d, c in [("B", "B"), ("arm_i", "i"), ("arm_ii", "ii"), ("arm_iii", "iii")])
+print("all-arm blind records written before first truth join (mtime):", blind_all <= joins, f"gap {joins - blind_all:.1f}s")

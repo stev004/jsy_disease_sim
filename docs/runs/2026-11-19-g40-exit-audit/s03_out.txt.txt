@@ -1,0 +1,280 @@
+
+===== ARM B  (T=34, R=3) =====
+cells complete: True  replicates per cell exact: True  calendar ok: True
+hits: {'beta': 10, 'inoculation_day_offset': 7, 'symptomatic_detection_probability': 9, 'asymptomatic_detection_probability': 10}  claim: {'asymptomatic_detection_probability': 10, 'beta': 10, 'inoculation_day_offset': 7, 'symptomatic_detection_probability': 9}
+boundary: {'beta': 0, 'inoculation_day_offset': 3, 'symptomatic_detection_probability': 0, 'asymptomatic_detection_probability': 0}  claim: {'asymptomatic_detection_probability': 0, 'beta': 0, 'inoculation_day_offset': 3, 'symptomatic_detection_probability': 0}
+joint: 7  claim: 7
+mean bias: {'beta': '0.002', 'inoculation_day_offset': '0.1', 'symptomatic_detection_probability': '-0.0125', 'asymptomatic_detection_probability': '-0.0075'}  claim: {'asymptomatic_detection_probability': '-0.0075', 'beta': '0.002', 'inoculation_day_offset': '0.1', 'symptomatic_detection_probability': '-0.0125'}
+predicates 4-8: {'4_no_global_tie': True, '5_dimension_hits': False, '6_joint_hits': True, '7_bias': True, '8_boundaries': False}
+claimed predicates: {'10_measured_caps': True, '1_complete': True, '2_truth_viability': True, '3_chronology_conservation': True, '4_no_global_tie': True, '5_dimension_hits': False, '6_joint_hits': True, '7_bias': True, '8_boundaries': False, '9_provenance': True} FAIL
+csv rows 40 all match: True []
+max |objective diff| vs stored: 0.0  min bit-exact cells/target: 625
+selection agrees all: True  identified flags agree all: True
+per-target: seed | selected (beta,off,sym,asym) | tied | gaps beta/off/sym/asym | joint
+  82001 | (0.1, 0.0, 0.625, 0.175) | False | 0.1512/0.0055/0.0491/0.0835 | id I--I hit H--H bnd .b.. | joint False
+  82002 | (0.08, 2.0, 0.75, 0.25) | False | 0.5158/0.0618/0.1076/0.2764 | id IIII hit HHHH bnd .... | joint True
+  82003 | (0.08, 2.0, 0.75, 0.25) | False | 0.5593/0.1641/0.1413/0.0605 | id IIII hit HHHH bnd .... | joint True
+  82004 | (0.08, 2.0, 0.75, 0.25) | False | 0.1456/0.1456/0.1101/0.0717 | id IIII hit HHHH bnd .... | joint True
+  82005 | (0.08, 2.0, 0.75, 0.25) | False | 0.4262/0.2815/0.2672/0.0860 | id IIII hit HHHH bnd .... | joint True
+  82006 | (0.08, 4.0, 0.75, 0.25) | False | 0.3297/0.3297/0.2436/0.0586 | id IIII hit H-HH bnd .b.. | joint False
+  82007 | (0.08, 2.0, 0.75, 0.25) | False | 0.6829/0.2699/0.1932/0.2884 | id IIII hit HHHH bnd .... | joint True
+  82008 | (0.08, 1.0, 0.75, 0.25) | False | 0.4641/0.1039/0.1481/0.2296 | id IIII hit HHHH bnd .... | joint True
+  82009 | (0.08, 4.0, 0.75, 0.25) | False | 0.7940/0.4344/0.1573/0.2552 | id IIII hit H-HH bnd .b.. | joint False
+  82010 | (0.08, 2.0, 0.75, 0.25) | False | 0.7854/0.0776/0.1734/0.1869 | id IIII hit HHHH bnd .... | joint True
+truth tables (predicate-2 table part): {82001: (967.0, 198.0, 28, True), 82002: (961.0, 215.0, 28, True), 82003: (951.0, 196.0, 28, True), 82004: (960.0, 194.0, 27, True), 82005: (909.0, 202.0, 28, True), 82006: (870.0, 217.0, 27, True), 82007: (897.0, 214.0, 26, True), 82008: (914.0, 208.0, 28, True), 82009: (925.0, 189.0, 27, True), 82010: (954.0, 224.0, 29, True)}
+gaps within 0.005 of 0.05: [(82001, 'symptomatic_detection_probability', 0.049122842629044115)]
+
+===== ARM i  (T=34, R=12) =====
+cells complete: True  replicates per cell exact: True  calendar ok: True
+hits: {'beta': 10, 'inoculation_day_offset': 8, 'symptomatic_detection_probability': 8, 'asymptomatic_detection_probability': 10}  claim: {'asymptomatic_detection_probability': 10, 'beta': 10, 'inoculation_day_offset': 8, 'symptomatic_detection_probability': 8}
+boundary: {'beta': 0, 'inoculation_day_offset': 2, 'symptomatic_detection_probability': 0, 'asymptomatic_detection_probability': 0}  claim: {'asymptomatic_detection_probability': 0, 'beta': 0, 'inoculation_day_offset': 2, 'symptomatic_detection_probability': 0}
+joint: 6  claim: 6
+mean bias: {'beta': '0.00', 'inoculation_day_offset': '-0.2', 'symptomatic_detection_probability': '0.00', 'asymptomatic_detection_probability': '0.00'}  claim: {'asymptomatic_detection_probability': '0.00', 'beta': '0.00', 'inoculation_day_offset': '-0.2', 'symptomatic_detection_probability': '0.00'}
+predicates 4-8: {'4_no_global_tie': True, '5_dimension_hits': True, '6_joint_hits': True, '7_bias': True, '8_boundaries': True}
+claimed predicates: {'10_measured_caps': True, '1_complete': True, '2_truth_viability': True, '3_chronology_conservation': True, '4_no_global_tie': True, '5_dimension_hits': True, '6_joint_hits': True, '7_bias': True, '8_boundaries': True, '9_provenance': True} PASS
+csv rows 40 all match: True []
+max |objective diff| vs stored: 0.0  min bit-exact cells/target: 625
+selection agrees all: True  identified flags agree all: True
+per-target: seed | selected (beta,off,sym,asym) | tied | gaps beta/off/sym/asym | joint
+  82001 | (0.08, 0.0, 0.75, 0.25) | False | 0.0787/0.0787/0.0787/0.0787 | id IIII hit H-HH bnd .b.. | joint False
+  82002 | (0.08, 2.0, 0.75, 0.25) | False | 0.8659/0.5191/0.0443/0.2196 | id II-I hit HH-H bnd .... | joint False
+  82003 | (0.08, 2.0, 0.75, 0.25) | False | 0.5526/0.3150/0.1203/0.1713 | id IIII hit HHHH bnd .... | joint True
+  82004 | (0.08, 2.0, 0.75, 0.25) | False | 0.2910/0.2910/0.0396/0.1892 | id II-I hit HH-H bnd .... | joint False
+  82005 | (0.08, 2.0, 0.75, 0.25) | False | 0.5723/0.4225/0.3439/0.2359 | id IIII hit HHHH bnd .... | joint True
+  82006 | (0.08, 3.0, 0.75, 0.25) | False | 0.2370/0.2370/0.2370/0.1070 | id IIII hit HHHH bnd .... | joint True
+  82007 | (0.08, 2.0, 0.75, 0.25) | False | 0.7365/0.7365/0.4213/0.1465 | id IIII hit HHHH bnd .... | joint True
+  82008 | (0.08, 0.0, 0.75, 0.25) | False | 0.8405/0.0354/0.2661/0.2396 | id I-II hit H-HH bnd .b.. | joint False
+  82009 | (0.08, 3.0, 0.75, 0.25) | False | 0.0750/0.0750/0.0750/0.0750 | id IIII hit HHHH bnd .... | joint True
+  82010 | (0.08, 2.0, 0.75, 0.25) | False | 0.7817/0.1792/0.1059/0.0709 | id IIII hit HHHH bnd .... | joint True
+truth tables (predicate-2 table part): {82001: (967.0, 198.0, 28, True), 82002: (961.0, 215.0, 28, True), 82003: (951.0, 196.0, 28, True), 82004: (960.0, 194.0, 27, True), 82005: (909.0, 202.0, 28, True), 82006: (870.0, 217.0, 27, True), 82007: (897.0, 214.0, 26, True), 82008: (914.0, 208.0, 28, True), 82009: (925.0, 189.0, 27, True), 82010: (954.0, 224.0, 29, True)}
+gaps within 0.005 of 0.05: []
+
+===== ARM ii  (T=53, R=3) =====
+cells complete: True  replicates per cell exact: True  calendar ok: True
+hits: {'beta': 10, 'inoculation_day_offset': 5, 'symptomatic_detection_probability': 9, 'asymptomatic_detection_probability': 9}  claim: {'asymptomatic_detection_probability': 9, 'beta': 10, 'inoculation_day_offset': 5, 'symptomatic_detection_probability': 9}
+boundary: {'beta': 0, 'inoculation_day_offset': 2, 'symptomatic_detection_probability': 0, 'asymptomatic_detection_probability': 0}  claim: {'asymptomatic_detection_probability': 0, 'beta': 0, 'inoculation_day_offset': 2, 'symptomatic_detection_probability': 0}
+joint: 5  claim: 5
+mean bias: {'beta': '0.002', 'inoculation_day_offset': '0.4', 'symptomatic_detection_probability': '-0.0125', 'asymptomatic_detection_probability': '-0.0075'}  claim: {'asymptomatic_detection_probability': '-0.0075', 'beta': '0.002', 'inoculation_day_offset': '0.4', 'symptomatic_detection_probability': '-0.0125'}
+predicates 4-8: {'4_no_global_tie': True, '5_dimension_hits': False, '6_joint_hits': False, '7_bias': True, '8_boundaries': True}
+claimed predicates: {'10_measured_caps': True, '1_complete': True, '2_truth_viability': True, '3_chronology_conservation': True, '4_no_global_tie': True, '5_dimension_hits': False, '6_joint_hits': False, '7_bias': True, '8_boundaries': True, '9_provenance': True} FAIL
+csv rows 40 all match: True []
+max |objective diff| vs stored: 0.0  min bit-exact cells/target: 625
+selection agrees all: True  identified flags agree all: True
+per-target: seed | selected (beta,off,sym,asym) | tied | gaps beta/off/sym/asym | joint
+  82001 | (0.1, 3.0, 0.625, 0.175) | False | 0.1460/0.0458/0.0059/0.0519 | id I--I hit H--H bnd .... | joint False
+  82002 | (0.08, 2.0, 0.75, 0.25) | False | 0.4863/0.0435/0.0884/0.1659 | id I-II hit H-HH bnd .... | joint False
+  82003 | (0.08, 2.0, 0.75, 0.25) | False | 0.6996/0.1861/0.1431/0.0818 | id IIII hit HHHH bnd .... | joint True
+  82004 | (0.08, 2.0, 0.75, 0.25) | False | 0.2519/0.2519/0.1012/0.0531 | id IIII hit HHHH bnd .... | joint True
+  82005 | (0.08, 2.0, 0.75, 0.25) | False | 1.0307/0.0146/0.1703/0.0243 | id I-I- hit H-H- bnd .... | joint False
+  82006 | (0.08, 4.0, 0.75, 0.25) | False | 1.2680/0.2598/0.1113/0.0552 | id IIII hit H-HH bnd .b.. | joint False
+  82007 | (0.08, 2.0, 0.75, 0.25) | False | 0.7898/0.2840/0.2012/0.1939 | id IIII hit HHHH bnd .... | joint True
+  82008 | (0.08, 1.0, 0.75, 0.25) | False | 0.4652/0.0826/0.1080/0.1828 | id IIII hit HHHH bnd .... | joint True
+  82009 | (0.08, 4.0, 0.75, 0.25) | False | 1.3850/0.3981/0.1557/0.2157 | id IIII hit H-HH bnd .b.. | joint False
+  82010 | (0.08, 2.0, 0.75, 0.25) | False | 0.6532/0.1708/0.1299/0.0977 | id IIII hit HHHH bnd .... | joint True
+truth tables (predicate-2 table part): {82001: (1021.0, 211.0, 42, True), 82002: (1057.0, 246.0, 41, True), 82003: (1041.0, 225.0, 44, True), 82004: (1055.0, 215.0, 41, True), 82005: (1033.0, 219.0, 41, True), 82006: (973.0, 249.0, 43, True), 82007: (993.0, 237.0, 42, True), 82008: (989.0, 225.0, 42, True), 82009: (1059.0, 219.0, 43, True), 82010: (1041.0, 254.0, 45, True)}
+gaps within 0.005 of 0.05: [(82001, 'inoculation_day_offset', 0.045776043428283356), (82001, 'asymptomatic_detection_probability', 0.0519241522566536), (82004, 'asymptomatic_detection_probability', 0.053099681187310906)]
+
+===== ARM iii  (T=34, R=3) =====
+cells complete: True  replicates per cell exact: True  calendar ok: True
+hits: {'beta': 9, 'inoculation_day_offset': 7, 'symptomatic_detection_probability': 9, 'asymptomatic_detection_probability': 9}  claim: {'asymptomatic_detection_probability': 9, 'beta': 9, 'inoculation_day_offset': 7, 'symptomatic_detection_probability': 9}
+boundary: {'beta': 0, 'inoculation_day_offset': 3, 'symptomatic_detection_probability': 0, 'asymptomatic_detection_probability': 0}  claim: {'asymptomatic_detection_probability': 0, 'beta': 0, 'inoculation_day_offset': 3, 'symptomatic_detection_probability': 0}
+joint: 7  claim: 7
+mean bias: {'beta': '0.002', 'inoculation_day_offset': '0.1', 'symptomatic_detection_probability': '-0.0125', 'asymptomatic_detection_probability': '-0.0075'}  claim: {'asymptomatic_detection_probability': '-0.0075', 'beta': '0.002', 'inoculation_day_offset': '0.1', 'symptomatic_detection_probability': '-0.0125'}
+predicates 4-8: {'4_no_global_tie': True, '5_dimension_hits': False, '6_joint_hits': True, '7_bias': True, '8_boundaries': False}
+claimed predicates: {'10_measured_caps': True, '1_complete': True, '2_truth_viability': True, '3_chronology_conservation': True, '4_no_global_tie': True, '5_dimension_hits': False, '6_joint_hits': True, '7_bias': True, '8_boundaries': False, '9_provenance': True} FAIL
+csv rows 40 all match: True []
+max |objective diff| vs stored: 1.7763568394002505e-15  min bit-exact cells/target: 371
+selection agrees all: True  identified flags agree all: True
+per-target: seed | selected (beta,off,sym,asym) | tied | gaps beta/off/sym/asym | joint
+  82001 | (0.1, 0.0, 0.625, 0.175) | False | 0.0297/0.0297/0.0297/0.0297 | id ---- hit ---- bnd .b.. | joint False
+  82002 | (0.08, 2.0, 0.75, 0.25) | False | 0.6325/0.0650/0.1063/0.2730 | id IIII hit HHHH bnd .... | joint True
+  82003 | (0.08, 2.0, 0.75, 0.25) | False | 0.7982/0.1607/0.1403/0.0601 | id IIII hit HHHH bnd .... | joint True
+  82004 | (0.08, 2.0, 0.75, 0.25) | False | 0.2953/0.2296/0.1098/0.0716 | id IIII hit HHHH bnd .... | joint True
+  82005 | (0.08, 2.0, 0.75, 0.25) | False | 1.3355/0.2982/0.2672/0.0859 | id IIII hit HHHH bnd .... | joint True
+  82006 | (0.08, 4.0, 0.75, 0.25) | False | 1.3039/0.3019/0.2347/0.0564 | id IIII hit H-HH bnd .b.. | joint False
+  82007 | (0.08, 2.0, 0.75, 0.25) | False | 0.9952/0.2859/0.1930/0.2882 | id IIII hit HHHH bnd .... | joint True
+  82008 | (0.08, 1.0, 0.75, 0.25) | False | 0.5589/0.0856/0.1439/0.2232 | id IIII hit HHHH bnd .... | joint True
+  82009 | (0.08, 4.0, 0.75, 0.25) | False | 1.1995/0.4003/0.1536/0.2491 | id IIII hit H-HH bnd .b.. | joint False
+  82010 | (0.08, 2.0, 0.75, 0.25) | False | 0.9839/0.0789/0.1731/0.1866 | id IIII hit HHHH bnd .... | joint True
+truth tables (predicate-2 table part): {82001: (967.0, 198.0, 28, True), 82002: (961.0, 215.0, 28, True), 82003: (951.0, 196.0, 28, True), 82004: (960.0, 194.0, 27, True), 82005: (909.0, 202.0, 28, True), 82006: (870.0, 217.0, 27, True), 82007: (897.0, 214.0, 26, True), 82008: (914.0, 208.0, 28, True), 82009: (925.0, 189.0, 27, True), 82010: (954.0, 224.0, 29, True)}
+gaps within 0.005 of 0.05: []
+
+serosurvey issues: []
+
+SHARING / CONFIG: {
+ "targets_B_eq_i": true,
+ "targets_B_eq_iii": true,
+ "candA_B_eq_i": true,
+ "candA_B_eq_iii": true,
+ "ii_target_report_prefix_eq_B_through_2025-02-04": true,
+ "ii_candidate_prefix_eq_B": "1875/1875",
+ "ii_dates": [
+  "2025-01-06",
+  "2025-02-27",
+  53
+ ],
+ "candidate_config": {
+  "B": {
+   "durations": [
+    30
+   ],
+   "obs_pairs": [
+    [
+     83001,
+     93001,
+     "v13-g35b-fit",
+     "A"
+    ],
+    [
+     83002,
+     93002,
+     "v13-g35b-fit",
+     "A"
+    ],
+    [
+     83003,
+     93003,
+     "v13-g35b-fit",
+     "A"
+    ]
+   ],
+   "bad": [],
+   "n_bad": 0
+  },
+  "i": {
+   "durations": [
+    30
+   ],
+   "obs_pairs": [
+    [
+     83001,
+     93001,
+     "v13-g35b-fit",
+     "A"
+    ],
+    [
+     83002,
+     93002,
+     "v13-g35b-fit",
+     "A"
+    ],
+    [
+     83003,
+     93003,
+     "v13-g35b-fit",
+     "A"
+    ],
+    [
+     83004,
+     93004,
+     "v13-g35b-fit",
+     "B_prime"
+    ],
+    [
+     83005,
+     93005,
+     "v13-g35b-fit",
+     "B_prime"
+    ],
+    [
+     83006,
+     93006,
+     "v13-g35b-fit",
+     "B_prime"
+    ],
+    [
+     83007,
+     93007,
+     "v13-g35b-fit",
+     "C_prime"
+    ],
+    [
+     83008,
+     93008,
+     "v13-g35b-fit",
+     "C_prime"
+    ],
+    [
+     83009,
+     93009,
+     "v13-g35b-fit",
+     "C_prime"
+    ],
+    [
+     83010,
+     93010,
+     "v13-g35b-fit",
+     "D_prime"
+    ],
+    [
+     83011,
+     93011,
+     "v13-g35b-fit",
+     "D_prime"
+    ],
+    [
+     83012,
+     93012,
+     "v13-g35b-fit",
+     "D_prime"
+    ]
+   ],
+   "bad": [],
+   "n_bad": 0
+  },
+  "ii": {
+   "durations": [
+    49
+   ],
+   "obs_pairs": [
+    [
+     83001,
+     93001,
+     "v13-g35b-fit",
+     "A"
+    ],
+    [
+     83002,
+     93002,
+     "v13-g35b-fit",
+     "A"
+    ],
+    [
+     83003,
+     93003,
+     "v13-g35b-fit",
+     "A"
+    ]
+   ],
+   "bad": [],
+   "n_bad": 0
+  },
+  "iii": {
+   "durations": [
+    30
+   ],
+   "obs_pairs": [
+    [
+     83001,
+     93001,
+     "v13-g35b-fit",
+     "A"
+    ],
+    [
+     83002,
+     93002,
+     "v13-g35b-fit",
+     "A"
+    ],
+    [
+     83003,
+     93003,
+     "v13-g35b-fit",
+     "A"
+    ]
+   ],
+   "bad": [],
+   "n_bad": 0
+  }
+ }
+}

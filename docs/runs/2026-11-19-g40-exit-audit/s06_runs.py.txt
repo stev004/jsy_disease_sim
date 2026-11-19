@@ -1,0 +1,26 @@
+"""G40 audit: latent-call ledger (no duplicate/retried calls), seed keys in run configs."""
+import json, glob, os
+from collections import Counter
+os.chdir("/home/steven/jos-g35b-campaign-20261022T234254Z")
+S = json.load(open("campaign_summary.json"))
+for a in ["B", "i", "ii", "iii"]:
+    lr = S["disclosures"][a]["latent_runtimes"]
+    c = Counter((x["seed"], x["beta"], x["offset"]) for x in lr)
+    seeds = sorted({x["seed"] for x in lr})
+    print(a, "latent calls", len(lr), "distinct", len(c), "duplicates", [k for k, v in c.items() if v > 1], "seeds", seeds)
+rec = json.load(open("B/candidate_tables/0/83001.json"))
+print("run_config keys:", sorted(rec["run_config"]))
+seedkeys = {k: v for k, v in rec["run_config"].items() if "seed" in k}
+print("seed-like keys in candidate run_config:", seedkeys)
+bad = []
+for d in ["B", "arm_i", "arm_ii", "arm_iii"]:
+    for f in glob.glob(f"{d}/candidate_tables/*/*.json"):
+        r = json.load(open(f))
+        for k, v in r["run_config"].items():
+            if "seed" in k and k != "initial_seed_count" and v != r["process_seed"]:
+                bad.append((f, k, v))
+    for p in json.load(open(f"{d}/target_provenance.json")):
+        for k, v in p["requested_run_config"].items():
+            if "seed" in k and k != "initial_seed_count" and v != p["process_seed"]:
+                bad.append((d, p["process_seed"], k, v))
+print("seed key mismatches:", bad[:5], len(bad))

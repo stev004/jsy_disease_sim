@@ -1,0 +1,22 @@
+"""G40 audit: fixed-scenario parameters in every candidate and target run config."""
+import json, glob, os
+os.chdir("/home/steven/jos-g35b-campaign-20261022T234254Z")
+def check(rc, dur):
+    rm = rc["route_multipliers"]
+    return (rc["mode"] == "ci" and rc["start_date"] == "2025-01-06" and rc["duration_days"] == dur
+            and rc["waning_enabled"] is False and rc["symptomatic_probability"] == 0.6
+            and len(rm) == 11 and all(v == 1.0 for v in rm.values())
+            and rc["latent_duration"]["family"] == "constant" and rc["latent_duration"]["mean_days"] == 2.0
+            and rc["infectious_duration"]["family"] == "constant" and rc["infectious_duration"]["mean_days"] == 5.0
+            and rc["dt_days"] == 1.0 and rc["initial_prevalence"] is None)
+for d, dur in [("B", 30), ("arm_i", 30), ("arm_ii", 49), ("arm_iii", 30)]:
+    bad = 0; n = 0
+    for f in glob.glob(f"{d}/candidate_tables/*/*.json"):
+        r = json.load(open(f)); n += 1
+        oc = r["observation_config"]
+        if not check(r["run_config"], dur) or oc["reporting_delay"]["days"] != [2] or oc["detection_delay"]["days"] != [0] \
+           or oc["analysis_horizon_tail_days"] != 4 or oc["day_of_week_effect"] != [1.0]*7:
+            bad += 1
+    tb = sum(not check(p["requested_run_config"], dur) for p in json.load(open(f"{d}/target_provenance.json")))
+    print(d, "candidate files", n, "fixed-param violations", bad, "| target violations", tb)
+print("route ids:", sorted(json.load(open("B/candidate_tables/0/83001.json"))["run_config"]["route_multipliers"]))

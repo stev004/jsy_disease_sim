@@ -1,0 +1,109 @@
+"""G40 audit: arm-(i) batch/nested descriptives, arm-(iii) share of L,
+float-margin robustness of every gate decision."""
+import json
+import os
+import statistics
+import sys
+
+sys.path.insert(0, "/tmp/g40audit")
+import s03_recompute as R  # noqa: E402
+
+os.chdir(R.BUNDLE)
+J = R.load_json
+OFF = 1  # index of offset in cell key
+
+# ---------- arm (i) descriptives ----------
+targets, lib = R.load_arm_tables("arm_i")
+desc = J("arm_i/g35b_i_descriptives.json")
+sets = {
+    "A": R.BATCH["A"], "B_prime": R.BATCH["B_prime"], "C_prime": R.BATCH["C_prime"], "D_prime": R.BATCH["D_prime"],
+    "A_union_B_prime": R.BATCH["A"] + R.BATCH["B_prime"],
+    "all_twelve": sum(R.BATCH.values(), []),
+}
+agree_count = 0
+mism = []
+spread_max_diff = 0.0
+for s in R.TARGETS:
+    dt = next(t for t in desc["targets"] if t["target_seed"] == s)
+    batch_obj = {}
+    reoff = {}
+    for name, seeds in sets.items():
+        surf = {k: R.rep_sum(targets[s], [reps[sd]["table"] for sd in seeds], 34) / 68.0 for k, reps in lib.items()}
+        f = R.fit(surf)
+        pr = f["profiles"]["inoculation_day_offset"]
+        reoff[name] = (pr["argmin"] if pr["unique"] else None, f["selected"][OFF] if f["selected"] else None, pr["identified"])
+        if name in ("A", "B_prime", "C_prime", "D_prime"):
+            batch_obj[name] = surf
+        claimed = dt["reprofiled_offsets"][name]
+        if claimed["reprofiled_offset"] != reoff[name][0] or claimed["global_selected_offset"] != reoff[name][1] \
+                or claimed["offset_profile_identified"] != reoff[name][2]:
+            mism.append((s, name, claimed["reprofiled_offset"], reoff[name]))
+    four = [reoff[n][0] for n in ("A", "B_prime", "C_prime", "D_prime")]
+    agree = None not in four and len(set(four)) == 1
+    agree_count += int(agree)
+    if agree != dt["four_batch_offsets_agree"]:
+        mism.append((s, "agree", agree, dt["four_batch_offsets_agree"]))
+    # per fixed tuple range and median of four batch objectives
+    for row in dt["fixed_tuple_spreads"]:
+        k = R.cell_key(row["cell"])
+        vals = sorted(batch_obj[n][k] for n in ("A", "B_prime", "C_prime", "D_prime"))
+        rng = vals[-1] - vals[0]
+        med = (vals[1] + vals[2]) / 2
+        spread_max_diff = max(spread_max_diff, abs(rng - row["range"]), abs(med - row["median"]))
+        if row["label"] != "stochastic_replicate_variation":
+            mism.append((s, "label", row["label"]))
+    print(s, "re-profiled offsets A/B'/C'/D'/A∪B'/12:", [reoff[n][0] for n in sets], "agree:", agree)
+print("arm i descriptive mismatches:", mism)
+print("four-batch agreement count recomputed:", agree_count, "claimed:", desc["four_batch_offset_agreement_count"])
+print("max |range/median diff|:", spread_max_diff, " tuples per target:", len(desc["targets"][0]["fixed_tuple_spreads"]))
+# Batch A estimate equals B gate estimate
+for s in R.TARGETS:
+    a = J(f"arm_i/descriptive_estimates/A/{s}.json"); b = J(f"B/blind_estimates/{s}.json")
+    if a["estimate_hash"] != b["estimate_hash"]:
+        print("A != B estimate", s)
+print("batch-A descriptive estimate hashes == B gate estimate hashes: checked")
+
+# ---------- arm (iii) share and float margins ----------
+ss = J("arm_iii/arm_iii/serosurvey_samples.json")
+tk = {t["process_seed"]: t["k"] for t in ss["targets"]}
+ck = {(c["process_seed"], float(c["beta"]), float(c["offset"])): c["k"] for c in ss["candidates"]}
+d3 = J("arm_iii/g35b_iii_descriptives.json")
+t3, lib3 = R.load_arm_tables("arm_iii")
+for s in R.TARGETS:
+    surf = {}
+    S = {}
+    for k, reps in lib3.items():
+        rep = R.rep_sum(t3[s], [reps[sd]["table"] for sd in R.BATCH["A"]], 34)
+        zbar = sum(R.anscombe_z(ck[(sd, k[0], k[1])], 400) for sd in R.BATCH["A"]) / 3
+        S[k] = (R.anscombe_z(tk[s], 400) - zbar) ** 2
+        surf[k] = (rep + S[k]) / 68.0
+    f = R.fit(surf)
+    sel = f["selected"]
+    share = (S[sel] / 68.0) / surf[sel]
+    dt = next(t for t in d3["targets"] if t["target_seed"] == s)
+    print(f"iii {s} share recomputed {share:.12f} claimed {dt['serosurvey_share_of_loss']:.12f} term {S[sel]:.6f} vs {dt['serosurvey_term']}")
+
+# ---------- margins: how far each decision is from its float threshold ----------
+def margins(label, arm_dir, T, seeds, sero=None):
+    tg, lb = R.load_arm_tables(arm_dir)
+    worst_tie = float("inf"); worst_gap = float("inf"); worst_unique = float("inf")
+    for s in R.TARGETS:
+        surf = {}
+        for k, reps in lb.items():
+            tot = R.rep_sum(tg[s], [reps[sd]["table"] for sd in seeds], T)
+            if sero:
+                zbar = sum(R.anscombe_z(ck[(sd, k[0], k[1])], 400) for sd in seeds) / 3
+                tot += (R.anscombe_z(tk[s], 400) - zbar) ** 2
+            surf[k] = tot / (2.0 * T)
+        vals = sorted(surf.values())
+        worst_tie = min(worst_tie, (vals[1] - vals[0]) / max(1.0, vals[0]))
+        f = R.fit(surf)
+        for n, pr in f["profiles"].items():
+            if pr["gap"] is not None:
+                worst_gap = min(worst_gap, abs(pr["gap"] - 0.05))
+    print(f"{label}: min relative separation of best vs second cell {worst_tie:.3e} (tie threshold 1e-12); min |gap-0.05| {worst_gap:.3e}")
+
+margins("B", "B", 34, R.BATCH["A"])
+margins("i", "arm_i", 34, sum(R.BATCH.values(), []))
+margins("ii", "arm_ii", 53, R.BATCH["A"])
+margins("iii", "arm_iii", 34, R.BATCH["A"], sero=True)

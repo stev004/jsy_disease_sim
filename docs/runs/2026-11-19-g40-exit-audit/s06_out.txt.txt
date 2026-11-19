@@ -1,0 +1,7 @@
+B latent calls 85 distinct 85 duplicates [] seeds [82001, 82002, 82003, 82004, 82005, 82006, 82007, 82008, 82009, 82010, 83001, 83002, 83003]
+i latent calls 225 distinct 225 duplicates [] seeds [83004, 83005, 83006, 83007, 83008, 83009, 83010, 83011, 83012]
+ii latent calls 85 distinct 85 duplicates [] seeds [82001, 82002, 82003, 82004, 82005, 82006, 82007, 82008, 82009, 82010, 83001, 83002, 83003]
+iii latent calls 0 distinct 0 duplicates [] seeds []
+run_config keys: ['beta', 'dt_days', 'duration_days', 'generator_version', 'immunity_duration', 'import_rate_per_day', 'import_schedule', 'infectious_duration', 'initial_prevalence', 'initial_seed_count', 'latent_duration', 'mode', 'parameter_set_id', 'route_multipliers', 'schema_version', 'seed', 'start_date', 'symptomatic_probability', 'waning_enabled']
+seed-like keys in candidate run_config: {'initial_seed_count': 0, 'seed': 83001}
+seed key mismatches: [] 0

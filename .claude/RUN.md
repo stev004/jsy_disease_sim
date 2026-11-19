@@ -1,4 +1,6 @@
-# RUN — nothing in flight. G38 merged, G39 campaign complete; exit audit (G40) pending. Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (not final).
+# RUN — nothing in flight. G35-B exit audit CONFIRMED 2026-11-19 (G40); results FINAL: Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL. Next: G41 (default A STOP).
+
+**2026-11-19 — G40 (Steven: "Yes, run audit"):** fresh Claude Opus 5.5 @ high exit audit, dispatched from the desktop app (not `claude -p` in WSL). Recomputed all four arms from the raw bundle: every predicate matches the bundle's claims; no VOID defect; five observations (O1 wall-time disclosure mismatch, low; O2–O5 info, incl. arm i passing exactly at four thresholds). Report `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`; scripts `docs/runs/2026-11-19-g40-exit-audit/`. Tokens 234,898. ts: trail row `g40-exit-audit-CONFIRMED`.
 
 **2026-10-23 — G38 + G39 (Steven):**
 - **G38 merge:** `0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8`. Mirror PASS 705/4. It reached GitHub after a recovery: the bash `( step ) ||` pattern disabled `set -e`. Trail rows `g38-merged` and `g38-merge-correction`.

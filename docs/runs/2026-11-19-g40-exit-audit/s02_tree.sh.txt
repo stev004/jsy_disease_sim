@@ -1,0 +1,5 @@
+#!/bin/bash
+B=/home/steven/jos-g35b-campaign-20261022T234254Z
+cd "$B"
+find . -type f ! -path '*/parents/*' | sed -E 's|/[0-9]+(\.json)?|/N\1|g' | sort | uniq -c
+echo; find . -type f -path '*/parents/*' | wc -l

@@ -1,0 +1,28 @@
+82001 re-profiled offsets A/B'/C'/D'/A∪B'/12: [0.0, 0.0, 1.0, 2.0, 0.0, 0.0] agree: False
+82002 re-profiled offsets A/B'/C'/D'/A∪B'/12: [2.0, 1.0, 2.0, 2.0, 0.0, 2.0] agree: False
+82003 re-profiled offsets A/B'/C'/D'/A∪B'/12: [2.0, 1.0, 2.0, 2.0, 2.0, 2.0] agree: False
+82004 re-profiled offsets A/B'/C'/D'/A∪B'/12: [2.0, 1.0, 2.0, 2.0, 3.0, 2.0] agree: False
+82005 re-profiled offsets A/B'/C'/D'/A∪B'/12: [2.0, 2.0, 2.0, 3.0, 2.0, 2.0] agree: False
+82006 re-profiled offsets A/B'/C'/D'/A∪B'/12: [4.0, 2.0, 4.0, 3.0, 2.0, 3.0] agree: False
+82007 re-profiled offsets A/B'/C'/D'/A∪B'/12: [2.0, 3.0, 2.0, 2.0, 2.0, 2.0] agree: False
+82008 re-profiled offsets A/B'/C'/D'/A∪B'/12: [1.0, 1.0, 0.0, 2.0, 0.0, 0.0] agree: False
+82009 re-profiled offsets A/B'/C'/D'/A∪B'/12: [4.0, 4.0, 4.0, 3.0, 2.0, 3.0] agree: False
+82010 re-profiled offsets A/B'/C'/D'/A∪B'/12: [2.0, 1.0, 2.0, 2.0, 1.0, 2.0] agree: False
+arm i descriptive mismatches: []
+four-batch agreement count recomputed: 0 claimed: 0
+max |range/median diff|: 0.0  tuples per target: 625
+batch-A descriptive estimate hashes == B gate estimate hashes: checked
+iii 82001 share recomputed 0.111393704200 claimed 0.111393704200 term 4.262321 vs 0.06268119308015306
+iii 82002 share recomputed 0.012533357808 claimed 0.012533357808 term 0.239392 vs 0.0035204700936315894
+iii 82003 share recomputed 0.007283332431 claimed 0.007283332431 term 0.186455 vs 0.002741987632863429
+iii 82004 share recomputed 0.001969300946 claimed 0.001969300946 term 0.046049 vs 0.0006771850903360326
+iii 82005 share recomputed 0.000169638093 claimed 0.000169638093 term 0.003227 vs 4.745193692412541e-05
+iii 82006 share recomputed 0.036731316265 claimed 0.036731316265 term 0.704815 vs 0.010364930523017067
+iii 82007 share recomputed 0.000787318812 claimed 0.000787318812 term 0.012258 vs 0.00018026329755269153
+iii 82008 share recomputed 0.027944586272 claimed 0.027944586272 term 0.533707 vs 0.007848632524767932
+iii 82009 share recomputed 0.023873978175 claimed 0.023873978175 term 0.457411 vs 0.006726632092055674
+iii 82010 share recomputed 0.001368433672 claimed 0.001368433672 term 0.025618 vs 0.00037674058459203074
+B: min relative separation of best vs second cell 2.738e-03 (tie threshold 1e-12); min |gap-0.05| 8.772e-04
+i: min relative separation of best vs second cell 9.174e-03 (tie threshold 1e-12); min |gap-0.05| 5.713e-03
+ii: min relative separation of best vs second cell 2.453e-03 (tie threshold 1e-12); min |gap-0.05| 1.924e-03
+iii: min relative separation of best vs second cell 1.593e-02 (tie threshold 1e-12); min |gap-0.05| 6.443e-03
