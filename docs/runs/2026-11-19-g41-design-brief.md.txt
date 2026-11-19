@@ -1,0 +1,40 @@
+TASK: JOS · g41-design · draft the G41 confirmatory predeclaration (arm-i factor, fresh seeds)
+ROLE: consultant — Claude Opus 5.5 @ high. Design consult; no implementation, no runs.
+
+GOAL: Write a complete, implementation-ready DRAFT predeclaration for a single confirmatory synthetic-recovery study of the G35-B arm-(i) factor ("more candidate replicates per cell", declared level R = 12), on fresh seeds. It must have the same structure and rigour as the frozen G35-B predeclaration, so that a model owner can accept it (possibly with amendments) and it can be frozen BEFORE any code is written or any campaign is run. The study answers one question: at the declared level, on targets and candidate seeds never used before, does R = 12 recover all four dimensions (beta, inoculation-day offset, symptomatic detection, asymptomatic detection) under the frozen G35-B arm-(i) gate?
+
+SCOPE: Repo C:\Users\StevBeast\Documents\jsy_disease_sim (git `main`; code baseline 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8, which contains the G35-B harness `src/jersey_outbreak/g35b_design_study.py` and config `configs/calibration/v13_g35b_design_study.yaml`). The G35-B campaign bundle at \\wsl$\Ubuntu\home\steven\jos-g35b-campaign-20261022T234254Z is immutable read-only reference. You may read anything. You may write EXACTLY ONE file: docs/research/v1_3/2026-11-19-g41-confirmatory-design-opus-DRAFT.md. No other edits, no commits, no pushes, no subagents, no simulations, no fits, no test runs, no population builds.
+
+CONTEXT (problem in the director's words): Phase 0 (2026-09-24) and Phase 0b (2026-09-26) failed synthetic recovery on the inoculation-day offset: selections piled on grid boundaries while beta and detection recovered. The G35-B design study (frozen predeclaration commit 3972190) then tested three factors one at a time against a baseline B (R = 3, 30-day window): (i) R = 12 candidate replicates, (ii) a 49-day window, (iii) a serosurvey anchor. Its single campaign (2026-10-23) and the independent exit audit (2026-11-19, CONFIRMED) give: B FAIL, i PASS, ii FAIL, iii FAIL. Arm (i) passed exactly at four inclusive thresholds (offset hits 8/10, symptomatic hits 8/10, joint 6/10, offset boundary 2/10), its four three-replicate batches agreed on the offset for 0/10 targets (descriptive), and three arms raise the chance of one chance pass. The frozen G35-B text says any reliance on arm (i) requires Steven's decision and a new owner-ruled, fresh-seed confirmatory predeclaration. Steven chose that (G41 = B, 2026-11-19). Real-data fitting stays STOPPED (G34 A+B) regardless of outcome; no outcome of this study authorizes it — at most it can justify Steven opening a separate gate.
+
+Read in full before writing:
+1. docs/research/v1_3/2026-10-22-g35b-predeclaration.md (frozen; your structural template — especially §1 lineage, §4.1 arm i, §5–§7 objective/predicates/readings, §8 seeds and replacement rule, §9 caps, §10 bundle, §12 order and VOID/FAIL rules, §13 implementation outline).
+2. docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md and owner clarifications 1 and 2 (same folder) — the amendments the owner demanded last time; pre-empt them.
+3. docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md (results, margins, observations O1–O5).
+4. docs/research/v1_3/2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md.
+5. .claude/DIRECTOR.md (hard rules and lessons — binding, especially: explicit unknown beats false precision; never invent parameters; ensemble spread is stochastic replicate variation, never a confidence interval; status vocabularies never mix; sha256s on committed LF bytes; ruling → pre-check → freeze order; a director brief must never add a rule the frozen text lacks).
+6. The harness code and config named above, so the design maps onto what exists.
+
+The draft must decide and argue IN ADVANCE (state each choice and why; where a choice is genuinely the owner's, present options with a recommended default):
+a. What is held fixed versus G35-B arm (i): scenario, grid, objective, R, T, tie/identification rules, tolerances, bias limits, predicates P1–P10 and their thresholds. A confirmatory study normally changes only the seeds; any other change must be justified against the risk of "moving the goalposts" after seeing arm i's result.
+b. Target count and thresholds. Whether to keep 10 targets with the frozen integer thresholds, or use more targets (with thresholds stated as integer counts fixed now) for a less knife-edge test. Consider the effect on the chance a true-recovery design passes and a non-recovery design passes, using only information already in hand (the G35-B and Phase-0b retained results); label any such numbers as exploratory, not gate inputs.
+c. Whether the baseline arm B (R = 3) is re-run on the new seeds as a concurrent control, or not. One gated arm means no multiplicity; say how a concurrent control would or would not be gated.
+d. Fresh seeds: process-seed lists for targets and candidates, observation-seed namespaces, reserves, disjointness from every earlier set (Phase 0: 42xxx/52xxx/43xxx/53xxx; Phase 0b: 62/72/63/73; probe 81001–81006, 91001–91003; G35-B 82001–82015, 83001–83017, 92xxx, 93xxx, 94xxx, 95xxx), the buildability pre-check (builds only, outcome-blind, after the ruling commit) and the replacement rule if a primary seed fails to build. Leave the pre-check result and any hashes as explicit placeholders to be filled mechanically at freeze.
+e. Descriptives (reported, never gated): which, and how labelled — including whether to repeat the batch-agreement descriptive.
+f. Implementation approach: reuse the existing harness's arm-(i) path with a new config, versus new code — choose the smallest change that keeps the frozen semantics, and say what the implementation units are (`Class: numerical`).
+g. §12-style order with seats named in advance, so no clarification is needed later: implementer (gpt-6.1-sol @ high), independent implementation reviewer (not the implementer), Steven's single-campaign authorization, fresh independent exit audit (neither implementer nor reviewer), and what happens if a seat is unavailable or a provider classifier stops it (never rephrase and resubmit filtered content to the same provider).
+h. Readings for every outcome (PASS, FAIL, VOID), verbatim, and the status phrase extension, keeping the existing phrase "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL" intact.
+i. Caps (§9-style exact work counts) and the bundle contents (§10-style), so the exit audit can recompute every predicate from raw tables, and the latent truth needed for P2/P3 is retained this time (exit-audit observation O4).
+j. A lineage block citing G35-B (predeclaration hash 2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e, bundle SHA256SUMS digest e6649a4b32289ad32cec7862ed79ea75a5123d0231178bebf0db78f0fd54c8fc, exit audit path) and Phase 0/0b.
+
+ACCEPTANCE: the draft file exists; every section a–j is answered with a stated choice or an owner option with a default; no parameter, threshold or seed is left implicit; nothing contradicts DIRECTOR.md hard rules; every unknown is labelled as unknown rather than guessed; it ends with a short list "Questions for the model owner".
+
+VERIFY: re-read your draft against items a–j and against the G35-B owner ruling's amendments A1–A11; fix gaps before returning.
+
+TIMEBOX: one pass; stop and report if you exceed ~250K tokens.
+
+FORBIDDEN: running any simulation, build, fit or test; writing any file except the one draft; editing the repo otherwise; committing; anything touching real data; calling any result calibrated or validated; calling replicate spread a confidence interval.
+
+REPORT: return (1) the draft path, (2) a one-paragraph summary of the key design choices, (3) the questions for the model owner, (4) anything in the frozen G35-B text or harness that you found inconsistent or that blocks a clean confirmatory design.
+
+STANDING: .claude/DIRECTOR.md in the repo is binding in full; read it.

@@ -1,4 +1,10 @@
-# RUN — nothing in flight. G35-B exit audit CONFIRMED 2026-11-19 (G40); results FINAL: Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL. Next: G41 (default A STOP).
+# RUN — IN FLIGHT: foreman run `g41-predecl` (G41 = B, Steven 2026-11-19).
+
+**Predicate:** an owner-ruled, FROZEN confirmatory predeclaration for the G35-B arm-(i) factor (more replicates per candidate) on fresh seeds pre-checked buildable, committed via `fm.sh sync` with its committed-bytes SHA-256 recorded in the trail. No implementation, no campaign, no study-seed simulation, no real data.
+**Budget:** 5 iterations (default). **Units, in order:** (1) design + predeclaration DRAFT — Opus 5.5 @ high consultant (routed straight to Claude: the 2026-10-22 gpt-6.1-sol design consult on this study was stopped by OpenAI's bio-risk classifier; DIRECTOR lesson) · (2) model-owner ruling — Fable 5.1 subagent under Steven's delegation · (3) ruling committed → seed build pre-check (builds only) on that commit · (4) mechanical freeze. Then trail audit on the other family (gpt-6-astra @ high).
+**In flight:** unit 1 (design draft). **Cold-start recipe:** if `docs/research/v1_3/2026-11-19-g41-confirmatory-design-opus-DRAFT.md` exists, go to unit 2; else re-dispatch unit 1 with the brief filed at `docs/runs/2026-11-19-g41-design-brief.md.txt`.
+
+**Previous:** RUN — nothing in flight. G35-B exit audit CONFIRMED 2026-11-19 (G40); results FINAL: Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL. Next: G41 (default A STOP).
 
 **2026-11-19 — G40 (Steven: "Yes, run audit"):** fresh Claude Opus 5.5 @ high exit audit, dispatched from the desktop app (not `claude -p` in WSL). Recomputed all four arms from the raw bundle: every predicate matches the bundle's claims; no VOID defect; five observations (O1 wall-time disclosure mismatch, low; O2–O5 info, incl. arm i passing exactly at four thresholds). Report `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`; scripts `docs/runs/2026-11-19-g40-exit-audit/`. Tokens 234,898. ts: trail row `g40-exit-audit-CONFIRMED`.
 

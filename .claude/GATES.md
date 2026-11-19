@@ -4,21 +4,22 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. **G41 OPEN** (what follows G35-B; default A STOP). G5 open.
-
-### G41 — What, if anything, follows G35-B? (model owner)
-- **Why it's open:** the exit audit CONFIRMED B FAIL, i PASS, ii FAIL, iii FAIL. Arm i (more replicates per candidate) passed only at threshold on four counts (offset hits 8/10, symptomatic hits 8/10, joint 6/10, offset boundary 2/10), its four-batch offset agreement was 0/10, and three arms raise the chance of one chance pass. The frozen text says any reliance on arm i needs Steven's decision and a new owner-ruled, fresh-seed confirmatory predeclaration. Real-data fitting stays STOPPED either way.
-- **Options:**
-  - **A — STOP (default).** Record G35-B as the final synthetic design study. JOS keeps the offset non-identifiability finding; arm i stays a screening result only.
-  - **B — Confirmatory study of the replicate factor.** Owner-ruled predeclaration first, fresh seeds pre-checked buildable, one campaign, same pass/fail rules. Only after B passes could real-data fitting be reconsidered, as a separate gate.
-  - **C — Labelled demo.** Ship the simulator as scenario-only research software with the identifiability finding stated; no calibration claim.
-- **Default on no answer:** A.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B (confirmatory study; run `g41-predecl` in flight). G5 open.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G41 — RESOLVED 2026-11-19: B (Steven, chat: "B — Confirmatory study") — What, if anything, follows G35-B? (model owner)
+- **Why it's open:** the exit audit CONFIRMED B FAIL, i PASS, ii FAIL, iii FAIL. Arm i (more replicates per candidate) passed only at threshold on four counts (offset hits 8/10, symptomatic hits 8/10, joint 6/10, offset boundary 2/10), its four-batch offset agreement was 0/10, and three arms raise the chance of one chance pass. The frozen text says any reliance on arm i needs Steven's decision and a new owner-ruled, fresh-seed confirmatory predeclaration. Real-data fitting stays STOPPED either way.
+- **Options:**
+  - **A — STOP (default).** Record G35-B as the final synthetic design study. JOS keeps the offset non-identifiability finding; arm i stays a screening result only.
+  - **B — Confirmatory study of the replicate factor.** Owner-ruled predeclaration first, fresh seeds pre-checked buildable, one campaign, same pass/fail rules. Only after B passes could real-data fitting be reconsidered, as a separate gate.
+  - **C — Labelled demo.** Ship the simulator as scenario-only research software with the identifiability finding stated; no calibration claim.
+- **Default on no answer:** A.
+- **Execution:** foreman run `g41-predecl` (predicate: owner-ruled, frozen confirmatory predeclaration on fresh pre-checked seeds, SHA recorded; no implementation, no campaign, no real data). Implementation and the campaign are later gates.
 
 ### G40 — RESOLVED 2026-11-19: audit run, CONFIRMED (Steven, chat: "Yes, run audit") — Exit-audit seat for the G35-B campaign (§12 step 9)
 - **Why it's open:** frozen §12 step 9 and clarification 2 require a fresh, independent exit audit by a model that is neither the implementer (gpt-6.1-sol) nor the step-7 reviewer (gpt-6-astra). Opus 5.5 is the natural seat, but the `claude` CLI is not logged in on Windows or WSL, and logging in is Steven's credential step. Until the audit files, the G35-B results are **not final**.
