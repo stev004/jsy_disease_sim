@@ -1,0 +1,27 @@
+TASK: JOS · g43-owner-ruling · rule on the G43 multi-library predeclaration draft
+ROLE: model owner — gpt-6.2-sol @ high, acting under Steven's standing delegation of model-owner science rulings (first given 2026-09-19). Read-only; your final response IS the ruling and will be filed verbatim.
+
+GOAL: Issue the model-owner ruling on the G43 multi-library predeclaration draft so that it can (or cannot) be frozen. Your ruling is binding science authority for this study; the director implements it mechanically and must not add rules you did not state.
+
+SCOPE: Repository root = the directory you were started in (a read-only clone of `main` at the commit named by `git rev-parse HEAD`). Read anything. The G35-B campaign bundle at /home/steven/jos-g35b-campaign-20261022T234254Z is immutable read-only reference. Do not edit, create, commit or push any file; no simulations, builds, fits or tests. Light read-only arithmetic is allowed; label anything derived EXPLORATORY.
+
+CONTEXT (director's words): After the owner rejected the one-library G41 confirmatory design (docs/research/v1_3/2026-11-20-g41-owner-ruling.md), Steven chose B2: several independent R = 12 candidate libraries scored on the same fresh targets, frozen arm-(i) gate unchanged per library, R = 3 batches as concurrent reference, across-library reading declared in advance. Three consultants proposed designs (docs/research/v1_3/2026-11-20-g42-b2-consult-{fable52,astra62,sol62}.md; comparison 2026-11-20-g42-b2-consult-comparison.md). Steven delegated the choice; the director chose design F (Fable 5.2: L = 6 libraries, N = 20 shared targets, CONSISTENT-PASS / MIXED / CONSISTENT-FAIL / NO-READING, no study-level k-of-L cut). The reasons are in .claude/GATES.md, Resolved entry G43. Fable 5.2 then drafted the predeclaration: docs/research/v1_3/2026-11-20-g43-multilibrary-predeclaration-DRAFT.md (committed at 55bb491dc76b3de18eb04c8ce290eb9edb455f78; committed-bytes sha256 709bc9f3503d392886366ac59c8be205066386a52a22175e868cae1fd367f590). It ends with 14 questions for you.
+
+SEAT DISCLOSURE: you are the owner because Fable 5.2 authored the design and the draft (author ≠ judge). A gpt-6.2-sol consult proposed the rival 22-library reliability design. You are asked to judge THIS draft on its merits. Rejecting it because you prefer the rival design is legitimate only if you argue that F is uninformative or defective, not merely weaker; the choice of question (draw-sensitivity versus reliability) was Steven's delegated product decision. If you conclude that a reliability standard is scientifically required, say so and the director will park that as a gate for Steven.
+
+Read in full: the draft; the frozen G35-B predeclaration docs/research/v1_3/2026-10-22-g35b-predeclaration.md; the G35-B owner ruling and clarifications 1 and 2 (same folder); the G41 owner ruling; docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md; .claude/DIRECTOR.md (hard rules and lessons binding); .claude/GATES.md entries G42 and G43. Skim src/jersey_outbreak/g35b_design_study.py and phase0_campaign.py where the draft cites them. Check the draft's seed disjointness, integer thresholds and work counts.
+
+YOUR RULING MUST:
+1. Open with exactly one verdict line: `G43 OWNER RULING: ACCEPT` | `ACCEPT WITH AMENDMENTS` | `REJECT`.
+2. Answer each of the draft's 14 questions with a ruling.
+3. List amendments as numbered items (A1, A2, …), each stating the exact text change or value.
+4. State pre-freeze conditions in order. The established order is: ruling commit → builds-only, outcome-blind seed pre-check on that commit → mechanical freeze (fill placeholders, hash committed bytes). Nothing before the ruling commit.
+5. Reconcile seat names: DIRECTOR.md's fleet line still names gpt-6.1-sol / gpt-6-astra; gpt-6.2-sol and gpt-6.2-astra are now installed and verified. Rule which models fill each §12 seat, with fallbacks, consistent with author ≠ judge (Fable 5.2 drafted; you rule).
+6. Change no science silently: every grid, threshold, seed, objective, level or predicate you alter is named.
+7. Observe DIRECTOR.md hard rules (explicit unknown beats false precision; never invent parameters; replicate spread is never a confidence interval; status vocabularies never mix; no calibration/validation claims; real-data fitting stays STOPPED).
+
+REPORT: First line: your exact model name and reasoning effort. Then the verdict line, a one-paragraph summary, answers Q1–Q14, the amendment list, pre-freeze conditions, the seat table, and anything that needs Steven personally. Final response only; no more than about 3,000 words.
+
+TIMEBOX: one pass; stop and report if you exceed ~300K tokens.
+FORBIDDEN: editing or creating files; commits; simulations, builds, fits or tests; real data; calling anything calibrated or validated; calling replicate spread a confidence interval.
+STANDING: .claude/DIRECTOR.md is binding in full; read it.
