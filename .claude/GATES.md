@@ -4,7 +4,16 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2 (redesign; three-model consult panel in flight). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. **G43 OPEN** (which B2 design goes to drafting; default HOLD). G5 open.
+
+### G43 — Which B2 design goes forward to a predeclaration draft?
+- **Evidence:** `docs/research/v1_3/2026-11-20-g42-b2-consult-comparison.md` and the three filed consults.
+- **Options:**
+  - **F — Fable 5.2 design:** L = 6 independent R = 12 libraries on 20 shared targets; all / some / none reading (CONSISTENT-PASS, MIXED, CONSISTENT-FAIL, NO-READING); no new threshold; ~2 h compute. Answers "can the draw flip the verdict?", not "how reliable is it?".
+  - **AS — Astra/Sol 6.2 design:** L = 22 libraries on 20 shared targets; new study-level standard 0.80 with ≤ 5% error each way (21–22 yes, 14–20 can't tell, 0–13 no); ~7 h compute. Positive reading only ~34% likely even at a true 90% pass rate.
+  - **A — STOP** after all (record G35-B as final).
+- **Also to settle:** owner-ruling seat — Fable has been the owner, but Fable 5.2 is now a consultant on this design (disclose, or route the ruling elsewhere).
+- **Default on no answer:** HOLD.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
