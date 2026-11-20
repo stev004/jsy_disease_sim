@@ -1,7 +1,14 @@
-# RUN — nothing in flight. G42-B2 consult panel DONE; awaiting Steven on G43.
+# RUN — `g43-predecl` IN FLIGHT (2026-11-20). Predicate: owner-ruled, frozen B2 multi-library predeclaration (design F, L = 6) on fresh seeds pre-checked buildable, committed with SHA recorded. No implementation, no campaign, no real data.
+
+**In flight:** unit 1, Fable 5.2 subagent drafting `docs/research/v1_3/2026-11-20-g43-multilibrary-predeclaration-DRAFT.md` from brief `docs/runs/2026-11-20-g43-predecl-draft-brief.md.txt` (ts: trail row `g43-F`).
+**Resume recipe:** if the draft file exists and the subagent reported, commit it, record committed-bytes sha256, then launch the owner ruling (gpt-6.2-sol @ high, read-only Codex in a fresh GitHub clone at that SHA; on a classifier stop, re-route unchanged to a fresh Opus 5.5 subagent). If no draft exists, relaunch unit 1 from the same brief. Then: ruling commit → builds-only seed pre-check (`docs/runs/2026-10-22-g35b-seed-precheck.py.txt` pattern) → mechanical freeze.
+
+---
+
+## Previous: G42-B2 consult panel DONE; G43 = F.
 
 **G42-B2 consult panel (2026-11-20):** three reports filed verbatim under `docs/research/v1_3/2026-11-20-g42-b2-consult-{fable52,astra62,sol62}.md`, comparison `docs/research/v1_3/2026-11-20-g42-b2-consult-comparison.md`. Two designs emerged: Fable 5.2 descriptive draw-sensitivity (L = 6 libraries, N = 20, all/some/none classes, no new threshold, ~2 h); gpt-6.2-astra and gpt-6.2-sol converged independently on a reliability test (L = 22, N = 20, 0.80 standard, 21–22 yes / 14–20 can't tell / 0–13 no, ~7 h). No classifier stops. Tokens: Fable 159,120 (Claude), Astra 76,404, Sol 116,238 (Codex).
-**Resume recipe:** on G43, commission the chosen design as a predeclaration draft, then an owner ruling (seat per G43), then ruling commit → builds-only pre-check → freeze. Nothing is built or run before that.
+**(Superseded resume recipe)** on G43, commission the chosen design as a predeclaration draft, then an owner ruling (seat per G43), then ruling commit → builds-only pre-check → freeze. Nothing is built or run before that.
 
 **Run `g41-predecl` (2026-11-19/20):** unit 1 Opus 5.5 design DRAFT kept (e8a2401, sha256 d46c46a9…033e); unit 2 Fable 5.1 owner ruling **REJECT** (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`): one 12-replicate library is one draw of the thing that varies, the design sits at threshold, and neither outcome would decide anything. No pre-check, no freeze, nothing implemented or run. Contingent rulings (INACTIVE) apply only if Steven picks G42-B1. Tokens: design 239,293; ruling 194,654 (Claude subagents; no Codex executors).
 **Resume recipe:** on G42 — B2: commission a new design consult (several independent R = 12 libraries; explicit unknowns per ruling §5) then owner ruling; A: record STOP in FRONTIER/RUN; B1: commit nothing new, apply ruling §6 amendments A1–A3, then pre-check → freeze; C: scope a labelled-demo task.
