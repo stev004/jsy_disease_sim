@@ -1,0 +1,15 @@
+TASK: JOS · g41-predecl trail audit · check run trail rows against git and filed artifacts
+ROLE: independent auditor — gpt-6-astra @ high. Read-only provenance audit of a documentation run; no science judgement needed.
+
+GOAL: Audit the 2026-11-19/20 work on `main` from trail row `g40-exit-audit-CONFIRMED` through the last row (`g41-run-start`, `g41-design-draft`, `g41-owner-REJECT`). Check whether every trail row's claims resolve against what actually exists in git and on disk, and return an Attention list. The director was Claude Opus 5.5 (desktop app); the design consultant and the G40 exit auditor were fresh Claude Opus 5.5 subagents; the owner was a Fable 5.1 subagent. You are the other family.
+
+SCOPE: Read-only clone at the path you were launched in (main at the HEAD named there). Read `.claude/decisions.tsv` rows from `g40-exit-audit-CONFIRMED` to the end, plus `.claude/RUN.md`, `.claude/GATES.md`, `.claude/FRONTIER.md`, `.claude/DIRECTOR.md`. Read the files those rows cite: `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`, `docs/runs/2026-11-19-g40-exit-audit/*`, `docs/runs/2026-11-19-g41-design-brief.md.txt`, `docs/runs/2026-11-20-g41-owner-ruling-brief.md.txt`, `docs/research/v1_3/2026-11-19-g41-confirmatory-design-opus-DRAFT.md`, `docs/research/v1_3/2026-11-20-g41-owner-ruling.md`. The G35-B campaign bundle `/home/steven/jos-g35b-campaign-20261022T234254Z` may be read. You may run read-only git commands and `sha256sum` over `git show <sha>:<path>` output, and read-only stdlib Python over the bundle. No edits, commits, pushes, simulations, builds or tests.
+
+CHECKS:
+1. **Evidence.** Every SHA in an evidence cell exists and is an ancestor of main; every cited path exists at the cited commit; every sha256 cited (draft d46c46a9…, ruling 21164627…, bundle SHA256SUMS e6649a4b…) equals sha256 of the committed bytes / file, never a working copy.
+2. **G40 exit audit.** The filed report's header and lineage claims match the bundle (SHA256SUMS digest, code SHA, predeclaration hash). Spot-check at least two per-arm predicate values in the report against the bundle's `*/recovery_evaluation.json`. Confirm the report discloses how the auditor was dispatched and its family relation to the director.
+3. **Gates.** G40 and G41 are closed with Steven's chat words quoted; G42 quotes the owner ruling §5 options and default verbatim with no director additions; no stale "exit audit pending" / "not final" / "in flight" claim remains in `.claude/`.
+4. **Ordering and scope.** No seed pre-check, freeze, implementation, simulation or campaign happened in this run (the owner ruling forbids pre-check/freeze). The draft and ruling are each the only file their author was allowed to write.
+5. **Rows.** Every row carries `[skip ci]`; token figures cited in RUN.md/rows are plausible and consistent; status phrase in DIRECTOR.md matches the exit audit's.
+
+REPORT: The first line states your model name. Then an Attention list, one line per finding: row ts/phase, what is wrong, the contradicting artifact. "No flags" is valid. Then one line per check (1–5) as OK or FLAG. Final response only.
