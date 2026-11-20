@@ -4,12 +4,22 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). **G44 OPEN** (authorize implementation; default HOLD). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). **G44 OPEN** (authorize implementation; default HOLD). G5 open.
 
 ### G44 — Authorize implementation of the frozen G43 study (U1–U3 + independent review)? No campaign.
 - **Frozen text:** `docs/research/v1_3/2026-11-20-g43-predeclaration.md` @ `fc16adcb3f8817eb2630ae5a31cd0508990bebd2`, committed-bytes sha256 `67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094`. Owner ruling (gpt-6.2-sol @ high): ACCEPT WITH AMENDMENTS A1–A10, `docs/research/v1_3/2026-11-20-g43-owner-ruling.md` @ `f2062d5`.
 - **Design (F):** six independent R = 12 candidate libraries scored on one shared panel of 20 fresh targets; frozen arm-(i) gate P1–P10 unchanged per library; reading CONSISTENT-PASS (6/6) / MIXED (1–5) / CONSISTENT-FAIL (0/6) / NO-READING (shared-panel P2/P3 failure) / VOID; no study-level recovery gate.
 - **Disclosure the owner required:** the target panel grows from 10 (G35-B) to 20 with fraction-preserving integer thresholds (hits ≥ 16, joint ≥ 12, boundary ≤ 4 of 20). Each target is five percentage points instead of ten; one target can still flip a verdict at an endpoint; the operating characteristics of the composite gate are unknown (frozen §7.7).
+  Binomial table from frozen §7.7 (EXPLORATORY DESIGN ARITHMETIC; per-target success Bernoulli(p) for one fixed library; single count predicates only):
+
+  | Per-target rate p | P(hits ≥ 4N/5): N = 10 → 20 | P(joint ≥ 3N/5): N = 10 → 20 |
+  |---:|---|---|
+  | 0.5 | 0.055 → 0.006 | 0.377 → 0.252 |
+  | 0.6 | 0.167 → 0.051 | 0.633 → 0.596 |
+  | 0.7 | 0.383 → 0.238 | 0.850 → 0.887 |
+  | 0.8 | 0.678 → 0.630 | 0.967 → 0.990 |
+  | 0.9 | 0.930 → 0.957 | 0.998 → 1.000 |
+- **First step if authorized — owner clarification 1:** the G43 trail audit (`docs/audits/2026-11-20-g43-trail-audit-astra62.md`) found frozen §7.3's opening sentence ("The study reports the six verdicts, k, and exactly one class word") not limited to intact campaigns, while the A3 precedence rule two lines later gives a VOID campaign no verdicts, counts or class. Under frozen §12 an inconsistency stops work pending a filed clarification, so implementation starts with a gpt-6.2-sol owner clarification on that sentence; the frozen text is not edited.
 - **What is asked:** three `Class: numerical` units (U1 evaluator and reading logic; U2 generation and blind barrier; U3 retention and bundle) implemented on gpt-6.2-sol @ high in a new standalone module reusing the G35-B scoring functions, then an independent implementation review by a fresh Claude Opus 5.5 @ high (frozen §12 seat table). **The campaign is NOT part of G44**; it needs Steven's separate single-campaign authorization (frozen §12), then a fresh exit audit (gpt-6.2-astra @ high).
 - **Scale (EXPLORATORY estimates):** campaign 92 builds, 1,820 latent calls, 45,020 transforms, roughly two hours (linear scaling, unreliable), bundle 0.5–1 GB; host C: had 14 GB free at pre-check.
 - **Real-data fitting stays STOPPED** whatever the outcome.
