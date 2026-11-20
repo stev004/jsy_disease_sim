@@ -21,7 +21,7 @@
 - **Why F:**
   1. It answers the question the owner's B2 actually posed (is arm-i recovery a property of R = 12, or of the library drawn?) without introducing a new study-level threshold. A 0.80 / 5% standard is a number nobody has a basis for; DIRECTOR's "never invent parameters" rule points away from it.
   2. AS is most likely to end at "can't tell" (≈ 66% even at a true 90% library pass rate), which is the exact defect the owner rejected G41 for: neither likely outcome would decide anything.
-  3. F's likely outcomes are informative: MIXED shows directly that the verdict depends on the draw; CONSISTENT-FAIL shows arm i was a chance pass; CONSISTENT-PASS is weaker (cannot exclude a 20–30% library failure rate), and the draft must say so in advance.
+  3. F's likely outcomes are informative: MIXED shows directly that the verdict depends on the draw; CONSISTENT-FAIL records six failures on the G43 panel and leaves the G35-B arm-(i) screening PASS in place (wording per owner ruling A4); CONSISTENT-PASS is weaker (cannot exclude a 20–30% library failure rate), and the draft must say so in advance.
   4. About 2 h of compute against about 7 h.
 - **Seat:** the owner ruling goes to **gpt-6.2-sol @ high**, not Fable: Fable 5.2 authored design F, so author ≠ judge rules Fable out. Disclosed: Sol 6.2 proposed the rival design AS. The drafter is Fable 5.2 (the design's author; drafting is authorship, not judgment). If OpenAI's classifier stops the ruling, it is re-routed unchanged to a fresh Claude Opus 5.5 subagent, never rephrased.
 - **Order:** draft → owner ruling → ruling commit → builds-only seed pre-check → freeze. Implementation and the campaign are later Steven gates. Real-data fitting stays STOPPED.
