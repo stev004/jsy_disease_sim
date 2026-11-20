@@ -1,6 +1,6 @@
 # RUN — `g43-predecl` IN FLIGHT (2026-11-20). Predicate: owner-ruled, frozen B2 multi-library predeclaration (design F, L = 6) on fresh seeds pre-checked buildable, committed with SHA recorded. No implementation, no campaign, no real data.
 
-**In flight:** unit 1, Fable 5.2 subagent drafting `docs/research/v1_3/2026-11-20-g43-multilibrary-predeclaration-DRAFT.md` from brief `docs/runs/2026-11-20-g43-predecl-draft-brief.md.txt` (ts: trail row `g43-F`).
+**In flight:** unit 2, owner ruling by gpt-6.2-sol @ high (read-only Codex, clone /home/steven/jos-g43-ruling-sol62-ro at 2bed790; log stem /home/steven/jos-g43-ruling-sol62; ts: trail row `g43-draft`). Unit 1 DONE: draft 55bb491, sha256 709bc9f3…f590.
 **Resume recipe:** if the draft file exists and the subagent reported, commit it, record committed-bytes sha256, then launch the owner ruling (gpt-6.2-sol @ high, read-only Codex in a fresh GitHub clone at that SHA; on a classifier stop, re-route unchanged to a fresh Opus 5.5 subagent). If no draft exists, relaunch unit 1 from the same brief. Then: ruling commit → builds-only seed pre-check (`docs/runs/2026-10-22-g35b-seed-precheck.py.txt` pattern) → mechanical freeze.
 
 ---
