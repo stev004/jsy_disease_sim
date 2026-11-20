@@ -1,0 +1,24 @@
+TASK: JOS · g41-owner-ruling · rule on the G41 confirmatory predeclaration draft
+ROLE: model owner — Fable 5.1, acting under Steven's standing delegation of model-owner science rulings (first given 2026-09-19, used for G35-B on 2026-10-22). Read-only except one file.
+
+GOAL: Issue the model-owner ruling on the G41 confirmatory-study design draft, so that it can (or cannot) be frozen. Your ruling is binding science authority for this study; the director implements it mechanically and must not add rules you did not state.
+
+SCOPE: Repo C:\Users\StevBeast\Documents\jsy_disease_sim (git main). Read anything. Write EXACTLY ONE file: docs/research/v1_3/2026-11-20-g41-owner-ruling.md. No other edits, no commits, no simulations, builds, fits or tests.
+
+CONTEXT (director's words): Steven chose G41 = B on 2026-11-19: a confirmatory, fresh-seed synthetic study of the G35-B arm-(i) factor (R = 12 candidate replicates per cell), "owner-ruled predeclaration first". The G35-B exit audit (docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md) confirmed B FAIL, i PASS, ii FAIL, iii FAIL, with arm (i) exactly at four inclusive thresholds and 0/10 batch offset agreement. A Claude Opus 5.5 consultant drafted the confirmatory predeclaration: docs/research/v1_3/2026-11-19-g41-confirmatory-design-opus-DRAFT.md (committed at e8a2401; committed-bytes sha256 d46c46a92790934bd9dd19b31e619c2dae016a4ebe8036a8aa2306bd357c033e). Its exploratory section (labelled not a gate input) reports that, re-scoring retained G35-B records, an arm-(i)-like design meets the gate with bootstrap frequency about 0.42 at N = 10 and 0.36 at N = 20, versus 0.24 / 0.13 for an R = 3-like design, and that one independent R = 3 batch alone met predicates 4–8. In other words: a FAIL is the likelier single outcome even if R = 12 behaves as it did, and the evidence that R is the factor at all is weak. The draft ends with nine questions for you.
+
+Read in full: the draft; the frozen G35-B predeclaration docs/research/v1_3/2026-10-22-g35b-predeclaration.md; your previous ruling docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md and clarifications 1 and 2 (same folder); the exit audit; .claude/DIRECTOR.md (hard rules and lessons are binding); .claude/GATES.md entry G41 (Resolved section) for Steven's option text. Check the draft's exploratory numbers against the retained bundle (\\wsl$\Ubuntu\home\steven\jos-g35b-campaign-20261022T234254Z, read-only) to the extent you judge necessary; you may reason from the files but must not run simulations.
+
+YOUR RULING MUST:
+1. Open with exactly one verdict line: `G41 OWNER RULING: ACCEPT` | `ACCEPT WITH AMENDMENTS` | `REJECT`.
+2. Decide whether this confirmatory study is worth running as designed, given the exploratory power estimate. REJECT is legitimate if you judge a campaign uninformative; if so, say what (if anything) Steven should decide instead, and the director will park that as a gate. Do not soften a REJECT to avoid disappointing anyone.
+3. If accepting: answer every one of the draft's nine questions with a ruling; list any amendments as numbered items (A1, A2, …) each stating the exact text change or value; state any pre-freeze conditions in order (the established order is ruling commit → builds-only seed pre-check on that commit → mechanical freeze; nothing before the ruling commit).
+4. Rule explicitly whether a fraction-preserving change of target count N honours Steven's option text "same pass/fail rules", or needs Steven's own decision (if the latter, say so and the director will park it).
+5. Change no science silently: every grid, threshold, seed, objective, level or predicate you alter is named.
+6. Observe DIRECTOR.md hard rules (explicit unknown beats false precision; replicate spread is never a confidence interval; status vocabularies never mix; no calibration/validation claims; real-data fitting stays STOPPED).
+
+REPORT: return the verdict line, a one-paragraph summary, the amendment list (if any), and anything that needs Steven personally.
+
+TIMEBOX: one pass; stop and report if you exceed ~250K tokens.
+FORBIDDEN: any file write other than the ruling; commits; simulations, builds, fits or tests; real data.
+STANDING: .claude/DIRECTOR.md is binding in full.
