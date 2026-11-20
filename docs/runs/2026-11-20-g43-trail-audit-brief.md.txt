@@ -1,0 +1,15 @@
+TASK: JOS · g43-predecl trail audit · check run trail rows against git and filed artifacts
+ROLE: independent auditor — gpt-6.2-astra @ high. Read-only provenance audit of a documentation run; no science judgement needed.
+
+GOAL: Audit the 2026-11-20 run `g43-predecl` on `main`, trail rows `g43-F`, `g43-draft`, `g43-ruling`, `g43-seed-precheck`, `g43-frozen`. Check whether every row's claims resolve against what exists in git and on disk, and return an Attention list. The director was Claude Opus 5.5 (desktop app); the drafter was a Claude Fable 5.2 subagent; the owner was gpt-6.2-sol @ high (read-only Codex; its final message was filed verbatim by the director); the freeze was applied by a fresh Claude Opus 5.5 subagent. You are the other family from the director.
+
+SCOPE: Read-only clone at the path you were launched in (main at the HEAD named there). Read `.claude/decisions.tsv` rows from `g43-F` to the end, `.claude/RUN.md`, `.claude/GATES.md` (G43 resolved, G44 open), `.claude/FRONTIER.md`, `.claude/DIRECTOR.md`, and every file those rows cite under `docs/research/v1_3/2026-11-20-g43-*` and `docs/runs/2026-11-20-g43-*`. The pre-check work dirs `/home/steven/jos-g43-precheck-20261120*` and the ruling run files `/home/steven/jos-g43-ruling-sol62*` may be read. Read-only git commands, `sha256sum` over `git show <sha>:<path>` output, and read-only stdlib Python are allowed. No edits, commits, pushes, simulations, builds or tests.
+
+CHECKS:
+1. **Evidence.** Every SHA in an evidence cell exists and is an ancestor of main; every cited path exists at the cited commit; every cited sha256 equals sha256 of the committed bytes at the cited commit.
+2. **Order.** The ruling commit precedes every pre-check attempt (compare commit times with the pre-check log/file mtimes, including the two aborted attempts); the freeze commit follows the pre-check evidence commit; no implementation, simulation or campaign happened (code tree `src configs tests scripts` at main equals 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8).
+3. **Verbatim and mechanical.** The filed owner ruling equals `/home/steven/jos-g43-ruling-sol62.last.md` apart from the director's header. The frozen text differs from the draft only by amendments A1–A10, ruling answers, and placeholder fills: spot-check at least four amendments and the §8 final seed table against `docs/runs/2026-11-20-g43-seed-precheck.json` and the A7 rule (replacements recomputable from the JSON).
+4. **Gates and state.** G43 quotes Steven's delegation verbatim; G44 is open with default HOLD and carries the owner's required 10→20 disclosure; no stale "in flight" claim remains for this run in `.claude/`.
+5. **Rows.** Every row carries `[skip ci]`; token figures are plausible and consistent with RUN.md; disclosures (draft over timebox, aborted launcher attempts) are present.
+
+REPORT: First line states your model name. Then an Attention list, one line per finding: row ts/phase, what is wrong, the contradicting artifact. "No flags" is valid. Then one line per check (1–5) as OK or FLAG. Final response only.
