@@ -4,7 +4,21 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B (confirmatory study; run `g41-predecl` in flight). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). **G42 OPEN** (what follows; default HOLD). G5 open.
+
+### G42 — After the owner's REJECT of the G41 confirmatory design: what follows? (Steven; options quoted verbatim from the owner ruling §5)
+- **Source:** `docs/research/v1_3/2026-11-20-g41-owner-ruling.md` (Fable 5.1 model owner, verdict `G41 OWNER RULING: REJECT`). Draft rejected: `docs/research/v1_3/2026-11-19-g41-confirmatory-design-opus-DRAFT.md`.
+
+**Question:** G41 = B commissioned a confirmatory study under "one campaign, same pass/fail rules". The owner has rejected that design as uninformative: one candidate library gives one draw, a FAIL is the likelier result whether or not replicates matter, and a PASS would not be enough to reconsider real-data fitting. What follows?
+
+- **B2 — Redesign to measure library-to-library variation (owner recommendation if the calibration path is still wanted).** Commission a new design draft in which several independent R = 12 candidate libraries are scored against the same fresh targets, the frozen arm-(i) gate is computed unchanged per library, the R = 3 batches inside those libraries serve as a concurrent reference, and the reading of the across-library counts is declared in advance. This changes "same pass/fail rules" at the study level, which is why it is Steven's decision. **Explicit unknowns, not chosen here:** the number of libraries, the number of targets, and the rule for reading the library results. They must be argued structurally by the design consultant and ruled by the owner; none may be taken from the §2 table. Synthetic only; outcomes authorize nothing beyond input to a later Steven gate.
+- **A — STOP.** Record G35-B as the final synthetic design study. The offset non-identifiability finding stands; arm i stays a screening result only. This is the original G41 default and is fully defensible on the evidence in hand.
+- **B1 — Run the draft as designed anyway.** Steven may overrule this rejection. If he does, the contingent rulings in §6 apply and no second owner pass is needed. The owner's advice is against it for the reasons in §3.
+- **C — Labelled demo**, as in the original G41 option text.
+
+**Default on no answer: HOLD.** Nothing is pre-checked, frozen, implemented or run. STOP is not the default, because that would reverse Steven's B by silence.
+
+**Owner's order of preference:** B2 if Steven still wants to know whether more replicates can make the offset recoverable; otherwise A. B1 last. Which goal the project pursues is Steven's product decision, not a science ruling.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
