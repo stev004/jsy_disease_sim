@@ -1,11 +1,16 @@
-# RUN — `g43-predecl` IN FLIGHT (2026-11-20). Predicate: owner-ruled, frozen B2 multi-library predeclaration (design F, L = 6) on fresh seeds pre-checked buildable, committed with SHA recorded. No implementation, no campaign, no real data.
+# RUN — nothing in flight. Run `g43-predecl` COMPLETE (predicate met); awaiting Steven on G44.
 
-**In flight:** unit 4, mechanical freeze (fresh Opus 5.5 subagent applying owner amendments A1–A10 + placeholders; brief `docs/runs/2026-11-20-g43-freeze-brief.md.txt`; output `docs/research/v1_3/2026-11-20-g43-predeclaration.md`). DONE: unit 1 draft 55bb491 (sha256 709bc9f3…f590); unit 2 owner ruling ACCEPT WITH AMENDMENTS f2062d5 (sha256 ba442e94…117c); unit 3 seed pre-check f4054f6 (135/3; A7 replacements 87301→87351, 87305→87352, 87506→87551). ts: trail row `g43-seed-precheck`.
-**Resume recipe:** if the draft file exists and the subagent reported, commit it, record committed-bytes sha256, then launch the owner ruling (gpt-6.2-sol @ high, read-only Codex in a fresh GitHub clone at that SHA; on a classifier stop, re-route unchanged to a fresh Opus 5.5 subagent). If no draft exists, relaunch unit 1 from the same brief. Then: ruling commit → builds-only seed pre-check (`docs/runs/2026-10-22-g35b-seed-precheck.py.txt` pattern) → mechanical freeze.
+**Run `g43-predecl` (2026-11-20):** predicate = owner-ruled, frozen B2 multi-library predeclaration (design F) on fresh seeds pre-checked buildable, committed with SHA recorded — MET.
+- unit 1 draft (Fable 5.2, 280,104 tokens, over the 250K timebox): `55bb491`, sha256 709bc9f3…f590;
+- unit 2 owner ruling ACCEPT WITH AMENDMENTS A1–A10 (gpt-6.2-sol @ high, 139,991 tokens): `f2062d5`, sha256 ba442e94…117c;
+- unit 3 builds-only seed pre-check on `f2062d5`: 135 BUILT / 3 FAILED (adult-supply class); A7 replacements 87301→87351, 87305→87352, 87506→87551; evidence `f4054f6`; two launcher attempts aborted on director script errors first (logs filed);
+- unit 4 mechanical freeze (fresh Opus 5.5, 213,523 tokens): **`fc16adcb3f8817eb2630ae5a31cd0508990bebd2`, sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094**.
+Trail rows `g43-F` → `g43-frozen`. Nothing implemented or run; code tree unchanged vs `0c9c371`.
+**Resume recipe:** on G44 = authorize, run foreman `g44-impl`: U1–U3 per frozen §13 on gpt-6.2-sol @ high (briefs quote frozen sentences verbatim with line numbers), director CI mirror, fresh Opus 5.5 review; campaign stays a separate Steven gate.
 
 ---
 
-## Previous: G42-B2 consult panel DONE; G43 = F.
+## Previous: G42-B2 consult panel DONE.
 
 **G42-B2 consult panel (2026-11-20):** three reports filed verbatim under `docs/research/v1_3/2026-11-20-g42-b2-consult-{fable52,astra62,sol62}.md`, comparison `docs/research/v1_3/2026-11-20-g42-b2-consult-comparison.md`. Two designs emerged: Fable 5.2 descriptive draw-sensitivity (L = 6 libraries, N = 20, all/some/none classes, no new threshold, ~2 h); gpt-6.2-astra and gpt-6.2-sol converged independently on a reliability test (L = 22, N = 20, 0.80 standard, 21–22 yes / 14–20 can't tell / 0–13 no, ~7 h). No classifier stops. Tokens: Fable 159,120 (Claude), Astra 76,404, Sol 116,238 (Codex).
 **(Superseded resume recipe)** on G43, commission the chosen design as a predeclaration draft, then an owner ruling (seat per G43), then ruling commit → builds-only pre-check → freeze. Nothing is built or run before that.
