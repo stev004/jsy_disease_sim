@@ -1,0 +1,29 @@
++ test '!' -e /home/steven/jos-g43-precheck-20261120
++ test '!' -e /home/steven/jos-g43-precheck-20261120-src
++ git clone --quiet https://github.com/stev004/jsy_disease_sim.git /home/steven/jos-g43-precheck-20261120-src
++ git -C /home/steven/jos-g43-precheck-20261120-src checkout --quiet --detach f2062d524c53a52d16837c2c7fe2ca8be6715510
++ git -C /home/steven/jos-g43-precheck-20261120-src rev-parse HEAD
+f2062d524c53a52d16837c2c7fe2ca8be6715510
+++ git -C /home/steven/jos-g43-precheck-20261120-src diff --stat 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8 f2062d524c53a52d16837c2c7fe2ca8be6715510 -- src configs tests scripts
++ test -z ''
++ echo 'TREE_ATTEST empty diff 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8..f2062d524c53a52d16837c2c7fe2ca8be6715510 -- src configs tests scripts'
+TREE_ATTEST empty diff 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8..f2062d524c53a52d16837c2c7fe2ca8be6715510 -- src configs tests scripts
++ cp /tmp/g43pc.py /home/steven/jos-g43-precheck-20261120.py
++ sha256sum /home/steven/jos-g43-precheck-20261120.py
+3ebdcbb45d07f532db220dd4a15fe63d33c5ee0b2795f2f0c49b672a3b8b8f8d  /home/steven/jos-g43-precheck-20261120.py
++ df -h /mnt/c /
+Filesystem      Size  Used Avail Use% Mounted on
+C:\             466G  452G   14G  98% /mnt/c
+/dev/sdd       1007G   29G  928G   3% /
+++ df --output=avail -B1G /mnt/c
+++ tail -1
+++ tr -d ' '
++ FREE=14
++ test 14 -ge 5
++ cd /home/steven/jos-g43-precheck-20261120-src
++ uv sync --locked -q
+/tmp/g43pc.sh: line 21: uv: command not found
++ die uvsync
++ echo 'DIE: uvsync'
+DIE: uvsync
++ exit 9

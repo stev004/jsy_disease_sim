@@ -1,0 +1,152 @@
++ test '!' -e /home/steven/jos-g43-precheck-20261120r2
++ test '!' -e /home/steven/jos-g43-precheck-20261120r2-src
++ git clone --quiet https://github.com/stev004/jsy_disease_sim.git /home/steven/jos-g43-precheck-20261120r2-src
++ git -C /home/steven/jos-g43-precheck-20261120r2-src checkout --quiet --detach f2062d524c53a52d16837c2c7fe2ca8be6715510
++ git -C /home/steven/jos-g43-precheck-20261120r2-src rev-parse HEAD
+f2062d524c53a52d16837c2c7fe2ca8be6715510
+++ git -C /home/steven/jos-g43-precheck-20261120r2-src diff --stat 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8 f2062d524c53a52d16837c2c7fe2ca8be6715510 -- src configs tests scripts
++ test -z ''
++ echo 'TREE_ATTEST empty diff 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8..f2062d524c53a52d16837c2c7fe2ca8be6715510 -- src configs tests scripts'
+TREE_ATTEST empty diff 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8..f2062d524c53a52d16837c2c7fe2ca8be6715510 -- src configs tests scripts
++ cp /tmp/g43pc.py /home/steven/jos-g43-precheck-20261120r2.py
++ sha256sum /home/steven/jos-g43-precheck-20261120r2.py
+3ebdcbb45d07f532db220dd4a15fe63d33c5ee0b2795f2f0c49b672a3b8b8f8d  /home/steven/jos-g43-precheck-20261120r2.py
++ df -h /mnt/c /
+Filesystem      Size  Used Avail Use% Mounted on
+C:\             466G  452G   14G  98% /mnt/c
+/dev/sdd       1007G   29G  928G   3% /
+++ df --output=avail -B1G /mnt/c
+++ tail -1
+++ tr -d ' '
++ FREE=14
++ test 14 -ge 5
++ cd /home/steven/jos-g43-precheck-20261120r2-src
++ /home/steven/.local/bin/uv sync --locked -q
++ set +x
+{"seed": 86001, "status": "BUILT", "seconds": 5.52, "fallbacks": [], "error_class": null}
+TALLY {"BUILT": 1}
+/tmp/g43pc.sh: line 24: 86002: command not found
+/tmp/g43pc.sh: line 25: 86003: command not found
+/tmp/g43pc.sh: line 26: 86004: command not found
+/tmp/g43pc.sh: line 27: 86005: command not found
+/tmp/g43pc.sh: line 28: 86006: command not found
+/tmp/g43pc.sh: line 29: 86007: command not found
+/tmp/g43pc.sh: line 30: 86008: command not found
+/tmp/g43pc.sh: line 31: 86009: command not found
+/tmp/g43pc.sh: line 32: 86010: command not found
+/tmp/g43pc.sh: line 33: 86011: command not found
+/tmp/g43pc.sh: line 34: 86012: command not found
+/tmp/g43pc.sh: line 35: 86013: command not found
+/tmp/g43pc.sh: line 36: 86014: command not found
+/tmp/g43pc.sh: line 37: 86015: command not found
+/tmp/g43pc.sh: line 38: 86016: command not found
+/tmp/g43pc.sh: line 39: 86017: command not found
+/tmp/g43pc.sh: line 40: 86018: command not found
+/tmp/g43pc.sh: line 41: 86019: command not found
+/tmp/g43pc.sh: line 42: 86020: command not found
+/tmp/g43pc.sh: line 43: 86102: command not found
+/tmp/g43pc.sh: line 44: 86103: command not found
+/tmp/g43pc.sh: line 45: 86104: command not found
+/tmp/g43pc.sh: line 46: 86105: command not found
+/tmp/g43pc.sh: line 47: 86106: command not found
+/tmp/g43pc.sh: line 48: 86107: command not found
+/tmp/g43pc.sh: line 49: 86108: command not found
+/tmp/g43pc.sh: line 50: 86109: command not found
+/tmp/g43pc.sh: line 51: 86110: command not found
+/tmp/g43pc.sh: line 52: 87102: command not found
+/tmp/g43pc.sh: line 53: 87103: command not found
+/tmp/g43pc.sh: line 54: 87104: command not found
+/tmp/g43pc.sh: line 55: 87105: command not found
+/tmp/g43pc.sh: line 56: 87106: command not found
+/tmp/g43pc.sh: line 57: 87107: command not found
+/tmp/g43pc.sh: line 58: 87108: command not found
+/tmp/g43pc.sh: line 59: 87109: command not found
+/tmp/g43pc.sh: line 60: 87110: command not found
+/tmp/g43pc.sh: line 61: 87111: command not found
+/tmp/g43pc.sh: line 62: 87112: command not found
+/tmp/g43pc.sh: line 63: 87152: command not found
+/tmp/g43pc.sh: line 64: 87153: command not found
+/tmp/g43pc.sh: line 65: 87154: command not found
+/tmp/g43pc.sh: line 66: 87155: command not found
+/tmp/g43pc.sh: line 67: 87156: command not found
+/tmp/g43pc.sh: line 68: 87202: command not found
+/tmp/g43pc.sh: line 69: 87203: command not found
+/tmp/g43pc.sh: line 70: 87204: command not found
+/tmp/g43pc.sh: line 71: 87205: command not found
+/tmp/g43pc.sh: line 72: 87206: command not found
+/tmp/g43pc.sh: line 73: 87207: command not found
+/tmp/g43pc.sh: line 74: 87208: command not found
+/tmp/g43pc.sh: line 75: 87209: command not found
+/tmp/g43pc.sh: line 76: 87210: command not found
+/tmp/g43pc.sh: line 77: 87211: command not found
+/tmp/g43pc.sh: line 78: 87212: command not found
+/tmp/g43pc.sh: line 79: 87252: command not found
+/tmp/g43pc.sh: line 80: 87253: command not found
+/tmp/g43pc.sh: line 81: 87254: command not found
+/tmp/g43pc.sh: line 82: 87255: command not found
+/tmp/g43pc.sh: line 83: 87256: command not found
+/tmp/g43pc.sh: line 84: 87302: command not found
+/tmp/g43pc.sh: line 85: 87303: command not found
+/tmp/g43pc.sh: line 86: 87304: command not found
+/tmp/g43pc.sh: line 87: 87305: command not found
+/tmp/g43pc.sh: line 88: 87306: command not found
+/tmp/g43pc.sh: line 89: 87307: command not found
+/tmp/g43pc.sh: line 90: 87308: command not found
+/tmp/g43pc.sh: line 91: 87309: command not found
+/tmp/g43pc.sh: line 92: 87310: command not found
+/tmp/g43pc.sh: line 93: 87311: command not found
+/tmp/g43pc.sh: line 94: 87312: command not found
+/tmp/g43pc.sh: line 95: 87352: command not found
+/tmp/g43pc.sh: line 96: 87353: command not found
+/tmp/g43pc.sh: line 97: 87354: command not found
+/tmp/g43pc.sh: line 98: 87355: command not found
+/tmp/g43pc.sh: line 99: 87356: command not found
+/tmp/g43pc.sh: line 100: 87402: command not found
+/tmp/g43pc.sh: line 101: 87403: command not found
+/tmp/g43pc.sh: line 102: 87404: command not found
+/tmp/g43pc.sh: line 103: 87405: command not found
+/tmp/g43pc.sh: line 104: 87406: command not found
+/tmp/g43pc.sh: line 105: 87407: command not found
+/tmp/g43pc.sh: line 106: 87408: command not found
+/tmp/g43pc.sh: line 107: 87409: command not found
+/tmp/g43pc.sh: line 108: 87410: command not found
+/tmp/g43pc.sh: line 109: 87411: command not found
+/tmp/g43pc.sh: line 110: 87412: command not found
+/tmp/g43pc.sh: line 111: 87452: command not found
+/tmp/g43pc.sh: line 112: 87453: command not found
+/tmp/g43pc.sh: line 113: 87454: command not found
+/tmp/g43pc.sh: line 114: 87455: command not found
+/tmp/g43pc.sh: line 115: 87456: command not found
+/tmp/g43pc.sh: line 116: 87502: command not found
+/tmp/g43pc.sh: line 117: 87503: command not found
+/tmp/g43pc.sh: line 118: 87504: command not found
+/tmp/g43pc.sh: line 119: 87505: command not found
+/tmp/g43pc.sh: line 120: 87506: command not found
+/tmp/g43pc.sh: line 121: 87507: command not found
+/tmp/g43pc.sh: line 122: 87508: command not found
+/tmp/g43pc.sh: line 123: 87509: command not found
+/tmp/g43pc.sh: line 124: 87510: command not found
+/tmp/g43pc.sh: line 125: 87511: command not found
+/tmp/g43pc.sh: line 126: 87512: command not found
+/tmp/g43pc.sh: line 127: 87552: command not found
+/tmp/g43pc.sh: line 128: 87553: command not found
+/tmp/g43pc.sh: line 129: 87554: command not found
+/tmp/g43pc.sh: line 130: 87555: command not found
+/tmp/g43pc.sh: line 131: 87556: command not found
+/tmp/g43pc.sh: line 132: 87602: command not found
+/tmp/g43pc.sh: line 133: 87603: command not found
+/tmp/g43pc.sh: line 134: 87604: command not found
+/tmp/g43pc.sh: line 135: 87605: command not found
+/tmp/g43pc.sh: line 136: 87606: command not found
+/tmp/g43pc.sh: line 137: 87607: command not found
+/tmp/g43pc.sh: line 138: 87608: command not found
+/tmp/g43pc.sh: line 139: 87609: command not found
+/tmp/g43pc.sh: line 140: 87610: command not found
+/tmp/g43pc.sh: line 141: 87611: command not found
+/tmp/g43pc.sh: line 142: 87612: command not found
+/tmp/g43pc.sh: line 143: 87652: command not found
+/tmp/g43pc.sh: line 144: 87653: command not found
+/tmp/g43pc.sh: line 145: 87654: command not found
+/tmp/g43pc.sh: line 146: 87655: command not found
+/tmp/g43pc.sh: line 147: 87656: command not found
+EXIT=127

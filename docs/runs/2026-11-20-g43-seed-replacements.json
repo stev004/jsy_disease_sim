@@ -1,0 +1,216 @@
+{
+  "rule": "owner ruling A7: within each pool, failed primaries in ascending order each take the lowest-numbered successful unused reserve; replacement inherits position, paired observation seed and batch",
+  "pools": {
+    "target": {
+      "replacements": [],
+      "final_process_seeds": [
+        86001,
+        86002,
+        86003,
+        86004,
+        86005,
+        86006,
+        86007,
+        86008,
+        86009,
+        86010,
+        86011,
+        86012,
+        86013,
+        86014,
+        86015,
+        86016,
+        86017,
+        86018,
+        86019,
+        86020
+      ],
+      "unused_reserves": [
+        86101,
+        86102,
+        86103,
+        86104,
+        86105,
+        86106,
+        86107,
+        86108,
+        86109,
+        86110
+      ],
+      "reserve_build_failures": []
+    },
+    "library1": {
+      "replacements": [],
+      "final_process_seeds": [
+        87101,
+        87102,
+        87103,
+        87104,
+        87105,
+        87106,
+        87107,
+        87108,
+        87109,
+        87110,
+        87111,
+        87112
+      ],
+      "unused_reserves": [
+        87151,
+        87152,
+        87153,
+        87154,
+        87155,
+        87156
+      ],
+      "reserve_build_failures": []
+    },
+    "library2": {
+      "replacements": [],
+      "final_process_seeds": [
+        87201,
+        87202,
+        87203,
+        87204,
+        87205,
+        87206,
+        87207,
+        87208,
+        87209,
+        87210,
+        87211,
+        87212
+      ],
+      "unused_reserves": [
+        87251,
+        87252,
+        87253,
+        87254,
+        87255,
+        87256
+      ],
+      "reserve_build_failures": []
+    },
+    "library3": {
+      "replacements": [
+        {
+          "position": 1,
+          "failed": 87301,
+          "error_class": "DataBuildError",
+          "replacement": 87351
+        },
+        {
+          "position": 5,
+          "failed": 87305,
+          "error_class": "DataBuildError",
+          "replacement": 87352
+        }
+      ],
+      "final_process_seeds": [
+        87351,
+        87302,
+        87303,
+        87304,
+        87352,
+        87306,
+        87307,
+        87308,
+        87309,
+        87310,
+        87311,
+        87312
+      ],
+      "unused_reserves": [
+        87353,
+        87354,
+        87355,
+        87356
+      ],
+      "reserve_build_failures": []
+    },
+    "library4": {
+      "replacements": [],
+      "final_process_seeds": [
+        87401,
+        87402,
+        87403,
+        87404,
+        87405,
+        87406,
+        87407,
+        87408,
+        87409,
+        87410,
+        87411,
+        87412
+      ],
+      "unused_reserves": [
+        87451,
+        87452,
+        87453,
+        87454,
+        87455,
+        87456
+      ],
+      "reserve_build_failures": []
+    },
+    "library5": {
+      "replacements": [
+        {
+          "position": 6,
+          "failed": 87506,
+          "error_class": "DataBuildError",
+          "replacement": 87551
+        }
+      ],
+      "final_process_seeds": [
+        87501,
+        87502,
+        87503,
+        87504,
+        87505,
+        87551,
+        87507,
+        87508,
+        87509,
+        87510,
+        87511,
+        87512
+      ],
+      "unused_reserves": [
+        87552,
+        87553,
+        87554,
+        87555,
+        87556
+      ],
+      "reserve_build_failures": []
+    },
+    "library6": {
+      "replacements": [],
+      "final_process_seeds": [
+        87601,
+        87602,
+        87603,
+        87604,
+        87605,
+        87606,
+        87607,
+        87608,
+        87609,
+        87610,
+        87611,
+        87612
+      ],
+      "unused_reserves": [
+        87651,
+        87652,
+        87653,
+        87654,
+        87655,
+        87656
+      ],
+      "reserve_build_failures": []
+    }
+  }
+}

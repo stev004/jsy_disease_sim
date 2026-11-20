@@ -1,0 +1,165 @@
++ test '!' -e /home/steven/jos-g43-precheck-20261120r3
++ test '!' -e /home/steven/jos-g43-precheck-20261120r3-src
++ git clone --quiet https://github.com/stev004/jsy_disease_sim.git /home/steven/jos-g43-precheck-20261120r3-src
++ git -C /home/steven/jos-g43-precheck-20261120r3-src checkout --quiet --detach f2062d524c53a52d16837c2c7fe2ca8be6715510
++ git -C /home/steven/jos-g43-precheck-20261120r3-src rev-parse HEAD
+f2062d524c53a52d16837c2c7fe2ca8be6715510
+++ git -C /home/steven/jos-g43-precheck-20261120r3-src diff --stat 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8 f2062d524c53a52d16837c2c7fe2ca8be6715510 -- src configs tests scripts
++ test -z ''
++ echo 'TREE_ATTEST empty diff 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8..f2062d524c53a52d16837c2c7fe2ca8be6715510 -- src configs tests scripts'
+TREE_ATTEST empty diff 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8..f2062d524c53a52d16837c2c7fe2ca8be6715510 -- src configs tests scripts
++ cp /tmp/g43pc.py /home/steven/jos-g43-precheck-20261120r3.py
++ sha256sum /home/steven/jos-g43-precheck-20261120r3.py
+3ebdcbb45d07f532db220dd4a15fe63d33c5ee0b2795f2f0c49b672a3b8b8f8d  /home/steven/jos-g43-precheck-20261120r3.py
++ df -h /mnt/c /
+Filesystem      Size  Used Avail Use% Mounted on
+C:\             466G  452G   14G  98% /mnt/c
+/dev/sdd       1007G   29G  928G   3% /
+++ df --output=avail -B1G /mnt/c
+++ tail -1
+++ tr -d ' '
++ FREE=14
++ test 14 -ge 5
++ cd /home/steven/jos-g43-precheck-20261120r3-src
++ /home/steven/.local/bin/uv sync --locked -q
++ set +x
+{"seed": 86001, "status": "BUILT", "seconds": 4.21, "fallbacks": [], "error_class": null}
+{"seed": 86002, "status": "BUILT", "seconds": 1.69, "fallbacks": [], "error_class": null}
+{"seed": 86003, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 86004, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 86005, "status": "BUILT", "seconds": 1.79, "fallbacks": [], "error_class": null}
+{"seed": 86006, "status": "BUILT", "seconds": 1.66, "fallbacks": [], "error_class": null}
+{"seed": 86007, "status": "BUILT", "seconds": 1.69, "fallbacks": [], "error_class": null}
+{"seed": 86008, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 86009, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 86010, "status": "BUILT", "seconds": 1.82, "fallbacks": [], "error_class": null}
+{"seed": 86011, "status": "BUILT", "seconds": 1.69, "fallbacks": [], "error_class": null}
+{"seed": 86012, "status": "BUILT", "seconds": 1.7, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 86013, "status": "BUILT", "seconds": 1.72, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 86014, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 86015, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 86016, "status": "BUILT", "seconds": 1.68, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 86017, "status": "BUILT", "seconds": 1.7, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 86018, "status": "BUILT", "seconds": 1.67, "fallbacks": [], "error_class": null}
+{"seed": 86019, "status": "BUILT", "seconds": 1.81, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 86020, "status": "BUILT", "seconds": 1.74, "fallbacks": [], "error_class": null}
+{"seed": 86101, "status": "BUILT", "seconds": 1.69, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 86102, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 86103, "status": "BUILT", "seconds": 1.7, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 86104, "status": "BUILT", "seconds": 1.76, "fallbacks": [], "error_class": null}
+{"seed": 86105, "status": "BUILT", "seconds": 1.79, "fallbacks": [], "error_class": null}
+{"seed": 86106, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 86107, "status": "BUILT", "seconds": 1.69, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 86108, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 86109, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 86110, "status": "BUILT", "seconds": 1.77, "fallbacks": [], "error_class": null}
+{"seed": 87101, "status": "BUILT", "seconds": 1.75, "fallbacks": [], "error_class": null}
+{"seed": 87102, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87103, "status": "BUILT", "seconds": 1.75, "fallbacks": [], "error_class": null}
+{"seed": 87104, "status": "BUILT", "seconds": 1.74, "fallbacks": [], "error_class": null}
+{"seed": 87105, "status": "BUILT", "seconds": 1.74, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87106, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87107, "status": "BUILT", "seconds": 1.81, "fallbacks": [], "error_class": null}
+{"seed": 87108, "status": "BUILT", "seconds": 1.75, "fallbacks": [], "error_class": null}
+{"seed": 87109, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87110, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87111, "status": "BUILT", "seconds": 1.89, "fallbacks": [], "error_class": null}
+{"seed": 87112, "status": "BUILT", "seconds": 1.8, "fallbacks": [], "error_class": null}
+{"seed": 87151, "status": "BUILT", "seconds": 1.74, "fallbacks": [], "error_class": null}
+{"seed": 87152, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87153, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87154, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87155, "status": "BUILT", "seconds": 1.74, "fallbacks": [], "error_class": null}
+{"seed": 87156, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87201, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87202, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87203, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87204, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 87205, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87206, "status": "BUILT", "seconds": 1.73, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87207, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 87208, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87209, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87210, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 87211, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 87212, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 87251, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 87252, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87253, "status": "BUILT", "seconds": 1.69, "fallbacks": [], "error_class": null}
+{"seed": 87254, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87255, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87256, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 87301, "status": "FAILED", "seconds": 0.3, "fallbacks": [], "error_class": "DataBuildError"}
+{"seed": 87302, "status": "BUILT", "seconds": 1.72, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 87303, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87304, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87305, "status": "FAILED", "seconds": 0.31, "fallbacks": [], "error_class": "DataBuildError"}
+{"seed": 87306, "status": "BUILT", "seconds": 1.69, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 87307, "status": "BUILT", "seconds": 1.68, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87308, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87309, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87310, "status": "BUILT", "seconds": 1.69, "fallbacks": [], "error_class": null}
+{"seed": 87311, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87312, "status": "BUILT", "seconds": 1.74, "fallbacks": [], "error_class": null}
+{"seed": 87351, "status": "BUILT", "seconds": 1.71, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 87352, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 87353, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87354, "status": "BUILT", "seconds": 1.71, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87355, "status": "BUILT", "seconds": 1.81, "fallbacks": [], "error_class": null}
+{"seed": 87356, "status": "BUILT", "seconds": 1.72, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 87401, "status": "BUILT", "seconds": 1.85, "fallbacks": [], "error_class": null}
+{"seed": 87402, "status": "BUILT", "seconds": 1.84, "fallbacks": [], "error_class": null}
+{"seed": 87403, "status": "BUILT", "seconds": 1.84, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87404, "status": "BUILT", "seconds": 1.88, "fallbacks": [], "error_class": null}
+{"seed": 87405, "status": "BUILT", "seconds": 1.86, "fallbacks": [], "error_class": null}
+{"seed": 87406, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87407, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87408, "status": "BUILT", "seconds": 1.75, "fallbacks": [], "error_class": null}
+{"seed": 87409, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 87410, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 87411, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87412, "status": "BUILT", "seconds": 1.74, "fallbacks": [], "error_class": null}
+{"seed": 87451, "status": "BUILT", "seconds": 1.73, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87452, "status": "BUILT", "seconds": 1.71, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 87453, "status": "BUILT", "seconds": 1.7, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 87454, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 87455, "status": "BUILT", "seconds": 1.73, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 87456, "status": "BUILT", "seconds": 1.74, "fallbacks": [], "error_class": null}
+{"seed": 87501, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87502, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 87503, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87504, "status": "BUILT", "seconds": 1.71, "fallbacks": [], "error_class": null}
+{"seed": 87505, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87506, "status": "FAILED", "seconds": 0.25, "fallbacks": [], "error_class": "DataBuildError"}
+{"seed": 87507, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 87508, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87509, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87510, "status": "BUILT", "seconds": 1.78, "fallbacks": [], "error_class": null}
+{"seed": 87511, "status": "BUILT", "seconds": 1.84, "fallbacks": [], "error_class": null}
+{"seed": 87512, "status": "BUILT", "seconds": 1.79, "fallbacks": [], "error_class": null}
+{"seed": 87551, "status": "BUILT", "seconds": 1.77, "fallbacks": [], "error_class": null}
+{"seed": 87552, "status": "BUILT", "seconds": 1.8, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 87553, "status": "BUILT", "seconds": 1.75, "fallbacks": [], "error_class": null}
+{"seed": 87554, "status": "BUILT", "seconds": 1.78, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87555, "status": "BUILT", "seconds": 1.78, "fallbacks": [], "error_class": null}
+{"seed": 87556, "status": "BUILT", "seconds": 1.73, "fallbacks": [], "error_class": null}
+{"seed": 87601, "status": "BUILT", "seconds": 1.72, "fallbacks": [], "error_class": null}
+{"seed": 87602, "status": "BUILT", "seconds": 1.74, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87603, "status": "BUILT", "seconds": 2.01, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87604, "status": "BUILT", "seconds": 1.94, "fallbacks": [], "error_class": null}
+{"seed": 87605, "status": "BUILT", "seconds": 1.74, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87606, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 87607, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 87608, "status": "BUILT", "seconds": 1.68, "fallbacks": ["private_assignment_residual_fallback"], "error_class": null}
+{"seed": 87609, "status": "BUILT", "seconds": 1.67, "fallbacks": ["destination_reassignment_fallback"], "error_class": null}
+{"seed": 87610, "status": "BUILT", "seconds": 1.67, "fallbacks": [], "error_class": null}
+{"seed": 87611, "status": "BUILT", "seconds": 1.75, "fallbacks": [], "error_class": null}
+{"seed": 87612, "status": "BUILT", "seconds": 1.7, "fallbacks": [], "error_class": null}
+{"seed": 87651, "status": "BUILT", "seconds": 1.67, "fallbacks": [], "error_class": null}
+{"seed": 87652, "status": "BUILT", "seconds": 1.68, "fallbacks": [], "error_class": null}
+{"seed": 87653, "status": "BUILT", "seconds": 1.82, "fallbacks": [], "error_class": null}
+{"seed": 87654, "status": "BUILT", "seconds": 1.76, "fallbacks": [], "error_class": null}
+{"seed": 87655, "status": "BUILT", "seconds": 1.77, "fallbacks": [], "error_class": null}
+{"seed": 87656, "status": "BUILT", "seconds": 1.69, "fallbacks": [], "error_class": null}
+TALLY {"BUILT": 135, "FAILED": 3}
+EXIT=0
