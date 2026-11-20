@@ -4,22 +4,27 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. **G43 OPEN** (which B2 design goes to drafting; default HOLD). G5 open.
-
-### G43 — Which B2 design goes forward to a predeclaration draft?
-- **Evidence:** `docs/research/v1_3/2026-11-20-g42-b2-consult-comparison.md` and the three filed consults.
-- **Options:**
-  - **F — Fable 5.2 design:** L = 6 independent R = 12 libraries on 20 shared targets; all / some / none reading (CONSISTENT-PASS, MIXED, CONSISTENT-FAIL, NO-READING); no new threshold; ~2 h compute. Answers "can the draw flip the verdict?", not "how reliable is it?".
-  - **AS — Astra/Sol 6.2 design:** L = 22 libraries on 20 shared targets; new study-level standard 0.80 with ≤ 5% error each way (21–22 yes, 14–20 can't tell, 0–13 no); ~7 h compute. Positive reading only ~34% likely even at a true 90% pass rate.
-  - **A — STOP** after all (record G35-B as final).
-- **Also to settle:** owner-ruling seat — Fable has been the owner, but Fable 5.2 is now a consultant on this design (disclose, or route the ruling elsewhere).
-- **Default on no answer:** HOLD.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); run `g43-predecl` drafts the Fable 5.2 design. G5 open.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
 - **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
 
 ## Resolved
+
+### G43 — RESOLVED 2026-11-20: F, by the director under Steven's delegation (chat: "what do you think we should do? go with whatever you think") — Which B2 design goes forward to a predeclaration draft?
+- **Evidence:** `docs/research/v1_3/2026-11-20-g42-b2-consult-comparison.md` and the three filed consults.
+- **Options were:**
+  - **F — Fable 5.2 design:** L = 6 independent R = 12 libraries on 20 shared targets; all / some / none reading (CONSISTENT-PASS, MIXED, CONSISTENT-FAIL, NO-READING); no new threshold; ~2 h compute. Answers "can the draw flip the verdict?", not "how reliable is it?".
+  - **AS — Astra/Sol 6.2 design:** L = 22 libraries on 20 shared targets; new study-level standard 0.80 with ≤ 5% error each way (21–22 yes, 14–20 can't tell, 0–13 no); ~7 h compute. Positive reading only ~34% likely even at a true 90% pass rate.
+  - **A — STOP** after all (record G35-B as final).
+- **Why F:**
+  1. It answers the question the owner's B2 actually posed (is arm-i recovery a property of R = 12, or of the library drawn?) without introducing a new study-level threshold. A 0.80 / 5% standard is a number nobody has a basis for; DIRECTOR's "never invent parameters" rule points away from it.
+  2. AS is most likely to end at "can't tell" (≈ 66% even at a true 90% library pass rate), which is the exact defect the owner rejected G41 for: neither likely outcome would decide anything.
+  3. F's likely outcomes are informative: MIXED shows directly that the verdict depends on the draw; CONSISTENT-FAIL shows arm i was a chance pass; CONSISTENT-PASS is weaker (cannot exclude a 20–30% library failure rate), and the draft must say so in advance.
+  4. About 2 h of compute against about 7 h.
+- **Seat:** the owner ruling goes to **gpt-6.2-sol @ high**, not Fable: Fable 5.2 authored design F, so author ≠ judge rules Fable out. Disclosed: Sol 6.2 proposed the rival design AS. The drafter is Fable 5.2 (the design's author; drafting is authorship, not judgment). If OpenAI's classifier stops the ruling, it is re-routed unchanged to a fresh Claude Opus 5.5 subagent, never rephrased.
+- **Order:** draft → owner ruling → ruling commit → builds-only seed pre-check → freeze. Implementation and the campaign are later Steven gates. Real-data fitting stays STOPPED.
 
 ### G42 — RESOLVED 2026-11-20: B2 (Steven, chat: "alright basically do a redesign but consult fable 5.2, astra 6.2 and sol 6.2 on high reasoning and see if they differ in their approach. will mean updating codex so feel free to do that") — After the owner's REJECT of the G41 confirmatory design: what follows? (Steven; options quoted verbatim from the owner ruling §5)
 - **Source:** `docs/research/v1_3/2026-11-20-g41-owner-ruling.md` (Fable 5.1 model owner, verdict `G41 OWNER RULING: REJECT`). Draft rejected: `docs/research/v1_3/2026-11-19-g41-confirmatory-design-opus-DRAFT.md`.

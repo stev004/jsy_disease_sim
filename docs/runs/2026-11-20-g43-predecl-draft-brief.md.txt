@@ -1,0 +1,42 @@
+TASK: JOS · g43-draft · draft the B2 multi-library predeclaration (design F, L = 6)
+ROLE: consultant / drafter — Claude Fable 5.2 @ high. Documentation only; no implementation, no runs.
+
+GOAL: Turn design F (your own G42-B2 consult, docs/research/v1_3/2026-11-20-g42-b2-consult-fable52.md) into a complete, implementation-ready DRAFT predeclaration that a model owner can rule on and that can then be frozen BEFORE any code is written or any campaign is run. Same structure and rigour as the frozen G35-B predeclaration. The study answers: at R = 12 candidate replicates per grid cell, does the frozen arm-(i) gate verdict on one fresh shared target panel depend on which independent candidate library was drawn? Readings CONSISTENT-PASS / MIXED / CONSISTENT-FAIL / NO-READING, declared in advance, no new study-level pass threshold.
+
+SCOPE: Repo C:\Users\StevBeast\Documents\jsy_disease_sim (git `main`; code baseline 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8 contains the G35-B harness `src/jersey_outbreak/g35b_design_study.py`, `src/jersey_outbreak/g35b_constants.py`, config `configs/calibration/v13_g35b_design_study.yaml`). The G35-B campaign bundle at \\wsl$\Ubuntu\home\steven\jos-g35b-campaign-20261022T234254Z is immutable read-only reference. You may read anything. You may write EXACTLY ONE file: docs/research/v1_3/2026-11-20-g43-multilibrary-predeclaration-DRAFT.md. No other edits, no commits, no pushes, no subagents, no simulations, fits, tests or population builds.
+
+CONTEXT (director's words): Phase 0 and Phase 0b failed synthetic recovery on the inoculation-day offset. G35-B tested three factors one at a time; confirmed result B FAIL, i PASS, ii FAIL, iii FAIL. Arm (i), R = 12 as four batches of three, passed exactly at four inclusive thresholds with 0/10 four-batch offset agreement. A one-library confirmatory design (G41) was REJECTED by the owner as uninformative: one library is one draw of the thing that varies. Steven chose B2 (several independent R = 12 libraries on the same fresh targets, frozen arm-(i) gate unchanged per library, R = 3 batches as concurrent reference, across-library reading declared in advance). Three consultants proposed designs; two (gpt-6.2-astra, gpt-6.2-sol) converged on a 22-library reliability test with a new 0.80 standard. Steven delegated the choice; the director chose YOUR design F (gate G43 in .claude/GATES.md gives the reasons). The owner ruling on your draft will be by gpt-6.2-sol @ high — which proposed the rival design — so pre-empt its likely objections: argue why no k-of-L cut is declared, state plainly what CONSISTENT-PASS at L = 6 cannot rule out, and make the NO-READING and boundary cases mechanical. Real-data fitting stays STOPPED whatever the outcome; no outcome authorizes anything beyond input to a later Steven gate.
+
+Read in full before writing:
+1. Your consult: docs/research/v1_3/2026-11-20-g42-b2-consult-fable52.md (the design; keep its choices unless you find a defect, and if you change one say so and why).
+2. The other two consults and the comparison (same folder, 2026-11-20-g42-b2-consult-{astra62,sol62,comparison}.md) — adopt their good ideas where they don't conflict with F (e.g. target × library matrix, paired R = 3 reporting, frozen wording for common-cause failure).
+3. docs/research/v1_3/2026-10-22-g35b-predeclaration.md (frozen; your structural template — §1 lineage, §4.1 arm i, §5–§10, §12 order/VOID/FAIL rules, §13 implementation outline), plus 2026-10-22-g35b-owner-ruling-ACCEPTED.md and owner clarifications 1 and 2 (pre-empt the amendments demanded last time).
+4. docs/research/v1_3/2026-11-20-g41-owner-ruling.md (why G41 was rejected; §6 contingent amendments A1–A3 may still be useful) and the rejected draft 2026-11-19-g41-confirmatory-design-opus-DRAFT.md.
+5. docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md (observations O1–O5, especially O4: retain target latent truth).
+6. docs/runs/2026-10-22-g35b-seed-precheck.py.txt and .log (how the builds-only pre-check was done last time).
+7. .claude/DIRECTOR.md — binding in full (explicit unknown beats false precision; never invent parameters; replicate spread is stochastic replicate variation, never a confidence interval; status vocabularies never mix; sha256s on committed LF bytes; ruling → pre-check → freeze order; a brief must never add a rule the frozen text lacks).
+
+The draft must decide and argue IN ADVANCE (state each choice and why; where a choice is genuinely the owner's or Steven's, give options with a recommended default):
+a. Held fixed vs G35-B arm (i): scenario, grid, objective, R, T, tie/identification rules, tolerances, bias limits, P1–P10; and the fraction-preserving integer thresholds at N = 20 (state every one as an integer count, derived from the frozen 10-target counts, with the derivation).
+b. Estimand and reading classes, each defined mechanically from the six per-library verdicts, including NO-READING (common-cause: e.g. a shared target failing a target-level predicate in every library) and what each reading does and does not license. State the exact sentence that will be written for each class.
+c. L and N and why (structural argument, not a tuned pass rate); exploratory numbers labelled EXPLORATORY.
+d. Fresh seeds: shared target process seeds (20 + reserves), six libraries' candidate process seeds and observation-seed namespaces, disjoint from every earlier set (Phase 0: 42xxx/52xxx/43xxx/53xxx; Phase 0b: 62/72/63/73; probe 81001–81006, 91001–91003; G35-B 82001–82015, 83001–83017, 92xxx, 93xxx, 94xxx, 95xxx; and the never-built G41 series in the rejected draft). Replacement rule if a primary seed fails to build. Leave the pre-check result and hashes as explicit placeholders filled mechanically at freeze.
+e. R = 3 concurrent reference: what it is, how read, why ungated; any disclosure sentences triggered mechanically.
+f. Descriptives (never gated) and their labels; pooled references only if you keep them, labelled.
+g. Implementation approach (new standalone module reusing G35-B scoring functions, or config-only reuse) and the implementation units, each `Class: numerical`.
+h. §12-style order with seats named in advance: implementer gpt-6.1-sol @ high (Class: numerical); independent implementation reviewer (not the implementer); Steven's single-campaign authorization; fresh independent exit audit (neither implementer nor reviewer); fallback if a seat is unavailable or a provider classifier stops it (re-route unchanged to the other family; never rephrase and resubmit to the same provider).
+i. Readings for every outcome incl. VOID, verbatim, and the status-phrase extension keeping "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL" intact.
+j. Caps (exact work counts: builds, latent calls, transforms) and bundle contents so the exit audit can recompute every predicate from raw tables, retaining target latent truth (O4); host-disk check per DIRECTOR lesson 2026-09-02.
+k. Lineage block: G35-B predeclaration sha256 2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e, bundle SHA256SUMS digest e6649a4b32289ad32cec7862ed79ea75a5123d0231178bebf0db78f0fd54c8fc, exit audit path, G41 ruling, G42 consults, G43 gate.
+
+ACCEPTANCE: the draft file exists; every item a–k is answered with a stated choice or an owner option with a default; no parameter, threshold or seed is left implicit; nothing contradicts DIRECTOR.md hard rules; every unknown is labelled unknown; it ends with "Questions for the model owner".
+
+VERIFY: re-read the draft against a–k, against the G35-B owner ruling's amendments, and against the G41 rejection reasons; fix gaps before returning.
+
+TIMEBOX: one pass; stop and report if you exceed ~250K tokens.
+
+FORBIDDEN: running any simulation, build, fit or test; writing any file except the one draft; committing; anything touching real data; calling any result calibrated or validated; calling replicate spread a confidence interval.
+
+REPORT: return (1) the draft path, (2) a one-paragraph summary of the key choices and any change from your consult, (3) the questions for the model owner, (4) anything inconsistent or blocking in the frozen text or harness.
+
+STANDING: .claude/DIRECTOR.md in the repo is binding in full; read it.
