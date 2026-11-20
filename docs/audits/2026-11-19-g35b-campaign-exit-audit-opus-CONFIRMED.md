@@ -229,6 +229,6 @@ The auditor's scripts and their outputs are filed verbatim (copied from WSL `/tm
 - `s07_fixed.py`: fixed scenario parameters;
 - `s08_readback.py`: blind read-back and write order.
 
-Each `sNN_out.txt` is that script's output. Nothing was written into the bundle.
+Each `sNN_out.txt` is that script's output; s01 and s02 printed to the auditor's console only and have no filed output (director correction 2026-11-20, trail audit Attention 1; integrity was independently re-verified by the trail auditor: 13,927/13,927 entries OK). Nothing was written into the bundle.
 
 `JOS G35-B CAMPAIGN EXIT AUDIT: CONFIRMED`

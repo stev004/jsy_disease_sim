@@ -4,9 +4,15 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). **G42 OPEN** (what follows; default HOLD). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL (FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2 (redesign; three-model consult panel in flight). G5 open.
 
-### G42 — After the owner's REJECT of the G41 confirmatory design: what follows? (Steven; options quoted verbatim from the owner ruling §5)
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G42 — RESOLVED 2026-11-20: B2 (Steven, chat: "alright basically do a redesign but consult fable 5.2, astra 6.2 and sol 6.2 on high reasoning and see if they differ in their approach. will mean updating codex so feel free to do that") — After the owner's REJECT of the G41 confirmatory design: what follows? (Steven; options quoted verbatim from the owner ruling §5)
 - **Source:** `docs/research/v1_3/2026-11-20-g41-owner-ruling.md` (Fable 5.1 model owner, verdict `G41 OWNER RULING: REJECT`). Draft rejected: `docs/research/v1_3/2026-11-19-g41-confirmatory-design-opus-DRAFT.md`.
 
 **Question:** G41 = B commissioned a confirmatory study under "one campaign, same pass/fail rules". The owner has rejected that design as uninformative: one candidate library gives one draw, a FAIL is the likelier result whether or not replicates matter, and a PASS would not be enough to reconsider real-data fitting. What follows?
@@ -19,12 +25,7 @@
 **Default on no answer: HOLD.** Nothing is pre-checked, frozen, implemented or run. STOP is not the default, because that would reverse Steven's B by silence.
 
 **Owner's order of preference:** B2 if Steven still wants to know whether more replicates can make the offset recoverable; otherwise A. B1 last. Which goal the project pursues is Steven's product decision, not a science ruling.
-
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
+- **Execution:** codex-cli updated 0.163.0/0.156.1 → 0.170.0 (WSL + Windows); gpt-6.2-sol and gpt-6.2-astra probe-verified. One shared B2 design brief sent to three consultants at high effort (Fable 5.2, gpt-6.2-astra, gpt-6.2-sol); director compares approaches and reports before any owner ruling.
 
 ### G41 — RESOLVED 2026-11-19: B (Steven, chat: "B — Confirmatory study") — What, if anything, follows G35-B? (model owner)
 - **Why it's open:** the exit audit CONFIRMED B FAIL, i PASS, ii FAIL, iii FAIL. Arm i (more replicates per candidate) passed only at threshold on four counts (offset hits 8/10, symptomatic hits 8/10, joint 6/10, offset boundary 2/10), its four-batch offset agreement was 0/10, and three arms raise the chance of one chance pass. The frozen text says any reliance on arm i needs Steven's decision and a new owner-ruled, fresh-seed confirmatory predeclaration. Real-data fitting stays STOPPED either way.
@@ -36,7 +37,7 @@
 - **Execution:** foreman run `g41-predecl` (predicate: owner-ruled, frozen confirmatory predeclaration on fresh pre-checked seeds, SHA recorded; no implementation, no campaign, no real data). Implementation and the campaign are later gates.
 
 ### G40 — RESOLVED 2026-11-19: audit run, CONFIRMED (Steven, chat: "Yes, run audit") — Exit-audit seat for the G35-B campaign (§12 step 9)
-- **Why it's open:** frozen §12 step 9 and clarification 2 require a fresh, independent exit audit by a model that is neither the implementer (gpt-6.1-sol) nor the step-7 reviewer (gpt-6-astra). Opus 5.5 is the natural seat, but the `claude` CLI is not logged in on Windows or WSL, and logging in is Steven's credential step. Until the audit files, the G35-B results are **not final**.
+- **Why it was open (historical):** frozen §12 step 9 and clarification 2 require a fresh, independent exit audit by a model that is neither the implementer (gpt-6.1-sol) nor the step-7 reviewer (gpt-6-astra). Opus 5.5 is the natural seat, but the `claude` CLI is not logged in on Windows or WSL, and logging in is Steven's credential step. Until the audit files, the G35-B results are **not final**.
 - **Options:**
   - **A (recommended):** Steven runs `claude /login` in WSL. The director then dispatches the Opus 5.5 @ high exit audit, recomputing everything from the bundle.
   - **B:** an owner clarification names another non-author, non-reviewer seat.
