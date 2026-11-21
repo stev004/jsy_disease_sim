@@ -4,9 +4,15 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). **G44 OPEN** (authorize implementation; default HOLD). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl`). G5 open.
 
-### G44 — Authorize implementation of the frozen G43 study (U1–U3 + independent review)? No campaign.
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G44 — RESOLVED 2026-11-21: AUTHORIZED (Steven, chat: "Authorize G44") — Authorize implementation of the frozen G43 study (U1–U3 + independent review)? No campaign.
 - **Frozen text:** `docs/research/v1_3/2026-11-20-g43-predeclaration.md` @ `fc16adcb3f8817eb2630ae5a31cd0508990bebd2`, committed-bytes sha256 `67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094`. Owner ruling (gpt-6.2-sol @ high): ACCEPT WITH AMENDMENTS A1–A10, `docs/research/v1_3/2026-11-20-g43-owner-ruling.md` @ `f2062d5`.
 - **Design (F):** six independent R = 12 candidate libraries scored on one shared panel of 20 fresh targets; frozen arm-(i) gate P1–P10 unchanged per library; reading CONSISTENT-PASS (6/6) / MIXED (1–5) / CONSISTENT-FAIL (0/6) / NO-READING (shared-panel P2/P3 failure) / VOID; no study-level recovery gate.
 - **Disclosure the owner required:** the target panel grows from 10 (G35-B) to 20 with fraction-preserving integer thresholds (hits ≥ 16, joint ≥ 12, boundary ≤ 4 of 20). Each target is five percentage points instead of ten; one target can still flip a verdict at an endpoint; the operating characteristics of the composite gate are unknown (frozen §7.7).
@@ -24,12 +30,7 @@
 - **Scale (EXPLORATORY estimates):** campaign 92 builds, 1,820 latent calls, 45,020 transforms, roughly two hours (linear scaling, unreliable), bundle 0.5–1 GB; host C: had 14 GB free at pre-check.
 - **Real-data fitting stays STOPPED** whatever the outcome.
 - **Default on no answer:** HOLD.
-
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
+- **Execution:** foreman run `g44-impl` (predicate: owner clarification 1 filed; U1–U3 implemented on branch `codex/g43-multilibrary` per frozen §13; director CI mirror PASS on the integration head filed; independent review PASS by a fresh Opus 5.5 filed on main; branch pushed after that). No campaign, no merge.
 
 ### G43 — RESOLVED 2026-11-20: F, by the director under Steven's delegation (chat: "what do you think we should do? go with whatever you think") — Which B2 design goes forward to a predeclaration draft?
 - **Evidence:** `docs/research/v1_3/2026-11-20-g42-b2-consult-comparison.md` and the three filed consults.

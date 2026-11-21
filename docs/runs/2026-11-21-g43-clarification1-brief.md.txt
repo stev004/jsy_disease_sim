@@ -1,0 +1,19 @@
+TASK: JOS · g43-clarification-1 · rule on the §7.3 opening sentence vs the A3 VOID rule
+ROLE: model owner — gpt-6.2-sol @ high (the G43 owner seat, frozen §12 seat 0). Read-only; your final response IS the clarification and will be filed verbatim.
+
+GOAL: Issue owner clarification 1 to the frozen G43 predeclaration, resolving one wording inconsistency so implementation (G44, authorized by Steven 2026-11-21) can proceed.
+
+SCOPE: Repository root = the directory you were started in (read-only clone of main at `git rev-parse HEAD`). Read anything. No edits, commits, simulations, builds or tests.
+
+CONTEXT (director's words): The frozen predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md (freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2, committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094) applies your ruling docs/research/v1_3/2026-11-20-g43-owner-ruling.md. The end-of-run trail audit (docs/audits/2026-11-20-g43-trail-audit-astra62.md) found:
+- §7.3, line 201 (verbatim): "There is **no study-level gate, no study-level PASS/FAIL token and no k-of-L cut**. The study reports the six verdicts, k, and exactly one class word, selected by the first matching row."
+- §7.3, line 203, your amendment A3 (verbatim excerpt): "A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading."
+- The class table row 1 (line 207) reads "**VOID** (campaign status; no class, no reading)".
+Line 201's second sentence is not limited to intact campaigns. Frozen §12 (last bullet) says any later inconsistency in the frozen text is a stop resolved only by a filed clarification ruling that changes no grid, threshold, seed, objective, level, predicate or reading class. Do not change the frozen file; rule how line 201 is to be read and implemented. Also say whether you see any other inconsistency of the same kind in §7.3–§7.4, §7.8, §7.11, §10 or §12 that the implementer should be told about now (rule on each, or say none).
+
+YOUR CLARIFICATION MUST: open with exactly `G43 OWNER CLARIFICATION 1: <one-line ruling>`; quote each frozen sentence it governs with its line number; state the binding reading; confirm it changes no grid, threshold, seed, objective, level, predicate or reading class; end with a "Standing" paragraph like docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md.
+
+REPORT: First line: your exact model name and reasoning effort. Then the clarification. Final response only; under about 800 words.
+TIMEBOX: stop and report if you exceed ~150K tokens.
+FORBIDDEN: edits, commits, simulations, builds, tests; real data; calling anything calibrated or validated; calling replicate spread a confidence interval.
+STANDING: .claude/DIRECTOR.md is binding in full.
