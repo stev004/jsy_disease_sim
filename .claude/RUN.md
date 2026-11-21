@@ -1,4 +1,12 @@
-# RUN — nothing in flight. Run `g43-predecl` COMPLETE (predicate met); awaiting Steven on G44.
+# RUN — `g44-impl` IN FLIGHT (2026-11-21). Predicate: owner clarification 1 filed; U1–U3 on `codex/g43-multilibrary` per frozen G43 §13; director CI mirror PASS filed; fresh Opus 5.5 review PASS filed on main; branch pushed only after that. No campaign, no merge. Budget: 3 implementation runs (frozen §13).
+
+**Done:** clarification 1 (gpt-6.2-sol) at `9002c59` (ts: trail row `g43-clarification-1`).
+**In flight:** U1 (gpt-6.2-sol @ high, Class: numerical), worktree `/home/steven/jos-g44-wt` on branch `codex/g43-multilibrary` from `9002c59`; brief `docs/runs/2026-11-21-g44-u1-brief.md.txt`; log stem `/home/steven/jos-g44-u1-20261121`.
+**Resume recipe:** if `<stem>.log` ends `rc=`, read `<stem>.last.md`, re-run the brief's acceptance commands in the worktree, review the full diff (scope: only the five permitted paths), then commit LOCALLY on the branch (never push before the review PASS is filed on main), file the report and acceptance log under `docs/runs/`, and launch U2. If codex died without `rc=`, relaunch U1 from the same brief as attempt 2 (stem suffix `-a2`).
+
+---
+
+## Previous: run `g43-predecl` COMPLETE (predicate met).
 
 **Run `g43-predecl` (2026-11-20):** predicate = owner-ruled, frozen B2 multi-library predeclaration (design F) on fresh seeds pre-checked buildable, committed with SHA recorded — MET.
 - unit 1 draft (Fable 5.2, 280,104 tokens, over the 250K timebox): `55bb491`, sha256 709bc9f3…f590;
