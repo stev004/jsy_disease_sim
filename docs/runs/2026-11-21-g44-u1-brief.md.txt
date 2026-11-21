@@ -1,0 +1,61 @@
+TASK: JOS · g44-u1 · G43 multi-library harness U1: declaration, evaluator, reading logic
+ROLE: implementer — gpt-6.2-sol @ high. Class: numerical. Unit 1 of 3 (frozen G43 §13).
+
+GOAL: Implement frozen G43 §13 unit U1 exactly: the new standalone G43 module's constants, config, strict frozen-payload validation, exact dry-run, the N-target evaluator with integer predicates, the historical-fixture source-of-truth test, and the reading-class / readings / S1–S2 / status-phrase pure functions. No generation path (U2), no retention/bundle (U3), no campaign.
+
+SCOPE: the worktree you run in (branch `codex/g43-multilibrary`, base = the HEAD you start at). You may CREATE only:
+- `src/jersey_outbreak/g43_multilibrary.py`
+- `src/jersey_outbreak/g43_constants.py`
+- `configs/calibration/v13_g43_multilibrary.yaml`
+- `tests/test_g43_multilibrary.py`
+- `tests/fixtures/g43/` (the historical fixture of §13 U1 and nothing else)
+Edit NOTHING else. In particular `src/jersey_outbreak/g35b_design_study.py`, `g35b_constants.py`, `phase0_campaign.py` and every protected module stay byte-identical (G43 §11, §13 "imports the G35-B pure functions unchanged"). You cannot commit; the director commits after acceptance. No subagents.
+
+CONTEXT. These bind, in this order (read in full before coding):
+1. `docs/research/v1_3/2026-11-20-g43-predeclaration.md` — FROZEN (freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2; committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094). Governing text for U1: §3 (lines 74–116), §4 (117–128), §6 (133–145), §7.1–§7.4 (148–249), §7.8 (318–337), §7.9–§7.11 (338–379), §8 incl. the final seed table (380–589), §9 (590–628), §11 (654–666), §13 (707–746), §14 (747–778). The U1 text, verbatim from §13:
+   > "Constants, config, strict frozen-payload validation, and a dry-run that reports the §9 counts exactly, shared and per library."
+   > "The N-target evaluator with integer predicates and the three groups of §7.2. Endpoint regressions at 16/20, 15/20, 12/20, 11/20, 4/20 and 5/20, plus decimal endpoint and cancellation regressions for the twenty-target bias."
+   > "Independent source of truth: run at N = 10 on a fixture derived from the retained G35-B blind records, with the source files' SHA-256 recorded in the fixture, the evaluator reproduces the CONFIRMED exit-audit counts for arm B (FAIL; hits 10/7/9/10, joint 7, boundary 0/3/0/0) and arm i (PASS; 10/8/8/10, joint 6, boundary 0/2/0/0). For the U1 historical fixture, supply the retained truth diagnostics and CONFIRMED completion, provenance and work evidence alongside the blind records when asserting full historical verdicts."
+   > "The class function of §7.3 as a pure function, with a table-driven test over the complete partition: VOID (campaign exception, established departure, or any false P1, P9 or P10 component, shared or library-side, including one detected without an exception); NO-READING with cause `shared_panel` (P2 false, P3 false, both); and k = 0, 1, 2, 3, 4, 5, 6."
+   > "Readings, S1/S2 triggers and the status phrase as pure functions. Trigger endpoint tests at 4k′ = m, 4k′ = m + 1, m = 24 and m = 23, at k′ = m = 0 (S1 suppressed), and for class eligibility (S1 and S2 emitted only for CONSISTENT-PASS, MIXED and CONSISTENT-FAIL, S1 before S2; neither for NO-READING or VOID). A test that each forbidden word of §7.3 is absent from every generated reading."
+   > "The G35-B, Phase-0 and Phase-0b dry-runs unchanged."
+   And from §13: "Imported unchanged: `loss`, `fit_blind`, `_fit_scored_grid`, `_offset_descriptive`, `batch_offset_agreement`, `batch_objective_spread`, the blind-estimate persistence and read-back helpers, `committed_document_bytes`, and the Phase-0 config constructors and table builders." Import what U1 needs from that list; do not copy-paste them.
+2. Owner ruling `docs/research/v1_3/2026-11-20-g43-owner-ruling.md` (A1–A10 are already applied in the frozen text; the ruling is context, the frozen text governs).
+3. Owner clarification 1 `docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md` — binding on how §7.3 line 201 is read for a VOID campaign.
+4. The G35-B harness `src/jersey_outbreak/g35b_design_study.py` + `g35b_constants.py` + `tests/test_g35b_design_study.py` as the pattern to follow (committed-bytes digest validation, CRLF rejection, frozen-payload mutation tests, exact Decimal predicates, independent constants).
+5. G35-B campaign bundle (read-only) `/home/steven/jos-g35b-campaign-20261022T234254Z` — source for the historical fixture; record each source file's sha256 in the fixture. The exit audit `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md` gives the counts the fixture must reproduce.
+6. `.claude/DIRECTOR.md` — STANDING, binding in full. Especially: integrity checks need an INDEPENDENT source of truth (an expected value derived from the input under test is a defect); declared finite-decimal predicates need exact arithmetic and endpoint/cancellation regressions, never an epsilon; evidence checks reject absent metadata; CLI errors via plain `typer.echo(..., err=True)` + exit code if you use typer (or argparse like the G35-B module).
+
+Director elaborations (each labelled; none adds a rule):
+- MECHANICAL CONSEQUENCE of §13 "g43_constants.py: independent; holds every earlier seed set from §8, this document's committed-bytes digest, the final seeds and the M2/M3/M4 hashes": the final seeds and hashes are the 92 rows of frozen §8 "Final seed table" (lines 445–541); the replacements 87301→87351, 87305→87352, 87506→87551 are already reflected there. Transcribe from the frozen text, and add a test that re-parses those rows from the committed bytes of the frozen file and compares them with the constants (independent re-read).
+- MECHANICAL CONSEQUENCE of committed-bytes validation: the predeclaration digest constant is 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094; validate against `git show <commit>:<path>` bytes as the G35-B module does, never the working copy.
+- MECHANICAL CONSEQUENCE: the config file's own committed-bytes digest cannot exist until the director commits it. As in G35-B corrective F4, compute sha256 of the exact LF bytes of the YAML you write, hold it as a constant in `g43_constants.py`, and test `sha256(LF bytes) == constant`.
+- OPEN, not for you to decide: anything the frozen text leaves unstated. If you hit one, implement nothing for it, leave a `NotImplementedError` with a comment citing the frozen line, and list it in your report.
+
+ACCEPTANCE (run from the worktree root; paste real output in your report):
+```
+export UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache
+uv run python -m jersey_outbreak.g43_multilibrary dry-run --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md
+uv run python -m jersey_outbreak.g35b_design_study dry-run --config configs/calibration/v13_g35b_design_study.yaml --predeclaration docs/research/v1_3/2026-10-22-g35b-predeclaration.md
+uv run ruff check . && uv run ruff format --check .
+uv run mypy --ignore-missing-imports src/jersey_outbreak/g43_multilibrary.py src/jersey_outbreak/g43_constants.py
+uv run pytest tests/test_g43_multilibrary.py tests/test_g35b_design_study.py tests/test_phase0_campaign.py tests/test_phase0b_campaign.py -q
+uv run pytest -q          # full suite ONCE, last, on final bytes
+git status --porcelain; git diff --stat
+```
+- G43 dry-run prints the §9 counts exactly (92 builds / 1,820 latent calls / 45,020 transforms; 75,000 gate / 375,000 descriptive loss evaluations; 120 gate / 600 descriptive blind records; 0 serosurvey samples), shared and per library, and fails closed on any mismatch.
+- G35-B dry-run output unchanged (2500/395/9395/85/22).
+- Negative tests: tampered predeclaration bytes, CRLF bytes, uncommitted predeclaration, every frozen-payload field mutation, any seed overlapping an earlier set — each rejected.
+- Endpoint tests named in §13 U1, and the historical fixture reproducing both arms' CONFIRMED counts and verdicts.
+- Partition, reading, trigger and forbidden-word tests named in §13 U1.
+- Only the permitted files are new; nothing else changed.
+
+VERIFY ORDER (DIRECTOR lesson 2026-09-22): formatting, lint, mypy and focused tests first; the full suite once on final bytes; if anything changes after the full suite, say so.
+
+TIMEBOX: ~60 minutes of work; stop and report if you exceed ~300K tokens or hit the usage limit.
+
+FORBIDDEN: editing any file outside SCOPE; any population build, latent run, simulation or campaign on a G43 study seed (U1 needs none); real data; commits/pushes; calling anything calibrated or validated; calling replicate spread a confidence interval; inventing any threshold, seed, tolerance or rule not in the frozen text.
+
+REPORT: (1) changed files with `git diff --stat` and `git status --porcelain`; (2) acceptance commands with real output; (3) for each §13 U1 bullet, the test names that cover it; (4) every place you interpreted the frozen text, with the line you relied on; (5) every OPEN item left as NotImplementedError; (6) anything in the frozen text, ruling or clarification that looked inconsistent.
+
+STANDING: `.claude/DIRECTOR.md` in the worktree is binding in full; read it.

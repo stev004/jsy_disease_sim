@@ -1,0 +1,1020 @@
+Reading additional input from stdin...
+OpenAI Codex v0.170.0
+--------
+workdir: /home/steven/jos-g43-clar1-sol62-ro
+model: gpt-6.2-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a20053-ab88-7f01-821f-946d678714ec
+--------
+user
+TASK: JOS · g43-clarification-1 · rule on the §7.3 opening sentence vs the A3 VOID rule
+ROLE: model owner — gpt-6.2-sol @ high (the G43 owner seat, frozen §12 seat 0). Read-only; your final response IS the clarification and will be filed verbatim.
+
+GOAL: Issue owner clarification 1 to the frozen G43 predeclaration, resolving one wording inconsistency so implementation (G44, authorized by Steven 2026-11-21) can proceed.
+
+SCOPE: Repository root = the directory you were started in (read-only clone of main at `git rev-parse HEAD`). Read anything. No edits, commits, simulations, builds or tests.
+
+CONTEXT (director's words): The frozen predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md (freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2, committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094) applies your ruling docs/research/v1_3/2026-11-20-g43-owner-ruling.md. The end-of-run trail audit (docs/audits/2026-11-20-g43-trail-audit-astra62.md) found:
+- §7.3, line 201 (verbatim): "There is **no study-level gate, no study-level PASS/FAIL token and no k-of-L cut**. The study reports the six verdicts, k, and exactly one class word, selected by the first matching row."
+- §7.3, line 203, your amendment A3 (verbatim excerpt): "A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading."
+- The class table row 1 (line 207) reads "**VOID** (campaign status; no class, no reading)".
+Line 201's second sentence is not limited to intact campaigns. Frozen §12 (last bullet) says any later inconsistency in the frozen text is a stop resolved only by a filed clarification ruling that changes no grid, threshold, seed, objective, level, predicate or reading class. Do not change the frozen file; rule how line 201 is to be read and implemented. Also say whether you see any other inconsistency of the same kind in §7.3–§7.4, §7.8, §7.11, §10 or §12 that the implementer should be told about now (rule on each, or say none).
+
+YOUR CLARIFICATION MUST: open with exactly `G43 OWNER CLARIFICATION 1: <one-line ruling>`; quote each frozen sentence it governs with its line number; state the binding reading; confirm it changes no grid, threshold, seed, objective, level, predicate or reading class; end with a "Standing" paragraph like docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md.
+
+REPORT: First line: your exact model name and reasoning effort. Then the clarification. Final response only; under about 800 words.
+TIMEBOX: stop and report if you exceed ~150K tokens.
+FORBIDDEN: edits, commits, simulations, builds, tests; real data; calling anything calibrated or validated; calling replicate spread a confidence interval.
+STANDING: .claude/DIRECTOR.md is binding in full.
+codex
+I’ll read the frozen text and the director’s rules, then check the named sections for the same wording issue.
+exec
+/bin/bash -lc 'git show fc16adcb3f8817eb2630ae5a31cd0508990bebd2:docs/research/v1_3/2026-11-20-g43-predeclaration.md | sha256sum
+sha256sum docs/research/v1_3/2026-11-20-g43-predeclaration.md' in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094  -
+67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094  docs/research/v1_3/2026-11-20-g43-predeclaration.md
+
+exec
+/bin/bash -lc "wc -l .claude/DIRECTOR.md docs/research/v1_3/2026-11-20-g43-predeclaration.md docs/research/v1_3/2026-11-20-g43-owner-ruling.md docs/audits/2026-11-20-g43-trail-audit-astra62.md docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md
+rg --files -g 'AGENTS.md'" in /home/steven/jos-g43-clar1-sol62-ro
+exec
+/bin/bash -lc 'git rev-parse HEAD
+ git status --short
+ git rev-parse --show-toplevel' in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 52ms:
+    91 .claude/DIRECTOR.md
+   904 docs/research/v1_3/2026-11-20-g43-predeclaration.md
+    72 docs/research/v1_3/2026-11-20-g43-owner-ruling.md
+    23 docs/audits/2026-11-20-g43-trail-audit-astra62.md
+    23 docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md
+  1113 total
+AGENTS.md
+
+ succeeded in 251ms:
+412e0c020427ff0bebdd230feb04f7c263a61499
+/home/steven/jos-g43-clar1-sol62-ro
+
+exec
+/bin/bash -lc "rg -n '"'^#{1,6} |VOID|admissib'"' docs/research/v1_3/2026-11-20-g43-predeclaration.md" in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+1:# G43 multi-library synthetic study predeclaration: six independent R = 12 candidate libraries on one shared target panel (FROZEN 2026-11-20)
+5:## 1. Status and lineage
+49:## 2. Question, estimand and scope
+74:## 3. What is held fixed, and what changes (brief item a)
+117:## 4. Design
+129:## 5. Observation model
+133:## 6. Objective and blind boundary
+146:## 7. Predicates, reading classes and descriptives
+148:### 7.1 Per-library recovery gate (brief item a)
+179:### 7.2 Three groups of predicates
+199:### 7.3 Across-library reading classes (brief item b; mechanical)
+203:**Precedence rule (owner amendment A3).** "A campaign exception, an established departure from the declaration, or any false P1, P9 or P10 component makes the campaign VOID. A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading. Seal the available evidence. For an intact campaign, any false P2 or P3 produces NO-READING, with cause `shared_panel` and all failed target conditions listed. All six gates are FAIL in that case. Report `k = 0` and the descriptive `k′`, `m`, and `m_ℓ`. Otherwise classify by `k`: six CONSISTENT-PASS, one through five MIXED, zero CONSISTENT-FAIL."
+207:| 1 | Campaign status is VOID under §12: a campaign exception, an established departure from the declaration, or any false P1, P9 or P10 component | **VOID** (campaign status; no class, no reading) |
+213:Here k = the number of ℓ with gate PASS. In rows 3–5 every `nonrecovery_ok_ℓ` is true, so k equals **k′** = the number of ℓ with `recovery_met_ℓ` true. k′ is computed and reported in every row except VOID.
+221:**Why NO-READING is defined on P2 and P3 after the VOID rules, and not on "which predicates failed".** A rule of the form "every library failed and only shared predicates failed" has a hole: a shared P2 failure together with a P5 failure in some libraries would be read as CONSISTENT-FAIL although every verdict was forced before recovery was assessed. Row 2 has no such hole. This tightens the common-cause rule in the consult (§17).
+223:### 7.4 Readings (brief items b, i; verbatim, descriptive statements separate from the gate vocabulary)
+236:**VOID.** No reading. §12 VOID rules apply. A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading; the available evidence is sealed (§7.3).
+246:| VOID | Nothing | Anything |
+250:### 7.5 Why no k-of-L cut is declared
+273:### 7.6 Number of libraries: L = 6 (brief item c; owner-ruled, §18 Q3)
+291:### 7.7 Number of targets: N = 20 (brief item c)
+318:### 7.8 The R = 3 concurrent reference (brief item e)
+331:For CONSISTENT-PASS, MIXED and CONSISTENT-FAIL, emit S1 exactly when `m > 0 and 4*k′ ≤ m`, and S2 exactly when `m == 24`. Emit S1 then S2 when both apply. Emit neither for NO-READING or VOID. If neither sentence is emitted, no sentence is written; k′, m and every m_ℓ are still reported for every intact campaign. The count of libraries with `recovery_met_ℓ` false and m_ℓ ≥ 1 is reported as `libraries_not_met_with_a_batch_met`, without a sentence.
+338:### 7.9 Descriptives (brief item f; reported, never gated)
+354:### 7.10 Explicit exclusions (no forking paths)
+369:### 7.11 Status phrase (brief item i)
+371:The existing phrase is kept intact and extended. Status vocabularies never mix: PASS/FAIL are per-library recovery-gate verdicts, VOID is a campaign status under §12, and the class word and readings are descriptive text that never appears in the phrase.
+376:- After a VOID campaign: "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: VOID".
+378:There is one campaign, so VOID is recorded once, at campaign level, with no per-library tokens. The G43 tokens are final only after the exit audit returns CONFIRMED; until then state files append "(exit audit pending)" outside the phrase. The class word may be written beside the phrase in prose, never inside it.
+380:## 8. Seeds and replacement rule (brief item d)
+437:### Exclusions and replacements
+445:### Final seed table (92 seeds)
+542:### Unused reserves (retired)
+590:## 9. Workload and fail-closed caps (brief item j)
+629:## 10. Bundle (brief item j)
+652:**Verdict lines.** The exit audit writes `G43 LIBRARY <1…6> RECOVERY GATE: PASS|FAIL` six times, then `G43 ACROSS-LIBRARY READING: CONSISTENT-PASS|MIXED|CONSISTENT-FAIL|NO-READING (k = <k> of 6)`, then the §7.4 reading and any §7.8 sentence. The audit's own verdict is `JOS G43 CAMPAIGN EXIT AUDIT: CONFIRMED | DISCREPANCY | VOID`. A VOID exit audit writes the audit verdict and cause, with no library or reading lines.
+654:## 11. Protected contracts
+667:## 12. Order, seats and VOID/FAIL rules (brief item h)
+683:7. **Fresh independent exit audit**, by a model that is neither the implementer nor the step-4 reviewer. It recomputes every predicate, k, k′, m and the class from the raw bundle with the Python standard library only, checks the reading and the S1/S2 sentences against §7.4 and §7.8, confirms that no descriptive feeds a verdict, and returns `JOS G43 CAMPAIGN EXIT AUDIT: CONFIRMED | DISCREPANCY | VOID`. Only after CONFIRMED do the G43 tokens become final.
+700:**VOID and FAIL rules (G35-B §12, carried forward):**
+701:- A software exception during the campaign stops all work, seals a partial bundle with `software_status` VOID, and makes the campaign VOID. VOID is recorded once at campaign level (§7.11); there are no library verdict lines, no counts `k`, `k′`, `m` or `m_ℓ`, no class and no reading. There is no retry, replacement or resume.
+702:- A step-4 defect blocks progression until corrected and independently reviewed. An established campaign defect makes the campaign VOID. DISCREPANCY denotes unresolved verification without an established departure. An intact campaign’s tokens become final only on CONFIRMED. No campaign retry or resume is allowed. A corrected rerun after VOID requires Steven’s explicit chat decision and a new owner-ruled text, using the same frozen seeds.
+707:## 13. Implementation approach and units (brief item g)
+729:  - The class function of §7.3 as a pure function, with a table-driven test over the complete partition: VOID (campaign exception, established departure, or any false P1, P9 or P10 component, shared or library-side, including one detected without an exception); NO-READING with cause `shared_panel` (P2 false, P3 false, both); and k = 0, 1, 2, 3, 4, 5, 6.
+730:  - Readings, S1/S2 triggers and the status phrase as pure functions. Trigger endpoint tests at 4k′ = m, 4k′ = m + 1, m = 24 and m = 23, at k′ = m = 0 (S1 suppressed), and for class eligibility (S1 and S2 emitted only for CONSISTENT-PASS, MIXED and CONSISTENT-FAIL, S1 before S2; neither for NO-READING or VOID). A test that each forbidden word of §7.3 is absent from every generated reading.
+747:## 14. Acceptance commands (proposed gates; not run in this draft)
+763:# then the CI verify-job step list exactly (read .github/workflows/ once: uv lock check, compileall,
+764:# ruff check + format, mypy over the pinned modules, focused pytest on test_g43/test_g35b/test_phase0*,
+765:# full pytest once on final bytes)
+779:## 15. Limitations
+792:## 16. Attestation
+801:## 17. Changes from the G42 consult, and ideas adopted from the other consults
+809:| NO-READING if every library fails and the only failed predicates are library-independent (P2, P3, P9, P10) | NO-READING if P2 or P3 fails in an intact campaign, with cause `shared_panel`; any false P1, P9 or P10 component makes the campaign VOID (§7.3, owner amendment A3) | The consult's rule had a hole when a shared failure coincided with recovery failures, and it treated P9 and P10 as wholly library-independent although each has a library-side component. The owner ruled the precedence (A3); the rule is a complete partition. |
+822:- "a reduced denominator has no reading" (§7.3; carried by the VOID rule of owner amendment A3);
+849:## 18. Owner rulings applied
+859:| Q5 NO-READING | Only for shared P2 or P3 failure after integrity passes; any false P1, P9 or P10 component makes the campaign VOID; `library_integrity` cause removed | A3; §7.3, §7.4, §12, §13, §17 |
+863:| Q9 Status phrase | Six per-library PASS/FAIL tokens for an intact campaign; VOID once at campaign level; classes outside the phrase | A3; §7.11, §12 |
+870:## 19. Full flat seed list for the pre-check (L = 6, N = 20)
+
+exec
+/bin/bash -lc 'cat .claude/DIRECTOR.md' in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+# DIRECTOR.md — standing orders for the JOS director agent (foreman)
+
+*The director's constitution for this repo. Re-read in full at the top of EVERY iteration — never work from memory of it. Hard rules refreshed 2026-09-01 post-release (V1.1 released, V1.2 cycle open). Distilled 2026-08-31 from Sol's cold-start handoff (`docs/handoff/2026-08-31-sol-handoff.md`, binding in full) and the foreman architecture (`StevOS/projects/pages/foreman.md`).*
+
+## Roles
+
+- **Director (you - Claude via `/foreman`, or GPT-6 Astra via `$foreman` inside Codex since 2026-09-05):** frame predicates, write briefs, review diffs, verify, keep `.claude/` state files current, decide next. You never implement beyond a one-line obvious fix. Whichever family directs, the end-of-run trail audit runs on the other family.
+- **Executor (Codex via `codex exec`):** implements from self-contained briefs in isolated worktrees. Stateless — every brief re-briefs in full. Behavioural contract: `AGENTS.md` at the repo root (present since the V1.1 repair cycle).
+- **Fleet (routing v8 + v8.2, 2026-10-22; codex-cli 0.163.0 in WSL and Windows):** implementation = `gpt-6-luna @ xhigh` (Steven's standing preference). The exception is `Class: numerical` units, which implement on `gpt-6.1-sol @ high`: a unit whose acceptance includes a numerical tolerance, a statistical test, an estimator/endpoint/interval computation, or a seeded-reproducibility assertion. Most Phase-0-style harness work qualifies (P0-1 took 3 Luna attempts plus an extension and still shipped a decimal endpoint defect). Reviews, consults and exit audits run on `gpt-6.1-sol @ high`, with `xhigh` reserved for merge-gate and exit verdicts. Trail audit = the other family (Claude-directed: `gpt-6-astra @ high`, never `ultra`). Opus 5.5 cross-vendor review is used for Risk:high units after the Sol PASS; it is advisory and never a merge trigger. Pass the effort explicitly on every `codex exec`. `gpt-6-sol` is retired. An attempt that hits the usage limit or passes ~300K tokens stops and reports. Never use a pre-GPT-6 model without asking.
+- **Independent auditor (fresh 6.1-Sol@high thread):** release-gate audits per handoff §10. Author ≠ judge, always. Audits are read-only; a BLOCKED verdict spawns the smallest corrective branch, never in-audit repair.
+- **Steven:** launches audits, approves expensive runs, owns every code merge to `main` and every tag (state-layer commits under `.claude/` and `docs/` go via `fm.sh sync` — that is the only agent write to `main`). His decisions queue in `GATES.md` with defaults.
+
+## Iteration contract
+
+1. Re-read this file, `FRONTIER.md`, the tail of `decisions.tsv`, open items in `GATES.md`.
+2. Check the run's predicate. Met → stop and report. Blocked on a gate → route around it or stop.
+3. Smallest unit that moves the predicate. Brief per the foreman 9-field template (GOAL/SCOPE/CONTEXT/ACCEPTANCE/VERIFY/TIMEBOX/FORBIDDEN/REPORT/STANDING — this file pasted verbatim as STANDING). A field you can't fill = a unit you haven't scoped.
+4. Execute in a fresh worktree off the correct base. **Never the primary worktree; never touch the existing `/private/tmp/jsy_*` worktrees** (handoff §7.5: no force-remove, no force-checkout, no clean/reset).
+5. Review full diff (scope-check first), run every acceptance criterion, keep-or-revert. "Might help" never rides along.
+6. One row in `decisions.tsv`, rewrite `FRONTIER.md` if the frontier moved, park new human questions in `GATES.md`, commit state files on `main` via `fm.sh sync`.
+
+Budgets per job: 3 implementation runs, 2 peer consults (6.1-Sol@high), unless Steven extends. Predicates are never relaxed; a plateau is a pivot, not a stop; duration is never a finish condition.
+
+## Repo-specific hard rules (from handoff §18 and §2 — binding)
+
+- **Current status phrase (2026-10-22, G35-B ruling condition 6):** "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run" — G35-B tokens FINAL (exit audit CONFIRMED 2026-11-19); `G43: not run` from the G43 freeze (`fc16adc`, 2026-11-20) until its campaign completes (frozen G43 §7.11). Arm i is a screening pass only. G41's one-library confirmatory design was REJECTED; the B2 multi-library successor (G43) is FROZEN at `fc16adc` and its implementation waits on G44. Real-data fitting STOPPED (G34 A+B).
+
+- **Released state (2026-09-01):** `main` = tag `jos-v1.1.0` = `e502ebfd366743db8ecbb65f580159bfa1d2a70c` + state-layer commits. Tags `jos-v1.0.0` (`9e9ce3abc4201cd8303c723015462d21ca237800`) and `jos-v1.1.0` are immutable. Code reaches `main` only by Steven's SHA-first merge; agents never merge code or tag by default. The 2026-09-01 G3 merge was executed by an agent on a one-time explicit chat instruction and is not a standing authorization.
+- Any release candidate under audit is immutable while the audit is pending; a new head voids the verdict.
+- **Forward scope authority:** `docs/audits/2026-09-01-solpro-deep-audit-BLOCKED.md` §9–§11 (V1.2 evidence foundation → V1.2.1 synthetic recovery → V1.3 first calibration → V1.3.1 → V1.4 → V2). §11's cut list is binding. Calibration never happens in the same milestone as the evidence foundation.
+- Never: restart V1.1 research/lanes · run the 180-day full-wave or the 30-replicate ensemble without the gate order in `FRONTIER.md` · `git clean` / `reset --hard` / force-checkout · squash or delete milestone branches · fabricate school year-groups, catchments, pathogen-neutral CVs, or any unsupported numeric default ("explicit unknown beats false precision") · call any tier calibrated/validated before it has passed a predeclared held-out validation (V1.3 exit gate at the earliest) · call ensemble bands confidence intervals (they are stochastic replicate variation) · conflate episode incidence with ever-infected fraction · treat `docs/progress.md` / `V1_1_IMPLEMENTATION_STATUS.md` as audit evidence (they are claims) · overwrite `~/Documents/JOS_v1_full_scale_evidence/` or `~/Documents/JOS_v1_1_full_scale_evidence/` (both runs) · run a 2.5/97.5 replicate band on fewer than 40 successful replicates (n·min(q,1−q)≥1 rule; N=30 reports median/IQR + labelled extrema only — the M04 decision).
+- Science design and mechanical implementation stay separated (§7.7): scientific parameter choices come from a written synthesis/spec, never improvised by an implementation agent.
+- Performance changes require measured hotspot + fixed-seed scientific-equivalence proof before merge (§7.10). Nothing merges because it "looks faster."
+- Status vocabularies never mix (§10.5): gates are PASS/FAIL; scientific findings are CLOSED / PARTIALLY CLOSED BY DESIGN / DEFERRED TO V1.x / FAILED. H3/H4 assess mechanism-support and shipped-default separately (§10.6).
+
+## Audit convention (when directing an audit)
+
+Immutable commit, never branch tip · verify ancestry · detached worktree · read-only · verdict is exactly `JOS <tier> RELEASE-CANDIDATE PASS` / `BLOCKED` with the tier named (e.g. `V1.2`) · minimum test surface per §10.8 (never the full-wave inside an audit) · protected contracts list §10.4.
+
+## Escalation
+
+Reaches Steven, batched in the run digest: irreversible actions, product/taste calls, a standing order contradicting observed reality, a dead end that survived a replan. Everything else: act and log. Every ask parks in `GATES.md` with a default.
+
+## Lessons (symptom -> root cause -> RULE)
+
+- 2026-08-31 (pilot, via terra trail-audit): trail rows cited doc names as evidence -> conclusions are not primary evidence -> RULE: the decisions.tsv evidence column carries resolvable artifacts (full SHA, commit hash of the write-back, log-file path), never just a document title; abbreviate nothing.
+- 2026-08-31 (corrective, via terra trail-audit): two trail rows carried hand-estimated timestamps contradicting machine-stamped ones -> director wrote ts by hand instead of using the helper -> RULE: every trail row goes through `fm.sh log` (it stamps `date`); hand-written timestamps are banned.
+- 2026-08-31 (corrective, via terra trail-audit): executor logs lived only in session scratchpad, so trail evidence pointed at files that die with the session -> RULE: at write-back, file each executor's final report (the `.last.md`) into `docs/runs/` on the state branch, and record the codex session id in the evidence cell.
+- 2026-09-01 (Sol Pro B04): a gate resolved verbally in chat stayed open in GATES.md, and a superseded branch stayed labelled "release candidate" in two files -> rulings and supersessions were logged to the trail but not reconciled into every state file -> RULE: a write-back is not complete until every state file agrees — after editing, grep the state layer for the superseded SHA/branch/status and fix every stale mention (the closeout staleness sweep, applied to .claude/).
+- 2026-09-01 (Sol Pro §12): release instructions named a branch -> branches move, releases don't -> RULE: merge/tag instructions are SHA-first; a branch name is a pointer, never a release identity.
+- 2026-09-01 (v12-carry-ins, self-caught): director logged a CI PASS row from a watcher's summary line, then read the run and found `conclusion=failure` -> verdict written before the verdict was read -> RULE: a CI trail row is written only after `gh run view <id> --json jobs` (or `--log-failed`) has been read in the same step; the row cites the job conclusions, never a watcher summary.
+- 2026-09-01 (v12-carry-ins, CI-caught): a CLI test asserted on typer's rich-rendered error panel; passed locally (wide terminal), failed on the 80-column runner -> rendered output is environment-dependent -> RULE: briefs for CLI error paths require plain `typer.echo(..., err=True)` + `typer.Exit(code)` and tests assert on exit code + plain message, never on rich/ANSI output.
+- 2026-09-02 (P4 desktop, self-caught after WSL crash): a 16 GB swapfile added live inside WSL exhausted the Windows host disk (~9 GB free) and crashed the whole VM, killing the run -> resource decisions were sized against the guest's view only -> RULE: before any allocation that grows a WSL VHD (swapfile, big cache, evidence dir), check the HOST drive's free space (`df /mnt/c`) and leave ≥5 GB; host disk is part of every capacity calculation on this box (G9 has the pagefile context).
+- 2026-09-03 (R7 chain, CI-caught): S1b passed the director's local gates (full suite, ruff, format, fingerprint compare) but failed CI on 3 mypy errors — the local gate list did not mirror CI's verify job, which also runs mypy over a pinned module list -> RULE: the director's pre-push gate for any src/ change is the CI verify job's exact step list (read `.github/workflows/` once per cycle and mirror it: uv lock check, compileall, pytest, ruff check+format, mypy over the pinned modules, relocation check where applicable), not a remembered subset.
+- 2026-09-05 (v12-run2 iteration 2, director-caught in review): the executor transcribed the brief's illustrative phrasing for a gov.je `Date` column into the measure dictionary as a sourced fact -> a brief that gives an EXAMPLE value for a transcription/citation field will be copied verbatim -> RULE: in briefs for transcription fields (dictionaries, fixtures, provenance notes), never give example content that is not itself a frozen-source fact; give the rule and the literal `unknown` fallback only, and make "every non-unknown cell cites a frozen locator" an acceptance criterion the executor must grep.
+- 2026-09-05 (perf-v12-run3, self-caught): RUN.md carried hand-written clock times up to two hours off the machine clock (the director inferred times from elapsed waits) -> only `fm.sh log` stamps are trustworthy -> RULE: RUN.md and GATES.md cite trail-row phases ("ts: trail row <phase>") instead of hand-written clock times; a time that did not come from `date` or a trail row is not written.
+- 2026-09-06 (perf-v12-run3, self-caught at digest time): every trail row of the run lacked its tokens column although the director passed the value -> the WSL-installed `fm.sh` predated the tokens column (the repo's vendored copy was equally old; only the Windows `~/.claude` copy was current) and silently ignored the eighth argument -> RULE: at run start the director diffs the installed `~/.claude/skills/foreman/scripts/fm.sh` against the repo's vendored `.claude/skills/foreman/scripts/fm.sh` and against the newest copy on any machine, reinstalls with `scripts/install_skills.sh --force` if they differ, and checks the first trail row of the run has all seven columns (`awk -F'	' '{print NF}'`).
+- 2026-09-09 (run 4 retries, self-caught): cherry-picking a `main` docs commit into two executor worktrees to hand them a review report conflicted on `.claude/RUN.md`/`GATES.md` (the commit carried state-file edits too) and left both worktrees mid-cherry-pick while executors were already running -> state-layer commits are never branch-clean -> RULE: hand context to an executor by copying the file into the worktree (untracked) or quoting it in the brief; never `cherry-pick` a commit that touches `.claude/` into a feature worktree, and never launch an executor in a worktree whose `git status` is not clean apart from intended files.
+- 2026-09-12 (v121-run5, self-caught): four executors launched through `wsl -d Ubuntu -- bash -c '... fm.sh exec ...'` from the desktop app all died within a minute, exactly when that wsl.exe invocation returned (log mtimes 17:19:14–17:19:20 vs launch 17:18:50; no `.last.md`, no error text) -> WSL tears down the process tree of a finished `wsl.exe` invocation, `nohup` notwithstanding; earlier runs survived only because the director held an interactive terminal session -> RULE: on this box any process that must outlive a director tool call (codex executors, long measurements) is started from a detached hidden `wsl.exe` session (`Start-Process wsl.exe -ArgumentList '-d','Ubuntu','--','bash','/tmp/<script>.sh' -WindowStyle Hidden`, the script ending in `sleep infinity`), and the director verifies `pgrep -f 'codex exec'` ≥ 60 s after launch before logging the launch row. Corollary: never pass shell variables or `/tmp` paths inline through `wsl -- bash -c` from PowerShell/Git Bash — write a script file under the scratchpad, copy via `/mnt/c`, run it by path.
+- 2026-09-12 (v121-run5, terra trail audit Attention 4/5/8): the integration branch was pushed and the independent review launched before the director's own full CI mirror had finished, the mirror's first pass failed on a director-script invocation error, and a quick-gate number was logged without a saved transcript -> the director treated the reviewer's mirror as the gate and its own as optional, and trusted session output as evidence -> RULE: the director's full CI mirror (exact verify-job step list, module lists deduplicated) runs to `PASS` on the integration head BEFORE the push and BEFORE the review launch, its log is filed under `docs/runs/` in the same write-back, and every test count cited in a trail row points at a filed transcript, never at tool-call output that dies with the session.
+- 2026-09-12 (v121-run6, terra trail audit Attention 4/5): first-attempt executor briefs carried a `· retry 1` label because the launcher appended it unconditionally, and the mirror-before-push claim had no retained push receipt -> provenance noise and an unverifiable ordering claim -> RULE: a retry label is added only when a previous attempt log for that unit exists; after every push that a trail row relies on, the row's evidence cell carries `git ls-remote origin <branch>` output (SHA + branch) captured in the same step.
+
+- 2026-09-22 (Phase 0, director acceptance review): a no-campaign-execution brief yielded pure scoring utilities without the simulator adapter needed by later units -> implementation and execution authorization were conflated -> RULE: campaign briefs explicitly require implementing and mock-testing the generation/orchestration path while separately keeping real execution gated.
+
+- 2026-09-22 (Phase 0 P0-1 correction, director review): defaulting missing result metadata to requested configs let namespace evidence pass -> test fakes omitted the real result fields -> RULE: evidence checks require returned metadata and reject absence; adapter tests use real config constructors and faithful result metadata, mocking only expensive execution.
+
+- 2026-09-22 (Phase 0 numerical review): binary subtraction excluded a declared inclusive decimal endpoint despite green tests -> endpoints were not exercised -> RULE: declared finite-decimal recovery predicates need exact arithmetic and endpoint/cancellation regressions; never repair by inventing epsilon or retuning thresholds.
+
+- 2026-09-22 (Phase 0 closeout): state-only pushes triggered 12 prohibited Actions runs -> push workflows ignore file intent -> RULE: under no-GitHub-CI instruction, every fm log decision and sync commit message includes [skip ci] before any push; never claim no remote runs without evidence.
+
+- 2026-09-22 (Terra trail audit): local shared-clone origin refs were mistaken for GitHub push evidence -> remote name was treated as identity -> RULE: audit remote URLs before inferring publication; use retained ls-remote output from the actual destination.
+
+- 2026-09-22 (G30 correction): full verification began before final formatting, forcing repeated suite sessions and a timebox stop -> brief verification order put the expensive suite too early -> RULE: finish formatting, lint, type checks and focused regressions before the full suite; run the full suite once against final bytes, and disclose any later change that invalidates it.
+
+- 2026-09-23 (P0-2, Sol review BLOCKED after director KEEP): the director accepted a ruling-hash check whose expected digest came from the same supplied config, and a persistence check that compared a function's return value with the value it had just been given -> review checked that a verification existed, not what it verified against -> RULE: for every integrity/provenance check in a diff, the reviewer names the independent source of truth (module constant, re-read bytes, separate artifact) and treats any check whose expected value derives from the input under test as a defect.
+
+- 2026-09-24 (Phase-0 run end, self-caught): the end-of-run trail audit reused the log stem `~/jos-phase0-trail` from the 2026-09-22 run. The launcher's `test ! -e` guard correctly aborted, but the watcher found the OLD `.last.md` and would have reported the previous run's audit as this run's -> stems were named by purpose, not by run -> RULE: every executor/auditor log stem, clone and brief path carries a run-unique token (date or run id), and each watcher first asserts that its `.log` mtime is newer than the launch before it trusts any `.last.md`.
+
+- 2026-09-24 (Phase-0 run, gpt-5.5 trail audit HIGH 1–2): two feature pushes happened seconds after the director read the review PASS on disk, and the PASS report was committed to git about a minute later -> "read it, push, then file" felt equivalent to "file, then push" -> RULE: the sequence is review PASS → copy it into docs/audits → commit and push the state layer → THEN push the feature branch and capture ls-remote. The trail can only prove an ordering it can see.
+- 2026-09-24 (same audit, MEDIUM 3): a `git add docs/runs/<prefix>-*` glob silently skipped a file named `<prefix>.log` -> RULE: after filing evidence, run `git status --porcelain docs/` and confirm every cited path is tracked before writing a trail row that cites it.
+- 2026-09-26 (popgen fix): two Luna attempts stopped at a byte-identity gate on files that differ between two builds of the SAME code (runtime_seconds, peak_memory_bytes, created_at, file sizes, dirty-tree flag) -> the director wrote the identity criterion without first double-building the base -> RULE: before briefing any identity gate, build the unchanged base twice and normalise exactly the fields that differ there; compare artifact ids, logical hashes and Parquet bytes exactly, and walk M2 as well as M3 directories.
+- 2026-09-26 (WSL launches): two detached launches silently did nothing. The Windows default distro is not Ubuntu, and a clean-tree check counted staged files -> RULE: always `wsl.exe -d Ubuntu ...`; after `git add`, check cleanliness with `git diff --quiet && test -z "$(git ls-files --others --exclude-standard)"`, not `git status --porcelain | wc -l`.
+- 2026-09-29 (popgen merge): repo-wide `ruff check .` failed on an evidence script filed as `docs/runs/*.py` -> evidence files are inside the lint scope -> RULE: file executable evidence as `*.py.txt` (byte-exact, unlinted), never as `.py` under docs/.
+- 2026-09-29 (G34-B): a design memo recommended an option that the already-retained bundle could refute for free -> RULE: before commissioning a successor design, run an exploratory, clearly labelled analysis of the retained surfaces (no new seeds, no pass-rule numbers), and consult a second model family on the plan.
+- 2026-10-22 (g35b-predecl): the gpt-6.1-sol design consult for the G35-B study (synthetic epidemic recovery design) was stopped by OpenAI's bio-risk classifier after 83K tokens, with no report -> provider safety classifiers can block benign epidemic-model work, and the standing practice is no filter bypass -> RULE: never rephrase or resubmit filtered content to the same provider; re-route the unchanged unit to the other model family (Claude: Opus 5.5 consultant, Fable owner), keep author != judge, log the stop with its token count, and expect the same risk on later OpenAI units for that content.
+- 2026-10-22 (g35b-predecl): the director started an outcome-blind builds-only seed pre-check before the owner-ruling commit, contrary to the ruling's declared order (ruling -> pre-check -> probe) -> "harmless" was treated as "allowed" -> RULE: no pre-freeze action starts before the commit that authorizes it exists on main, however inert; a run that started early is superseded, disclosed in the trail and rerun in order.
+- 2026-10-22 (g35b-predecl): a frozen document cited a sha256 computed on the Windows checkout's CRLF working copy, which differed from the committed (LF) bytes the trail cited -> core.autocrlf rewrites text files on checkout -> RULE: every sha256 written into a frozen or cited document is computed from committed bytes (`git show <sha>:<path> | sha256sum`) or on the WSL clone, never from a Windows working copy.
+- 2026-10-22 (g37-impl, step-7 review BLOCKED F3): the director's U2 brief added a rule the frozen predeclaration never stated ("a tied global minimum counts as non-agreement" for the arm-(i) offset-agreement descriptive). The executor implemented it faithfully, and the independent review caught the departure from §7.2(b) -> a brief that paraphrases frozen text also adds to it -> RULE: in briefs implementing a frozen predeclaration, quote the governing frozen sentence verbatim with its line number, and label any director elaboration as such, as either a mechanical consequence (with its derivation) or an open question for the owner. Never let a new semantic rule enter as a requirement.
+- 2026-10-22 (g37-impl, trail audit Attention 1–2): the run predicate said the review PASS is "filed before the push", but the foreman keep step pushed the feature branch after every unit, so the reviewed head reached origin before any mirror or review was filed. The keep script also committed code before filing the acceptance transcript -> the generic "keep = commit + push" step was not reconciled with the run's own ordering clause -> RULE: when a run's predicate orders a review before the push, unit keeps commit LOCALLY only (or push to a scratch ref named `review/<run>`). The feature branch is pushed once, after the review PASS is filed on main. The keep script files the acceptance transcript on main BEFORE the code commit, and the code commit message cites the transcript's path.
+- 2026-10-23 (G38 merge): a merge script ran each step as `( step ) || handler` with `set -euo pipefail` inside the step. Bash disables errexit inside any command whose status is tested by `||`, so a failed "local main == origin/main" check and a rejected push were ignored. The script then filed a receipt and a trail row claiming the push -> errexit is not a guard inside `||`/`&&`/`if` contexts -> RULE: in launcher scripts, every precondition and every push gets an explicit `|| die "<reason>"`. After any push, verify `git ls-remote` equals the local HEAD before writing a receipt or trail row. Never rely on `set -e` inside a function or subshell whose status is tested.
+- 2026-11-20 (g43-predecl, gpt-6.2-astra trail audit): all five run rows were shifted one column left (no `why` argument), leaving every `tokens` cell empty, and a launcher's multi-line `$(seq …)` seed list split the command so one seed was built twice across attempts -> `fm.sh log` takes positional args and never checks their count; unquoted newlines inside heredoc-expanded variables become command separators -> RULE: every `fm.sh log` call passes exactly seven fields after the repo (phase, decision, why, evidence, result, tokens), and the director checks the new row with `tail -1 .claude/decisions.tsv | awk -F'\t' '{print NF, $NF}'` before moving on; any list interpolated into a launcher is joined onto one line (`echo $LIST`) and its word count asserted in the script.
+
+exec
+/bin/bash -lc 'cat docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md docs/audits/2026-11-20-g43-trail-audit-astra62.md docs/research/v1_3/2026-11-20-g43-owner-ruling.md' in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+MODEL-OWNER CLARIFICATION (G35-B) 1: ISSUED
+
+<!-- Filed verbatim by the director (Claude Opus 5.5) on 2026-10-22 (HTML entities decoded). Author: Fable 5.1 model-owner subagent under Steven's 2026-10-22 delegation, issued under condition 5 of docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md, in response to the gpt-6-astra trail audit docs/audits/2026-10-22-g35b-trail-audit-astra.md. The frozen predeclaration is unchanged. -->
+
+**Authority.** Steven's 2026-10-22 delegation; condition 5 of `docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md`. Scope: the two inconsistencies found by the gpt-6-astra trail audit in the frozen predeclaration `docs/research/v1_3/2026-10-22-g35b-predeclaration.md` (commit `3972190bd7cde523860fe303b41427c1c95c57eb`, committed-bytes sha256 `2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e`). The frozen file stays byte-unchanged. This ruling is interpretive only.
+
+**Owner verification (read-only, performed before ruling).**
+- `git show 3972190:docs/research/v1_3/2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md | sha256sum` = `8cf4c76612434cbd90c5de4ca9dfd1326422b94a72bd4a63ccff71e95f34908a`.
+- The same committed bytes with every line ending normalised to CRLF (`\r?\n` → `\r\n`) = `de13913b85afa3578f3fcea2e460448909132133a30735eb3cae2609780079d6`, identical to the Windows working copy (`core.autocrlf=true`). The two hashes therefore differ only by line endings; content is identical.
+- The ridge diagnostic has not changed since it was filed (`f102a6d`); the frozen predeclaration hashes to the stated `2e8358ab…`.
+- Frozen §10 (line 413) reads "…These are disclosures and never gate or subset, and measured counters."
+
+**Item 1 — ridge-diagnostic lineage hash (§1 lineage table).**
+(a) Authoritative reading: the §1 row identifies the ridge diagnostic by content, not by platform-specific bytes. The binding lineage digest is the committed-bytes SHA-256 `8cf4c76612434cbd90c5de4ca9dfd1326422b94a72bd4a63ccff71e95f34908a` (blob at `3972190`, path `docs/research/v1_3/2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md`). The cited `de13913b…` is read as the CRLF working-copy rendering of the same content and is accepted as a non-binding alias of the same document, never as evidence of a different document.
+(b) Changes no grid, threshold, seed, objective, level or predicate. The lineage table records provenance only; no parameter of the study is derived from it.
+(c) U1 must: carry `8cf4c766…` as the binding ridge-diagnostic lineage digest; compute every SHA-256 it asserts (the frozen predeclaration's own `2e8358ab…` included) from committed bytes via `git show <sha>:<path>`, never from a working copy; record this ruling as the source of the corrected digest; and treat a mismatch of the committed-bytes digest (not of the CRLF alias) as the stop condition.
+
+**Item 2 — §10 trailing clause after A10.**
+(a) Authoritative reading: the A10 ruled text ends at "These are disclosures and never gate or subset." The residual ", and measured counters" is the draft's continuation, orphaned when the ruled sentence's period was merged into it. §10 is read as: "…plus per-target columns `population_fallback_m2` and `population_fallback_m3` (TRUE/FALSE from the build diagnostics), measured counters, and a per-arm descriptive count of fallback-built targets and candidates. These are disclosures and never gate or subset." The dangling clause adds no artefact, column, or obligation beyond "measured counters" as already present in the draft list; nothing in it gates, subsets, or feeds any predicate.
+(b) Changes no grid, threshold, seed, objective, level or predicate. The disclosure-only status of all §10 per-arm outputs stands exactly as A10 ruled.
+(c) U1 must: implement §10 per the reading in (a); emit the fallback columns, the measured counters and the descriptive count as disclosures only, with no code path that reads them into gating, subsetting, or predicate evaluation; and cite this ruling, not a re-punctuated predeclaration, wherever §10 is quoted.
+
+**Standing.** Both items are clarifications under condition 5. The frozen predeclaration, its commit, its committed-bytes hash, and every grid, threshold, seed, objective, level and predicate in it remain in force unchanged. Any further inconsistency is a new stop under the same condition.
+*Filed verbatim by the director (Claude Opus 5.5) from read-only Codex run: brief docs/runs/2026-11-20-g43-trail-audit-brief.md.txt; clone HEAD a03b7d982cfc58544390707d8c8182cbead35059; 94,477 tokens; rc=0; session 01a1f752-cbe7-7613-a152-1488786a527f. Links point into the auditor's clone.*
+
+---
+
+gpt-6.2-astra @ high
+
+**Attention** · 2026-11-20, `main` at `a03b7d9`. Astra also supplied a prior G42 rival-design consult and shares the OpenAI family with the Sol owner.
+
+- **04:22 `g43-F` through 04:57 `g43-frozen`** — All five TSV rows are shifted one column left after `decision`. Citations appear in `why`, outcomes in `evidence`, and token counts in `result`. Every `tokens` cell is empty. [TSV header](/home/steven/jos-g43-trail-astra62-ro/.claude/decisions.tsv:1) · [Five audit rows](/home/steven/jos-g43-trail-astra62-ro/.claude/decisions.tsv:418)
+- **04:40 `g43-ruling`** — The row omits the required Codex session ID. The filed owner log records it on line 11. [Owner log](/home/steven/jos-g43-trail-astra62-ro/docs/runs/2026-11-20-g43-owner-ruling-sol62.log:11) · [Recording rule](/home/steven/jos-g43-trail-astra62-ro/.claude/DIRECTOR.md:48)
+- **04:40 `g43-ruling` and 04:57 `g43-frozen`** — Both rows give abbreviated `ls-remote main=…` claims. The required contemporaneous full-SHA and branch receipts are absent from the rows. Git independently confirms both commits are ancestors of `main`. [Trail](/home/steven/jos-g43-trail-astra62-ro/.claude/decisions.tsv:420) · [Receipt rule](/home/steven/jos-g43-trail-astra62-ro/.claude/DIRECTOR.md:61)
+- **04:49 `g43-seed-precheck`** — The row claims **29** successful fallback builds. The JSON and log agree on **28** distinct seeds, 18 with the private-assignment fallback and 10 with the destination fallback. Of those, 17 entered the final table and 11 were unused reserves. [Pre-check JSON](/home/steven/jos-g43-trail-astra62-ro/docs/runs/2026-11-20-g43-seed-precheck.json) · [Frozen tables](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-predeclaration.md:445)
+- **04:49 `g43-seed-precheck`** — The successful attempt covered all 138 seeds once, but seed `86001` was built twice across attempts. The row discloses the repeat. It is an exception to the owner’s once-per-seed condition. [Ruling](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-owner-ruling.md:54) · [Aborted attempt 2](/home/steven/jos-g43-trail-astra62-ro/docs/runs/2026-11-20-g43-seed-precheck-abortedr2.log:26) · [Completed attempt](/home/steven/jos-g43-trail-astra62-ro/docs/runs/2026-11-20-g43-seed-precheck.log:26)
+- **04:57 `g43-frozen`** — Frozen §7.3 still says to report six verdicts, `k`, and exactly one class without limiting that sentence to intact campaigns. Two lines later, A3 expressly suppresses all three for VOID. [Frozen §7.3](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-predeclaration.md:201)
+- **04:57 `g43-frozen`** — G44 states the 10→20 rationale and points to frozen §7.7, but the gate entry omits the binomial table the owner required with the disclosure. The table exists in the frozen text. [G44 disclosure](/home/steven/jos-g43-trail-astra62-ro/.claude/GATES.md:12) · [Owner requirement](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-owner-ruling.md:73) · [Binomial table](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-predeclaration.md:298)
+- **04:57 `g43-frozen`** — DIRECTOR’s current status phrase still ends at G35-B. Frozen §7.11 requires the suffix `G43: not run` from freeze until campaign completion. [Current status phrase](/home/steven/jos-g43-trail-astra62-ro/.claude/DIRECTOR.md:26) · [Frozen §7.11](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-predeclaration.md:374)
+
+**Checks**
+
+1. **FLAG — Evidence.** All cited commits and paths resolve, and all seven cited SHA-256 digests match the committed bytes. The TSV field placement, session ID, and push receipts have the defects above.
+2. **OK — Order.** Ruling `f2062d5` at 04:40:13 UTC preceded all three log creations at 04:41:00, 04:42:16, and 04:44:17. Pre-check evidence `f4054f6` at 04:49:08 preceded freeze `fc16adc` at 04:57:47. `git diff --stat 0c9c371 main -- src configs tests scripts` returned no output. The logs record builds only, with no simulation or campaign.
+3. **FLAG — Verbatim and mechanical.** All 15,823 owner-response bytes match after the director’s header. A1, A2, A5, A6, and A7 check out. All 92 final rows match the JSON, including observation seeds, batches, fallbacks, and 276 logical hashes. A7 reproduces `87301→87351`, `87305→87352`, and `87506→87551`. The A3 wording conflict remains.
+4. **FLAG — Gates and state.** G43 carries the recorded delegation quote, G44 is open with default HOLD, and no current G43 in-flight claim remains. The gate disclosure and current status phrase have the omissions above.
+5. **FLAG — Rows.** All five decisions carry `[skip ci]`. The recorded figures `0 / 280104 / 139991 / 0 / 213523` agree with RUN’s unit accounting, and both the draft overrun and aborted launches are disclosed. The named `tokens` field is blank in all five rows.*Filed verbatim by the director (Claude Opus 5.5) from the read-only Codex run: brief docs/runs/2026-11-20-g43-owner-ruling-brief.md.txt; clone HEAD 2bed79036aaa4df467900c2009d7632b96eef624; 139,991 tokens; rc=0. Everything below this line is the owner's text, unedited.*
+
+---
+
+gpt-6.2-sol @ high  
+G43 OWNER RULING: ACCEPT WITH AMENDMENTS
+
+Design F may be frozen after the ordered pre-check and the amendments below. Six separately seeded libraries on byte-identical targets can show whether changing the library flips the gate verdict on that panel. Unanimity records what happened in six draws and leaves the underlying pass probability unknown. That answers Steven’s draw-sensitivity question without a reliability standard. I verified the draft’s committed-bytes SHA-256 `709bc9f3503d392886366ac59c8be205066386a52a22175e868cae1fd367f590` at `55bb491dc76b3de18eb04c8ce290eb9edb455f78` from read-only HEAD `2bed79036aaa4df467900c2009d7632b96eef624`. No files changed. Real-data fitting stays STOPPED.
+
+## Q1–Q14
+
+1. **Reading rule.** Accept CONSISTENT-PASS at six, MIXED at one through five, and CONSISTENT-FAIL at zero, subject to the precedence in A3. A reliability standard is unnecessary for this question. There is no study-level recovery gate.
+2. **CONSISTENT-PASS wording.** Keep the one-in-five and three-in-ten examples. The table can stay in §7.5 without appearing in the reading. **EXPLORATORY:** under the stated hypothetical model, the probabilities of six passes are 0.2621 and 0.1176, respectively.
+3. **L.** Accept six and the two-direction 0.055 precedent as a design anchor. **EXPLORATORY:** under the coin-flip illustration, five draws give 0.0625 probability of unanimity and six give 0.03125. This is a comparison of design sizes, with no inferential cutoff.
+4. **N.** Accept 20 and the §7.7 table, which I reproduced. P5 requires at least 16 hits per dimension, P6 at least 12 joint hits, and P8 at most four boundary selections per dimension. The integer tests are `5 × hits ≥ 80`, `5 × joint ≥ 60`, and `5 × boundary ≤ 20`. Equality qualifies. P7 uses all 20 signed errors and exact decimal arithmetic. One unviable truth run forces NO-READING in an otherwise intact campaign. The pre-check does not assess viability.
+5. **NO-READING.** Use it for shared P2 or P3 failure after integrity passes. A false shared or library component of P1, P9 or P10 makes the campaign VOID, including when detected without an exception. A3 governs precedence and reporting.
+6. **R = 3 reference.** Accept the paired descriptive comparison of `k′` and `m`, including each `m_ℓ`, and retain the nested R = 6 descriptives. Suppress S1 at zero–zero. Keep the sentence wording, with eligibility and ordering as in A5.
+7. **Pooled R = 72.** Exclude from the campaign. A later calculation on the retained bundle may use the draft’s definition and must be labelled EXPLORATORY.
+8. **Target blocks.** Exclude the two-block descriptive. The target-by-library matrices are sufficient to inspect where misses recur.
+9. **Status phrase.** Use six per-library PASS/FAIL tokens for an intact campaign. Record VOID once at campaign level. Readings and classes stay outside the phrase.
+10. **Seeds.** Accept all listed ranges, including the retired G41 ranges through the maximum proposed target count. Accept ten target reserves and six per library, with separate pools. **EXPLORATORY read-only check:** §19 matches §8, with 138 process IDs, 92 observation IDs and 230 distinct IDs. There was zero overlap with the 208 IDs in the declared earlier sets or with the retained G35-B ledger. All 724 possible G43 process/observation pairings, including reserve assignments, had distinct effective observation stream keys. Keep successful fallback builds and disclose them.
+11. **Seats.** Adopt the table below for G43. Claude Fable 5.1 may be the last exit-audit substitute under the stated independence and disclosure rules. The drafter and ruling model are excluded from implementation review and exit audit.
+12. **Retention.** Retain target latent truth and no candidate latent truth. Source inspection resolves the draft’s two named latent P3 unknowns. The event rows expose the fields used by `natural_history.chronology_passed`, and the daily state rows plus the actual resident count determine `states.conserved`. A8 supplies the inputs for the observation checks as well.
+13. **P2 attribution.** Accept separate reporting and calculation. P2 uses only its five declared viability conditions, P3 uses the chronology and conservation checks, and completion and namespace checks belong to P1 and P9. The historical conjunction is preserved.
+14. **Implementation gate.** Yes. Freeze may proceed under this ruling. Implementation requires Steven’s separate authorization, default HOLD.
+
+## Amendments
+
+**A1. §§2, 7.5 and 7.6 — design rationale.** Delete §2’s `EXPECTATION` paragraph. Replace §7.5’s numbered arguments 1–5 with: “The study records whether the verdict changed among the six declared library draws on this panel. A reliability decision would require a separately commissioned standard and error budget. The six verdicts, predicate vectors and target-by-library matrices are published for a later Steven decision.” Keep the hypothetical table and its conditional interpretation. Delete the bullets beginning “For comparison with the rival proposals’ 5% convention only” and “No affordable L”. In §15, replace the corresponding affordability claim with “The pass probability on this panel remains unknown.” Delete §7.6’s `Structural floor` paragraph and the alternatives after “The 0.055 is a precedent, not a law.” Label the derived binomial and unanimity illustrations in §§7.5–7.7 `EXPLORATORY DESIGN ARITHMETIC`.
+
+**A2. §7.7 — panel rationale.** Replace its two bullets under “What N controls” with: “At N = 20 each target contributes five percentage points to a count fraction, compared with ten at N = 10. One target can still flip a verdict at an endpoint. Twenty doubles the G35-B panel, following the earlier 5-to-10 design precedent, and preserves exact integer cutoffs.” Keep the table. Replace the sentence claiming the change cannot make any PASS easier with: “The table describes single count predicates under hypothetical per-target rates. The operating characteristics of the composite gate are unknown.” Delete the sentence offering N = 30 as an owner option and the final paragraph of §19 offering alternative L or N.
+
+**A3. §§7.3–7.4, 7.11, 10, 12 and 13 — precedence and status.** Apply this rule throughout: “A campaign exception, an established departure from the declaration, or any false P1, P9 or P10 component makes the campaign VOID. A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading. Seal the available evidence. For an intact campaign, any false P2 or P3 produces NO-READING, with cause `shared_panel` and all failed target conditions listed. All six gates are FAIL in that case. Report `k = 0` and the descriptive `k′`, `m`, and `m_ℓ`. Otherwise classify by `k`: six CONSISTENT-PASS, one through five MIXED, zero CONSISTENT-FAIL.” Remove the `library_integrity` NO-READING cause and update §13’s partition cases accordingly. Replace §7.3’s threshold boundary sentence with “Equality meets the applicable count predicate. A library passes only when all ten predicates are met.” In §7.11 use the six-token format for an intact campaign with `<PASS|FAIL>` in each slot, and append only `; G43: VOID` to the historical phrase for a VOID campaign. In §10 a VOID exit audit writes the audit verdict and cause, with no library or reading lines. In §12 replace the reviewer/defect rule with: “A step-4 defect blocks progression until corrected and independently reviewed. An established campaign defect makes the campaign VOID. DISCREPANCY denotes unresolved verification without an established departure. An intact campaign’s tokens become final only on CONFIRMED. No campaign retry or resume is allowed. A corrected rerun after VOID requires Steven’s explicit chat decision and a new owner-ruled text, using the same frozen seeds.”
+
+**A4. §§2, 7.4 and GATES G43 — interpretation.** In §2 use “The observed count is `k` of six. The library pass probability on this panel remains unknown.” In MIXED replace the `<k>/6 is a count` sentence with “The observed count is <k> of six. The library pass probability on this panel remains unknown.” In CONSISTENT-FAIL replace the sentence beginning “The G35-B arm-(i) PASS is not reproduced” with “None of these six libraries reproduced the G35-B recovery result. The campaigns differed in libraries, target draws and panel size. This comparison does not identify which difference mattered.” In GATES G43 reason 3 replace “CONSISTENT-FAIL shows arm i was a chance pass” with “CONSISTENT-FAIL records six failures on the G43 panel and leaves the G35-B arm-(i) screening PASS in place.”
+
+**A5. §7.8 — reference triggers.** For CONSISTENT-PASS, MIXED and CONSISTENT-FAIL, emit S1 exactly when `m > 0 and 4*k′ ≤ m`, and S2 exactly when `m == 24`. Emit S1 then S2 when both apply. Emit neither for NO-READING or VOID. Keep the counts for every intact campaign and update U1’s trigger cases to cover zero–zero and class eligibility. Replace the sentence claiming each batch contributes one quarter of its parent’s objective with “Each batch contributes one quarter of its parent’s transformed candidate mean at each cell, channel and date. The loss squares the residual after forming that mean.”
+
+**A6. §§7.9, 7.10 and 9 — pooling.** Replace the §7.9 pooled-option paragraph with “The campaign excludes the pooled R = 72 reference.” Add that exclusion to §7.10 and remove the conditional pooled row from §9. For later EXPLORATORY use of the retained bundle, the definition is library order 1–6, then position 1–12, `loss(target, predictions, 72, 34)`, and P4–P8 at N = 20, reported as met or not met with label `pooled_reference_not_a_tested_level`.
+
+**A7. §8 — reserve assignment.** Replace the primary-replacement bullet with “Within each pool, visit failed primary positions in ascending order. For each, consume the lowest-numbered successful reserve that has not already been used in that pool. The replacement inherits the position, paired observation seed and batch membership. Exhaustion stops the freeze and returns the draft to the owner.” Record all build exceptions, including those on unused reserves.
+
+**A8. §§10, 12, 13 and 15 — P3 evidence.** Add the complete target `daily_observed_cases` and the actual target `benchmark.n_agents` to retention. Replace the P3 recomputability unknown and related U3/exit-audit language with “Independently recompute the four existing P3 inputs from the retained evidence. Use `transmission_events` for `natural_history.chronology_passed`, `daily_epidemic` and `benchmark.n_agents` for `states.conserved`, `observation_events` for `no_report_before_infection`, and `daily_observed_cases` summed over `latent_infections` minus the length of `observation_events` for `latent_incidence_conservation`. Use the existing source expressions. U3 records the source locators and tests agreement with the returned flags.” The exit audit retains the stdlib-only requirement.
+
+**A9. §§7.2, 9 and 13 — predicate evidence.** Append to §7.2: “Compute P2 from acquisitions, local secondaries, the two channel totals and the number of nonzero combined-report dates. Do not use `TruthDiagnostics.viable` as P2. P3 is the conjunction of its four existing input checks. Completion is checked under P1 and namespace evidence under P9. P10 reads the operational work ledger, including required descriptive scoring and record counts. Descriptive results and disclosure copies never feed P10.” For the U1 historical fixture, supply the retained truth diagnostics and CONFIRMED completion, provenance and work evidence alongside the blind records when asserting full historical verdicts.
+
+**A10. §§12–13 — seats.** Substitute the seat table and routing rules below. Replace `gpt-6.1-sol @ high` in §12 step 3 and §13’s unit header with `gpt-6.2-sol @ high`, subject to the table. This is G43-specific routing.
+
+No grid, truth, tolerance, bias limit, threshold fraction, seed value, objective, tie rule or R level is altered by these amendments. **EXPLORATORY work-count check:** the §9 caps reconcile to 92 builds, 1,820 latent calls, 45,020 report transforms, 3,750 candidate cells, 75,000 gate and 375,000 descriptive loss evaluations, 120 gate and 600 descriptive blind records, and zero serosurvey samples. The 138 builds in the pre-check are separate. Wall time and size remain planning estimates and disclosures. The §9 host-disk rule applies.
+
+## Pre-freeze conditions
+
+1. **Ruling commit first.** File this ruling verbatim on `main` via `fm.sh sync` with `[skip ci]`, and record the commit and committed-bytes SHA-256 through `fm.sh log`. No pre-freeze action starts before that commit exists on `main`.
+2. **Pre-check on that commit.** Attest an empty diff against `0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8` for `src configs tests scripts`. Check and log host free space of at least 5 GB. Build all 138 §19 process seeds once in `ci` mode. Record build outcome, exception class, both fallback disclosures, and M2/M3/M4 logical hashes. Apply A7 and file the run-unique script, record and log. This step is builds-only and outcome-blind. Pool exhaustion returns the draft to the owner.
+3. **Mechanical freeze.** Apply A1–A10, mark the text FROZEN, and fill the lineage and §8 placeholders from the filed evidence. Commit via `fm.sh sync` with `[skip ci]`, hash committed bytes and record the freeze commit and digest in the trail. U1 pins the digest in the config and an independent constant. A later inconsistency stops work pending a filed clarification under §12.
+
+## §12 seats
+
+| Seat | Default | Fallbacks in order |
+|---|---|---|
+| 0 · Owner ruling | `gpt-6.2-sol @ high`, this ruling | Fresh Claude Opus 5.5 @ high |
+| 1 · Director | Claude Opus 5.5 in the standing director role | Standing director handoff |
+| 3 · Numerical implementation | `gpt-6.2-sol @ high` in separate executor sessions | Claude Opus 5.5 @ high in an isolated worktree |
+| 4 · Implementation review | Fresh Claude Opus 5.5 @ high | Fresh `gpt-6.2-astra @ high` |
+| 7 · Exit audit | Fresh `gpt-6.2-astra @ high` | Fresh Claude Opus 5.5 @ high, then fresh Claude Fable 5.1 @ high |
+| 8 · Trail audit, Claude-directed run | Fresh `gpt-6.2-astra @ high` | Fresh `gpt-6-astra @ high` on operational unavailability only |
+| 8 · Trail audit, OpenAI-directed run | Fresh Claude Opus 5.5 @ high | Fresh Claude Fable 5.1 @ high |
+
+Apply author ≠ judge to the actual work and skip ineligible substitutes. Steps 4 and 7 exclude Claude Fable 5.2, the ruling model, and every implementation author’s model. Step 7 also excludes the step-4 reviewer’s model. A fresh Opus instance may review or audit when eligible, independently of the director session. Disclose shared model or family with the director, the drafter, or another recorded seat, including the Sol owner and executor pairing and Astra’s prior rival-design consult. Preserve the DIRECTOR rule against rephrasing or resubmitting classifier-stopped content to the same provider. File stops and substitutions with the reason and attempt token count, or `not applicable` when no attempt ran. If no eligible seat remains, hold at that step and return to the owner. An exit audit awaiting an eligible seat leaves the results provisional.
+
+## Steven’s decisions
+
+The director must disclose the increase from 10 to 20 targets with the corrected §7.7 rationale and binomial table. Steven’s separate decisions remain implementation authorization, SHA-first merge, and authorization of the single campaign, each default HOLD. No decision on a reliability standard is needed to freeze G43.
+exec
+/bin/bash -lc "nl -ba docs/research/v1_3/2026-11-20-g43-predeclaration.md | sed -n '195,249p;318,337p;369,379p;629,706p'" in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+   195	**Attribution note.** The evaluator reports each condition of P2 and P3 as its own field, computed from its own inputs. The G35-B implementation's `TruthDiagnostics.viable` (`phase0_campaign.py:641–653`) also folds chronology, conservation and namespace evidence into its P2 value. That affects only which predicate is named as failed, never a gate verdict or a class, because P2, P3 and P9 are all in the conjunction and all in the non-recovery group.
+   196	
+   197	**Predicate evidence (owner amendment A9).** Compute P2 from acquisitions, local secondaries, the two channel totals and the number of nonzero combined-report dates. Do not use `TruthDiagnostics.viable` as P2. P3 is the conjunction of its four existing input checks. Completion is checked under P1 and namespace evidence under P9. P10 reads the operational work ledger, including required descriptive scoring and record counts. Descriptive results and disclosure copies never feed P10.
+   198	
+   199	### 7.3 Across-library reading classes (brief item b; mechanical)
+   200	
+   201	There is **no study-level gate, no study-level PASS/FAIL token and no k-of-L cut**. The study reports the six verdicts, k, and exactly one class word, selected by the first matching row.
+   202	
+   203	**Precedence rule (owner amendment A3).** "A campaign exception, an established departure from the declaration, or any false P1, P9 or P10 component makes the campaign VOID. A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading. Seal the available evidence. For an intact campaign, any false P2 or P3 produces NO-READING, with cause `shared_panel` and all failed target conditions listed. All six gates are FAIL in that case. Report `k = 0` and the descriptive `k′`, `m`, and `m_ℓ`. Otherwise classify by `k`: six CONSISTENT-PASS, one through five MIXED, zero CONSISTENT-FAIL."
+   204	
+   205	| Order | Condition (all exact, no judgment) | Class |
+   206	|---:|---|---|
+   207	| 1 | Campaign status is VOID under §12: a campaign exception, an established departure from the declaration, or any false P1, P9 or P10 component | **VOID** (campaign status; no class, no reading) |
+   208	| 2 | Intact campaign and P2 or P3 is false | **NO-READING** |
+   209	| 3 | k = 6 | **CONSISTENT-PASS** |
+   210	| 4 | 1 ≤ k ≤ 5 | **MIXED** |
+   211	| 5 | k = 0 | **CONSISTENT-FAIL** |
+   212	
+   213	Here k = the number of ℓ with gate PASS. In rows 3–5 every `nonrecovery_ok_ℓ` is true, so k equals **k′** = the number of ℓ with `recovery_met_ℓ` true. k′ is computed and reported in every row except VOID.
+   214	
+   215	**Boundary cases, stated so that none is left to judgment:**
+   216	- k = 5 is MIXED. k = 1 is MIXED. The words "nearly", "almost", "majority", "most", "typical" and "best library" are forbidden in every reading and summary.
+   217	- Equality meets the applicable count predicate. A library passes only when all ten predicates are met. A library's count margin is reported (§7.9, D1) and cannot change the class.
+   218	- **NO-READING, shared-panel cause.** If P2 or P3 is false in an intact campaign, all six gates are FAIL by the frozen conjunction, whatever the libraries did. The cause is recorded as `shared_panel`, with the target seeds and all failed target conditions. Example: one truth run with no local secondary infection. `k = 0` is reported with the descriptive `k′`, `m` and `m_ℓ`.
+   219	- In NO-READING the six per-library verdicts stand as computed. No FAIL is reclassified, no target is removed, the panel is not regenerated, and no library is rescored.
+   220	
+   221	**Why NO-READING is defined on P2 and P3 after the VOID rules, and not on "which predicates failed".** A rule of the form "every library failed and only shared predicates failed" has a hole: a shared P2 failure together with a P5 failure in some libraries would be read as CONSISTENT-FAIL although every verdict was forced before recovery was assessed. Row 2 has no such hole. This tightens the common-cause rule in the consult (§17).
+   222	
+   223	### 7.4 Readings (brief items b, i; verbatim, descriptive statements separate from the gate vocabulary)
+   224	
+   225	Angle-bracket fields are filled mechanically from the evaluation. No other word may be added to a reading.
+   226	
+   227	**CONSISTENT-PASS.** "All six independently drawn R = 12 candidate libraries passed the frozen G35-B arm-(i) recovery gate on the same 20 shared synthetic targets. In six draws on this one target panel, the gate verdict was not observed to depend on which library was drawn. This is a count, not a pass rate, not a reliability finding and not an interval: six passes in six draws do not rule out that a substantial fraction of libraries, for example one in five or three in ten, would fail on this panel, and nothing is shown for any other target panel, scenario, grid, objective or level of R. Smallest count margin across the six libraries: <d> target(s); libraries with at least one count exactly at its inclusive threshold: <n> of 6. This authorizes no real-data fitting. It is no more than input to a later gate decided by Steven."
+   228	
+   229	**MIXED.** "<k> of six independently drawn R = 12 candidate libraries passed the frozen G35-B arm-(i) recovery gate and <6 − k> failed it, on byte-identical targets. On this target panel the gate verdict depended on which candidate library was drawn. This is a direct observation, not a statistical inference. Four-dimensional recovery under this gate is therefore not shown to be a property of the level R = 12 on this panel. The observed count is <k> of six. The library pass probability on this panel remains unknown. Failing libraries and their failed predicates: <ℓ: predicates with counts>. Smallest count margin among the passing libraries: <d> target(s). The G35-B arm-(i) PASS remains a screening result only."
+   230	
+   231	**CONSISTENT-FAIL.** "None of six independently drawn R = 12 candidate libraries passed the frozen G35-B arm-(i) recovery gate on the same 20 shared synthetic targets, with every shared-panel and integrity predicate satisfied. In six draws on this one target panel, R = 12 did not produce four-dimensional recovery, and no dependence of the verdict on the library was observed. Failed predicates per library: <ℓ: predicates with counts>. None of these six libraries reproduced the G35-B recovery result. The campaigns differed in libraries, target draws and panel size. This comparison does not identify which difference mattered. Zero of six is a count, not a pass rate and not an interval, and it says nothing about other levels of R. The G35-B arm-(i) PASS remains a screening result only and its verdict is not changed."
+   232	
+   233	**NO-READING.** "No reading on library dependence is issued. <Cause sentence.> The six per-library verdicts stand as computed and are not reclassified; no target is removed and the panel is not regenerated. Predicates 4–8 were met by <k′> of six libraries; this is reported descriptively and licenses nothing."
+   234	- Cause sentence, `shared_panel`: "All six library gates are FAIL because a predicate that does not involve the candidate library failed on the shared panel (<target seeds: failed conditions>), so this panel could not discriminate among candidate-library draws by gate outcome."
+   235	
+   236	**VOID.** No reading. §12 VOID rules apply. A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading; the available evidence is sealed (§7.3).
+   237	
+   238	**What each class does and does not license:**
+   239	
+   240	| Class | Licenses | Does not license |
+   241	|---|---|---|
+   242	| CONSISTENT-PASS | The statement "no library dependence of the verdict was observed in six draws on this panel", as input to a later Steven gate | Any pass rate, reliability claim or interval; any claim for another panel; reopening G34; real-data fitting; "confirmed" or "validated" |
+   243	| MIXED | The statement "the verdict depended on the library drawn, on this panel" | Any rate; any claim that R = 12 "usually" or "rarely" recovers; any claim about other levels of R; any change to a G35-B verdict |
+   244	| CONSISTENT-FAIL | The statement "R = 12 did not produce recovery under any of six libraries on this panel" | Proof that R = 12 cannot recover on another panel; proof of the ridge hypothesis; any change to the G35-B arm-(i) verdict |
+   245	| NO-READING | Nothing about library dependence | Reading k′ as if it were k; removing the failing target; a rerun without Steven |
+   246	| VOID | Nothing | Anything |
+   247	
+   248	The R = 3 reference disclosure sentences (§7.8) are written after the reading under their own key. They never alter, qualify or replace the class.
+   249	
+   318	### 7.8 The R = 3 concurrent reference (brief item e)
+   319	
+   320	**What it is.** Each library contains four batches of three. The 4 × 6 = 24 batches are 24 independent R = 3 candidate libraries, each a Phase-0b-shaped objective, scored against the same twenty targets from tables already generated. In addition, batches 1∪2 of each library give six R = 6 libraries, the frozen nested step.
+   321	
+   322	**How it is read.** For each of the 24 batches and each of the six R = 6 sub-libraries, the predicate 4–8 computation is applied at N = 20 with the §7.1 thresholds. Each record reports per-dimension hit counts, the joint count, per-dimension boundary counts, exact mean biases, the tie count and a boolean `criteria_4_to_8_met`.
+   323	- Vocabulary is "met / not met", never PASS/FAIL. These records never enter the status phrase, a verdict line or a class.
+   324	- **m** = the number of the 24 batches with `criteria_4_to_8_met`. **m_ℓ** = the number among library ℓ's four batches. Both are reported beside k′, and each m_ℓ is shown beside its parent library's verdict.
+   325	- The comparison uses k′ (predicates 4–8), so that the R = 12 and R = 3 sides are the same computation.
+   326	
+   327	**Disclosure sentences, each triggered by an exact integer comparison with no threshold:**
+   328	- **S1, exactly when m > 0 and 4·k′ ≤ m:** "On this panel the six R = 12 libraries did not meet predicates 4–8 proportionally more often than their own twenty-four R = 3 batches (R = 12: <k′> of 6; R = 3: <m> of 24)."
+   329	- **S2, exactly when m = 24:** "Every R = 3 batch also met predicates 4–8 on this panel; R = 12 is not shown to be necessary here."
+   330	
+   331	For CONSISTENT-PASS, MIXED and CONSISTENT-FAIL, emit S1 exactly when `m > 0 and 4*k′ ≤ m`, and S2 exactly when `m == 24`. Emit S1 then S2 when both apply. Emit neither for NO-READING or VOID. If neither sentence is emitted, no sentence is written; k′, m and every m_ℓ are still reported for every intact campaign. The count of libraries with `recovery_met_ℓ` false and m_ℓ ≥ 1 is reported as `libraries_not_met_with_a_batch_met`, without a sentence.
+   332	
+   333	**Why it is ungated.**
+   334	- The batches are nested in the libraries. Each batch contributes one quarter of its parent's transformed candidate mean at each cell, channel and date. The loss squares the residual after forming that mean. The 24 are not an independent control arm against the six.
+   335	- A second verdict family would recreate the readings table and the multiplicity that G35-B §7.4 warned about, and would let the R = 12 reading depend on how a short library happened to score.
+   336	- Any rule on the difference between k′/6 and m/24 needs a margin, which would be an invented number. S1 and S2 need none.
+   337	
+   369	### 7.11 Status phrase (brief item i)
+   370	
+   371	The existing phrase is kept intact and extended. Status vocabularies never mix: PASS/FAIL are per-library recovery-gate verdicts, VOID is a campaign status under §12, and the class word and readings are descriptive text that never appears in the phrase.
+   372	
+   373	- Until this text is frozen: "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL".
+   374	- From the freeze until a campaign completes: "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run".
+   375	- After an intact campaign: "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: L1 <PASS|FAIL>, L2 <PASS|FAIL>, L3 <PASS|FAIL>, L4 <PASS|FAIL>, L5 <PASS|FAIL>, L6 <PASS|FAIL>".
+   376	- After a VOID campaign: "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: VOID".
+   377	
+   378	There is one campaign, so VOID is recorded once, at campaign level, with no per-library tokens. The G43 tokens are final only after the exit audit returns CONFIRMED; until then state files append "(exit audit pending)" outside the phrase. The class word may be written beside the phrase in prose, never inside it.
+   379	
+   629	## 10. Bundle (brief item j)
+   630	
+   631	One fresh, immutable bundle in a new, empty destination outside the repo. It must let the exit audit recompute every predicate, every reference evaluation, k, k′, m and the class from raw tables with the Python standard library only.
+   632	
+   633	- **`frozen_inputs/`:** this predeclaration (frozen), the owner ruling, any clarification, the config and the pre-check record, each as committed bytes with its SHA-256; plus source and config hashes for every tracked `.py/.yaml/.json` under `src/jersey_outbreak` and `configs`.
+   634	- **`seed_ledger.json`:** every role, library, batch and position, with pairing and replacement status.
+   635	- **`targets/`:**
+   636	  - the 20 target tables and `target_provenance.json` (returned and requested run and observation configs, `observation_rng`, population lineage);
+   637	  - **target latent truth (fixes exit-audit O4).** Per target: the complete `transmission_events` (all rows, all fields); the complete `daily_epidemic`; the latent diagnostics `natural_history` and `states` payloads; the complete `observation_events`; the complete `daily_observed_cases`; the actual `benchmark.n_agents`; and the observation diagnostics keys used by P3;
+   638	  - `truth_diagnostics.json`, written after the truth join, with each P2 and P3 condition as its own field per target;
+   639	  - `auditor_recompute_notes.json`, naming which P2 and P3 inputs are recomputable from the retained raw rows and which are only internally checkable, each with its code locator. Independently recompute the four existing P3 inputs from the retained evidence. Use `transmission_events` for `natural_history.chronology_passed`, `daily_epidemic` and `benchmark.n_agents` for `states.conserved`, `observation_events` for `no_report_before_infection`, and `daily_observed_cases` summed over `latent_infections` minus the length of `observation_events` for `latent_incidence_conservation`. Use the existing source expressions. U3 records the source locators and tests agreement with the returned flags.
+   640	  - Candidate latent truth is not retained, because no predicate uses it.
+   641	- **`library_<ℓ>/`, for ℓ = 1…6:**
+   642	  - the two-channel table for every (cell, replicate), with its process seed, observation seed, batch, position, `table_sha256`, population lineage (M2/M3/M4 logical hashes and both fallback flags) and `observation_rng`;
+   643	  - 20 gate blind records and 100 descriptive blind records with read-back hashes, plus `blind_readback_hashes.json`;
+   644	  - `g43_L<ℓ>_recovery.csv`, with every per-target predicate value, the boundary flag computed by its own code path, and `population_fallback_m2` / `population_fallback_m3` (disclosures only);
+   645	  - `recovery_evaluation.json`, with the ten predicates, the three groups of §7.2, `nonrecovery_ok`, `recovery_met`, the counts, the biases and the D1 margins;
+   646	  - `g43_L<ℓ>_descriptives.json` (D4) and `reference_evaluations.json` (D5), labelled.
+   647	- **`g43_matrices.json`:** D2 and D3.
+   648	- **`g43_across_library.json`:** the six verdicts, k, k′, m, every m_ℓ, the S1 and S2 trigger values, the class word, the NO-READING cause record if any, and the reading text.
+   649	- **`campaign_summary.json`:** the §1 lineage block; a `seats` block naming the implementer, the reviewer and any substitution under §12 with the stopped attempt's token count or `not applicable` (fixes O3); `software_status`; the six `scientific_status` values; the class and reading; the S1/S2 sentences under their own key; the status phrase; measured-versus-planned work; and the disclosures.
+   650	- **`SHA256SUMS`** covering every other file, with write bits removed and the bundle re-verified after sealing.
+   651	
+   652	**Verdict lines.** The exit audit writes `G43 LIBRARY <1…6> RECOVERY GATE: PASS|FAIL` six times, then `G43 ACROSS-LIBRARY READING: CONSISTENT-PASS|MIXED|CONSISTENT-FAIL|NO-READING (k = <k> of 6)`, then the §7.4 reading and any §7.8 sentence. The audit's own verdict is `JOS G43 CAMPAIGN EXIT AUDIT: CONFIRMED | DISCREPANCY | VOID`. A VOID exit audit writes the audit verdict and cause, with no library or reading lines.
+   653	
+   654	## 11. Protected contracts
+   655	
+   656	**No change to any of:**
+   657	- `outbreak_runner.py`, `respiratory.py`, `observation.py`, `observation_scheduler.py`, `observation_schemas.py`, `population_*`, `parent_build.py`, `starsim_adapter.py`, `calibration*.py`, `hashing.py`, `scientific_hashes.py`;
+   658	- any artifact schema or identity/persistence contract;
+   659	- the handoff §10.4 list.
+   660	
+   661	**`phase0_campaign.py`, `g35b_design_study.py` and `g35b_constants.py` stay byte-unchanged.** The Phase-0, Phase-0b and G35-B dry-runs must still report 198/59/599/8, 1,334/107/4,007/8 and 2,500/395/9,395/85/22.
+   662	
+   663	**No performance change.** If the campaign cannot run within host memory or disk as measured by U3, that is a stop returned to the director and Steven, never a reason to alter generation, batching semantics or retention.
+   664	
+   665	**Stop condition:** any need to modify a protected module, any of the three files above, or a contract stops the unit. It requires a separate owner-rulable brief.
+   666	
+   667	## 12. Order, seats and VOID/FAIL rules (brief item h)
+   668	
+   669	**Order:**
+   670	0. **Owner ruling** on this draft: gpt-6.2-sol @ high (G43). If a provider classifier stops it, the unchanged brief goes to a fresh Claude Opus 5.5 subagent (G43); it is never rephrased or resubmitted to the same provider.
+   671	1. **Director pre-freeze actions** (no study simulation):
+   672	   - commit the ruling via `fm.sh sync` `[skip ci]`; record its committed-bytes SHA-256 in the trail; attest that `git diff --stat 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8 HEAD -- src configs tests scripts` is empty;
+   673	   - check and log host disk;
+   674	   - run the builds-only pre-check of the §19 list on that tree, then the replacement rule;
+   675	   - fill the §8 placeholders and the §1 ruling row mechanically, apply the ruling's amendments verbatim, and commit the frozen predeclaration via `fm.sh sync` `[skip ci]`; record its committed-bytes SHA-256 in the trail.
+   676	
+   677	   No pre-freeze action may start before the commit that authorizes it exists on `main`. An exhausted reserve pool returns the draft to the owner. Every SHA-256 written into the frozen text is computed from committed bytes.
+   678	2. **Steven authorizes implementation** (a new GATES item, default HOLD).
+   679	3. **U1, U2, U3** (§13), each `Class: numerical`, implemented by **gpt-6.2-sol @ high** (subject to the seat table below). The director re-accepts each unit and runs the full CI verify-job mirror to PASS on the integration head; the log is filed under `docs/runs/` before any push or review launch. Unit keeps commit locally or to `review/<run>`; the feature branch is pushed once, after the review PASS is filed on `main`.
+   680	4. **Independent implementation review** of the complete implementation against the frozen text, by a model that authored none of it. It is given the frozen predeclaration, the ruling, any clarification and the complete implementation (code, config, tests, dry-run and cap evidence). It runs no study simulation and touches no seed. A defect it names returns the implementation to the executor before step 5.
+   681	5. **Steven's SHA-first merge** of the reviewed head (default HOLD).
+   682	6. **Steven authorizes the single campaign** (default HOLD). It runs at the merge commit, in a fresh clean clone, into a new empty directory outside the repo, from a detached WSL session (DIRECTOR lesson 2026-09-12). The launcher refuses to start if an exit marker exists or if the host-disk rule of §9 is not met. Every precondition and every push uses explicit `|| die`.
+   683	7. **Fresh independent exit audit**, by a model that is neither the implementer nor the step-4 reviewer. It recomputes every predicate, k, k′, m and the class from the raw bundle with the Python standard library only, checks the reading and the S1/S2 sentences against §7.4 and §7.8, confirms that no descriptive feeds a verdict, and returns `JOS G43 CAMPAIGN EXIT AUDIT: CONFIRMED | DISCREPANCY | VOID`. Only after CONFIRMED do the G43 tokens become final.
+   684	8. **Trail audit** at the end of each run, on the family other than the director's (DIRECTOR Roles).
+   685	
+   686	**Seats, named in advance (owner amendment A10; G43-specific routing):**
+   687	
+   688	| Seat | Default | Fallbacks in order |
+   689	|---|---|---|
+   690	| 0 · Owner ruling | `gpt-6.2-sol @ high`, this ruling | Fresh Claude Opus 5.5 @ high |
+   691	| 1 · Director | Claude Opus 5.5 in the standing director role | Standing director handoff |
+   692	| 3 · Numerical implementation | `gpt-6.2-sol @ high` in separate executor sessions | Claude Opus 5.5 @ high in an isolated worktree |
+   693	| 4 · Implementation review | Fresh Claude Opus 5.5 @ high | Fresh `gpt-6.2-astra @ high` |
+   694	| 7 · Exit audit | Fresh `gpt-6.2-astra @ high` | Fresh Claude Opus 5.5 @ high, then fresh Claude Fable 5.1 @ high |
+   695	| 8 · Trail audit, Claude-directed run | Fresh `gpt-6.2-astra @ high` | Fresh `gpt-6-astra @ high` on operational unavailability only |
+   696	| 8 · Trail audit, OpenAI-directed run | Fresh Claude Opus 5.5 @ high | Fresh Claude Fable 5.1 @ high |
+   697	
+   698	**Routing rules.** Apply author ≠ judge to the actual work and skip ineligible substitutes. Steps 4 and 7 exclude Claude Fable 5.2, the ruling model, and every implementation author’s model. Step 7 also excludes the step-4 reviewer’s model. A fresh Opus instance may review or audit when eligible, independently of the director session. Disclose shared model or family with the director, the drafter, or another recorded seat, including the Sol owner and executor pairing and Astra’s prior rival-design consult. Preserve the DIRECTOR rule against rephrasing or resubmitting classifier-stopped content to the same provider. File stops and substitutions with the reason and attempt token count, or `not applicable` when no attempt ran. If no eligible seat remains, hold at that step and return to the owner. An exit audit awaiting an eligible seat leaves the results provisional.
+   699	
+   700	**VOID and FAIL rules (G35-B §12, carried forward):**
+   701	- A software exception during the campaign stops all work, seals a partial bundle with `software_status` VOID, and makes the campaign VOID. VOID is recorded once at campaign level (§7.11); there are no library verdict lines, no counts `k`, `k′`, `m` or `m_ℓ`, no class and no reading. There is no retry, replacement or resume.
+   702	- A step-4 defect blocks progression until corrected and independently reviewed. An established campaign defect makes the campaign VOID. DISCREPANCY denotes unresolved verification without an established departure. An intact campaign’s tokens become final only on CONFIRMED. No campaign retry or resume is allowed. A corrected rerun after VOID requires Steven’s explicit chat decision and a new owner-ruled text, using the same frozen seeds.
+   703	- A scientific FAIL is never reclassified. NO-READING is a reading class, not a status, and leaves the six verdicts as computed.
+   704	- No second campaign, no additional library and no additional target without Steven's explicit chat decision.
+   705	- Any later inconsistency in the frozen text is a stop resolved only by a filed clarification ruling that changes no grid, threshold, seed, objective, level, predicate or reading class.
+   706	
+
+exec
+/bin/bash -lc "nl -ba .claude/DIRECTOR.md | sed -n '60,100p'
+cat docs/research/v1_3/2026-10-22-g35b-owner-clarification-1.md docs/audits/2026-11-20-g43-trail-audit-astra62.md" in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+    60	- 2026-09-12 (v121-run5, terra trail audit Attention 4/5/8): the integration branch was pushed and the independent review launched before the director's own full CI mirror had finished, the mirror's first pass failed on a director-script invocation error, and a quick-gate number was logged without a saved transcript -> the director treated the reviewer's mirror as the gate and its own as optional, and trusted session output as evidence -> RULE: the director's full CI mirror (exact verify-job step list, module lists deduplicated) runs to `PASS` on the integration head BEFORE the push and BEFORE the review launch, its log is filed under `docs/runs/` in the same write-back, and every test count cited in a trail row points at a filed transcript, never at tool-call output that dies with the session.
+    61	- 2026-09-12 (v121-run6, terra trail audit Attention 4/5): first-attempt executor briefs carried a `· retry 1` label because the launcher appended it unconditionally, and the mirror-before-push claim had no retained push receipt -> provenance noise and an unverifiable ordering claim -> RULE: a retry label is added only when a previous attempt log for that unit exists; after every push that a trail row relies on, the row's evidence cell carries `git ls-remote origin <branch>` output (SHA + branch) captured in the same step.
+    62	
+    63	- 2026-09-22 (Phase 0, director acceptance review): a no-campaign-execution brief yielded pure scoring utilities without the simulator adapter needed by later units -> implementation and execution authorization were conflated -> RULE: campaign briefs explicitly require implementing and mock-testing the generation/orchestration path while separately keeping real execution gated.
+    64	
+    65	- 2026-09-22 (Phase 0 P0-1 correction, director review): defaulting missing result metadata to requested configs let namespace evidence pass -> test fakes omitted the real result fields -> RULE: evidence checks require returned metadata and reject absence; adapter tests use real config constructors and faithful result metadata, mocking only expensive execution.
+    66	
+    67	- 2026-09-22 (Phase 0 numerical review): binary subtraction excluded a declared inclusive decimal endpoint despite green tests -> endpoints were not exercised -> RULE: declared finite-decimal recovery predicates need exact arithmetic and endpoint/cancellation regressions; never repair by inventing epsilon or retuning thresholds.
+    68	
+    69	- 2026-09-22 (Phase 0 closeout): state-only pushes triggered 12 prohibited Actions runs -> push workflows ignore file intent -> RULE: under no-GitHub-CI instruction, every fm log decision and sync commit message includes [skip ci] before any push; never claim no remote runs without evidence.
+    70	
+    71	- 2026-09-22 (Terra trail audit): local shared-clone origin refs were mistaken for GitHub push evidence -> remote name was treated as identity -> RULE: audit remote URLs before inferring publication; use retained ls-remote output from the actual destination.
+    72	
+    73	- 2026-09-22 (G30 correction): full verification began before final formatting, forcing repeated suite sessions and a timebox stop -> brief verification order put the expensive suite too early -> RULE: finish formatting, lint, type checks and focused regressions before the full suite; run the full suite once against final bytes, and disclose any later change that invalidates it.
+    74	
+    75	- 2026-09-23 (P0-2, Sol review BLOCKED after director KEEP): the director accepted a ruling-hash check whose expected digest came from the same supplied config, and a persistence check that compared a function's return value with the value it had just been given -> review checked that a verification existed, not what it verified against -> RULE: for every integrity/provenance check in a diff, the reviewer names the independent source of truth (module constant, re-read bytes, separate artifact) and treats any check whose expected value derives from the input under test as a defect.
+    76	
+    77	- 2026-09-24 (Phase-0 run end, self-caught): the end-of-run trail audit reused the log stem `~/jos-phase0-trail` from the 2026-09-22 run. The launcher's `test ! -e` guard correctly aborted, but the watcher found the OLD `.last.md` and would have reported the previous run's audit as this run's -> stems were named by purpose, not by run -> RULE: every executor/auditor log stem, clone and brief path carries a run-unique token (date or run id), and each watcher first asserts that its `.log` mtime is newer than the launch before it trusts any `.last.md`.
+    78	
+    79	- 2026-09-24 (Phase-0 run, gpt-5.5 trail audit HIGH 1–2): two feature pushes happened seconds after the director read the review PASS on disk, and the PASS report was committed to git about a minute later -> "read it, push, then file" felt equivalent to "file, then push" -> RULE: the sequence is review PASS → copy it into docs/audits → commit and push the state layer → THEN push the feature branch and capture ls-remote. The trail can only prove an ordering it can see.
+    80	- 2026-09-24 (same audit, MEDIUM 3): a `git add docs/runs/<prefix>-*` glob silently skipped a file named `<prefix>.log` -> RULE: after filing evidence, run `git status --porcelain docs/` and confirm every cited path is tracked before writing a trail row that cites it.
+    81	- 2026-09-26 (popgen fix): two Luna attempts stopped at a byte-identity gate on files that differ between two builds of the SAME code (runtime_seconds, peak_memory_bytes, created_at, file sizes, dirty-tree flag) -> the director wrote the identity criterion without first double-building the base -> RULE: before briefing any identity gate, build the unchanged base twice and normalise exactly the fields that differ there; compare artifact ids, logical hashes and Parquet bytes exactly, and walk M2 as well as M3 directories.
+    82	- 2026-09-26 (WSL launches): two detached launches silently did nothing. The Windows default distro is not Ubuntu, and a clean-tree check counted staged files -> RULE: always `wsl.exe -d Ubuntu ...`; after `git add`, check cleanliness with `git diff --quiet && test -z "$(git ls-files --others --exclude-standard)"`, not `git status --porcelain | wc -l`.
+    83	- 2026-09-29 (popgen merge): repo-wide `ruff check .` failed on an evidence script filed as `docs/runs/*.py` -> evidence files are inside the lint scope -> RULE: file executable evidence as `*.py.txt` (byte-exact, unlinted), never as `.py` under docs/.
+    84	- 2026-09-29 (G34-B): a design memo recommended an option that the already-retained bundle could refute for free -> RULE: before commissioning a successor design, run an exploratory, clearly labelled analysis of the retained surfaces (no new seeds, no pass-rule numbers), and consult a second model family on the plan.
+    85	- 2026-10-22 (g35b-predecl): the gpt-6.1-sol design consult for the G35-B study (synthetic epidemic recovery design) was stopped by OpenAI's bio-risk classifier after 83K tokens, with no report -> provider safety classifiers can block benign epidemic-model work, and the standing practice is no filter bypass -> RULE: never rephrase or resubmit filtered content to the same provider; re-route the unchanged unit to the other model family (Claude: Opus 5.5 consultant, Fable owner), keep author != judge, log the stop with its token count, and expect the same risk on later OpenAI units for that content.
+    86	- 2026-10-22 (g35b-predecl): the director started an outcome-blind builds-only seed pre-check before the owner-ruling commit, contrary to the ruling's declared order (ruling -> pre-check -> probe) -> "harmless" was treated as "allowed" -> RULE: no pre-freeze action starts before the commit that authorizes it exists on main, however inert; a run that started early is superseded, disclosed in the trail and rerun in order.
+    87	- 2026-10-22 (g35b-predecl): a frozen document cited a sha256 computed on the Windows checkout's CRLF working copy, which differed from the committed (LF) bytes the trail cited -> core.autocrlf rewrites text files on checkout -> RULE: every sha256 written into a frozen or cited document is computed from committed bytes (`git show <sha>:<path> | sha256sum`) or on the WSL clone, never from a Windows working copy.
+    88	- 2026-10-22 (g37-impl, step-7 review BLOCKED F3): the director's U2 brief added a rule the frozen predeclaration never stated ("a tied global minimum counts as non-agreement" for the arm-(i) offset-agreement descriptive). The executor implemented it faithfully, and the independent review caught the departure from §7.2(b) -> a brief that paraphrases frozen text also adds to it -> RULE: in briefs implementing a frozen predeclaration, quote the governing frozen sentence verbatim with its line number, and label any director elaboration as such, as either a mechanical consequence (with its derivation) or an open question for the owner. Never let a new semantic rule enter as a requirement.
+    89	- 2026-10-22 (g37-impl, trail audit Attention 1–2): the run predicate said the review PASS is "filed before the push", but the foreman keep step pushed the feature branch after every unit, so the reviewed head reached origin before any mirror or review was filed. The keep script also committed code before filing the acceptance transcript -> the generic "keep = commit + push" step was not reconciled with the run's own ordering clause -> RULE: when a run's predicate orders a review before the push, unit keeps commit LOCALLY only (or push to a scratch ref named `review/<run>`). The feature branch is pushed once, after the review PASS is filed on main. The keep script files the acceptance transcript on main BEFORE the code commit, and the code commit message cites the transcript's path.
+    90	- 2026-10-23 (G38 merge): a merge script ran each step as `( step ) || handler` with `set -euo pipefail` inside the step. Bash disables errexit inside any command whose status is tested by `||`, so a failed "local main == origin/main" check and a rejected push were ignored. The script then filed a receipt and a trail row claiming the push -> errexit is not a guard inside `||`/`&&`/`if` contexts -> RULE: in launcher scripts, every precondition and every push gets an explicit `|| die "<reason>"`. After any push, verify `git ls-remote` equals the local HEAD before writing a receipt or trail row. Never rely on `set -e` inside a function or subshell whose status is tested.
+    91	- 2026-11-20 (g43-predecl, gpt-6.2-astra trail audit): all five run rows were shifted one column left (no `why` argument), leaving every `tokens` cell empty, and a launcher's multi-line `$(seq …)` seed list split the command so one seed was built twice across attempts -> `fm.sh log` takes positional args and never checks their count; unquoted newlines inside heredoc-expanded variables become command separators -> RULE: every `fm.sh log` call passes exactly seven fields after the repo (phase, decision, why, evidence, result, tokens), and the director checks the new row with `tail -1 .claude/decisions.tsv | awk -F'\t' '{print NF, $NF}'` before moving on; any list interpolated into a launcher is joined onto one line (`echo $LIST`) and its word count asserted in the script.
+MODEL-OWNER CLARIFICATION (G35-B) 1: ISSUED
+
+<!-- Filed verbatim by the director (Claude Opus 5.5) on 2026-10-22 (HTML entities decoded). Author: Fable 5.1 model-owner subagent under Steven's 2026-10-22 delegation, issued under condition 5 of docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md, in response to the gpt-6-astra trail audit docs/audits/2026-10-22-g35b-trail-audit-astra.md. The frozen predeclaration is unchanged. -->
+
+**Authority.** Steven's 2026-10-22 delegation; condition 5 of `docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md`. Scope: the two inconsistencies found by the gpt-6-astra trail audit in the frozen predeclaration `docs/research/v1_3/2026-10-22-g35b-predeclaration.md` (commit `3972190bd7cde523860fe303b41427c1c95c57eb`, committed-bytes sha256 `2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e`). The frozen file stays byte-unchanged. This ruling is interpretive only.
+
+**Owner verification (read-only, performed before ruling).**
+- `git show 3972190:docs/research/v1_3/2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md | sha256sum` = `8cf4c76612434cbd90c5de4ca9dfd1326422b94a72bd4a63ccff71e95f34908a`.
+- The same committed bytes with every line ending normalised to CRLF (`\r?\n` → `\r\n`) = `de13913b85afa3578f3fcea2e460448909132133a30735eb3cae2609780079d6`, identical to the Windows working copy (`core.autocrlf=true`). The two hashes therefore differ only by line endings; content is identical.
+- The ridge diagnostic has not changed since it was filed (`f102a6d`); the frozen predeclaration hashes to the stated `2e8358ab…`.
+- Frozen §10 (line 413) reads "…These are disclosures and never gate or subset, and measured counters."
+
+**Item 1 — ridge-diagnostic lineage hash (§1 lineage table).**
+(a) Authoritative reading: the §1 row identifies the ridge diagnostic by content, not by platform-specific bytes. The binding lineage digest is the committed-bytes SHA-256 `8cf4c76612434cbd90c5de4ca9dfd1326422b94a72bd4a63ccff71e95f34908a` (blob at `3972190`, path `docs/research/v1_3/2026-09-29-phase0b-ridge-diagnostic-EXPLORATORY.md`). The cited `de13913b…` is read as the CRLF working-copy rendering of the same content and is accepted as a non-binding alias of the same document, never as evidence of a different document.
+(b) Changes no grid, threshold, seed, objective, level or predicate. The lineage table records provenance only; no parameter of the study is derived from it.
+(c) U1 must: carry `8cf4c766…` as the binding ridge-diagnostic lineage digest; compute every SHA-256 it asserts (the frozen predeclaration's own `2e8358ab…` included) from committed bytes via `git show <sha>:<path>`, never from a working copy; record this ruling as the source of the corrected digest; and treat a mismatch of the committed-bytes digest (not of the CRLF alias) as the stop condition.
+
+**Item 2 — §10 trailing clause after A10.**
+(a) Authoritative reading: the A10 ruled text ends at "These are disclosures and never gate or subset." The residual ", and measured counters" is the draft's continuation, orphaned when the ruled sentence's period was merged into it. §10 is read as: "…plus per-target columns `population_fallback_m2` and `population_fallback_m3` (TRUE/FALSE from the build diagnostics), measured counters, and a per-arm descriptive count of fallback-built targets and candidates. These are disclosures and never gate or subset." The dangling clause adds no artefact, column, or obligation beyond "measured counters" as already present in the draft list; nothing in it gates, subsets, or feeds any predicate.
+(b) Changes no grid, threshold, seed, objective, level or predicate. The disclosure-only status of all §10 per-arm outputs stands exactly as A10 ruled.
+(c) U1 must: implement §10 per the reading in (a); emit the fallback columns, the measured counters and the descriptive count as disclosures only, with no code path that reads them into gating, subsetting, or predicate evaluation; and cite this ruling, not a re-punctuated predeclaration, wherever §10 is quoted.
+
+**Standing.** Both items are clarifications under condition 5. The frozen predeclaration, its commit, its committed-bytes hash, and every grid, threshold, seed, objective, level and predicate in it remain in force unchanged. Any further inconsistency is a new stop under the same condition.
+*Filed verbatim by the director (Claude Opus 5.5) from read-only Codex run: brief docs/runs/2026-11-20-g43-trail-audit-brief.md.txt; clone HEAD a03b7d982cfc58544390707d8c8182cbead35059; 94,477 tokens; rc=0; session 01a1f752-cbe7-7613-a152-1488786a527f. Links point into the auditor's clone.*
+
+---
+
+gpt-6.2-astra @ high
+
+**Attention** · 2026-11-20, `main` at `a03b7d9`. Astra also supplied a prior G42 rival-design consult and shares the OpenAI family with the Sol owner.
+
+- **04:22 `g43-F` through 04:57 `g43-frozen`** — All five TSV rows are shifted one column left after `decision`. Citations appear in `why`, outcomes in `evidence`, and token counts in `result`. Every `tokens` cell is empty. [TSV header](/home/steven/jos-g43-trail-astra62-ro/.claude/decisions.tsv:1) · [Five audit rows](/home/steven/jos-g43-trail-astra62-ro/.claude/decisions.tsv:418)
+- **04:40 `g43-ruling`** — The row omits the required Codex session ID. The filed owner log records it on line 11. [Owner log](/home/steven/jos-g43-trail-astra62-ro/docs/runs/2026-11-20-g43-owner-ruling-sol62.log:11) · [Recording rule](/home/steven/jos-g43-trail-astra62-ro/.claude/DIRECTOR.md:48)
+- **04:40 `g43-ruling` and 04:57 `g43-frozen`** — Both rows give abbreviated `ls-remote main=…` claims. The required contemporaneous full-SHA and branch receipts are absent from the rows. Git independently confirms both commits are ancestors of `main`. [Trail](/home/steven/jos-g43-trail-astra62-ro/.claude/decisions.tsv:420) · [Receipt rule](/home/steven/jos-g43-trail-astra62-ro/.claude/DIRECTOR.md:61)
+- **04:49 `g43-seed-precheck`** — The row claims **29** successful fallback builds. The JSON and log agree on **28** distinct seeds, 18 with the private-assignment fallback and 10 with the destination fallback. Of those, 17 entered the final table and 11 were unused reserves. [Pre-check JSON](/home/steven/jos-g43-trail-astra62-ro/docs/runs/2026-11-20-g43-seed-precheck.json) · [Frozen tables](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-predeclaration.md:445)
+- **04:49 `g43-seed-precheck`** — The successful attempt covered all 138 seeds once, but seed `86001` was built twice across attempts. The row discloses the repeat. It is an exception to the owner’s once-per-seed condition. [Ruling](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-owner-ruling.md:54) · [Aborted attempt 2](/home/steven/jos-g43-trail-astra62-ro/docs/runs/2026-11-20-g43-seed-precheck-abortedr2.log:26) · [Completed attempt](/home/steven/jos-g43-trail-astra62-ro/docs/runs/2026-11-20-g43-seed-precheck.log:26)
+- **04:57 `g43-frozen`** — Frozen §7.3 still says to report six verdicts, `k`, and exactly one class without limiting that sentence to intact campaigns. Two lines later, A3 expressly suppresses all three for VOID. [Frozen §7.3](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-predeclaration.md:201)
+- **04:57 `g43-frozen`** — G44 states the 10→20 rationale and points to frozen §7.7, but the gate entry omits the binomial table the owner required with the disclosure. The table exists in the frozen text. [G44 disclosure](/home/steven/jos-g43-trail-astra62-ro/.claude/GATES.md:12) · [Owner requirement](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-owner-ruling.md:73) · [Binomial table](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-predeclaration.md:298)
+- **04:57 `g43-frozen`** — DIRECTOR’s current status phrase still ends at G35-B. Frozen §7.11 requires the suffix `G43: not run` from freeze until campaign completion. [Current status phrase](/home/steven/jos-g43-trail-astra62-ro/.claude/DIRECTOR.md:26) · [Frozen §7.11](/home/steven/jos-g43-trail-astra62-ro/docs/research/v1_3/2026-11-20-g43-predeclaration.md:374)
+
+**Checks**
+
+1. **FLAG — Evidence.** All cited commits and paths resolve, and all seven cited SHA-256 digests match the committed bytes. The TSV field placement, session ID, and push receipts have the defects above.
+2. **OK — Order.** Ruling `f2062d5` at 04:40:13 UTC preceded all three log creations at 04:41:00, 04:42:16, and 04:44:17. Pre-check evidence `f4054f6` at 04:49:08 preceded freeze `fc16adc` at 04:57:47. `git diff --stat 0c9c371 main -- src configs tests scripts` returned no output. The logs record builds only, with no simulation or campaign.
+3. **FLAG — Verbatim and mechanical.** All 15,823 owner-response bytes match after the director’s header. A1, A2, A5, A6, and A7 check out. All 92 final rows match the JSON, including observation seeds, batches, fallbacks, and 276 logical hashes. A7 reproduces `87301→87351`, `87305→87352`, and `87506→87551`. The A3 wording conflict remains.
+4. **FLAG — Gates and state.** G43 carries the recorded delegation quote, G44 is open with default HOLD, and no current G43 in-flight claim remains. The gate disclosure and current status phrase have the omissions above.
+5. **FLAG — Rows.** All five decisions carry `[skip ci]`. The recorded figures `0 / 280104 / 139991 / 0 / 213523` agree with RUN’s unit accounting, and both the draft overrun and aborted launches are disclosed. The named `tokens` field is blank in all five rows.
+exec
+/bin/bash -lc "nl -ba docs/research/v1_3/2026-11-20-g43-predeclaration.md | sed -n '679,706p'" in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+   679	3. **U1, U2, U3** (§13), each `Class: numerical`, implemented by **gpt-6.2-sol @ high** (subject to the seat table below). The director re-accepts each unit and runs the full CI verify-job mirror to PASS on the integration head; the log is filed under `docs/runs/` before any push or review launch. Unit keeps commit locally or to `review/<run>`; the feature branch is pushed once, after the review PASS is filed on `main`.
+   680	4. **Independent implementation review** of the complete implementation against the frozen text, by a model that authored none of it. It is given the frozen predeclaration, the ruling, any clarification and the complete implementation (code, config, tests, dry-run and cap evidence). It runs no study simulation and touches no seed. A defect it names returns the implementation to the executor before step 5.
+   681	5. **Steven's SHA-first merge** of the reviewed head (default HOLD).
+   682	6. **Steven authorizes the single campaign** (default HOLD). It runs at the merge commit, in a fresh clean clone, into a new empty directory outside the repo, from a detached WSL session (DIRECTOR lesson 2026-09-12). The launcher refuses to start if an exit marker exists or if the host-disk rule of §9 is not met. Every precondition and every push uses explicit `|| die`.
+   683	7. **Fresh independent exit audit**, by a model that is neither the implementer nor the step-4 reviewer. It recomputes every predicate, k, k′, m and the class from the raw bundle with the Python standard library only, checks the reading and the S1/S2 sentences against §7.4 and §7.8, confirms that no descriptive feeds a verdict, and returns `JOS G43 CAMPAIGN EXIT AUDIT: CONFIRMED | DISCREPANCY | VOID`. Only after CONFIRMED do the G43 tokens become final.
+   684	8. **Trail audit** at the end of each run, on the family other than the director's (DIRECTOR Roles).
+   685	
+   686	**Seats, named in advance (owner amendment A10; G43-specific routing):**
+   687	
+   688	| Seat | Default | Fallbacks in order |
+   689	|---|---|---|
+   690	| 0 · Owner ruling | `gpt-6.2-sol @ high`, this ruling | Fresh Claude Opus 5.5 @ high |
+   691	| 1 · Director | Claude Opus 5.5 in the standing director role | Standing director handoff |
+   692	| 3 · Numerical implementation | `gpt-6.2-sol @ high` in separate executor sessions | Claude Opus 5.5 @ high in an isolated worktree |
+   693	| 4 · Implementation review | Fresh Claude Opus 5.5 @ high | Fresh `gpt-6.2-astra @ high` |
+   694	| 7 · Exit audit | Fresh `gpt-6.2-astra @ high` | Fresh Claude Opus 5.5 @ high, then fresh Claude Fable 5.1 @ high |
+   695	| 8 · Trail audit, Claude-directed run | Fresh `gpt-6.2-astra @ high` | Fresh `gpt-6-astra @ high` on operational unavailability only |
+   696	| 8 · Trail audit, OpenAI-directed run | Fresh Claude Opus 5.5 @ high | Fresh Claude Fable 5.1 @ high |
+   697	
+   698	**Routing rules.** Apply author ≠ judge to the actual work and skip ineligible substitutes. Steps 4 and 7 exclude Claude Fable 5.2, the ruling model, and every implementation author’s model. Step 7 also excludes the step-4 reviewer’s model. A fresh Opus instance may review or audit when eligible, independently of the director session. Disclose shared model or family with the director, the drafter, or another recorded seat, including the Sol owner and executor pairing and Astra’s prior rival-design consult. Preserve the DIRECTOR rule against rephrasing or resubmitting classifier-stopped content to the same provider. File stops and substitutions with the reason and attempt token count, or `not applicable` when no attempt ran. If no eligible seat remains, hold at that step and return to the owner. An exit audit awaiting an eligible seat leaves the results provisional.
+   699	
+   700	**VOID and FAIL rules (G35-B §12, carried forward):**
+   701	- A software exception during the campaign stops all work, seals a partial bundle with `software_status` VOID, and makes the campaign VOID. VOID is recorded once at campaign level (§7.11); there are no library verdict lines, no counts `k`, `k′`, `m` or `m_ℓ`, no class and no reading. There is no retry, replacement or resume.
+   702	- A step-4 defect blocks progression until corrected and independently reviewed. An established campaign defect makes the campaign VOID. DISCREPANCY denotes unresolved verification without an established departure. An intact campaign’s tokens become final only on CONFIRMED. No campaign retry or resume is allowed. A corrected rerun after VOID requires Steven’s explicit chat decision and a new owner-ruled text, using the same frozen seeds.
+   703	- A scientific FAIL is never reclassified. NO-READING is a reading class, not a status, and leaves the six verdicts as computed.
+   704	- No second campaign, no additional library and no additional target without Steven's explicit chat decision.
+   705	- Any later inconsistency in the frozen text is a stop resolved only by a filed clarification ruling that changes no grid, threshold, seed, objective, level, predicate or reading class.
+   706	
+
+exec
+/bin/bash -lc "nl -ba docs/research/v1_3/2026-11-20-g43-owner-ruling.md | sed -n '1,37p'
+nl -ba docs/research/v1_3/2026-11-20-g43-predeclaration.md | sed -n '5,48p;338,353p;712,745p'" in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+     1	*Filed verbatim by the director (Claude Opus 5.5) from the read-only Codex run: brief docs/runs/2026-11-20-g43-owner-ruling-brief.md.txt; clone HEAD 2bed79036aaa4df467900c2009d7632b96eef624; 139,991 tokens; rc=0. Everything below this line is the owner's text, unedited.*
+     2	
+     3	---
+     4	
+     5	gpt-6.2-sol @ high  
+     6	G43 OWNER RULING: ACCEPT WITH AMENDMENTS
+     7	
+     8	Design F may be frozen after the ordered pre-check and the amendments below. Six separately seeded libraries on byte-identical targets can show whether changing the library flips the gate verdict on that panel. Unanimity records what happened in six draws and leaves the underlying pass probability unknown. That answers Steven’s draw-sensitivity question without a reliability standard. I verified the draft’s committed-bytes SHA-256 `709bc9f3503d392886366ac59c8be205066386a52a22175e868cae1fd367f590` at `55bb491dc76b3de18eb04c8ce290eb9edb455f78` from read-only HEAD `2bed79036aaa4df467900c2009d7632b96eef624`. No files changed. Real-data fitting stays STOPPED.
+     9	
+    10	## Q1–Q14
+    11	
+    12	1. **Reading rule.** Accept CONSISTENT-PASS at six, MIXED at one through five, and CONSISTENT-FAIL at zero, subject to the precedence in A3. A reliability standard is unnecessary for this question. There is no study-level recovery gate.
+    13	2. **CONSISTENT-PASS wording.** Keep the one-in-five and three-in-ten examples. The table can stay in §7.5 without appearing in the reading. **EXPLORATORY:** under the stated hypothetical model, the probabilities of six passes are 0.2621 and 0.1176, respectively.
+    14	3. **L.** Accept six and the two-direction 0.055 precedent as a design anchor. **EXPLORATORY:** under the coin-flip illustration, five draws give 0.0625 probability of unanimity and six give 0.03125. This is a comparison of design sizes, with no inferential cutoff.
+    15	4. **N.** Accept 20 and the §7.7 table, which I reproduced. P5 requires at least 16 hits per dimension, P6 at least 12 joint hits, and P8 at most four boundary selections per dimension. The integer tests are `5 × hits ≥ 80`, `5 × joint ≥ 60`, and `5 × boundary ≤ 20`. Equality qualifies. P7 uses all 20 signed errors and exact decimal arithmetic. One unviable truth run forces NO-READING in an otherwise intact campaign. The pre-check does not assess viability.
+    16	5. **NO-READING.** Use it for shared P2 or P3 failure after integrity passes. A false shared or library component of P1, P9 or P10 makes the campaign VOID, including when detected without an exception. A3 governs precedence and reporting.
+    17	6. **R = 3 reference.** Accept the paired descriptive comparison of `k′` and `m`, including each `m_ℓ`, and retain the nested R = 6 descriptives. Suppress S1 at zero–zero. Keep the sentence wording, with eligibility and ordering as in A5.
+    18	7. **Pooled R = 72.** Exclude from the campaign. A later calculation on the retained bundle may use the draft’s definition and must be labelled EXPLORATORY.
+    19	8. **Target blocks.** Exclude the two-block descriptive. The target-by-library matrices are sufficient to inspect where misses recur.
+    20	9. **Status phrase.** Use six per-library PASS/FAIL tokens for an intact campaign. Record VOID once at campaign level. Readings and classes stay outside the phrase.
+    21	10. **Seeds.** Accept all listed ranges, including the retired G41 ranges through the maximum proposed target count. Accept ten target reserves and six per library, with separate pools. **EXPLORATORY read-only check:** §19 matches §8, with 138 process IDs, 92 observation IDs and 230 distinct IDs. There was zero overlap with the 208 IDs in the declared earlier sets or with the retained G35-B ledger. All 724 possible G43 process/observation pairings, including reserve assignments, had distinct effective observation stream keys. Keep successful fallback builds and disclose them.
+    22	11. **Seats.** Adopt the table below for G43. Claude Fable 5.1 may be the last exit-audit substitute under the stated independence and disclosure rules. The drafter and ruling model are excluded from implementation review and exit audit.
+    23	12. **Retention.** Retain target latent truth and no candidate latent truth. Source inspection resolves the draft’s two named latent P3 unknowns. The event rows expose the fields used by `natural_history.chronology_passed`, and the daily state rows plus the actual resident count determine `states.conserved`. A8 supplies the inputs for the observation checks as well.
+    24	13. **P2 attribution.** Accept separate reporting and calculation. P2 uses only its five declared viability conditions, P3 uses the chronology and conservation checks, and completion and namespace checks belong to P1 and P9. The historical conjunction is preserved.
+    25	14. **Implementation gate.** Yes. Freeze may proceed under this ruling. Implementation requires Steven’s separate authorization, default HOLD.
+    26	
+    27	## Amendments
+    28	
+    29	**A1. §§2, 7.5 and 7.6 — design rationale.** Delete §2’s `EXPECTATION` paragraph. Replace §7.5’s numbered arguments 1–5 with: “The study records whether the verdict changed among the six declared library draws on this panel. A reliability decision would require a separately commissioned standard and error budget. The six verdicts, predicate vectors and target-by-library matrices are published for a later Steven decision.” Keep the hypothetical table and its conditional interpretation. Delete the bullets beginning “For comparison with the rival proposals’ 5% convention only” and “No affordable L”. In §15, replace the corresponding affordability claim with “The pass probability on this panel remains unknown.” Delete §7.6’s `Structural floor` paragraph and the alternatives after “The 0.055 is a precedent, not a law.” Label the derived binomial and unanimity illustrations in §§7.5–7.7 `EXPLORATORY DESIGN ARITHMETIC`.
+    30	
+    31	**A2. §7.7 — panel rationale.** Replace its two bullets under “What N controls” with: “At N = 20 each target contributes five percentage points to a count fraction, compared with ten at N = 10. One target can still flip a verdict at an endpoint. Twenty doubles the G35-B panel, following the earlier 5-to-10 design precedent, and preserves exact integer cutoffs.” Keep the table. Replace the sentence claiming the change cannot make any PASS easier with: “The table describes single count predicates under hypothetical per-target rates. The operating characteristics of the composite gate are unknown.” Delete the sentence offering N = 30 as an owner option and the final paragraph of §19 offering alternative L or N.
+    32	
+    33	**A3. §§7.3–7.4, 7.11, 10, 12 and 13 — precedence and status.** Apply this rule throughout: “A campaign exception, an established departure from the declaration, or any false P1, P9 or P10 component makes the campaign VOID. A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading. Seal the available evidence. For an intact campaign, any false P2 or P3 produces NO-READING, with cause `shared_panel` and all failed target conditions listed. All six gates are FAIL in that case. Report `k = 0` and the descriptive `k′`, `m`, and `m_ℓ`. Otherwise classify by `k`: six CONSISTENT-PASS, one through five MIXED, zero CONSISTENT-FAIL.” Remove the `library_integrity` NO-READING cause and update §13’s partition cases accordingly. Replace §7.3’s threshold boundary sentence with “Equality meets the applicable count predicate. A library passes only when all ten predicates are met.” In §7.11 use the six-token format for an intact campaign with `<PASS|FAIL>` in each slot, and append only `; G43: VOID` to the historical phrase for a VOID campaign. In §10 a VOID exit audit writes the audit verdict and cause, with no library or reading lines. In §12 replace the reviewer/defect rule with: “A step-4 defect blocks progression until corrected and independently reviewed. An established campaign defect makes the campaign VOID. DISCREPANCY denotes unresolved verification without an established departure. An intact campaign’s tokens become final only on CONFIRMED. No campaign retry or resume is allowed. A corrected rerun after VOID requires Steven’s explicit chat decision and a new owner-ruled text, using the same frozen seeds.”
+    34	
+    35	**A4. §§2, 7.4 and GATES G43 — interpretation.** In §2 use “The observed count is `k` of six. The library pass probability on this panel remains unknown.” In MIXED replace the `<k>/6 is a count` sentence with “The observed count is <k> of six. The library pass probability on this panel remains unknown.” In CONSISTENT-FAIL replace the sentence beginning “The G35-B arm-(i) PASS is not reproduced” with “None of these six libraries reproduced the G35-B recovery result. The campaigns differed in libraries, target draws and panel size. This comparison does not identify which difference mattered.” In GATES G43 reason 3 replace “CONSISTENT-FAIL shows arm i was a chance pass” with “CONSISTENT-FAIL records six failures on the G43 panel and leaves the G35-B arm-(i) screening PASS in place.”
+    36	
+    37	**A5. §7.8 — reference triggers.** For CONSISTENT-PASS, MIXED and CONSISTENT-FAIL, emit S1 exactly when `m > 0 and 4*k′ ≤ m`, and S2 exactly when `m == 24`. Emit S1 then S2 when both apply. Emit neither for NO-READING or VOID. Keep the counts for every intact campaign and update U1’s trigger cases to cover zero–zero and class eligibility. Replace the sentence claiming each batch contributes one quarter of its parent’s objective with “Each batch contributes one quarter of its parent’s transformed candidate mean at each cell, channel and date. The loss squares the residual after forming that mean.”
+     5	## 1. Status and lineage
+     6	
+     7	**Status:** FROZEN (owner ruling ACCEPT WITH AMENDMENTS A1–A10 applied; §18). This document is not a Phase 0c, not a V1.3 gate, not a second G35-B campaign and not the rejected G41 confirmatory study. Status phrase until this text is frozen: "Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL". From the freeze until a campaign completes, the phrase in §7.11 applies. Real-data fitting stays STOPPED (G34 A+B) whatever the outcome.
+     8	
+     9	**Authority.**
+    10	- G41 was resolved B by Steven on 2026-11-19. The owner REJECTED the one-library confirmatory design as uninformative (`2026-11-20-g41-owner-ruling.md` §3) and returned one question to Steven.
+    11	- G42 was resolved B2 by Steven on 2026-11-20 (`.claude/GATES.md`, Resolved): several independent R = 12 libraries on the same fresh targets, the frozen arm-(i) gate unchanged per library, the R = 3 batches as a concurrent reference, and the across-library reading declared in advance.
+    12	- G43 was resolved F on 2026-11-20 by the director under Steven's delegation (`.claude/GATES.md`, Resolved; trail row `g43-F`): the Fable 5.2 design goes forward to this draft.
+    13	- None of these authorizes implementation or a campaign. Both are later Steven gates (§12).
+    14	
+    15	**Seat disclosure.** The owner ruling on this draft is assigned to gpt-6.2-sol @ high, which proposed the rival design (22 libraries, a 0.80 reliability standard). The drafter is the author of design F. §7.5 and §7.6 are written to be ruled on by a reader who prefers the rival design.
+    16	
+    17	**Designed after the results were seen.** This study was designed after Phase 0, Phase 0b, the ridge diagnostic, the complete G35-B campaign, its exit audit and the G41 rejection. Every choice below is argued from structure, from frozen text, or from grid-independent arithmetic. No threshold, level, L, N, seed or reading rule is taken from any retained G35-B number, including the owner's EXPLORATORY table in the G41 ruling §2. Retained results appear only in the lineage block.
+    18	
+    19	**What any outcome authorizes:** nothing beyond input to a separate, later gate decided by Steven. In particular:
+    20	- **No outcome licenses:** real Jersey fitting; reopening G34; a claim that Phase 0, Phase 0b or G35-B arm B passed; satisfying the V1.3 plan's Phase-0 gate; nominal coverage; Jersey calibration; named-pathogen validation; or a pass rate, reliability figure or interval for any design.
+    21	- **Carried forward from G35-B amendment A1:** this study is synthetic. Neither it nor any successor synthetic study can reopen G34, satisfy the V1.3 plan's Phase-0 gate, or license real-data fitting; reopening real-data fitting would require Steven's explicit chat decision on a new gate and a new owner-ruled predeclaration of its own.
+    22	- **No outcome changes any earlier verdict.** Phase 0 FAIL, Phase 0b FAIL and G35-B "B FAIL, i PASS, ii FAIL, iii FAIL" stand. G35-B arm i stays a screening pass only.
+    23	
+    24	**Lineage block** (copied verbatim into `campaign_summary.json` and the exit audit, kept apart from G43 results). SHA-256 values marked † were recomputed by this draft from committed bytes at HEAD `3e44979a6c87dfdc3d393527c4e3cf15c4070b9b` (`git show HEAD:<path> | sha256sum`). The others are carried from the frozen G35-B §1 and the CONFIRMED exit audit and were not recomputed here.
+    25	
+    26	| Item | Value |
+    27	|---|---|
+    28	| Phase-0 verdict / audit | `phase0_verdict: FAIL` · `docs/audits/2026-09-24-phase0-exit-audit-sol-FAIL.md` |
+    29	| Phase-0 bundle `SHA256SUMS` digest | `72cd9a568598530923e08ce20b013d60eb7a3b26553b87c31685ad623f3faa80` |
+    30	| Phase-0 predeclaration SHA-256 | `ef67fe49903c3984ca98679eb0470878bc25523baca3bc23a63e4ae7d983a104` |
+    31	| Phase-0b verdict / audit | `phase0b_verdict: FAIL` · `docs/audits/2026-09-26-phase0b-exit-audit-sol-FAIL.md` |
+    32	| Phase-0b bundle `SHA256SUMS` digest | `a319c5557ffa77c56baebb8341b5fc2e1432f367bdb9d0b34169aa079659032a` |
+    33	| Phase-0b predeclaration SHA-256 | `ec8df64630dd50c83b0866a096fba4980453c34232d18114129587274f257451` |
+    34	| Ridge diagnostic SHA-256 (binding, committed bytes; G35-B clarification 1) | `8cf4c76612434cbd90c5de4ca9dfd1326422b94a72bd4a63ccff71e95f34908a` |
+    35	| G35-B predeclaration | `docs/research/v1_3/2026-10-22-g35b-predeclaration.md`, commit `3972190bd7cde523860fe303b41427c1c95c57eb`, SHA-256 † `2e8358abd9e275a5cf04a58b4ad76313c10964f2da06d46cd0f8a7190733216e` |
+    36	| G35-B owner ruling | `docs/research/v1_3/2026-10-22-g35b-owner-ruling-ACCEPTED.md`, SHA-256 † `f84738a9594312f3371f4bb469c5cfaafed265dc5d233ee34f1f0be564d99643` |
+    37	| G35-B clarification 1 / 2 | SHA-256 † `2b1d4a5ee6bbab965a32e2abcdc4d00cab769d7d994a015fcf3bf5b0df0346d5` / † `ccae8721871b78b22d84451202ff541cb5836f06f402e176fe97308e296215e0` |
+    38	| G35-B harness code SHA | `0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8`. `g35b_design_study.py` † `f133ff3af74395955ad01d8e7f70e8474a020c4addcfd26135ec1b586d3f27f0`; `g35b_constants.py` † `bc766a31ce85e57f824a48ea046adeb0efad148c26133c268ba5f78e5923c494`; `configs/calibration/v13_g35b_design_study.yaml` † `4259c45f01cf122521f6853dba5059415a0ca6317a02d3f883be18e3263105d0` |
+    39	| G35-B bundle | `/home/steven/jos-g35b-campaign-20261022T234254Z` (immutable, read-only), `SHA256SUMS` digest `e6649a4b32289ad32cec7862ed79ea75a5123d0231178bebf0db78f0fd54c8fc` |
+    40	| G35-B exit audit | `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`, last changed at commit `141295f`, SHA-256 † `cf758f26a50986f04c7549ffbb855387d515230739f4f0cd9a27372bec617595`; verdict `JOS G35-B CAMPAIGN EXIT AUDIT: CONFIRMED` |
+    41	| G35-B results (final) | B FAIL (P5, P8), i PASS, ii FAIL (P5, P6), iii FAIL (P5, P8) |
+    42	| G35-B arm-(i) counts | hits beta/offset/sym/asym 10/8/8/10; joint 6/10; boundary 0/2/0/0; four-batch offset agreement 0/10 (descriptive). Four counts sit exactly at their inclusive thresholds (exit audit O5) |
+    43	| G41 rejected draft | `docs/research/v1_3/2026-11-19-g41-confirmatory-design-opus-DRAFT.md`, commit `e8a2401`, SHA-256 † `d46c46a92790934bd9dd19b31e619c2dae016a4ebe8036a8aa2306bd357c033e`. Never frozen; its seed series were never built |
+    44	| G41 owner ruling | `docs/research/v1_3/2026-11-20-g41-owner-ruling.md`, SHA-256 † `211646270378a45c83f54ed72350c13b371a92472e5d108455d0b6a6e6e9c77d`; verdict `G41 OWNER RULING: REJECT`; §4 binds successors |
+    45	| G42 consults | `2026-11-20-g42-b2-consult-fable52.md` † `691b567d078f2062257b12029427c963352e622c0306f01f4f7c5664d146fd73`; `…-astra62.md` † `361f7f015e707c52f75f07cbd65f0b3799cc25a13c65884076c753be37e38ab9`; `…-sol62.md` † `58c075a467e00026b761060c82aa6c524e800fc693fd2075fece9304cebf57b6`; `…-comparison.md` † `30896351a8114431ad33d8ad5bcabee10e80174ca5c3b28f5ef507df82208de1` (all in `docs/research/v1_3/`, commit `47e90bd`) |
+    46	| G42 / G43 resolutions | G42 = B2, Steven, chat, 2026-11-20 (trail row `g42-B2`). G43 = F, director under Steven's delegation, 2026-11-20 (trail row `g43-F`, commits `55c03c9`, `3e44979`) |
+    47	| Owner ruling on this draft | `docs/research/v1_3/2026-11-20-g43-owner-ruling.md`, commit `f2062d524c53a52d16837c2c7fe2ca8be6715510`, committed-bytes SHA-256 `ba442e94e4791d9c0a502d4656e580c591c4eed2c8ece50fbaecd6a655cd117c`; gpt-6.2-sol @ high; verdict `G43 OWNER RULING: ACCEPT WITH AMENDMENTS`; no substitution under §12 |
+    48	
+   338	### 7.9 Descriptives (brief item f; reported, never gated)
+   339	
+   340	Every record carries `label: stochastic_replicate_variation` or `label: descriptive_not_a_gate`. Spreads are stochastic replicate variation, never confidence intervals. No descriptive can change a verdict or a class; the exit audit confirms this by recomputing every verdict and the class with no descriptive input.
+   341	
+   342	- **D1. Per-library predicate vector and margins.** All ten predicates; hit, joint and boundary counts; exact mean biases. Count margins in targets: hits_d − 16 for each dimension, joint − 12, and 4 − boundary_d for each dimension (nine integers; a margin ≥ 0 means the count predicate is met). `min_count_margin` is the smallest of the nine, and `at_threshold` is true when any of the nine is 0. The bias margin, limit − |mean bias|, is an exact decimal string per dimension.
+   343	- **D2. Target × library matrices (20 × 6).** Selected cell; joint hit; per-dimension hit; per-dimension identified flag; per-dimension boundary flag; global-tie flag; and the R = 12 re-profiled offset.
+   344	- **D3. Per-target row summaries.** The number of libraries with a joint hit (0…6); the number with an offset hit; the number of distinct selected offsets; and `all_six_offsets_agree`, true if and only if all six R = 12 re-profiled offsets are non-null and equal. These show whether misses follow targets (rows) or libraries (columns).
+   345	- **D4. Batch descriptives per library, verbatim G35-B §7.2(b).**
+   346	  - The re-profiled offset per target under each of batches 1–4 (three replicates each), batches 1∪2 (six) and all twelve.
+   347	  - Per fixed tuple, the range and median of the four batch objectives. The median is the arithmetic mean of the middle two of the four sorted values.
+   348	  - The count of targets whose four batch offsets agree. **Agreement rule, stated here so that no brief has to add one (DIRECTOR lesson 2026-10-22, G37 F3):** a fit's re-profiled offset is the unique offset whose profiled objective lies within τ = 10⁻¹² · max(1, minimum profiled objective) of that minimum, or null if more than one does. Four batches agree if and only if all four re-profiled offsets are non-null and equal. A global numerical tie in a batch's fit does not by itself make the batch disagree. This is the rule as implemented and reviewed in G35-B (`_offset_descriptive`, `batch_offset_agreement`, `g35b_design_study.py:1202–1233` at `0c9c371`). D3's six-library flag uses the same rule.
+   349	- **D5. R = 3 and R = 6 reference evaluations** (§7.8), with m, m_ℓ, k′ and the S1/S2 trigger values.
+   350	- **D6. Disclosures.** Per-target and per-candidate `population_fallback_m2` and `population_fallback_m3`; descriptive counts of fallback-built targets and of fallback-built candidates per library; measured counters; wall time. These are disclosures and never gate or subset (G35-B A10 as read by clarification 1 item 2).
+   351	
+   352	**Pooled reference.** The campaign excludes the pooled R = 72 reference. For later EXPLORATORY use of the retained bundle, the definition is library order 1–6, then position 1–12, `loss(target, predictions, 72, 34)`, and P4–P8 at N = 20, reported as met or not met with label `pooled_reference_not_a_tested_level`.
+   353	
+   712	- `verify_parent` checks builds against `g35b_constants.PROCESS_HASHES`, and `WorkCounter` reads the G35-B caps;
+   713	- `arm_i` requires a completed gated B generation;
+   714	- readings and status text are G35-B-specific.
+   715	
+   716	**Imported unchanged:** `loss`, `fit_blind`, `_fit_scored_grid`, `_offset_descriptive`, `batch_offset_agreement`, `batch_objective_spread`, the blind-estimate persistence and read-back helpers, `committed_document_bytes`, and the Phase-0 config constructors and table builders. The generation adapter may be reused only if it accepts a G43 counter and config without edits; otherwise it is re-implemented in the new module and tested for equal outputs on fixtures.
+   717	
+   718	**New files:**
+   719	- `src/jersey_outbreak/g43_multilibrary.py`
+   720	- `src/jersey_outbreak/g43_constants.py`: independent; holds every earlier seed set from §8, this document's committed-bytes digest, the final seeds and the M2/M3/M4 hashes
+   721	- `configs/calibration/v13_g43_multilibrary.yaml`: decimal strings, every seed listed
+   722	- `tests/test_g43_multilibrary.py`
+   723	
+   724	**Units (each `Class: numerical`; implementer gpt-6.2-sol @ high, subject to the §12 seat table):**
+   725	- **U1: declaration, evaluator and reading logic.**
+   726	  - Constants, config, strict frozen-payload validation, and a dry-run that reports the §9 counts exactly, shared and per library.
+   727	  - The N-target evaluator with integer predicates and the three groups of §7.2. Endpoint regressions at 16/20, 15/20, 12/20, 11/20, 4/20 and 5/20, plus decimal endpoint and cancellation regressions for the twenty-target bias.
+   728	  - **Independent source of truth:** run at N = 10 on a fixture derived from the retained G35-B blind records, with the source files' SHA-256 recorded in the fixture, the evaluator reproduces the CONFIRMED exit-audit counts for arm B (FAIL; hits 10/7/9/10, joint 7, boundary 0/3/0/0) and arm i (PASS; 10/8/8/10, joint 6, boundary 0/2/0/0). For the U1 historical fixture, supply the retained truth diagnostics and CONFIRMED completion, provenance and work evidence alongside the blind records when asserting full historical verdicts.
+   729	  - The class function of §7.3 as a pure function, with a table-driven test over the complete partition: VOID (campaign exception, established departure, or any false P1, P9 or P10 component, shared or library-side, including one detected without an exception); NO-READING with cause `shared_panel` (P2 false, P3 false, both); and k = 0, 1, 2, 3, 4, 5, 6.
+   730	  - Readings, S1/S2 triggers and the status phrase as pure functions. Trigger endpoint tests at 4k′ = m, 4k′ = m + 1, m = 24 and m = 23, at k′ = m = 0 (S1 suppressed), and for class eligibility (S1 and S2 emitted only for CONSISTENT-PASS, MIXED and CONSISTENT-FAIL, S1 before S2; neither for NO-READING or VOID). A test that each forbidden word of §7.3 is absent from every generated reading.
+   731	  - The G35-B, Phase-0 and Phase-0b dry-runs unchanged.
+   732	- **U2: generation, blind barrier, descriptives and reference evaluations.**
+   733	  - The shared-panel generation path and the six-library generation path, implemented and mock-tested with real config constructors and faithful result metadata (DIRECTOR lessons 2026-09-22). Evidence checks reject absent metadata.
+   734	  - Byte-sharing of target tables across libraries, verified by hash from an independent re-read.
+   735	  - Four batches at identical tuples, the nested 3/6/12 fits, D1–D5, and the reference evaluations reusing the descriptive surfaces.
+   736	  - The global barrier: every blind record of every library is persisted and read back before any truth join.
+   737	  - Work counters with reserve-before-dispatch and exact-equality checks.
+   738	- **U3: retention, bundle and summary.**
+   739	  - Target latent-truth retention (including `daily_observed_cases` and `benchmark.n_agents`) and `auditor_recompute_notes.json`; U3 records the source locators of the four P3 inputs and tests agreement of their independent recomputation (§10) with the returned flags.
+   740	  - Measured-equals-planned checks, the single-source wall-time disclosure, sealing and `verify_bundle`.
+   741	  - A stdlib-only recomputation script for the exit audit's use, tested against the evaluator on a mocked bundle.
+   742	  - Real-object smokes only on non-study seeds (for example the CI seed 123), never on a G43 study seed. One smoke measures the disk used by one parent build and the peak memory of one replicate's 25 latent runs, and reports both.
+   743	  - No campaign execution.
+   744	
+   745	Every brief quotes the governing frozen sentence verbatim with its line number. Any director elaboration is labelled as a mechanical consequence with its derivation, or as an open owner question; it never enters as a requirement (DIRECTOR lesson 2026-10-22, G37 F3). Every brief requires changed-file and diff-stat reporting, formatting, lint, type checks and focused regressions before the full suite, the full suite once on final bytes, and a stop on any protected-contract conflict. Budget: three implementation runs including correctives, unless Steven extends. No implementation brief authorizes a campaign.
+
+exec
+/bin/bash -lc "git diff --stat
+git diff --cached --stat
+rg -n 'G44|2026-11-21' .claude/GATES.md | head -12" in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 224ms:
+7:**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl`). G5 open.
+15:### G44 — RESOLVED 2026-11-21: AUTHORIZED (Steven, chat: "Authorize G44") — Authorize implementation of the frozen G43 study (U1–U3 + independent review)? No campaign.
+29:- **What is asked:** three `Class: numerical` units (U1 evaluator and reading logic; U2 generation and blind barrier; U3 retention and bundle) implemented on gpt-6.2-sol @ high in a new standalone module reusing the G35-B scoring functions, then an independent implementation review by a fresh Claude Opus 5.5 @ high (frozen §12 seat table). **The campaign is NOT part of G44**; it needs Steven's separate single-campaign authorization (frozen §12), then a fresh exit audit (gpt-6.2-astra @ high).
+
+exec
+/bin/bash -lc "nl -ba docs/research/v1_3/2026-11-20-g43-predeclaration.md | sed -n '49,73p;148,194p;590,628p'" in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+    49	## 2. Question, estimand and scope
+    50	
+    51	**Question.** At R = 12 candidate replicates per grid cell, does the frozen G35-B arm-(i) gate verdict, computed on one fresh shared target panel, depend on which independent candidate library was drawn?
+    52	
+    53	**Estimand.** For the frozen arm-(i) design the gate verdict is a function of two random draws: the candidate library (twelve process/observation pairs in four batches of three) and the target panel. This study holds the panel fixed and shared, and observes the verdict under L = 6 independently drawn libraries. The primary datum is **k**, the number of the six libraries whose frozen gate is PASS on the same N = 20 targets. The supporting data are the per-library predicate vectors and the target × library matrices (§7.9).
+    54	
+    55	**What is not estimated.** The observed count is `k` of six. The library pass probability on this panel remains unknown. The count is not a pass rate, not a reliability figure and not an interval, and no bound on that probability is reported.
+    56	
+    57	**Why the study is worth running where G41 was not.** The owner rejected G41 because one library is one draw of the thing that varies, and because neither outcome would have changed the next decision (ruling §3.1, §3.3). Here every reading class changes it:
+    58	
+    59	| Class (§7.3) | What Steven's next gate has in hand |
+    60	|---|---|
+    61	| CONSISTENT-PASS | No flip in six draws. Enough to ask whether a reliability study with its own ruled standard, or a second panel, is worth commissioning. Not enough to reopen anything. |
+    62	| MIXED | A direct observation that the verdict changes with the library on identical targets. The "more replicates at R = 12" route is answered by measurement in place of an unknown. |
+    63	| CONSISTENT-FAIL | No library reproduced recovery. The G35-B arm-(i) pass stands alone as a screening result. |
+    64	| NO-READING | Nothing learned about library dependence; the cause is named. |
+    65	
+    66	**Design rules.**
+    67	- One fixed campaign. No sequential or two-stage design, no early stopping at the first opposite pair.
+    68	- No gated baseline, no gated R = 3 arm, no pooled gate, no combined factor.
+    69	- G35-B results are lineage only. They are never pooled with G43 data: the targets differ, and the G35-B library was seen before this design.
+    70	- Synthetic only. No real Jersey data enter. The frozen Jersey 2020 serosurvey table (`covid_serosurvey_2020`) is not read, imported or used. No serosurvey is modelled.
+    71	- No horizon probe. The window is the frozen 30 days, so the only pre-freeze action on study seeds is the builds-only pre-check (§8).
+    72	- Research harness only. Nothing is written through `CalibrationArtifactManifest` or `write_calibration_artifact`.
+    73	
+   148	### 7.1 Per-library recovery gate (brief item a)
+   149	
+   150	The G35-B predicates apply to each library separately, with N = 20 in place of 10.
+   151	
+   152	**Integer thresholds and their derivation.** The frozen ten-target counts are 8/10, 6/10 and ≤ 2/10. As fractions they are 4/5, 3/5 and 1/5. The frozen integer tests are hits·5 ≥ 4·N, joint·5 ≥ 3·N and boundary·5 ≤ 1·N. At N = 20:
+   153	
+   154	| Predicate | Frozen count at 10 | Fraction | Integer test at N = 20 | Count at 20 |
+   155	|---|---:|---:|---|---:|
+   156	| P5, per dimension | ≥ 8 | 4/5 | hits·5 ≥ 80 | **hits ≥ 16** |
+   157	| P6, joint | ≥ 6 | 3/5 | joint·5 ≥ 60 | **joint ≥ 12** |
+   158	| P8, per dimension | ≤ 2 | 1/5 | boundary·5 ≤ 20 | **boundary ≤ 4** |
+   159	
+   160	Equality at every inclusive endpoint qualifies. P7 divides the exact decimal sum of the twenty signed errors by 20. P2's "ten inoculation acquisitions" is the scenario's ten import attempts and does not scale with N.
+   161	
+   162	`G43 LIBRARY ℓ RECOVERY GATE: PASS` only if all of:
+   163	1. All 20 target runs, all 625 candidate cells of library ℓ and all 12 replicates per cell complete without replacement.
+   164	2. Each truth run realizes all ten inoculation acquisitions, at least one local secondary infection, reports in both channels, and at least three nonzero combined-report dates.
+   165	3. Observation chronology and latent-incidence conservation pass for every truth run.
+   166	4. No target has a numerically tied global minimum under library ℓ.
+   167	5. Every dimension is identified and within tolerance for ≥ 16/20 targets.
+   168	6. ≥ 12/20 targets are identified and within tolerance jointly in all four dimensions.
+   169	7. Every dimension's absolute twenty-target mean bias is ≤ its limit (exact decimal). The mean is defined only when all twenty targets have a selected cell; otherwise the predicate is not met.
+   170	8. No dimension is selected at an outermost grid value for more than 4/20 targets. This is computed by its own code path. On these grids every outermost value lies outside tolerance, so predicate 8 is implied by predicate 5; the per-dimension count is still reported.
+   171	9. Seeds, namespaces, grid, objective, dates, fixed parameters, read-back and blind provenance match this declaration, and every build reproduces its frozen M2/M3/M4 logical hashes.
+   172	10. Measured work equals the §9 caps: the shared-panel counts and library ℓ's own counts.
+   173	
+   174	**Status and failure rules (verbatim G35-B):**
+   175	- `software_status` and `scientific_status` are kept separate.
+   176	- An extinct or uninformative truth fails predicate 2 and is never resampled.
+   177	- A poor or extinct candidate is scored.
+   178	
+   179	### 7.2 Three groups of predicates
+   180	
+   181	The frozen gate is a conjunction, and nothing here changes it. For the study-level reading the ten predicates are grouped by what they can depend on.
+   182	
+   183	| Group | Predicates | Depends on the candidate library? |
+   184	|---|---|---|
+   185	| **Shared-panel** | P2, P3, and the target-side components of P1 (20 target runs complete), P9 (target seeds, namespaces, truth cell, dates, fixed parameters, target build hashes) and P10 (shared-panel work counts) | No. Evaluated once on the shared panel; the same value enters all six gates. |
+   186	| **Library-integrity** | the library-side components of P1 (625 cells × 12 replicates; 625 scored cells per target fit), P9 (library seeds, namespaces, read-back, blind provenance, candidate build hashes) and P10 (library work counts) | Yes, but they describe whether the work was done as declared, not whether recovery occurred. |
+   187	| **Recovery** | P4, P5, P6, P7, P8 | Yes. These are the recovery criteria. |
+   188	
+   189	For library ℓ define two booleans:
+   190	- `nonrecovery_ok_ℓ` = P1 ∧ P2 ∧ P3 ∧ P9 ∧ P10;
+   191	- `recovery_met_ℓ` = P4 ∧ P5 ∧ P6 ∧ P7 ∧ P8.
+   192	
+   193	The gate verdict is PASS if and only if both are true, which is the frozen conjunction.
+   194	
+   590	## 9. Workload and fail-closed caps (brief item j)
+   591	
+   592	Each parent is built once per process seed. Each candidate latent run is reused across the 25 detection pairs. With L = 6 and N = 20:
+   593	
+   594	| Quantity | Shared panel | Per library | Formula | **Total** |
+   595	|---|---:|---:|---|---:|
+   596	| Builds | 20 | 12 | N + 12L | **92** |
+   597	| Latent calls (30 days) | 20 | 12 × 25 = 300 | N + 300L | **1,820** |
+   598	| Report transforms | 20 | 12 × 625 = 7,500 | N + 7,500L | **45,020** |
+   599	| Candidate cells | — | 625 | 625L | **3,750** |
+   600	| Gate loss evaluations | — | 625 × 20 = 12,500 | 625·N·L | **75,000** |
+   601	| Gate blind records | — | 20 | N·L | **120** |
+   602	| Descriptive loss evaluations (four batches + batches 1∪2) | — | 5 × 12,500 = 62,500 | 5·625·N·L | **375,000** |
+   603	| Descriptive blind records | — | 5 × 20 = 100 | 5·N·L | **600** |
+   604	| Serosurvey samples | 0 | 0 | — | **0** |
+   605	
+   606	The reference evaluations of §7.8 reuse the descriptive surfaces and add no loss evaluation.
+   607	
+   608	Predicate 10 reads the operational work ledger, including required descriptive scoring and record counts. Descriptive results and disclosure copies never feed P10 (§7.2, owner amendment A9).
+   609	
+   610	**Dry-run must enforce exact equality** to the Total column and to the shared and per-library columns separately:
+   611	- builds 92 (20 + 6 × 12); latent calls 1,820 (20 + 6 × 300); transforms 45,020 (20 + 6 × 7,500);
+   612	- 625 cells per library;
+   613	- gate loss evaluations 75,000 and descriptive loss evaluations 375,000; blind records 120 and 600;
+   614	- latent duration exactly 30 and calendar exactly 34 dates;
+   615	- mode `ci`; serosurvey samples 0.
+   616	
+   617	It also rejects: seed overlap within the study or with any earlier set (§8); retries, replacement and adaptive work; any predicted or measured breach. Every call is reserved against its cap before dispatch, and an exception consumes its slot.
+   618	
+   619	**Outside the campaign.** The pre-check builds 138 process seeds: 20 targets + 10 target reserves + 72 candidates + 36 candidate reserves. It runs no latent call.
+   620	
+   621	**Wall time (unmeasured for this design; disclosure only, never a cap).** EXPLORATORY planning arithmetic from the G35-B `campaign_summary.json` arm-(i) disclosures (15.1 s for 9 builds, 215.9 s for 225 latent calls, 612.5 s for 5,625 transforms, 3.5 s scoring): about 1.7 s per build, 0.96 s per latent call and 0.11 s per transform. Scaling linearly, which is unreliable, gives roughly two hours, plus scoring and retention I/O that were not measured at this scale. The campaign records per-phase `time.perf_counter()` totals (build, latent, transform, scoring, retention) for the shared panel and for each library, and every latent call's `runtime_seconds`. **All wall-time figures come from one source,** `campaign_summary.json.disclosures`; any per-library disclosure file copies them byte-for-byte or omits them (exit-audit O1).
+   622	
+   623	**Retained size and host disk (unmeasured; estimate).**
+   624	- The bundle holds about 45,000 candidate table files, 20 target tables, 720 blind records and the latent-truth files: of the order of 46,000–47,000 files.
+   625	- EXPLORATORY estimate: 0.5–1 GB. It is scaled from the G35-B arm-(i) directory and has no precision.
+   626	- The disk used by 92 retained or transient parent builds, and the peak memory of holding one library's latent results, are **unknown**. U3 measures both on a non-study seed (§13) and the director adds them to the estimate before asking Steven for the campaign.
+   627	- **Host-disk rule (DIRECTOR lesson 2026-09-02).** The bundle is written inside the WSL VHD, which grows on the Windows host drive. Before launch the director checks `df /mnt/c` and logs it. The launcher refuses to start unless host free space is at least 5 GB plus the upper size estimate as updated by U3's measurement. The measured bundle size is disclosed afterwards.
+   628	
+
+exec
+/bin/bash -lc "rg -n 'partial bundle|software_status|exit audit pending|scientific_status' docs/research/v1_3/2026-10-22-g35b-predeclaration.md
+rg -n 'g43-clarification-1|line 201' .claude docs/runs" in /home/steven/jos-g43-clar1-sol62-ro
+ succeeded in 0ms:
+233:- `software_status` and `scientific_status` are kept separate, as in Phase 0b.
+docs/runs/2026-11-21-g43-clarification1-brief.md.txt:1:TASK: JOS · g43-clarification-1 · rule on the §7.3 opening sentence vs the A3 VOID rule
+docs/runs/2026-11-21-g43-clarification1-brief.md.txt:9:- §7.3, line 201 (verbatim): "There is **no study-level gate, no study-level PASS/FAIL token and no k-of-L cut**. The study reports the six verdicts, k, and exactly one class word, selected by the first matching row."
+docs/runs/2026-11-21-g43-clarification1-brief.md.txt:12:Line 201's second sentence is not limited to intact campaigns. Frozen §12 (last bullet) says any later inconsistency in the frozen text is a stop resolved only by a filed clarification ruling that changes no grid, threshold, seed, objective, level, predicate or reading class. Do not change the frozen file; rule how line 201 is to be read and implemented. Also say whether you see any other inconsistency of the same kind in §7.3–§7.4, §7.8, §7.11, §10 or §12 that the implementer should be told about now (rule on each, or say none).
+
+codex
+gpt-6.2-sol @ high  
+G43 OWNER CLARIFICATION 1: §7.3’s reporting sentence applies only to intact campaigns. A3 takes precedence for VOID.
+
+This ruling applies to the frozen G43 predeclaration at `fc16adcb3f8817eb2630ae5a31cd0508990bebd2`. I verified its committed-bytes SHA-256 as `67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094`. The working-tree and staged diff stats were empty.
+
+**§7.3, line 201**
+
+> There is **no study-level gate, no study-level PASS/FAIL token and no k-of-L cut**. The study reports the six verdicts, k, and exactly one class word, selected by the first matching row.
+
+**§7.3, line 203 (A3)**
+
+> A campaign exception, an established departure from the declaration, or any false P1, P9 or P10 component makes the campaign VOID. A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading. Seal the available evidence.
+
+**§7.3, line 207, row 1 result**
+
+> **VOID** (campaign status; no class, no reading)
+
+Apply line 201’s first sentence universally and its second sentence only to intact campaigns. Check row 1 before selecting a class. For VOID, record the campaign status and cause, seal the available evidence, and omit the scientific outputs named in A3. For an intact campaign, select the first matching row among rows 2–5 and report all six verdicts, `k`, and the selected class. An intact shared P2 or P3 failure remains NO-READING with cause `shared_panel`, all failed target conditions, six FAIL verdicts, `k = 0`, and the declared descriptive counts.
+
+**Other wording governed by the same precedence**
+
+**§7.3, line 217, and §7.4, line 248**
+
+> A library's count margin is reported (§7.9, D1) and cannot change the class.
+
+> The R = 3 reference disclosure sentences (§7.8) are written after the reading under their own key.
+
+Report margins in the intact scientific output. The ordering instruction applies when §7.8 emits a sentence. Available underlying evidence is retained on VOID.
+
+**§7.8, lines 324 and 331**
+
+> Both are reported beside k′, and each m_ℓ is shown beside its parent library's verdict.
+
+> The count of libraries with `recovery_met_ℓ` false and m_ℓ ≥ 1 is reported as `libraries_not_met_with_a_batch_met`, without a sentence.
+
+Both reporting instructions apply only to intact campaigns. Line 331 also governs the trigger bullets at lines 328–329. S1 and S2 are eligible only for CONSISTENT-PASS, MIXED and CONSISTENT-FAIL, in that order when both fire. NO-READING retains the counts and emits neither sentence. VOID emits neither sentence and reports none of these counts.
+
+**§7.11, line 378, and §12, line 683**
+
+> The G43 tokens are final only after the exit audit returns CONFIRMED; until then state files append "(exit audit pending)" outside the phrase.
+
+> Only after CONFIRMED do the G43 tokens become final.
+
+These finality clauses govern the six intact-campaign tokens. For a VOID campaign, use the line 376 suffix `; G43: VOID` once at campaign level. An audit finding VOID records VOID and its cause.
+
+**§10, lines 631, 648, 649 and 652, and §12, line 683**
+
+> It must let the exit audit recompute every predicate, every reference evaluation, k, k′, m and the class from raw tables with the Python standard library only.
+
+> **`g43_across_library.json`:** the six verdicts, k, k′, m, every m_ℓ, the S1 and S2 trigger values, the class word, the NO-READING cause record if any, and the reading text.
+
+> **`campaign_summary.json`:** the §1 lineage block; a `seats` block naming the implementer, the reviewer and any substitution under §12 with the stopped attempt's token count or `not applicable` (fixes O3); `software_status`; the six `scientific_status` values; the class and reading; the S1/S2 sentences under their own key; the status phrase; measured-versus-planned work; and the disclosures.
+
+> The exit audit writes `G43 LIBRARY <1…6> RECOVERY GATE: PASS|FAIL` six times, then `G43 ACROSS-LIBRARY READING: CONSISTENT-PASS|MIXED|CONSISTENT-FAIL|NO-READING (k = <k> of 6)`, then the §7.4 reading and any §7.8 sentence.
+
+> It recomputes every predicate, k, k′, m and the class from the raw bundle with the Python standard library only, checks the reading and the S1/S2 sentences against §7.4 and §7.8, confirms that no descriptive feeds a verdict, and returns `JOS G43 CAMPAIGN EXIT AUDIT: CONFIRMED | DISCREPANCY | VOID`.
+
+Complete scientific output and full recomputation apply to the intact path. Seal available evidence on VOID and omit the across-library results payload and scientific summary fields from the VOID report. The auditor uses available evidence to establish or substantiate VOID and writes the audit verdict and cause. DISCREPANCY retains its §12 meaning for unresolved verification without an established departure.
+
+I found no further inconsistency of this kind in the named sections.
+
+**Standing.** This interpretive ruling is issued under §12, line 705. The frozen predeclaration stays byte-for-byte intact. This clarification changes no grid, threshold, seed, objective, level, predicate or reading class. Any further inconsistency is a new stop under the same provision.
+tokens used
+59,415
+gpt-6.2-sol @ high  
+G43 OWNER CLARIFICATION 1: §7.3’s reporting sentence applies only to intact campaigns. A3 takes precedence for VOID.
+
+This ruling applies to the frozen G43 predeclaration at `fc16adcb3f8817eb2630ae5a31cd0508990bebd2`. I verified its committed-bytes SHA-256 as `67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094`. The working-tree and staged diff stats were empty.
+
+**§7.3, line 201**
+
+> There is **no study-level gate, no study-level PASS/FAIL token and no k-of-L cut**. The study reports the six verdicts, k, and exactly one class word, selected by the first matching row.
+
+**§7.3, line 203 (A3)**
+
+> A campaign exception, an established departure from the declaration, or any false P1, P9 or P10 component makes the campaign VOID. A VOID campaign has no library verdict lines, counts `k`, `k′`, `m`, or `m_ℓ`, class, or reading. Seal the available evidence.
+
+**§7.3, line 207, row 1 result**
+
+> **VOID** (campaign status; no class, no reading)
+
+Apply line 201’s first sentence universally and its second sentence only to intact campaigns. Check row 1 before selecting a class. For VOID, record the campaign status and cause, seal the available evidence, and omit the scientific outputs named in A3. For an intact campaign, select the first matching row among rows 2–5 and report all six verdicts, `k`, and the selected class. An intact shared P2 or P3 failure remains NO-READING with cause `shared_panel`, all failed target conditions, six FAIL verdicts, `k = 0`, and the declared descriptive counts.
+
+**Other wording governed by the same precedence**
+
+**§7.3, line 217, and §7.4, line 248**
+
+> A library's count margin is reported (§7.9, D1) and cannot change the class.
+
+> The R = 3 reference disclosure sentences (§7.8) are written after the reading under their own key.
+
+Report margins in the intact scientific output. The ordering instruction applies when §7.8 emits a sentence. Available underlying evidence is retained on VOID.
+
+**§7.8, lines 324 and 331**
+
+> Both are reported beside k′, and each m_ℓ is shown beside its parent library's verdict.
+
+> The count of libraries with `recovery_met_ℓ` false and m_ℓ ≥ 1 is reported as `libraries_not_met_with_a_batch_met`, without a sentence.
+
+Both reporting instructions apply only to intact campaigns. Line 331 also governs the trigger bullets at lines 328–329. S1 and S2 are eligible only for CONSISTENT-PASS, MIXED and CONSISTENT-FAIL, in that order when both fire. NO-READING retains the counts and emits neither sentence. VOID emits neither sentence and reports none of these counts.
+
+**§7.11, line 378, and §12, line 683**
+
+> The G43 tokens are final only after the exit audit returns CONFIRMED; until then state files append "(exit audit pending)" outside the phrase.
+
+> Only after CONFIRMED do the G43 tokens become final.
+
+These finality clauses govern the six intact-campaign tokens. For a VOID campaign, use the line 376 suffix `; G43: VOID` once at campaign level. An audit finding VOID records VOID and its cause.
+
+**§10, lines 631, 648, 649 and 652, and §12, line 683**
+
+> It must let the exit audit recompute every predicate, every reference evaluation, k, k′, m and the class from raw tables with the Python standard library only.
+
+> **`g43_across_library.json`:** the six verdicts, k, k′, m, every m_ℓ, the S1 and S2 trigger values, the class word, the NO-READING cause record if any, and the reading text.
+
+> **`campaign_summary.json`:** the §1 lineage block; a `seats` block naming the implementer, the reviewer and any substitution under §12 with the stopped attempt's token count or `not applicable` (fixes O3); `software_status`; the six `scientific_status` values; the class and reading; the S1/S2 sentences under their own key; the status phrase; measured-versus-planned work; and the disclosures.
+
+> The exit audit writes `G43 LIBRARY <1…6> RECOVERY GATE: PASS|FAIL` six times, then `G43 ACROSS-LIBRARY READING: CONSISTENT-PASS|MIXED|CONSISTENT-FAIL|NO-READING (k = <k> of 6)`, then the §7.4 reading and any §7.8 sentence.
+
+> It recomputes every predicate, k, k′, m and the class from the raw bundle with the Python standard library only, checks the reading and the S1/S2 sentences against §7.4 and §7.8, confirms that no descriptive feeds a verdict, and returns `JOS G43 CAMPAIGN EXIT AUDIT: CONFIRMED | DISCREPANCY | VOID`.
+
+Complete scientific output and full recomputation apply to the intact path. Seal available evidence on VOID and omit the across-library results payload and scientific summary fields from the VOID report. The auditor uses available evidence to establish or substantiate VOID and writes the audit verdict and cause. DISCREPANCY retains its §12 meaning for unresolved verification without an established departure.
+
+I found no further inconsistency of this kind in the named sections.
+
+**Standing.** This interpretive ruling is issued under §12, line 705. The frozen predeclaration stays byte-for-byte intact. This clarification changes no grid, threshold, seed, objective, level, predicate or reading class. Any further inconsistency is a new stop under the same provision.
+rc=0
