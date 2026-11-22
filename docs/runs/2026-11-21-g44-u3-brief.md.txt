@@ -1,0 +1,64 @@
+TASK: JOS · g44-u3 · G43 multi-library harness U3: retention, bundle, summary, smokes
+ROLE: implementer — gpt-6.2-sol @ high. Class: numerical. Unit 3 of 3 (frozen G43 §13).
+
+GOAL: Implement frozen G43 §13 unit U3 exactly on top of the committed U1+U2 code: target latent-truth retention and `auditor_recompute_notes.json` (with the P3 recomputation test), measured-equals-planned checks, the single-source wall-time disclosure, the §10 bundle layout with sealing and `verify_bundle`, a stdlib-only recomputation script for the exit audit, the `execute` command wired end to end (mock-tested only), and real-object smokes on the non-study CI seed 123 only, including the disk-per-build and peak-memory measurement. No campaign.
+
+SCOPE: the worktree you run in (branch `codex/g43-multilibrary`, base = the HEAD you start at, which already contains U1 and U2 committed by the director). You may create or edit only:
+- `src/jersey_outbreak/g43_multilibrary.py`
+- `src/jersey_outbreak/g43_constants.py`
+- `configs/calibration/v13_g43_multilibrary.yaml`
+- `tests/test_g43_multilibrary.py`
+- `tests/fixtures/g43/` (fixtures for this unit's tests only; existing U1 fixtures unchanged)
+- `src/jersey_outbreak/g43_recompute.py` (the stdlib-only exit-audit recomputation script; standard library imports only)
+- `docs/runs/2026-11-21-g44-u3-smoke.log` (untracked smoke output)
+Edit NOTHING else. In particular `src/jersey_outbreak/g35b_design_study.py`, `g35b_constants.py`, `phase0_campaign.py` and every protected module stay byte-identical (G43 §11, §13 "imports the G35-B pure functions unchanged"). You cannot commit; the director commits after acceptance. No subagents.
+
+CONTEXT. These bind, in this order (read in full before coding):
+1. `docs/research/v1_3/2026-11-20-g43-predeclaration.md` — FROZEN (freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2; committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094). Governing text for U3: §7.4 and §7.11 (223–249, 369–379, read with owner clarification 1), §9 wall time and disk (619–628), §10 bundle (629–653, every bullet), §12 step 6 launcher rules (refuse to start if an exit marker exists or the host-disk rule of §9 is not met; explicit `|| die`), §13 (707–746), §14 (747–778). The U3 text, verbatim from §13:
+   > "Target latent-truth retention (including `daily_observed_cases` and `benchmark.n_agents`) and `auditor_recompute_notes.json`; U3 records the source locators of the four P3 inputs and tests agreement of their independent recomputation (§10) with the returned flags."
+   > "Measured-equals-planned checks, the single-source wall-time disclosure, sealing and `verify_bundle`."
+   > "A stdlib-only recomputation script for the exit audit's use, tested against the evaluator on a mocked bundle."
+   > "Real-object smokes only on non-study seeds (for example the CI seed 123), never on a G43 study seed. One smoke measures the disk used by one parent build and the peak memory of one replicate's 25 latent runs, and reports both."
+   > "No campaign execution."
+   And from §13: "Imported unchanged: `loss`, `fit_blind`, `_fit_scored_grid`, `_offset_descriptive`, `batch_offset_agreement`, `batch_objective_spread`, the blind-estimate persistence and read-back helpers, `committed_document_bytes`, and the Phase-0 config constructors and table builders." Import what this unit needs from that list; do not copy-paste them.
+2. Owner ruling `docs/research/v1_3/2026-11-20-g43-owner-ruling.md` (A1–A10 are already applied in the frozen text; the ruling is context, the frozen text governs).
+3. Owner clarification 1 `docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md` — binding on how §7.3 line 201 is read for a VOID campaign.
+4. The G35-B harness `src/jersey_outbreak/g35b_design_study.py` + `g35b_constants.py` + `tests/test_g35b_design_study.py` as the pattern to follow (committed-bytes digest validation, CRLF rejection, frozen-payload mutation tests, exact Decimal predicates, independent constants).
+5. G35-B campaign bundle (read-only) `/home/steven/jos-g35b-campaign-20261022T234254Z` — source for the historical fixture; record each source file's sha256 in the fixture. The exit audit `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md` gives the counts the fixture must reproduce.
+6. `.claude/DIRECTOR.md` — STANDING, binding in full. Especially: integrity checks need an INDEPENDENT source of truth (an expected value derived from the input under test is a defect); declared finite-decimal predicates need exact arithmetic and endpoint/cancellation regressions, never an epsilon; evidence checks reject absent metadata; CLI errors via plain `typer.echo(..., err=True)` + exit code if you use typer (or argparse like the G35-B module).
+
+Director elaborations (each labelled; none adds a rule):
+- MECHANICAL CONSEQUENCE of §9 ("The launcher refuses to start unless host free space is at least 5 GB plus the upper size estimate as updated by U3's measurement"): the default upper estimate is the §9 EXPLORATORY upper bound (1 GB) plus your measured parent-build disk × 92 if builds are retained (or × 1 if transient); an override is allowed only by an explicit CLI flag whose value is recorded in the summary. Report the numbers.
+- Real smokes may run `build_parent` and latent runs on seed 123 ONLY; the smoke script asserts the seed is in no G43 or earlier study set.
+- OPEN, not for you to decide: anything the frozen text leaves unstated. If you hit one, implement nothing for it, leave a `NotImplementedError` with a comment citing the frozen line, and list it in your report.
+- Earlier unit reports are filed in the worktree under `docs/runs/2026-11-21-g44-u*-report.md`; read them, and do not silently resolve any OPEN item they list.
+
+ACCEPTANCE (run from the worktree root; paste real output in your report):
+```
+export UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache
+uv run python -m jersey_outbreak.g43_multilibrary dry-run --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md
+uv run python -m jersey_outbreak.g35b_design_study dry-run --config configs/calibration/v13_g35b_design_study.yaml --predeclaration docs/research/v1_3/2026-10-22-g35b-predeclaration.md
+uv run ruff check . && uv run ruff format --check .
+uv run mypy --ignore-missing-imports src/jersey_outbreak/g43_multilibrary.py src/jersey_outbreak/g43_constants.py
+uv run pytest tests/test_g43_multilibrary.py tests/test_g35b_design_study.py tests/test_phase0_campaign.py tests/test_phase0b_campaign.py -q
+uv run pytest -q          # full suite ONCE, last, on final bytes
+git status --porcelain; git diff --stat
+```
+- G43 and G35-B dry-run outputs unchanged from the base (G43 92/1,820/45,020; 75,000/375,000; 120/600; G35-B 2500/395/9395/85/22).
+- A mocked end-to-end `execute` writes a bundle with exactly the §10 layout; `verify_bundle` passes on it and fails after any single-byte change, a missing file, or a write bit left set; sealing removes write bits.
+- The stdlib-only recomputation script (no third-party imports; a test asserts this by inspecting its imports) reproduces every predicate, k, k′, m, every m_ℓ, the S1/S2 triggers and the class from the mocked bundle and agrees with the evaluator; on a mocked VOID bundle it reports VOID and no scientific outputs (clarification 1).
+- The P3 recomputation from retained raw rows agrees with the returned flags on the mocked bundle and disagrees when one raw row is corrupted.
+- `execute` refuses a non-empty output dir, an existing exit marker, and host free space below the §9 rule (mock `shutil.disk_usage`).
+- A smoke log on CI seed 123 with measured disk-per-build and peak memory, written to `docs/runs/2026-11-21-g44-u3-smoke.log` in the worktree (untracked; the director files it).
+- All earlier-unit tests still pass unchanged (a test may be edited only to extend it, never to weaken it; say which and why).
+- Only the permitted files are new; nothing else changed.
+
+VERIFY ORDER (DIRECTOR lesson 2026-09-22): formatting, lint, mypy and focused tests first; the full suite once on final bytes; if anything changes after the full suite, say so.
+
+TIMEBOX: ~60 minutes of work; stop and report if you exceed ~300K tokens or hit the usage limit.
+
+FORBIDDEN: editing any file outside SCOPE; any population build, latent run, simulation or campaign on a G43 study seed; real data; commits/pushes; calling anything calibrated or validated; calling replicate spread a confidence interval; inventing any threshold, seed, tolerance or rule not in the frozen text.
+
+REPORT: (1) changed files with `git diff --stat` and `git status --porcelain`; (2) acceptance commands with real output; (3) for each §13 U3 bullet, the test names that cover it; (4) every place you interpreted the frozen text, with the line you relied on; (5) every OPEN item left as NotImplementedError; (6) anything in the frozen text, ruling or clarification that looked inconsistent.
+
+STANDING: `.claude/DIRECTOR.md` in the worktree is binding in full; read it.
