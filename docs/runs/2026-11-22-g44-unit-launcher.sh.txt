@@ -1,0 +1,21 @@
+#!/bin/bash
+# g44 unit launcher in the existing worktree. Args: unit(u2|u3) expected_head stem_token
+set -u
+U=$1; H=$2; T=$3
+W=/home/steven/jos-g44-wt
+S=/home/steven/jos-g44-$U-$T
+die(){ echo "DIE: $*" >> $S.launch; exit 9; }
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH" UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache
+test ! -e $S.log || die log-exists
+cd $W || die cd
+test "$(git rev-parse HEAD)" = "$H" || die head
+git diff --quiet && git diff --cached --quiet || die dirty-tracked
+git fetch -q origin main || die fetch
+mkdir -p docs/runs
+for r in $(git ls-tree --name-only origin/main docs/runs/ | grep -E '2026-11-2[12]-g44-u[0-9]-report.md'); do git show origin/main:$r > $r || die report; done
+git show origin/main:docs/runs/2026-11-21-g44-$U-brief.md.txt | tr -d '\r' > $S-brief.md || die brief
+test -s $S-brief.md || die empty-brief
+sha256sum $S-brief.md >> $S.launch
+git ls-files --others --exclude-standard >> $S.launch
+codex exec --sandbox workspace-write -m gpt-6.2-sol -c model_reasoning_effort="high" --output-last-message $S.last.md "$(cat $S-brief.md)" < /dev/null > $S.log 2>&1
+echo "rc=$?" >> $S.log
