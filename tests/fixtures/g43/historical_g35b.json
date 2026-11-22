@@ -1,0 +1,3545 @@
+{
+  "bundle": "jos-g35b-campaign-20261022T234254Z",
+  "bundle_sha256sums_sha256": "e6649a4b32289ad32cec7862ed79ea75a5123d0231178bebf0db78f0fd54c8fc",
+  "source_sha256": {
+    "B/blind_estimates/82001.json": "cf716a8ba126cc2bb676674c8f140d0c5f8a6064dfa8a07273c5dfc60243b81c",
+    "B/blind_estimates/82002.json": "7aa8777f394a8a0e08040c81c6cd75b4f2e397f5088bc0031d551d75fc865afd",
+    "B/blind_estimates/82003.json": "1c2ff02de1bf010375780e5d02629d9c1690bbf245c9acb63dd85ecf16ff6716",
+    "B/blind_estimates/82004.json": "5a2fd94d0009958d1125a0e1e0f172de9e6d4d4a389d51e28cdf83f0d1cc0b5b",
+    "B/blind_estimates/82005.json": "fa58a0f158b052e74ff5bd395996156060d5cc657f9ad7ad17bb226438ba4fd3",
+    "B/blind_estimates/82006.json": "a6d5db1e2e75012322b686fc1e71f6593a2757b6dbcfc02060d3553d74c407a4",
+    "B/blind_estimates/82007.json": "cc8755b309e54bae06f6c4931c26f28589ab17e468f4e8f9044d427f2933190c",
+    "B/blind_estimates/82008.json": "6035a833422fd89a6c597f16c1e7e12b640ed83b5f8b589f691dd7cad0cc4272",
+    "B/blind_estimates/82009.json": "f36bfaad87d920643153042d25f28131a9ca587b4d0bdd846de9ddb7ebfe2650",
+    "B/blind_estimates/82010.json": "5ff7ddaac76910313e2162ed09835aa2b20a242722aba713c89a5fb40b88e44b",
+    "B/blind_readback_hashes.json": "13db2ffe3f303cb2d4de386a9476716f8127156af871a404661131017112815e",
+    "B/g35b_B_recovery.csv": "cd9013870f39ef854d0e72c78468bb60a4774d84d641fea5fdff643507316c52",
+    "B/target_provenance.json": "1527e630b418c7533e1089e2bde6aca919f229cac65dcc72a8538fbda3cbbb1c",
+    "arm_i/blind_estimates/82001.json": "3fe5e5c8a0e408b81449f6e46724db69a0130873d3f6cfd5bdad67f1d1d182c6",
+    "arm_i/blind_estimates/82002.json": "033b36a8857a46dcd5d524ac9eac5ef35ec99155b47295fb6e8183b9089fcff4",
+    "arm_i/blind_estimates/82003.json": "e23c9627be993149d3a254fa0dd9597098ad04c07009b07cce98c9792cd8ad92",
+    "arm_i/blind_estimates/82004.json": "7bb4d6a36562ed4dd42890550007882dfc50fea7bfc64daa4186ed6f10e72477",
+    "arm_i/blind_estimates/82005.json": "b1e6f3a1857515cde0d8a9362f563dacb1ddc8c85cee617199b8323733becbbc",
+    "arm_i/blind_estimates/82006.json": "3a568d16e1302c47a68b56a19a65b977d9bd07514c534023fad1d36896c2d82a",
+    "arm_i/blind_estimates/82007.json": "148f065baa46e9047f144851442aa7a0a7a6312be6ba53fc3dd03873d0c94a1d",
+    "arm_i/blind_estimates/82008.json": "9a2392361173b058d91fe0535e220c6e095888d9efbd1ccc701b170d50243645",
+    "arm_i/blind_estimates/82009.json": "b852f34f00718927755226d91f9cbb89f020ca792d41e068b62a41819f33c9cf",
+    "arm_i/blind_estimates/82010.json": "a188c1f9595892bf24e3370785c99378636df8e9605e3e2d81c78f4dc8c5240b",
+    "arm_i/blind_readback_hashes.json": "40729103d3dd6c61f0fa52eb0a654a099c60575ffd915b5b7e776b3a8e650b5f",
+    "arm_i/g35b_i_recovery.csv": "de7acd674cf8290ae0a6b140c9e7dc92364acb231e432fa5e5f1c3c6c24723c2",
+    "arm_i/target_provenance.json": "1527e630b418c7533e1089e2bde6aca919f229cac65dcc72a8538fbda3cbbb1c",
+    "campaign_summary.json": "ca756b4823873085573296931662051e8d7d7c0e17b33bb82571563ace92ecaf"
+  },
+  "audit": {
+    "path": "docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md",
+    "commit": "141295fe644602a57a8e54a77e322d2e88be313c",
+    "sha256": "cf758f26a50986f04c7549ffbb855387d515230739f4f0cd9a27372bec617595",
+    "verdict": "CONFIRMED"
+  },
+  "shared_panel": {
+    "completion_confirmed": true,
+    "provenance_confirmed": true,
+    "target_seeds": [
+      82001,
+      82002,
+      82003,
+      82004,
+      82005,
+      82006,
+      82007,
+      82008,
+      82009,
+      82010
+    ],
+    "truth_diagnostics": {
+      "82001": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 2152,
+        "symptomatic_reports": 967,
+        "asymptomatic_reports": 198,
+        "nonzero_combined_report_dates": 28,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2162,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2162,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2162,
+            "reported_case_count": 1165,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 967,
+            "asymptomatic": 198,
+            "nonzero_combined_dates": 28
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82001,
+            "observation_seed": 92001,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "c3dcf44696a49de7791073a6fd4c10d61f0c09682e2fa94e84409a8f6ea7827b",
+            "recomputed_fingerprint": "c3dcf44696a49de7791073a6fd4c10d61f0c09682e2fa94e84409a8f6ea7827b"
+          }
+        }
+      },
+      "82002": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 2069,
+        "symptomatic_reports": 961,
+        "asymptomatic_reports": 215,
+        "nonzero_combined_report_dates": 28,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2079,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2079,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2079,
+            "reported_case_count": 1176,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 961,
+            "asymptomatic": 215,
+            "nonzero_combined_dates": 28
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82002,
+            "observation_seed": 92002,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "c2a1a3b73af0e85101994656f696a0d88e7cd13ffd3020569f8acb358d6813d1",
+            "recomputed_fingerprint": "c2a1a3b73af0e85101994656f696a0d88e7cd13ffd3020569f8acb358d6813d1"
+          }
+        }
+      },
+      "82003": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 2067,
+        "symptomatic_reports": 951,
+        "asymptomatic_reports": 196,
+        "nonzero_combined_report_dates": 28,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2077,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2077,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2077,
+            "reported_case_count": 1147,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 951,
+            "asymptomatic": 196,
+            "nonzero_combined_dates": 28
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82003,
+            "observation_seed": 92003,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "8d10fba19076b5e7f07e4a12108e7d8686512630a78d33a502f4a674a91c64ce",
+            "recomputed_fingerprint": "8d10fba19076b5e7f07e4a12108e7d8686512630a78d33a502f4a674a91c64ce"
+          }
+        }
+      },
+      "82004": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 2065,
+        "symptomatic_reports": 960,
+        "asymptomatic_reports": 194,
+        "nonzero_combined_report_dates": 27,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2075,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2075,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2075,
+            "reported_case_count": 1154,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 960,
+            "asymptomatic": 194,
+            "nonzero_combined_dates": 27
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82004,
+            "observation_seed": 92004,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "a15b40ffae22dec8278811091c08005ac4f7bc865fbf35adbd3c3c2f4951acd0",
+            "recomputed_fingerprint": "a15b40ffae22dec8278811091c08005ac4f7bc865fbf35adbd3c3c2f4951acd0"
+          }
+        }
+      },
+      "82005": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 1999,
+        "symptomatic_reports": 909,
+        "asymptomatic_reports": 202,
+        "nonzero_combined_report_dates": 28,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2009,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2009,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2009,
+            "reported_case_count": 1111,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 909,
+            "asymptomatic": 202,
+            "nonzero_combined_dates": 28
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82005,
+            "observation_seed": 92005,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "21ca8f1a85b0704c964b0ed5f288b8c897ab0d3afaa714eef5304a8b8bd44e41",
+            "recomputed_fingerprint": "21ca8f1a85b0704c964b0ed5f288b8c897ab0d3afaa714eef5304a8b8bd44e41"
+          }
+        }
+      },
+      "82006": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 2006,
+        "symptomatic_reports": 870,
+        "asymptomatic_reports": 217,
+        "nonzero_combined_report_dates": 27,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2016,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2016,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2016,
+            "reported_case_count": 1087,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 870,
+            "asymptomatic": 217,
+            "nonzero_combined_dates": 27
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82006,
+            "observation_seed": 92006,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "1a52c18a4801c9245db5232a2b511a74975066d6b0bef99ab9b7a5c26e237aaa",
+            "recomputed_fingerprint": "1a52c18a4801c9245db5232a2b511a74975066d6b0bef99ab9b7a5c26e237aaa"
+          }
+        }
+      },
+      "82007": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 2048,
+        "symptomatic_reports": 897,
+        "asymptomatic_reports": 214,
+        "nonzero_combined_report_dates": 26,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2058,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2058,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2058,
+            "reported_case_count": 1111,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 897,
+            "asymptomatic": 214,
+            "nonzero_combined_dates": 26
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82007,
+            "observation_seed": 92007,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "4f51159d60956af8fcff1eec35c041f18ca47c27272be4d16f201d34d84656d6",
+            "recomputed_fingerprint": "4f51159d60956af8fcff1eec35c041f18ca47c27272be4d16f201d34d84656d6"
+          }
+        }
+      },
+      "82008": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 2099,
+        "symptomatic_reports": 914,
+        "asymptomatic_reports": 208,
+        "nonzero_combined_report_dates": 28,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2109,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2109,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2109,
+            "reported_case_count": 1122,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 914,
+            "asymptomatic": 208,
+            "nonzero_combined_dates": 28
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82008,
+            "observation_seed": 92008,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "eabcaa0114330dc6812f8703557595d7c6fe455264dbbbd1076d5587a326e4cf",
+            "recomputed_fingerprint": "eabcaa0114330dc6812f8703557595d7c6fe455264dbbbd1076d5587a326e4cf"
+          }
+        }
+      },
+      "82009": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 2030,
+        "symptomatic_reports": 925,
+        "asymptomatic_reports": 189,
+        "nonzero_combined_report_dates": 27,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2040,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2040,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2040,
+            "reported_case_count": 1114,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 925,
+            "asymptomatic": 189,
+            "nonzero_combined_dates": 27
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82009,
+            "observation_seed": 92009,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "646568adc16adb9893acbe35eba03ce8e0358e228363a5f6d522459f1df3b17d",
+            "recomputed_fingerprint": "646568adc16adb9893acbe35eba03ce8e0358e228363a5f6d522459f1df3b17d"
+          }
+        }
+      },
+      "82010": {
+        "inoculation_acquisitions": 10,
+        "local_secondary_infections": 2078,
+        "symptomatic_reports": 954,
+        "asymptomatic_reports": 224,
+        "nonzero_combined_report_dates": 29,
+        "chronology_passed": true,
+        "latent_incidence_conservation_passed": true,
+        "namespace_passed": true,
+        "complete": true,
+        "viable": true,
+        "raw_values": {
+          "natural_history": {
+            "schema_version": "1.1",
+            "owner": "generic_respiratory_seirs",
+            "transition_rule": "advance on the first daily timestep at or after each sampled transition",
+            "configured_durations": {
+              "latent": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 2.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "infectious": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 5.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Pathogen-neutral constant-duration demonstration; no non-zero CV is claimed."
+              },
+              "immunity": {
+                "schema_version": "1.1",
+                "family": "constant",
+                "mean_days": 30.0,
+                "cv": null,
+                "units": "days",
+                "status": "scenario_assumption",
+                "source_ids": [],
+                "notes": "Inactive while generic complete waning is disabled; retained for the V1 comparator."
+              }
+            },
+            "waning_enabled": false,
+            "symptomatic_probability": 0.6,
+            "realized_continuous_draws": {
+              "latent": {
+                "count": 2088,
+                "mean_days": 2.0,
+                "cv": 0.0,
+                "min_days": 2.0,
+                "max_days": 2.0
+              },
+              "infectious": {
+                "count": 2088,
+                "mean_days": 5.0,
+                "cv": 0.0,
+                "min_days": 5.0,
+                "max_days": 5.0
+              },
+              "immunity": {
+                "count": 0,
+                "mean_days": null,
+                "cv": null,
+                "min_days": null,
+                "max_days": null
+              }
+            },
+            "chronology_passed": true,
+            "observation_resamples_symptom_status_or_onset": false
+          },
+          "latent_states": {
+            "state_names": [
+              "susceptible",
+              "exposed",
+              "infected",
+              "recovered"
+            ],
+            "severity_implemented": false,
+            "disease_deaths_implemented": false,
+            "maximum_conservation_residual": 0,
+            "conserved": true
+          },
+          "observation_chronology_and_conservation": {
+            "status": "passed",
+            "latent_event_count": 2088,
+            "reported_case_count": 1178,
+            "no_report_before_infection": true,
+            "chronology_violations": 0,
+            "latent_incidence_conservation_difference": 0,
+            "latent_incidence_conservation": true,
+            "analysis_horizon": {
+              "latent_start": "2025-01-06",
+              "latent_end": "2025-02-04",
+              "observation_end": "2025-02-08",
+              "tail_days": 4,
+              "realised_natural_history_tail_days": 2,
+              "tail_source": "explicit_configured_tail"
+            }
+          },
+          "observed_report_counts": {
+            "symptomatic": 954,
+            "asymptomatic": 224,
+            "nonzero_combined_dates": 29
+          },
+          "namespace_verification": {
+            "verified": true,
+            "process_seed": 82010,
+            "observation_seed": 92010,
+            "observation_config_id": "v13-g35b-target",
+            "stream_namespace": "observation",
+            "stream_key_inputs": [
+              "latent_replicate_seed",
+              "observation_seed",
+              "observation_config_id"
+            ],
+            "observed_fingerprint": "86869cd3ca001adaf2887a86cf05e5443e91cf039f19eb14978ce19ad42a6e6a",
+            "recomputed_fingerprint": "86869cd3ca001adaf2887a86cf05e5443e91cf039f19eb14978ce19ad42a6e6a"
+          }
+        }
+      }
+    }
+  },
+  "arms": {
+    "B": {
+      "completion_confirmed": true,
+      "provenance_confirmed": true,
+      "work": {
+        "measured": {
+          "builds": 13,
+          "cells": 625,
+          "latent_calls": 85,
+          "observation_transforms": 1885,
+          "serosurvey_samples": 0
+        },
+        "measured_equals_planned": true,
+        "planned": {
+          "builds": 13,
+          "cells": 625,
+          "latent_calls": 85,
+          "observation_transforms": 1885,
+          "serosurvey_samples": 0
+        }
+      },
+      "gate_records": {
+        "82001": {
+          "source": "B/blind_estimates/82001.json",
+          "readback_entry": {
+            "estimate_hash": "d640629a64fcbf374b4e2fab55f6080b8334b3824a1d62e5041715f449ba0b59",
+            "path": "blind_estimates/82001.json",
+            "role": "gate",
+            "sha256": "cf716a8ba126cc2bb676674c8f140d0c5f8a6064dfa8a07273c5dfc60243b81c",
+            "target_seed": 82001
+          },
+          "estimate_hash": "d640629a64fcbf374b4e2fab55f6080b8334b3824a1d62e5041715f449ba0b59",
+          "selected": {
+            "asymptomatic_detection_probability": 0.175,
+            "beta": 0.1,
+            "inoculation_day_offset": 0,
+            "symptomatic_detection_probability": 0.625
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.5000184094696418,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                3.5160211744748833,
+                1.9082406827480545,
+                0.5755982086344061,
+                0.5000184094696418,
+                0.6633737677018475
+              ],
+              "relative_gap": 0.1511540329983652,
+              "second_minimum": 0.5755982086344061,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": false,
+              "minimum": 0.5000184094696418,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5000184094696418,
+                0.5293898286363312,
+                0.5394571965301632,
+                0.5027565853300482,
+                0.6729146044694948
+              ],
+              "relative_gap": 0.005476150094774886,
+              "second_minimum": 0.5027565853300482,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": false,
+              "minimum": 0.5000184094696418,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6974477301689864,
+                0.5000184094696418,
+                0.524580735109644,
+                0.6624202798661883,
+                0.8828664067468237
+              ],
+              "relative_gap": 0.049122842629044115,
+              "second_minimum": 0.524580735109644,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.5000184094696418,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.7035865486201365,
+                0.5000184094696418,
+                0.5417635236074109,
+                0.6617110956715703,
+                0.8367316965456781
+              ],
+              "relative_gap": 0.08348715436707049,
+              "second_minimum": 0.5417635236074109,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82002": {
+          "source": "B/blind_estimates/82002.json",
+          "readback_entry": {
+            "estimate_hash": "82eacdbf611fd76e4393eeb11f60885b052f9bf4c37f2d06a03ea23424427a4f",
+            "path": "blind_estimates/82002.json",
+            "role": "gate",
+            "sha256": "7aa8777f394a8a0e08040c81c6cd75b4f2e397f5088bc0031d551d75fc865afd",
+            "target_seed": 82002
+          },
+          "estimate_hash": "82eacdbf611fd76e4393eeb11f60885b052f9bf4c37f2d06a03ea23424427a4f",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.27736755269367325,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.936021783758392,
+                0.754700371040129,
+                0.27736755269367325,
+                0.42043489997643874,
+                0.7142839815748452
+              ],
+              "relative_gap": 0.5158041951675945,
+              "second_minimum": 0.42043489997643874,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.27736755269367325,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.29450842130105126,
+                0.4368387493281536,
+                0.27736755269367325,
+                0.38310574267882486,
+                0.42043489997643874
+              ],
+              "relative_gap": 0.06179839148780504,
+              "second_minimum": 0.29450842130105126,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.27736755269367325,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6364010334922134,
+                0.4188882546327216,
+                0.27736755269367325,
+                0.3072250274358167,
+                0.5035352038876887
+              ],
+              "relative_gap": 0.10764588161874243,
+              "second_minimum": 0.3072250274358167,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.27736755269367325,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6512085460401961,
+                0.35404140339509815,
+                0.27736755269367325,
+                0.3608773722221194,
+                0.48585478233332785
+              ],
+              "relative_gap": 0.27643410325685813,
+              "second_minimum": 0.35404140339509815,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82003": {
+          "source": "B/blind_estimates/82003.json",
+          "readback_entry": {
+            "estimate_hash": "61af25b95fa79673741384a7994f44eb97cadbefa25b5b2cab3048ae3e5555bc",
+            "path": "blind_estimates/82003.json",
+            "role": "gate",
+            "sha256": "1c2ff02de1bf010375780e5d02629d9c1690bbf245c9acb63dd85ecf16ff6716",
+            "target_seed": 82003
+          },
+          "estimate_hash": "61af25b95fa79673741384a7994f44eb97cadbefa25b5b2cab3048ae3e5555bc",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.37373233354353064,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.84016467213223,
+                0.7967183387157024,
+                0.37373233354353064,
+                0.5827691749243024,
+                0.8900867101645796
+              ],
+              "relative_gap": 0.559322334781141,
+              "second_minimum": 0.5827691749243024,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.37373233354353064,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.43507960786603633,
+                0.5445271473334898,
+                0.37373233354353064,
+                0.43738596771328714,
+                0.5827691749243024
+              ],
+              "relative_gap": 0.16414762335611577,
+              "second_minimum": 0.43507960786603633,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.37373233354353064,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.7979576031104303,
+                0.49008917486545833,
+                0.37373233354353064,
+                0.4265563296406778,
+                0.6329320435737562
+              ],
+              "relative_gap": 0.14134178757373816,
+              "second_minimum": 0.4265563296406778,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.37373233354353064,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6483551913045597,
+                0.39634160576483,
+                0.37373233354353064,
+                0.4945585649309913,
+                0.6968995826534856
+              ],
+              "relative_gap": 0.06049589557031451,
+              "second_minimum": 0.39634160576483,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82004": {
+          "source": "B/blind_estimates/82004.json",
+          "readback_entry": {
+            "estimate_hash": "95d964c3aa4399fa8cc0e2a41e612f8936cadcf6fe9d76585791f155d2150365",
+            "path": "blind_estimates/82004.json",
+            "role": "gate",
+            "sha256": "5a2fd94d0009958d1125a0e1e0f172de9e6d4d4a389d51e28cdf83f0d1cc0b5b",
+            "target_seed": 82004
+          },
+          "estimate_hash": "95d964c3aa4399fa8cc0e2a41e612f8936cadcf6fe9d76585791f155d2150365",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.3431936141698872,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.9669348427814075,
+                0.8748052442603633,
+                0.3431936141698872,
+                0.3931726869477683,
+                0.5990462073151184
+              ],
+              "relative_gap": 0.14562937861990793,
+              "second_minimum": 0.3931726869477683,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.3431936141698872,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.42160686449563495,
+                0.5043905504462742,
+                0.3431936141698872,
+                0.5048790387888018,
+                0.3931726869477683
+              ],
+              "relative_gap": 0.14562937861990793,
+              "second_minimum": 0.3931726869477683,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.3431936141698872,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6210382097396854,
+                0.3931726869477683,
+                0.3431936141698872,
+                0.3809653294758979,
+                0.5868557694647578
+              ],
+              "relative_gap": 0.11005949337773226,
+              "second_minimum": 0.3809653294758979,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.3431936141698872,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5565538789522616,
+                0.36781194428261205,
+                0.3431936141698872,
+                0.47874355631585935,
+                0.6676409571748237
+              ],
+              "relative_gap": 0.07173306581554958,
+              "second_minimum": 0.36781194428261205,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82005": {
+          "source": "B/blind_estimates/82005.json",
+          "readback_entry": {
+            "estimate_hash": "5afc0c42140efb275381f0babb7441eeb1ac21137e9f7dafda1244bd63e5351e",
+            "path": "blind_estimates/82005.json",
+            "role": "gate",
+            "sha256": "fa58a0f158b052e74ff5bd395996156060d5cc657f9ad7ad17bb226438ba4fd3",
+            "target_seed": 82005
+          },
+          "estimate_hash": "5afc0c42140efb275381f0babb7441eeb1ac21137e9f7dafda1244bd63e5351e",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.2796770852373494,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.440428237970003,
+                0.39887868116147107,
+                0.2796770852373494,
+                0.6408235337152144,
+                1.280815359407863
+              ],
+              "relative_gap": 0.426211521129665,
+              "second_minimum": 0.39887868116147107,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.2796770852373494,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.40435483624159424,
+                0.640753415430073,
+                0.2796770852373494,
+                0.4478854646713171,
+                0.35839321176984784
+              ],
+              "relative_gap": 0.2814536144986479,
+              "second_minimum": 0.35839321176984784,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2796770852373494,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6467126101727775,
+                0.3544193121083257,
+                0.2796770852373494,
+                0.3982311798380704,
+                0.39887868116147107
+              ],
+              "relative_gap": 0.26724472906868985,
+              "second_minimum": 0.3544193121083257,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2796770852373494,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5938062122011186,
+                0.3037155639580752,
+                0.2796770852373494,
+                0.3606443757763295,
+                0.4280902751110749
+              ],
+              "relative_gap": 0.08595083397814092,
+              "second_minimum": 0.3037155639580752,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82006": {
+          "source": "B/blind_estimates/82006.json",
+          "readback_entry": {
+            "estimate_hash": "f252066df2165b86924549b794f54e1f7b7835b860153fa99db1dad6eda9fbda",
+            "path": "blind_estimates/82006.json",
+            "role": "gate",
+            "sha256": "a6d5db1e2e75012322b686fc1e71f6593a2757b6dbcfc02060d3553d74c407a4",
+            "target_seed": 82006
+          },
+          "estimate_hash": "f252066df2165b86924549b794f54e1f7b7835b860153fa99db1dad6eda9fbda",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 4,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.27181745706796817,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.277883942797301,
+                0.36143384581931265,
+                0.27181745706796817,
+                0.6530130597845732,
+                1.4527396186100678
+              ],
+              "relative_gap": 0.3296932791514411,
+              "second_minimum": 0.36143384581931265,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.27181745706796817,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.42128869723680257,
+                0.4049530933809051,
+                0.36143384581931265,
+                0.4047309229767331,
+                0.27181745706796817
+              ],
+              "relative_gap": 0.3296932791514411,
+              "second_minimum": 0.36143384581931265,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.27181745706796817,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5893912047331475,
+                0.33803877236001845,
+                0.27181745706796817,
+                0.3750585752313638,
+                0.36143384581931265
+              ],
+              "relative_gap": 0.2436242175405665,
+              "second_minimum": 0.33803877236001845,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.27181745706796817,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.7967038240995942,
+                0.4200960684986849,
+                0.27181745706796817,
+                0.2877447065525822,
+                0.36143384581931265
+              ],
+              "relative_gap": 0.0585953884508287,
+              "second_minimum": 0.2877447065525822,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82007": {
+          "source": "B/blind_estimates/82007.json",
+          "readback_entry": {
+            "estimate_hash": "ed2cb70d6362bd54b2c9a3e0bb4633de9cc4af82de2dd5f357f88e3ae7db85dc",
+            "path": "blind_estimates/82007.json",
+            "role": "gate",
+            "sha256": "cc8755b309e54bae06f6c4931c26f28589ab17e468f4e8f9044d427f2933190c",
+            "target_seed": 82007
+          },
+          "estimate_hash": "ed2cb70d6362bd54b2c9a3e0bb4633de9cc4af82de2dd5f357f88e3ae7db85dc",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.22877819011090683,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.4350101390570256,
+                0.5004759980607489,
+                0.22877819011090683,
+                0.3850068675874849,
+                0.917331629251288
+              ],
+              "relative_gap": 0.6828827407054918,
+              "second_minimum": 0.3850068675874849,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.22877819011090683,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.29589087840840045,
+                0.5083154400891579,
+                0.22877819011090683,
+                0.3323535368411827,
+                0.29052316033448483
+              ],
+              "relative_gap": 0.2698901070667853,
+              "second_minimum": 0.29052316033448483,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.22877819011090683,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5271292535229923,
+                0.2729713421415371,
+                0.22877819011090683,
+                0.3355872011483464,
+                0.5004759980607489
+              ],
+              "relative_gap": 0.1931703018072063,
+              "second_minimum": 0.2729713421415371,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.22877819011090683,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6244668423694045,
+                0.29476430573728285,
+                0.22877819011090683,
+                0.29971513516212517,
+                0.42092418864001546
+              ],
+              "relative_gap": 0.2884283488491073,
+              "second_minimum": 0.29476430573728285,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82008": {
+          "source": "B/blind_estimates/82008.json",
+          "readback_entry": {
+            "estimate_hash": "7e9a56e3e14d009a1e00120863eb98fe162156a9cacade805efc3c7f501eeea5",
+            "path": "blind_estimates/82008.json",
+            "role": "gate",
+            "sha256": "6035a833422fd89a6c597f16c1e7e12b640ed83b5f8b589f691dd7cad0cc4272",
+            "target_seed": 82008
+          },
+          "estimate_hash": "7e9a56e3e14d009a1e00120863eb98fe162156a9cacade805efc3c7f501eeea5",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 1,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.2730155194194371,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.6854152987357565,
+                0.8776192656198234,
+                0.2730155194194371,
+                0.3997356186669903,
+                0.6002447756692932
+              ],
+              "relative_gap": 0.46414980187581056,
+              "second_minimum": 0.3997356186669903,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.2730155194194371,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.3676761623670231,
+                0.2730155194194371,
+                0.30137970744726916,
+                0.4238609071388427,
+                0.3997356186669903
+              ],
+              "relative_gap": 0.103892218611411,
+              "second_minimum": 0.30137970744726916,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2730155194194371,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5508747801409262,
+                0.313442016080911,
+                0.2730155194194371,
+                0.3968971363558524,
+                0.6580102452818882
+              ],
+              "relative_gap": 0.1480739876891987,
+              "second_minimum": 0.313442016080911,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2730155194194371,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6352801306604671,
+                0.3356971690624193,
+                0.2730155194194371,
+                0.3365914764057985,
+                0.4792532343706641
+              ],
+              "relative_gap": 0.22959006058070877,
+              "second_minimum": 0.3356971690624193,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82009": {
+          "source": "B/blind_estimates/82009.json",
+          "readback_entry": {
+            "estimate_hash": "b3c53b60c2d7f1f5b64be13ff72d9edc69837712ca8b3e18081ddfee5768d38c",
+            "path": "blind_estimates/82009.json",
+            "role": "gate",
+            "sha256": "f36bfaad87d920643153042d25f28131a9ca587b4d0bdd846de9ddb7ebfe2650",
+            "target_seed": 82009
+          },
+          "estimate_hash": "b3c53b60c2d7f1f5b64be13ff72d9edc69837712ca8b3e18081ddfee5768d38c",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 4,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.27502917930653326,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.5003348762256543,
+                0.4933938368576827,
+                0.27502917930653326,
+                0.5580556459759971,
+                1.3692855461225797
+              ],
+              "relative_gap": 0.793969054853527,
+              "second_minimum": 0.4933938368576827,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.27502917930653326,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.48514300180121794,
+                0.6721707206719539,
+                0.39450695106933836,
+                0.5098007935355106,
+                0.27502917930653326
+              ],
+              "relative_gap": 0.4344185299322054,
+              "second_minimum": 0.39450695106933836,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.27502917930653326,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.7293765670658744,
+                0.4260010968610952,
+                0.27502917930653326,
+                0.31829845627067316,
+                0.48087362320880433
+              ],
+              "relative_gap": 0.15732613198803247,
+              "second_minimum": 0.31829845627067316,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.27502917930653326,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6563552036013499,
+                0.34522380268575736,
+                0.27502917930653326,
+                0.36874660954199767,
+                0.5252315569801214
+              ],
+              "relative_gap": 0.2552260947591631,
+              "second_minimum": 0.34522380268575736,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82010": {
+          "source": "B/blind_estimates/82010.json",
+          "readback_entry": {
+            "estimate_hash": "4a262258799da6776095f819fc6a6bc401e4b64a7afbe153cfd3b30fb24ead56",
+            "path": "blind_estimates/82010.json",
+            "role": "gate",
+            "sha256": "5ff7ddaac76910313e2162ed09835aa2b20a242722aba713c89a5fb40b88e44b",
+            "target_seed": 82010
+          },
+          "estimate_hash": "4a262258799da6776095f819fc6a6bc401e4b64a7afbe153cfd3b30fb24ead56",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.2749311478459888,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.844631163512176,
+                0.6728314352175387,
+                0.2749311478459888,
+                0.4908739118810453,
+                0.7837152531934779
+              ],
+              "relative_gap": 0.7854430672075886,
+              "second_minimum": 0.4908739118810453,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.2749311478459888,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.2962531658380891,
+                0.37364339114334755,
+                0.2749311478459888,
+                0.32813824957251475,
+                0.4908739118810453
+              ],
+              "relative_gap": 0.07755402819634118,
+              "second_minimum": 0.2962531658380891,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2749311478459888,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.7081962070027076,
+                0.3947741417899563,
+                0.2749311478459888,
+                0.3225993793134694,
+                0.5160657414431938
+              ],
+              "relative_gap": 0.17338243353271632,
+              "second_minimum": 0.3225993793134694,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2749311478459888,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.665422868201129,
+                0.36411254410226224,
+                0.2749311478459888,
+                0.32630672021078966,
+                0.4675828697606389
+              ],
+              "relative_gap": 0.18686704932240145,
+              "second_minimum": 0.32630672021078966,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        }
+      }
+    },
+    "i": {
+      "completion_confirmed": true,
+      "provenance_confirmed": true,
+      "work": {
+        "measured": {
+          "builds": 9,
+          "cells": 625,
+          "latent_calls": 225,
+          "observation_transforms": 5625,
+          "serosurvey_samples": 0
+        },
+        "measured_equals_planned": true,
+        "planned": {
+          "builds": 9,
+          "cells": 625,
+          "latent_calls": 225,
+          "observation_transforms": 5625,
+          "serosurvey_samples": 0
+        }
+      },
+      "gate_records": {
+        "82001": {
+          "source": "arm_i/blind_estimates/82001.json",
+          "readback_entry": {
+            "estimate_hash": "252a38b08646f429d90e57c0724f388acf1d7fd96ebc9deb00fd52164ee43bbb",
+            "path": "blind_estimates/82001.json",
+            "role": "gate",
+            "sha256": "3fe5e5c8a0e408b81449f6e46724db69a0130873d3f6cfd5bdad67f1d1d182c6",
+            "target_seed": 82001
+          },
+          "estimate_hash": "252a38b08646f429d90e57c0724f388acf1d7fd96ebc9deb00fd52164ee43bbb",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 0,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.4194146736511048,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                4.334294026531597,
+                1.4078152285159897,
+                0.4194146736511048,
+                0.4524062014222223,
+                0.6657196600033388
+              ],
+              "relative_gap": 0.0786608810891579,
+              "second_minimum": 0.4524062014222223,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.4194146736511048,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.4194146736511048,
+                0.5055853745869632,
+                0.4524062014222223,
+                0.6791028155747071,
+                0.9602934674322742
+              ],
+              "relative_gap": 0.0786608810891579,
+              "second_minimum": 0.4524062014222223,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.4194146736511048,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6847766935777918,
+                0.4524062014222223,
+                0.4194146736511048,
+                0.4691175834394841,
+                0.6607537796523769
+              ],
+              "relative_gap": 0.0786608810891579,
+              "second_minimum": 0.4524062014222223,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.4194146736511048,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6946379125749461,
+                0.4524062014222223,
+                0.4194146736511048,
+                0.49893805906185235,
+                0.6702948343120733
+              ],
+              "relative_gap": 0.0786608810891579,
+              "second_minimum": 0.4524062014222223,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82002": {
+          "source": "arm_i/blind_estimates/82002.json",
+          "readback_entry": {
+            "estimate_hash": "7e6932d799b8a94ab1c4e882979f1f1270ff0f044698643a2bbb752ae8f491b9",
+            "path": "blind_estimates/82002.json",
+            "role": "gate",
+            "sha256": "033b36a8857a46dcd5d524ac9eac5ef35ec99155b47295fb6e8183b9089fcff4",
+            "target_seed": 82002
+          },
+          "estimate_hash": "7e6932d799b8a94ab1c4e882979f1f1270ff0f044698643a2bbb752ae8f491b9",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.22470889577897002,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                3.630808262116369,
+                0.5599480965068793,
+                0.22470889577897002,
+                0.4192936285185203,
+                0.48236418762495403
+              ],
+              "relative_gap": 0.8659413863657152,
+              "second_minimum": 0.4192936285185203,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.22470889577897002,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.4498425821957911,
+                0.3413606880396845,
+                0.22470889577897002,
+                0.4192936285185203,
+                0.43329825325319726
+              ],
+              "relative_gap": 0.5191240509474822,
+              "second_minimum": 0.3413606880396845,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": false,
+              "minimum": 0.22470889577897002,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6646736653592638,
+                0.39544416445319674,
+                0.22470889577897002,
+                0.23466048380140886,
+                0.405186767580011
+              ],
+              "relative_gap": 0.04428657792091819,
+              "second_minimum": 0.23466048380140886,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.22470889577897002,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6679752196242312,
+                0.34212802915455365,
+                0.22470889577897002,
+                0.2740497149827026,
+                0.4189048167410752
+              ],
+              "relative_gap": 0.21957661726158623,
+              "second_minimum": 0.2740497149827026,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82003": {
+          "source": "arm_i/blind_estimates/82003.json",
+          "readback_entry": {
+            "estimate_hash": "88a33d80aefc4f28d6b748a3710a086b8f4cd837fd904fa07f86732f1d46f39f",
+            "path": "blind_estimates/82003.json",
+            "role": "gate",
+            "sha256": "e23c9627be993149d3a254fa0dd9597098ad04c07009b07cce98c9792cd8ad92",
+            "target_seed": 82003
+          },
+          "estimate_hash": "88a33d80aefc4f28d6b748a3710a086b8f4cd837fd904fa07f86732f1d46f39f",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.3263816287146007,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                3.510357875410643,
+                0.5835254718569861,
+                0.3263816287146007,
+                0.5067396494876171,
+                0.5806058389677263
+              ],
+              "relative_gap": 0.5525985683793729,
+              "second_minimum": 0.5067396494876171,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.3263816287146007,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5835254718569861,
+                0.42920139136117474,
+                0.3263816287146007,
+                0.5067396494876171,
+                0.5806058389677263
+              ],
+              "relative_gap": 0.3150292590042903,
+              "second_minimum": 0.42920139136117474,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.3263816287146007,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.729994196310732,
+                0.47337811558383414,
+                0.3263816287146007,
+                0.36564633365056437,
+                0.5447540251114521
+              ],
+              "relative_gap": 0.1203030485833444,
+              "second_minimum": 0.36564633365056437,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.3263816287146007,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6576962922579256,
+                0.38228180131407674,
+                0.3263816287146007,
+                0.4102012545541039,
+                0.5840326749153915
+              ],
+              "relative_gap": 0.17127242369501466,
+              "second_minimum": 0.38228180131407674,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82004": {
+          "source": "arm_i/blind_estimates/82004.json",
+          "readback_entry": {
+            "estimate_hash": "7fe8bd1685b478047a9796819c996916a9fa01c497570416bc144e3eee0e48ba",
+            "path": "blind_estimates/82004.json",
+            "role": "gate",
+            "sha256": "7bb4d6a36562ed4dd42890550007882dfc50fea7bfc64daa4186ed6f10e72477",
+            "target_seed": 82004
+          },
+          "estimate_hash": "7fe8bd1685b478047a9796819c996916a9fa01c497570416bc144e3eee0e48ba",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.3199205089260365,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                3.6469817226026513,
+                0.657009448537683,
+                0.3199205089260365,
+                0.42381792063077495,
+                0.41301673906339487
+              ],
+              "relative_gap": 0.29099800587927166,
+              "second_minimum": 0.41301673906339487,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.3199205089260365,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5015668840979457,
+                0.422116744370186,
+                0.3199205089260365,
+                0.42381792063077495,
+                0.41301673906339487
+              ],
+              "relative_gap": 0.29099800587927166,
+              "second_minimum": 0.41301673906339487,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": false,
+              "minimum": 0.3199205089260365,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6009199078669657,
+                0.41301673906339487,
+                0.3199205089260365,
+                0.3325887811331582,
+                0.5076132571281434
+              ],
+              "relative_gap": 0.039598187217345635,
+              "second_minimum": 0.3325887811331582,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.3199205089260365,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5899081743410924,
+                0.3804364955061752,
+                0.3199205089260365,
+                0.420220824305521,
+                0.5959900231222269
+              ],
+              "relative_gap": 0.18915944708668106,
+              "second_minimum": 0.3804364955061752,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82005": {
+          "source": "arm_i/blind_estimates/82005.json",
+          "readback_entry": {
+            "estimate_hash": "d210a90fe6bcd56f5825e5215f4043ff607277c6102ee869afb2e55491fda0ae",
+            "path": "blind_estimates/82005.json",
+            "role": "gate",
+            "sha256": "b1e6f3a1857515cde0d8a9362f563dacb1ddc8c85cee617199b8323733becbbc",
+            "target_seed": 82005
+          },
+          "estimate_hash": "d210a90fe6bcd56f5825e5215f4043ff607277c6102ee869afb2e55491fda0ae",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.24128722214875667,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                3.0667855912755253,
+                0.4088089436310284,
+                0.24128722214875667,
+                0.37938067350297777,
+                0.7679003527627831
+              ],
+              "relative_gap": 0.5723197860394146,
+              "second_minimum": 0.37938067350297777,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.24128722214875667,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.4088089436310284,
+                0.55426335419189,
+                0.24128722214875667,
+                0.3432312463239435,
+                0.37938067350297777
+              ],
+              "relative_gap": 0.4225007162307874,
+              "second_minimum": 0.3432312463239435,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.24128722214875667,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5971726014292245,
+                0.35435825029435747,
+                0.24128722214875667,
+                0.3242775461054685,
+                0.4088089436310284
+              ],
+              "relative_gap": 0.34394827549362406,
+              "second_minimum": 0.3242775461054685,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.24128722214875667,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6177622203670728,
+                0.32059680853023564,
+                0.24128722214875667,
+                0.29819943804289994,
+                0.42522976943084156
+              ],
+              "relative_gap": 0.23586916616353668,
+              "second_minimum": 0.29819943804289994,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82006": {
+          "source": "arm_i/blind_estimates/82006.json",
+          "readback_entry": {
+            "estimate_hash": "258a58e1d7c4377cee8938e7936d7203a36e9b8f936431555c330789ea7f9d5d",
+            "path": "blind_estimates/82006.json",
+            "role": "gate",
+            "sha256": "3a568d16e1302c47a68b56a19a65b977d9bd07514c534023fad1d36896c2d82a",
+            "target_seed": 82006
+          },
+          "estimate_hash": "258a58e1d7c4377cee8938e7936d7203a36e9b8f936431555c330789ea7f9d5d",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 3,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.21252240813991305,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                2.7637248617147288,
+                0.354772335786773,
+                0.21252240813991305,
+                0.26289309043709663,
+                0.8550644890622786
+              ],
+              "relative_gap": 0.2370135118364662,
+              "second_minimum": 0.26289309043709663,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.21252240813991305,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.354772335786773,
+                0.36486871052500686,
+                0.2750888108844007,
+                0.21252240813991305,
+                0.26289309043709663
+              ],
+              "relative_gap": 0.2370135118364662,
+              "second_minimum": 0.26289309043709663,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.21252240813991305,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.43038633063247866,
+                0.26289309043709663,
+                0.21252240813991305,
+                0.28973308274326054,
+                0.354772335786773
+              ],
+              "relative_gap": 0.2370135118364662,
+              "second_minimum": 0.26289309043709663,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.21252240813991305,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6496257516490854,
+                0.3152833243296198,
+                0.21252240813991305,
+                0.23526579106850176,
+                0.33751818319200483
+              ],
+              "relative_gap": 0.10701639948299345,
+              "second_minimum": 0.23526579106850176,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82007": {
+          "source": "arm_i/blind_estimates/82007.json",
+          "readback_entry": {
+            "estimate_hash": "bc4bcb618ccf360d11d256e85c420127866c666397aa67991ef7cfa98bc71dfe",
+            "path": "blind_estimates/82007.json",
+            "role": "gate",
+            "sha256": "148f065baa46e9047f144851442aa7a0a7a6312be6ba53fc3dd03873d0c94a1d",
+            "target_seed": 82007
+          },
+          "estimate_hash": "bc4bcb618ccf360d11d256e85c420127866c666397aa67991ef7cfa98bc71dfe",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.1955938655137126,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                3.0874163026249017,
+                0.36686092894027067,
+                0.1955938655137126,
+                0.33965689537799504,
+                0.5930873486399801
+              ],
+              "relative_gap": 0.7365416573056199,
+              "second_minimum": 0.33965689537799504,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.1955938655137126,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.36686092894027067,
+                0.4054632729681435,
+                0.1955938655137126,
+                0.41161262636333157,
+                0.33965689537799504
+              ],
+              "relative_gap": 0.7365416573056199,
+              "second_minimum": 0.33965689537799504,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.1955938655137126,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5470766642121431,
+                0.29232915433519346,
+                0.1955938655137126,
+                0.2779893731498611,
+                0.36686092894027067
+              ],
+              "relative_gap": 0.42125813823323593,
+              "second_minimum": 0.2779893731498611,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.1955938655137126,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6608944254930341,
+                0.3104688311326874,
+                0.1955938655137126,
+                0.2242397658914311,
+                0.35452774421806393
+              ],
+              "relative_gap": 0.146456026637043,
+              "second_minimum": 0.2242397658914311,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82008": {
+          "source": "arm_i/blind_estimates/82008.json",
+          "readback_entry": {
+            "estimate_hash": "82dbcc428c503f8b50460270ba2bfc73a3d096bdf841f7b33cc0e5229f1f8efa",
+            "path": "blind_estimates/82008.json",
+            "role": "gate",
+            "sha256": "9a2392361173b058d91fe0535e220c6e095888d9efbd1ccc701b170d50243645",
+            "target_seed": 82008
+          },
+          "estimate_hash": "82dbcc428c503f8b50460270ba2bfc73a3d096bdf841f7b33cc0e5229f1f8efa",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 0,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.2591061697352019,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                3.3551786273673057,
+                0.5536428803535158,
+                0.2591061697352019,
+                0.4768752847896829,
+                0.5208261060711908
+              ],
+              "relative_gap": 0.8404628700159242,
+              "second_minimum": 0.4768752847896829,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": false,
+              "minimum": 0.2591061697352019,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.2591061697352019,
+                0.26828033746843793,
+                0.3123085628371676,
+                0.4768752847896829,
+                0.5208261060711908
+              ],
+              "relative_gap": 0.035406982946842754,
+              "second_minimum": 0.26828033746843793,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2591061697352019,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.6253978749757751,
+                0.32805741249370113,
+                0.2591061697352019,
+                0.3623739660542565,
+                0.5536428803535158
+              ],
+              "relative_gap": 0.26611192944176193,
+              "second_minimum": 0.32805741249370113,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2591061697352019,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.637872241178868,
+                0.3352669567987348,
+                0.2591061697352019,
+                0.3211847231695416,
+                0.46664317941185124
+              ],
+              "relative_gap": 0.23958732243922243,
+              "second_minimum": 0.3211847231695416,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82009": {
+          "source": "arm_i/blind_estimates/82009.json",
+          "readback_entry": {
+            "estimate_hash": "5b4de3a37a4f76e7b40ecdc4d4d12f36fad8d08137ff21e42e67bdeedbf042ef",
+            "path": "blind_estimates/82009.json",
+            "role": "gate",
+            "sha256": "b852f34f00718927755226d91f9cbb89f020ca792d41e068b62a41819f33c9cf",
+            "target_seed": 82009
+          },
+          "estimate_hash": "5b4de3a37a4f76e7b40ecdc4d4d12f36fad8d08137ff21e42e67bdeedbf042ef",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 3,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.26754373732256975,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                3.116304038662959,
+                0.4959265044471892,
+                0.26754373732256975,
+                0.28761054057245966,
+                0.7351249397839482
+              ],
+              "relative_gap": 0.07500382348959993,
+              "second_minimum": 0.28761054057245966,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.26754373732256975,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.4959265044471892,
+                0.5610880238489175,
+                0.32963820302246927,
+                0.26754373732256975,
+                0.28761054057245966
+              ],
+              "relative_gap": 0.07500382348959993,
+              "second_minimum": 0.28761054057245966,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.26754373732256975,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5389395172179112,
+                0.28761054057245966,
+                0.26754373732256975,
+                0.2916991385782517,
+                0.45651203585044164
+              ],
+              "relative_gap": 0.07500382348959993,
+              "second_minimum": 0.28761054057245966,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.26754373732256975,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.5303394084210072,
+                0.28761054057245966,
+                0.26754373732256975,
+                0.346289369319975,
+                0.5050283409920191
+              ],
+              "relative_gap": 0.07500382348959993,
+              "second_minimum": 0.28761054057245966,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        },
+        "82010": {
+          "source": "arm_i/blind_estimates/82010.json",
+          "readback_entry": {
+            "estimate_hash": "79fd508bcaddab7705b93cba507840a7edc6235cf6ad8d348f7dc58095b0d796",
+            "path": "blind_estimates/82010.json",
+            "role": "gate",
+            "sha256": "a188c1f9595892bf24e3370785c99378636df8e9605e3e2d81c78f4dc8c5240b",
+            "target_seed": 82010
+          },
+          "estimate_hash": "79fd508bcaddab7705b93cba507840a7edc6235cf6ad8d348f7dc58095b0d796",
+          "selected": {
+            "asymptomatic_detection_probability": 0.25,
+            "beta": 0.08,
+            "inoculation_day_offset": 2,
+            "symptomatic_detection_probability": 0.75
+          },
+          "numerical_tie": false,
+          "profiles": [
+            {
+              "dimension": "beta",
+              "identified": true,
+              "minimum": 0.2622650382079927,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                3.5406085462395507,
+                0.47063813111600106,
+                0.2622650382079927,
+                0.4672683279618636,
+                0.5950459734685413
+              ],
+              "relative_gap": 0.7816645754791397,
+              "second_minimum": 0.4672683279618636,
+              "values": [
+                0.04,
+                0.06,
+                0.08,
+                0.1,
+                0.12
+              ]
+            },
+            {
+              "dimension": "inoculation_day_offset",
+              "identified": true,
+              "minimum": 0.2622650382079927,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.40213188217127693,
+                0.3092656376068284,
+                0.2622650382079927,
+                0.4672683279618636,
+                0.5048994738395893
+              ],
+              "relative_gap": 0.17921031228554865,
+              "second_minimum": 0.3092656376068284,
+              "values": [
+                0.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0
+              ]
+            },
+            {
+              "dimension": "symptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2622650382079927,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.7314927554967996,
+                0.41589575374867915,
+                0.2622650382079927,
+                0.2900447143994898,
+                0.47063813111600106
+              ],
+              "relative_gap": 0.1059221479969667,
+              "second_minimum": 0.2900447143994898,
+              "values": [
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0
+              ]
+            },
+            {
+              "dimension": "asymptomatic_detection_probability",
+              "identified": true,
+              "minimum": 0.2622650382079927,
+              "numerical_tie": false,
+              "profiled_objectives": [
+                0.7529589907248071,
+                0.39079309268351603,
+                0.2622650382079927,
+                0.2808646167735162,
+                0.3952173149557249
+              ],
+              "relative_gap": 0.0709190164751311,
+              "second_minimum": 0.2808646167735162,
+              "values": [
+                0.1,
+                0.175,
+                0.25,
+                0.325,
+                0.4
+              ]
+            }
+          ],
+          "scored_cell_count": 625
+        }
+      }
+    }
+  }
+}
