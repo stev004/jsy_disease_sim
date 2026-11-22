@@ -1,7 +1,7 @@
 # RUN — nothing in flight. Run `g44-impl` COMPLETE (predicate met); awaiting Steven on G45.
 
 **Run `g44-impl` (2026-11-21/22):** owner clarification 1 `9002c59`; U1 `fa3cb99`, U2 `61c591d`, U3 `c723f71` (gpt-6.2-sol @ high; 279,209 / 313,264 / 318,499 tokens); director acceptance per unit and full CI mirror PASS on `c723f71`; independent review PASS (fresh Opus 5.5, 292,223 tokens; 2 MINOR + 5 NOTES); branch `codex/g43-multilibrary` pushed at `c723f71a652ce2d11278f0e2958bb72baf9716da` after the PASS was filed (main `434f3d3`). Trail rows `g44-run-start` → `g44-review-PASS`. Nothing merged; no campaign.
-**Resume recipe:** on G45 = A, brief one corrective unit (R1, R2, R3, R4, R5, R7) on the existing worktree `/home/steven/jos-g44-wt` at `c723f71`, director acceptance + mirror, bounded re-review by a fresh Opus 5.5, push. On G45 = B, SHA-first merge with the mirror on the merge commit. Either way the campaign waits for its own gate; check host disk first (≈ 9.9 GB free on 2026-11-22).
+**Resume recipe:** on G45 = A, brief one corrective unit (R1, R2, R3, R4, R5, R7) on the existing worktree `/home/steven/jos-g44-wt` at `c723f71`, director acceptance + mirror, bounded re-review by a fresh Opus 5.5, push; then park a merge gate. Frozen §12 line 702 forbids merging before the named defects are corrected and re-reviewed. Either way the campaign waits for its own gate; check host disk first (≈ 9.9 GB free on 2026-11-22).
 
 ---
 

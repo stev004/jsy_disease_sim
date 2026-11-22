@@ -4,20 +4,19 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). **G45 OPEN** (merge c723f71, optional corrective first; default HOLD). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). **G45 OPEN** (authorize one corrective for review findings R1–R7, then re-review; default HOLD). G5 open.
 
-### G45 — Merge the reviewed G43 harness to main (SHA-first)? Optional small corrective first.
-- **What:** branch `codex/g43-multilibrary` @ `c723f71a652ce2d11278f0e2958bb72baf9716da` adds only `src/jersey_outbreak/g43_multilibrary.py`, `g43_constants.py`, `g43_recompute.py`, `configs/calibration/v13_g43_multilibrary.yaml`, `tests/test_g43_multilibrary.py`, `tests/fixtures/g43/historical_g35b.json` (no protected module touched).
-- **Evidence:** independent review `docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md` (JOS G43 IMPLEMENTATION REVIEW: PASS); director full CI mirror `docs/runs/2026-11-22-g44-ci-mirror.log` (MIRROR_RESULT=PASS, 1757 passed; one pre-existing environment-timing test deselected, failing identically on the clean base: `docs/runs/2026-11-22-g44-flaky-test-basecheck.log`).
-- **Review findings to weigh (none blocking):**
-  - R1 (MINOR): `--bundle-upper-bytes` can lower the §9 host-disk requirement below the measured estimate. Host C: had ~9.9 GB free on 2026-11-22; the rule needs ≈ 6.0 GB.
-  - R2 (MINOR): shared-panel P1 "execution complete" is a literal `True` (safe today because any failed target run raises → VOID).
-  - R3–R7 (NOTES): exit marker never written by `execute`; one missing corruption test; a stale comment; P10 counts read from the summary ledger; Ctrl-C would leave a partial bundle unsealed.
+### G45 — Authorize one corrective unit for the G43 harness review findings (R1–R7), then re-review? No merge yet.
+- **What:** branch `codex/g43-multilibrary` @ `c723f71a652ce2d11278f0e2958bb72baf9716da` (six new files; no protected module touched) passed the independent review (`docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md`), but the review named defects. Frozen G43 §12 (line 702): "A step-4 defect blocks progression until corrected and independently reviewed." So a merge is not available until they are fixed (trail audit `docs/audits/2026-11-22-g44-trail-audit-astra62.md` caught the director offering it).
+- **Findings to correct:**
+  - R1 (MINOR): `--bundle-upper-bytes` can lower the §9 host-disk requirement below the measured estimate (host C: ≈ 9.9 GB free on 2026-11-22; rule needs ≈ 6.0 GB).
+  - R2 (MINOR): shared-panel P1 "execution complete" is a literal `True` (safe today because a failed target run raises → VOID).
+  - R3–R7 (NOTES): `execute` never writes the exit marker; one missing corruption test (table body changed, digest kept); a stale comment; P10 counts read from the summary ledger (exit-audit brief item, no code change); Ctrl-C/BaseException can leave a partial bundle unsealed.
+- **Evidence state:** director full CI mirror `docs/runs/2026-11-22-g44-ci-mirror.log` printed PASS with ONE test deselected (`test_prov_job_ordering::test_missing_head_request_fails_alone_and_scheduler_continues`). It is therefore not an exact CI-equivalent pass: that test also fails on the clean base `9002c59` with the identical assertion at line 176 (`docs/runs/2026-11-22-g44-flaky-test-basecheck-full.log`), so it is a pre-existing environment failure, not a G43 regression (backlog item).
 - **Options:**
-  - **A — Corrective first (director recommendation):** one bounded corrective unit for R1, R2, R3, R4, R5, R7 (gpt-6.2-sol @ high), then a bounded re-review and mirror, then merge. Needs Steven to extend the frozen §13 budget of three implementation runs (all three used by U1–U3).
-  - **B — Merge now** SHA-first: `git merge --no-ff c723f71a652ce2d11278f0e2958bb72baf9716da` with the full mirror on the merge commit before push; handle R1/R3/R7 operationally in the campaign launcher (never pass `--bundle-upper-bytes`, launcher writes the exit marker, treats an unsealed bundle as VOID).
-  - **C — HOLD.**
-- **After merge:** the single campaign is a separate gate (frozen §12 step 6), then a fresh exit audit (gpt-6.2-astra @ high). Real-data fitting stays STOPPED.
+  - **A — Authorize the corrective (director recommendation):** extend the frozen §13 budget (three implementation runs, all used by U1–U3) by one corrective run (gpt-6.2-sol @ high) for R1, R2, R3, R4, R5, R7; director acceptance + mirror; bounded re-review by a fresh Opus 5.5; push. Then a merge gate.
+  - **B — HOLD.**
+- **Later gates:** SHA-first merge; then the single campaign (frozen §12 step 6) and a fresh exit audit (gpt-6.2-astra @ high). Real-data fitting stays STOPPED.
 - **Default on no answer:** HOLD.
 
 ### G5 — Branch cleanup

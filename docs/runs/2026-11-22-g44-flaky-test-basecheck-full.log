@@ -1,0 +1,17 @@
++ git rev-parse HEAD
+9002c59fb07e830a2064c818a447be6b023712da
++ git status --porcelain
+++ git status --porcelain
++ test -z ''
++ echo CLEAN_TREE
+CLEAN_TREE
++ uv run pytest -p no:cacheprovider tests/test_prov_job_ordering.py::test_missing_head_request_fails_alone_and_scheduler_continues
++ grep -E '^E |test_prov_job_ordering.py:[0-9]+|passed|failed'
+            assert any(event["type"] == "job_failed" for event in manager.events(first_id))
+E           AssertionError: {'bundle_hash': None, 'canonical_request': {'request': {'duration_days': 1, 'kind': 'scenario_run', 'mode': 'ci', 'obs....13', 'starsim_version': '3.5.2'}}, 'created_at': '2026-11-22T04:38:57.950362+00:00', 'dirty_worktree_flag': None, ...}
+E           assert 'RUNNING' == 'SUCCEEDED'
+E             
+E             - SUCCEEDED
+E             + RUNNING
+tests/test_prov_job_ordering.py:176: AssertionError
+============================== 1 failed in 7.66s ===============================
