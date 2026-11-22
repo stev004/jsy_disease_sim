@@ -4,18 +4,26 @@ import hashlib
 import json
 import re
 import subprocess
+from collections import Counter
 from copy import deepcopy
 from dataclasses import asdict, replace
+from datetime import date, timedelta
 from decimal import Decimal, localcontext
+from itertools import product
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 import yaml
 
+from jersey_outbreak import g35b_design_study as g35b
 from jersey_outbreak import g43_constants as frozen
 from jersey_outbreak import g43_multilibrary as study
 from jersey_outbreak import phase0_campaign as phase0
+from jersey_outbreak.observation_scheduler import observation_stream_seed
+from jersey_outbreak.observation_schemas import ObservationConfig
+from jersey_outbreak.outbreak_schemas import OutbreakRunConfig
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/calibration/v13_g43_multilibrary.yaml"
@@ -947,3 +955,730 @@ def test_status_phrase_exact_lifecycle_variants() -> None:
     assert study.status_phrase(study.classify_campaign([shared_failure] * 6)) == (
         prefix + "; G43: L1 FAIL, L2 FAIL, L3 FAIL, L4 FAIL, L5 FAIL, L6 FAIL"
     )
+
+
+# §8's final positions, including the three replacements and their original observation IDs.
+_MOCK_LIBRARY_SEEDS = (
+    tuple(range(87101, 87113)),
+    tuple(range(87201, 87213)),
+    (87351, 87302, 87303, 87304, 87352, *range(87306, 87313)),
+    tuple(range(87401, 87413)),
+    (87501, 87502, 87503, 87504, 87505, 87551, *range(87507, 87513)),
+    tuple(range(87601, 87613)),
+)
+_MOCK_REPLICATES = {
+    seed: (library, position, 99000 + 100 * library + position)
+    for library, seeds in enumerate(_MOCK_LIBRARY_SEEDS, 1)
+    for position, seed in enumerate(seeds, 1)
+}
+_MOCK_GRID = (
+    (0.04, 0.06, 0.08, 0.10, 0.12),
+    tuple(range(5)),
+    (0.50, 0.625, 0.75, 0.875, 1.00),
+    (0.10, 0.175, 0.25, 0.325, 0.40),
+)
+_MOCK_START = date(2025, 1, 6)
+_MOCK_DATES = tuple((_MOCK_START + timedelta(days=index)).isoformat() for index in range(34))
+_MOCK_LATENT_COUNT = 60
+
+
+@pytest.fixture(scope="module")
+def declared_process_hashes(frozen_document: str) -> dict[int, tuple[str, ...]]:
+    table = frozen_document.split("### Final seed table (92 seeds)\n")[1].split(
+        "### Unused reserves"
+    )[0]
+    hashes = {}
+    for line in table.splitlines():
+        if line.startswith(("| target |", "| candidate |")):
+            fields = [item.strip() for item in line.strip("|").split("|")]
+            hashes[int(fields[4].split()[0])] = tuple(item.strip("`") for item in fields[-3:])
+    assert len(hashes) == 92
+    return hashes
+
+
+class _MockLatent(SimpleNamespace):
+    @property
+    def transmission_events(self) -> list[dict[str, Any]]:
+        self.on_truth(self.config.seed)
+        return [{"imported": True}] * 10 + [{"source_kind": "local"}] * (_MOCK_LATENT_COUNT - 10)
+
+
+def _mock_dispatches(
+    monkeypatch: pytest.MonkeyPatch,
+    process_hashes: dict[int, tuple[str, ...]],
+    ledger: study.WorkLedger,
+    *,
+    on_truth: Any = None,
+) -> dict[str, Any]:
+    calls = {"builds": Counter(), "latent_calls": Counter(), "observation_transforms": Counter()}
+    totals = Counter()
+
+    def record(kind: str, key: Any) -> None:
+        totals[kind] += 1
+        assert ledger.totals[kind] == totals[kind], f"{kind} reached execution before reservation"
+        calls[kind][key] += 1
+
+    def before_truth(seed: int) -> None:
+        assert on_truth is not None, f"early truth access for {seed}"
+        on_truth(seed)
+
+    def build(root: Path, mode: str, seed: int, path: Path, **options: Any) -> Any:
+        record("builds", seed)
+        assert root == ROOT and mode == "ci" and options == {"write_m4": True}
+        assert path.name == str(seed)
+        m2, m3, m4 = process_hashes[seed]
+        return SimpleNamespace(
+            generated=SimpleNamespace(
+                config=SimpleNamespace(seed=seed, mode=mode),
+                m2_input=SimpleNamespace(
+                    manifest=SimpleNamespace(seed=seed, mode=mode, logical_content_hash=m2)
+                ),
+                m3_input=SimpleNamespace(
+                    manifest=SimpleNamespace(seed=seed, mode=mode, logical_content_hash=m3)
+                ),
+                logical_content_hash=m4,
+            )
+        )
+
+    def latent(parent: Any, config: OutbreakRunConfig, parameters: Any) -> Any:
+        assert isinstance(config, OutbreakRunConfig)
+        offset = (date.fromisoformat(next(iter(config.import_schedule))) - _MOCK_START).days
+        record("latent_calls", (config.seed, config.beta, offset))
+        assert config.seed == parent.config.seed and config.mode == parent.config.mode == "ci"
+        assert config.start_date == _MOCK_START and config.duration_days == 30
+        assert config.initial_seed_count == 0 and config.import_rate_per_day == 0
+        assert list(config.import_schedule.values()) == [10]
+        assert config.symptomatic_probability == 0.6 and not config.waning_enabled
+        assert tuple(config.route_multipliers.values()) == (1.0,) * 11
+        assert config.latent_duration.family == "constant" and config.latent_duration.mean_days == 2
+        assert config.infectious_duration.family == "constant"
+        assert config.infectious_duration.mean_days == 5
+        return _MockLatent(
+            config=config,
+            generated=parent,
+            offset=offset,
+            on_truth=before_truth,
+            diagnostics={
+                "benchmark": {"n_agents": 3000, "runtime_seconds": 0.125},
+                "natural_history": {"chronology_passed": True},
+                "states": {"conserved": True},
+            },
+        )
+
+    def observe(result: Any, config: ObservationConfig) -> Any:
+        assert isinstance(config, ObservationConfig)
+        assert config.reporting_delay.kind == config.detection_delay.kind == "fixed"
+        assert config.reporting_delay.days == (2,) and config.detection_delay.days == (0,)
+        assert config.analysis_horizon_tail_days == 4 and config.day_of_week_effect == (1.0,) * 7
+        seed = result.config.seed
+        sym = config.parameters["symptomatic_detection_probability"].value
+        asym = config.parameters["asymptomatic_detection_probability"].value
+        cell = (result.config.beta, result.offset, sym, asym)
+        record(
+            "observation_transforms",
+            (seed, config.observation_seed, config.observation_config_id, *cell),
+        )
+        events = [
+            {"report_date": _MOCK_DATES[day], "symptomatic": symptomatic}
+            for day, symptomatic, values, value in zip(
+                (6, 7, 8, 9), (True, True, False, False), _MOCK_GRID, cell, strict=True
+            )
+            for _ in range(1 + 3 * values.index(value))
+        ]
+        if seed in _TARGET_SEEDS:
+            target_position = seed - _TARGET_SEEDS[0]
+            assert config.observation_seed == 98001 + target_position
+            assert config.observation_config_id == "v13-g43-target"
+            events.append({"report_date": _MOCK_DATES[12 + target_position], "symptomatic": True})
+        else:
+            library, position, observation_seed = _MOCK_REPLICATES[seed]
+            assert config.observation_seed == observation_seed
+            assert config.observation_config_id == "v13-g43-fit"
+            events.extend(
+                (
+                    {"report_date": _MOCK_DATES[11 + position], "symptomatic": True},
+                    {"report_date": _MOCK_DATES[24 + library], "symptomatic": False},
+                )
+            )
+        events.extend(
+            {"report_date": None, "symptomatic": False}
+            for _ in range(_MOCK_LATENT_COUNT - len(events))
+        )
+        return SimpleNamespace(
+            config=config,
+            latent_run=result,
+            observation_events=events,
+            diagnostics={
+                "no_report_before_infection": True,
+                "latent_incidence_conservation": True,
+                "observation_rng": {
+                    "stream_namespace": "observation",
+                    "stream_key_inputs": [
+                        "latent_replicate_seed",
+                        "observation_seed",
+                        "observation_config_id",
+                    ],
+                    "stream_fingerprint": hashlib.sha256(
+                        str(observation_stream_seed(seed, config)).encode()
+                    ).hexdigest(),
+                },
+            },
+        )
+
+    monkeypatch.setattr(study, "build_parent", build)
+    monkeypatch.setattr(g35b, "run_outbreak", latent)
+    monkeypatch.setattr(g35b, "observe_latent_run", observe)
+    return calls
+
+
+def _table_bytes(table: phase0.ObservedTables) -> bytes:
+    return (
+        json.dumps(
+            {
+                "dates": table.dates,
+                "symptomatic": table.symptomatic,
+                "asymptomatic": table.asymptomatic,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n"
+    ).encode()
+
+
+@pytest.fixture(scope="module")
+def mocked_full_run(
+    tmp_path_factory: pytest.TempPathFactory, declared_process_hashes: dict[int, tuple[str, ...]]
+) -> Any:
+    directory = tmp_path_factory.mktemp("g43-mocked") / "work"
+    ledger = study.WorkLedger()
+    readbacks = set()
+    truth_reads = []
+    fit_inputs = []
+    persist_paths = []
+    scores = Counter()
+    scope_slices = (
+        tuple(range(1, 13)),
+        (1, 2, 3),
+        (4, 5, 6),
+        (7, 8, 9),
+        (10, 11, 12),
+        tuple(range(1, 7)),
+    )
+
+    def on_truth(seed: int) -> None:
+        assert len(readbacks) == 720 and set(persist_paths) == readbacks
+        assert sum(scores.values()) == 450_000
+        truth_reads.append(seed)
+
+    def counted_loss(target: Any, predictions: Any, r: int, t: int) -> float:
+        index, cell_index = divmod(sum(scores.values()), 625)
+        scope, target_index = divmod(index, 20)
+        library_index, slice_index = divmod(scope, 6)
+        group = "gate" if slice_index == 0 else "descriptive"
+        kind = f"{group}_loss_evaluations"
+        scores[kind] += 1
+        assert ledger.totals[kind] == scores[kind]
+        positions = scope_slices[slice_index]
+        assert r == len(positions) and t == 34
+        if cell_index in (0, 624):
+            seed = _TARGET_SEEDS[target_index]
+            from_disk = (directory / "targets" / f"{seed}.json").read_bytes()
+            digest = hashlib.sha256(from_disk).hexdigest()
+            assert hashlib.sha256(_table_bytes(target)).hexdigest() == digest
+            assert target.dates == _MOCK_DATES
+            assert target.symptomatic[12 + target_index] == 1
+            assert tuple(table.symptomatic.index(1, 12) - 11 for table in predictions) == positions
+            assert all(
+                table.asymptomatic.index(1, 24) == 25 + library_index for table in predictions
+            )
+            if cell_index == 0:
+                fit_inputs.append((library_index + 1, slice_index, seed, digest))
+        return g35b.loss(target, predictions, r, t)
+
+    def persist(path: Path, fit: phase0.BlindFitResult) -> str:
+        persist_paths.append(path)
+        assert ledger.totals["gate_blind_records"] + ledger.totals[
+            "descriptive_blind_records"
+        ] == len(persist_paths)
+        return g35b._persist_fit(path, fit)
+
+    def readback(path: Path, fit: phase0.BlindFitResult, digest: str) -> None:
+        assert len(persist_paths) == 720
+        assert not truth_reads
+        g35b._verify_blind_readback(path, fit, digest)
+        assert path not in readbacks
+        readbacks.add(path)
+
+    def after_barrier(method: Any) -> Any:
+        def checked(*args: Any, **kwargs: Any) -> Any:
+            assert len(readbacks) == 720 and set(persist_paths) == readbacks
+            return method(*args, **kwargs)
+
+        return checked
+
+    with pytest.MonkeyPatch.context() as patch:
+        calls = _mock_dispatches(patch, declared_process_hashes, ledger, on_truth=on_truth)
+        patch.setattr(study, "loss", counted_loss)
+        patch.setattr(study, "_persist_fit", persist)
+        patch.setattr(study, "_verify_blind_readback", readback)
+        for name in (
+            "_truth_diagnostics_from_result",
+            "evaluate_shared_panel",
+            "evaluate_recovery",
+            "_reference_evaluation",
+        ):
+            patch.setattr(study, name, after_barrier(getattr(study, name)))
+        gen = study.generate_blind(CONFIG, PREDECLARATION, directory, root=ROOT, ledger=ledger)
+        assert not truth_reads and not readbacks
+        output = study.evaluate_after_blind(gen)
+    assert isinstance(output, study.StudyEvaluation)
+    return SimpleNamespace(
+        generation=gen,
+        output=output,
+        calls=calls,
+        fit_inputs=fit_inputs,
+        truth_reads=truth_reads,
+        scores=scores,
+        readbacks=readbacks,
+    )
+
+
+def test_mocked_generation_dispatches_frozen_rosters_and_exact_caps(mocked_full_run: Any) -> None:
+    run = mocked_full_run
+    assert run.calls["builds"] == Counter([*_TARGET_SEEDS, *_MOCK_REPLICATES])
+    assert run.calls["latent_calls"] == Counter(
+        [(seed, 0.08, 2) for seed in _TARGET_SEEDS]
+        + list(product(_MOCK_REPLICATES, *_MOCK_GRID[:2]))
+    )
+    assert run.calls["observation_transforms"] == Counter(
+        [
+            (seed, 98001 + i, "v13-g43-target", 0.08, 2, 0.75, 0.25)
+            for i, seed in enumerate(_TARGET_SEEDS)
+        ]
+        + [
+            (seed, obs, "v13-g43-fit", *cell)
+            for seed, (_, _, obs) in _MOCK_REPLICATES.items()
+            for cell in product(*_MOCK_GRID)
+        ]
+    )
+    assert run.scores == {"gate_loss_evaluations": 75_000, "descriptive_loss_evaluations": 375_000}
+    assert run.generation.ledger.measured(None) == _SHARED
+    for number in range(1, 7):
+        assert run.generation.ledger.measured(number) == _LIBRARY
+    assert run.generation.ledger.totals == _TOTALS
+
+
+def test_every_nested_fit_uses_independently_read_shared_target_bytes(mocked_full_run: Any) -> None:
+    directory = mocked_full_run.generation.directory / "targets"
+    assert set(p.name for p in directory.iterdir()) == {f"{seed}.json" for seed in _TARGET_SEEDS}
+    digests = {}
+    for position, seed in enumerate(_TARGET_SEEDS):
+        sym, asym = [0.0] * 34, [0.0] * 34
+        sym[6] = sym[7] = asym[8] = asym[9] = 7.0
+        sym[12 + position] = 1.0
+        expected = _table_bytes(phase0.ObservedTables(_MOCK_DATES, tuple(sym), tuple(asym)))
+        content = (directory / f"{seed}.json").read_bytes()
+        assert content == expected
+        digests[seed] = hashlib.sha256(content).hexdigest()
+    assert len(set(digests.values())) == 20
+    assert mocked_full_run.fit_inputs == [
+        (library, view, seed, digests[seed])
+        for library, view, seed in product(range(1, 7), range(6), _TARGET_SEEDS)
+    ]
+
+
+def test_global_barrier_reads_all_720_records_before_the_first_truth_access(
+    mocked_full_run: Any,
+) -> None:
+    run = mocked_full_run
+    assert run.truth_reads == list(_TARGET_SEEDS)
+    assert len(run.readbacks) == 720
+    assert sum(path.parent.name == "blind_estimates" for path in run.readbacks) == 120
+    assert sum(path.parent.parent.name == "descriptive_estimates" for path in run.readbacks) == 600
+
+
+def test_corrupt_last_descriptive_record_blocks_all_truth_joins(
+    mocked_full_run: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    generation = mocked_full_run.generation
+    last_record = generation.directory / "library_6/descriptive_estimates/batches_1_2/86020.json"
+    original = last_record.read_bytes()
+
+    def unexpected(*args: Any, **kwargs: Any) -> None:
+        pytest.fail("truth join called with unreadable descriptive record")
+
+    monkeypatch.setattr(study, "_truth_diagnostics_from_result", unexpected)
+    monkeypatch.setattr(study, "evaluate_recovery", unexpected)
+    try:
+        last_record.write_text("{}")
+        with pytest.raises(study.CampaignError, match="read-back mismatch"):
+            study.evaluate_after_blind(generation)
+    finally:
+        last_record.write_bytes(original)
+
+
+def test_changed_target_table_bytes_are_rejected_before_truth_join(mocked_full_run: Any) -> None:
+    generation = mocked_full_run.generation
+    path = generation.directory / "targets/86001.json"
+    original = path.read_bytes()
+    try:
+        # Same parsed table, different bytes.
+        path.write_bytes(original + b"\n")
+        with pytest.raises(study.CampaignError, match="target table SHA-256 mismatch"):
+            study.evaluate_after_blind(generation)
+    finally:
+        path.write_bytes(original)
+
+
+def test_target_file_mismatch_prevents_dispatch_of_the_first_loss(tmp_path: Path) -> None:
+    table = phase0.ObservedTables(_MOCK_DATES, (0.0,) * 34, (0.0,) * 34)
+    original = _table_bytes(table)
+    path = tmp_path / "target.json"
+    path.write_bytes(original + b"\n")
+    source = study._TargetTable(path, hashlib.sha256(original).hexdigest())
+    ledger = study.WorkLedger()
+    with pytest.raises(study.CampaignError, match="target table SHA-256 mismatch"):
+        study._fit_library(
+            tmp_path,
+            {86001: source},
+            (_TRUTH,),
+            {_TRUTH: (table,) * 12},
+            {_TRUTH: ({},) * 12},
+            study._ScopedCounter(ledger, 1),
+        )
+    assert ledger.totals["gate_loss_evaluations"] == 0
+
+
+@pytest.mark.parametrize(
+    "stage,member,error",
+    [
+        ("build", "generated", "parent metadata"),
+        ("build", "generated.config", "parent metadata"),
+        ("build", "generated.config.seed", "parent metadata"),
+        ("build", "generated.config.mode", "parent metadata"),
+        ("build", "generated.m2_input", "parent metadata"),
+        ("build", "generated.m2_input.manifest", "parent metadata"),
+        ("build", "generated.m2_input.manifest.seed", "parent metadata"),
+        ("build", "generated.m2_input.manifest.mode", "parent metadata"),
+        ("build", "generated.m2_input.manifest.logical_content_hash", "parent metadata"),
+        ("build", "generated.m3_input", "parent metadata"),
+        ("build", "generated.m3_input.manifest", "parent metadata"),
+        ("build", "generated.m3_input.manifest.seed", "parent metadata"),
+        ("build", "generated.m3_input.manifest.mode", "parent metadata"),
+        ("build", "generated.m3_input.manifest.logical_content_hash", "parent metadata"),
+        ("build", "generated.logical_content_hash", "parent metadata"),
+        ("latent", "generated", "latent result omitted"),
+        ("latent", "config", "latent result omitted"),
+        ("latent", "diagnostics", "runtime_seconds"),
+        ("latent", "diagnostics.benchmark", "runtime_seconds"),
+        ("latent", "diagnostics.benchmark.runtime_seconds", "runtime_seconds"),
+        ("latent", "diagnostics.benchmark.n_agents", "n_agents metadata"),
+        ("observe", "config", "namespace evidence"),
+        ("observe", "latent_run", "namespace evidence"),
+        ("observe", "observation_events", "observation result missing"),
+        ("observe", "diagnostics", "namespace evidence"),
+        ("observe", "diagnostics.observation_rng", "namespace evidence"),
+        ("observe", "diagnostics.observation_rng.stream_namespace", "namespace evidence"),
+        ("observe", "diagnostics.observation_rng.stream_key_inputs", "namespace evidence"),
+        ("observe", "diagnostics.observation_rng.stream_fingerprint", "namespace evidence"),
+    ],
+)
+def test_generation_rejects_missing_returned_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    declared_process_hashes: Any,
+    stage: str,
+    member: str,
+    error: str,
+) -> None:
+    ledger = study.WorkLedger()
+    _mock_dispatches(monkeypatch, declared_process_hashes, ledger)
+    module, name = {
+        "build": (study, "build_parent"),
+        "latent": (g35b, "run_outbreak"),
+        "observe": (g35b, "observe_latent_run"),
+    }[stage]
+    original = getattr(module, name)
+
+    def missing(*args: Any, **kwargs: Any) -> Any:
+        obj = result = original(*args, **kwargs)
+        *ancestors, field = member.split(".")
+        for part in ancestors:
+            obj = obj[part] if isinstance(obj, dict) else getattr(obj, part)
+        if isinstance(obj, dict):
+            del obj[field]
+        else:
+            delattr(obj, field)
+        return result
+
+    monkeypatch.setattr(module, name, missing)
+    with pytest.raises(study.CampaignError, match=error):
+        study.generate_blind(CONFIG, PREDECLARATION, tmp_path / "work", root=ROOT, ledger=ledger)
+    assert ledger.totals["builds"] == 1
+
+
+def test_candidate_parent_compares_returned_hash_to_frozen_hash_before_dispatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    declared_process_hashes: Any,
+) -> None:
+    ledger = study.WorkLedger()
+    wrong_hashes = {**declared_process_hashes, 87101: ("0" * 64,) * 3}
+    _mock_dispatches(monkeypatch, wrong_hashes, ledger)
+    with pytest.raises(study.CampaignError, match="logical hash mismatch for 87101"):
+        study.generate_blind(CONFIG, PREDECLARATION, tmp_path / "work", root=ROOT, ledger=ledger)
+    assert ledger.measured(None) == _SHARED
+    assert ledger.measured(1) == {**dict.fromkeys(_WORK_FIELDS, 0), "builds": 1}
+
+
+def test_exception_consumes_reserved_slot_and_generation_does_not_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    declared_process_hashes: Any,
+) -> None:
+    ledger = study.WorkLedger()
+    _mock_dispatches(monkeypatch, declared_process_hashes, ledger)
+    calls = []
+
+    def abort(parent: Any, config: OutbreakRunConfig, parameters: Any) -> None:
+        calls.append(config.seed)
+        assert ledger.measured(None)["latent_calls"] == 1
+        raise RuntimeError("injected latent failure")
+
+    monkeypatch.setattr(g35b, "run_outbreak", abort)
+    with pytest.raises(RuntimeError, match="injected latent failure"):
+        study.generate_blind(CONFIG, PREDECLARATION, tmp_path / "work", root=ROOT, ledger=ledger)
+    assert calls == [86001]
+    assert ledger.totals == {**dict.fromkeys(_WORK_FIELDS, 0), "builds": 1, "latent_calls": 1}
+    with pytest.raises(study.BudgetError, match="unused work ledger"):
+        study.generate_blind(CONFIG, PREDECLARATION, tmp_path / "second", root=ROOT, ledger=ledger)
+    assert calls == [86001]
+
+
+@pytest.mark.parametrize("kind", _WORK_FIELDS)
+def test_work_counter_rejects_per_library_cap_even_with_remaining_total(kind: str) -> None:
+    ledger = study.WorkLedger()
+    for _ in range(_LIBRARY[kind]):
+        ledger.reserve(3, kind)
+    with pytest.raises(study.BudgetError, match=f"L3 {kind} cap reached before dispatch"):
+        ledger.reserve(3, kind)
+    assert ledger.totals[kind] == ledger.measured(3)[kind] == _LIBRARY[kind]
+    with pytest.raises(study.BudgetError, match="measured shared-panel work differs"):
+        ledger.require_exact()
+
+
+@pytest.mark.parametrize("scope,match", [(None, "shared-panel"), (6, "L6"), (0, "total")])
+def test_work_counter_requires_each_exact_column(scope: int | None, match: str) -> None:
+    ledger = study.WorkLedger()
+    for library in (None, *range(1, 7)):
+        expected = _SHARED if library is None else _LIBRARY
+        for kind, count in expected.items():
+            for _ in range(count - int(library == scope and kind == "builds")):
+                ledger.reserve(library, kind)
+    if scope == 0:
+        # Isolate a ledger mismatch that would otherwise require broken accounting code.
+        ledger._totals["builds"] -= 1
+    with pytest.raises(study.BudgetError, match=rf"measured {match} work differs"):
+        ledger.require_exact()
+
+
+def test_mocked_full_run_reports_d1_to_d5_using_only_the_declared_surfaces(
+    mocked_full_run: Any,
+) -> None:
+    result = mocked_full_run.output
+    assert result.campaign.reading_class == "CONSISTENT-PASS"
+    assert set(result.predicate_descriptives) == set(range(1, 7))
+    for item in result.predicate_descriptives.values():
+        assert item["label"] == "descriptive_not_a_gate"
+        assert item["predicates"] == {f"P{i}": True for i in range(1, 11)}
+        assert item["hits"] == dict.fromkeys(_DIMENSIONS, 20) and item["joint_hits"] == 20
+        assert item["boundary_counts"] == dict.fromkeys(_DIMENSIONS, 0)
+        assert {key: Decimal(value) for key, value in item["mean_bias"].items()} == dict.fromkeys(
+            _DIMENSIONS, 0
+        )
+        assert item["count_margins"] == (4, 4, 4, 4, 8, 4, 4, 4, 4)
+        assert item["min_count_margin"] == 4 and item["at_threshold"] is False
+        assert tuple(item["bias_margins"].values()) == ("0.01", "0.5", "0.0625", "0.0375")
+
+    matrices = result.matrix_descriptives
+    assert matrices["target_seeds"] == _TARGET_SEEDS
+    assert matrices["library_numbers"] == tuple(range(1, 7))
+    assert len(matrices["matrix"]) == len(matrices["row_summaries"]) == 20
+    for seed, row, summary in zip(
+        _TARGET_SEEDS, matrices["matrix"], matrices["row_summaries"], strict=True
+    ):
+        assert len(row) == 6
+        for cell in row:
+            assert cell == {
+                "label": "descriptive_not_a_gate",
+                "selected": _TRUTH.as_dict(),
+                "joint_hit": True,
+                "hits": dict.fromkeys(_DIMENSIONS, True),
+                "identified": dict.fromkeys(_DIMENSIONS, True),
+                "boundary_flags": dict.fromkeys(_DIMENSIONS, False),
+                "numerical_tie": False,
+                "reprofiled_offset": 2,
+            }
+        assert summary == {
+            "label": "descriptive_not_a_gate",
+            "target_seed": seed,
+            "joint_hits": 6,
+            "offset_hits": 6,
+            "distinct_selected_offsets": 1,
+            "all_six_offsets_agree": True,
+        }
+
+    for library, descriptives in result.batch_descriptives.items():
+        assert descriptives["label"] == "stochastic_replicate_variation"
+        assert descriptives["four_batch_offset_agreement_count"] == 20
+        assert len(descriptives["targets"]) == 20
+        fits = mocked_full_run.generation.libraries[library]
+        for row in descriptives["targets"]:
+            assert row["four_batch_offsets_agree"]
+            assert {item["reprofiled_offset"] for item in row["reprofiled_offsets"].values()} == {2}
+            assert len(row["reprofiled_offsets"]) == 6 and len(row["fixed_tuple_spreads"]) == 625
+            for index, spread in enumerate(row["fixed_tuple_spreads"]):
+                scored = [
+                    fits[f"batch{n}"][row["target_seed"]].fit.loss_surface[index]
+                    for n in range(1, 5)
+                ]
+                a, b, c, d = sorted(item.objective for item in scored)
+                assert spread == {
+                    "cell": scored[0].cell.as_dict(),
+                    "label": "stochastic_replicate_variation",
+                    "range": d - a,
+                    "median": (b + c) / 2,
+                }
+
+    references = result.references
+    assert references.label == "descriptive_not_a_gate"
+    assert references.k_prime == 6 and references.m == 24
+    assert references.m_by_library == dict.fromkeys(range(1, 7), 4)
+    assert references.libraries_not_met_with_a_batch_met == 0
+    assert (references.s1, references.s2) == (True, True)
+    assert references.sentences == study.reference_sentences("CONSISTENT-PASS", k_prime=6, m=24)
+    for sublibraries in references.libraries.values():
+        assert {name: ref.replicates for name, ref in sublibraries.items()} == {
+            "batch1": 3,
+            "batch2": 3,
+            "batch3": 3,
+            "batch4": 3,
+            "batches_1_2": 6,
+        }
+        for record in sublibraries.values():
+            assert record.criteria_4_to_8_met and record.tie_count == 0
+            assert record.hits == dict.fromkeys(_DIMENSIONS, 20) and record.joint_hits == 20
+            assert record.boundary_counts == dict.fromkeys(_DIMENSIONS, 0)
+            assert all(Decimal(value) == 0 for value in record.mean_bias.values())
+    assert sum(mocked_full_run.scores.values()) == 450_000
+
+
+@pytest.mark.parametrize("last_offset,agree", [(2, True), (None, False), (3, False)])
+def test_d4_agreement_uses_unique_offset_profiles_even_with_global_ties(
+    last_offset: int | None, agree: bool
+) -> None:
+    table = phase0.ObservedTables(("2025-01-06",), (0.0,), (0.0,))
+    higher = replace(table, symptomatic=(3.0,), asymptomatic=(3.0,))
+    grid = tuple(
+        replace(_TRUTH, beta=beta, inoculation_day_offset=offset)
+        for beta, offset in product((0.08, 0.10), (2, 3))
+    )
+
+    def fit(offset: int | None, replicates: int = 3) -> study._FitFile:
+        predictions = {
+            cell: (table if offset is None or cell.inoculation_day_offset == offset else higher,)
+            * replicates
+            for cell in grid
+        }
+        scored = g35b.fit_blind(table, grid, predictions, R=replicates, T=1)
+        assert scored.numerical_tie and scored.selected is None
+        return study._FitFile(scored, "", "")
+
+    files = {f"batch{n}": {86001: fit(last_offset if n == 4 else 2)} for n in range(1, 5)}
+    files.update({"all_twelve": {86001: fit(2, 12)}, "batches_1_2": {86001: fit(2, 6)}})
+    descriptive = study._batch_descriptives(files)
+    assert descriptive["four_batch_offset_agreement_count"] == int(agree)
+    [record] = descriptive["targets"]
+    assert record["four_batch_offsets_agree"] is agree
+    assert record["reprofiled_offsets"]["batch4"]["reprofiled_offset"] == last_offset
+    assert record["reprofiled_offsets"]["batch4"]["offset_profile_tie"] is (last_offset is None)
+
+
+def test_d3_counts_selected_offsets_but_checks_agreement_on_reprofiled_offsets() -> None:
+    grid = tuple(
+        replace(_TRUTH, beta=beta, inoculation_day_offset=offset)
+        for beta, offset in product((0.08, 0.10), (2, 3))
+    )
+    table = phase0.ObservedTables(("2025-01-06",), (0.0,), (0.0,))
+    high = replace(table, symptomatic=(3.0,))
+
+    def fit(allowed: set[phase0.CandidateCell]) -> study._FitFile:
+        predictions = {cell: (table if cell in allowed else high,) * 12 for cell in grid}
+        return study._FitFile(g35b.fit_blind(table, grid, predictions, R=12, T=1), "", "")
+
+    selected = fit({_TRUTH})
+    global_tie = fit({_TRUTH, replace(_TRUTH, beta=0.10)})
+    profile_tie = fit(set(grid))
+    shifted = fit({replace(_TRUTH, inoculation_day_offset=3)})
+    parent_fits = {
+        number: {"all_twelve": dict.fromkeys(_TARGET_SEEDS, selected)} for number in range(1, 7)
+    }
+    parent_fits[1]["all_twelve"].update({86001: global_tie, 86002: profile_tie, 86003: shifted})
+    panel = _panel()
+    outputs = [
+        _evaluate([record.blind_record(seed) for seed, record in fits["all_twelve"].items()], panel)
+        for fits in parent_fits.values()
+    ]
+    summaries = study._matrix_descriptives(outputs, parent_fits)["row_summaries"]
+    assert [summary["distinct_selected_offsets"] for summary in summaries[:3]] == [1, 1, 2]
+    assert [summary["all_six_offsets_agree"] for summary in summaries[:3]] == [True, False, False]
+
+
+@pytest.mark.parametrize("failed_panel", [False, True])
+@pytest.mark.parametrize("counts,m,missed", [((4, 3, 1, 4, 0, 0), 12, 2), ((4,) * 6, 24, 3)])
+def test_reference_counts_wire_batch_records_to_u1_triggers(
+    failed_panel: bool, counts: tuple[int, ...], m: int, missed: int
+) -> None:
+    panel = _panel(_truth_failure("P2")) if failed_panel else _panel()
+    passing, failing = _library_examples(panel)
+    campaign = study.classify_campaign([passing, failing, failing, passing, failing, passing])
+    assert isinstance(campaign, study.IntactCampaign)
+    met = study._reference_evaluation(_rows(), 3)
+    with_tie = _rows()
+    with_tie[0] = replace(with_tie[0], numerical_tie=True, selected=None)
+    not_met = study._reference_evaluation(with_tie, 3)
+    assert not not_met.criteria_4_to_8_met and not_met.tie_count == 1
+    assert not_met.joint_hits == 19 and all(value is None for value in not_met.mean_bias.values())
+    m_by_library = dict(enumerate(counts, 1))
+    references = {
+        number: {
+            "batches_1_2": replace(met, replicates=6),
+            **{f"batch{batch}": met if batch <= count else not_met for batch in range(1, 5)},
+        }
+        for number, count in m_by_library.items()
+    }
+    report = study._summarize_references(campaign, references)
+    assert report.k_prime == 3 and report.m == m and report.m_by_library == m_by_library
+    assert report.libraries_not_met_with_a_batch_met == missed
+    assert (report.s1, report.s2) == (not failed_panel, not failed_panel and m == 24)
+    assert report.sentences == study.reference_sentences(campaign.reading_class, k_prime=3, m=m)
+    assert len(report.sentences) == (0 if failed_panel else 1 + int(m == 24))
+
+
+def test_void_omits_all_reference_counts_and_sentences(
+    mocked_full_run: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unexpected(*args: Any, **kwargs: Any) -> None:
+        pytest.fail("VOID evaluated or reported references")
+
+    monkeypatch.setattr(
+        study,
+        "_truth_diagnostics_from_result",
+        lambda *args, **kwargs: replace(_truth_diagnostics(), namespace_passed=False),
+    )
+    monkeypatch.setattr(study, "_reference_evaluation", unexpected)
+    monkeypatch.setattr(study, "reference_sentences", unexpected)
+    result = study.evaluate_after_blind(mocked_full_run.generation)
+    assert result == study.VoidCampaign("shared panel P9")
+    assert set(asdict(result)) == {"cause", "campaign_status"}

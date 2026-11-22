@@ -1,4 +1,4 @@
-"""Frozen G43 declaration, dry-run and post-blind recovery evaluation."""
+"""Frozen G43 declaration, generation, blind fitting and recovery evaluation."""
 
 from __future__ import annotations
 
@@ -11,22 +11,49 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from decimal import Context, Decimal, Inexact, localcontext
-from itertools import product
+from itertools import groupby, product
+from operator import attrgetter
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict, cast
 
 import yaml  # type: ignore[import-untyped]
 
 from . import g43_constants as frozen
-from .g35b_design_study import _compare, committed_document_bytes
+from .g35b_design_study import (
+    STOCHASTIC_REPLICATE_VARIATION,
+    _compare,
+    _fit_scored_grid,
+    _fixed_run_provenance,
+    _GenerationAdapter,
+    _offset_descriptive,
+    _persist_fit,
+    _verify_blind_readback,
+    batch_objective_spread,
+    batch_offset_agreement,
+    committed_document_bytes,
+    loss,
+)
+from .g35b_design_study import StudyConfig as _AdapterConfig
+from .g35b_design_study import WorkCounter as _AdapterCounter
+from .network_generator import GeneratedNetworks
+from .observation import ObservationRunResult
+from .observation_schemas import ObservationConfig
+from .outbreak_runner import OutbreakRunResult, load_parameter_set
+from .outbreak_schemas import OutbreakRunConfig, RespiratoryParameterSet
+from .parent_build import build_parent
 from .phase0_campaign import (
     P01_ROUTE_IDS,
+    BlindFitResult,
     BudgetError,
     CampaignError,
     CandidateCell,
     DimensionSpec,
+    ObservedTables,
     ProfileDiagnostic,
     TruthDiagnostics,
+    _compact_json_bytes,
+    _namespace_passes,
+    _truth_diagnostics_from_result,
     observation_dates,
 )
 
@@ -52,6 +79,7 @@ _DIMENSIONS = tuple(
 _START_DATE = date(2025, 1, 6)
 _TAIL_DAYS = 4
 _IMPORT_ATTEMPTS = 10
+_POPULATION_SIZE = 3000
 _TARGET_CONFIG_ID = "v13-g43-target"
 _FIT_CONFIG_ID = "v13-g43-fit"
 _TARGET_PROCESS_SEEDS = tuple(row.process for row in frozen.FINAL_SEEDS if row.library is None)
@@ -106,7 +134,7 @@ def frozen_payload() -> dict[str, Any]:
             for name, truth, grid, tolerance, bias_limit in frozen.DIMENSIONS
         },
         "fixed_scenario": {
-            "population_size": 3000,
+            "population_size": _POPULATION_SIZE,
             "initial_seed_count": 0,
             "inoculation_attempts": _IMPORT_ATTEMPTS,
             "inoculation_schedule": "start_date_plus_offset",
@@ -327,6 +355,384 @@ def plan_workload(config: StudyConfig) -> dict[str, Any]:
     }
 
 
+_LIBRARY_NUMBERS = tuple(range(1, frozen.LIBRARY_COUNT + 1))
+_REPLICATES = frozen.BATCH_COUNT * frozen.BATCH_SIZE
+_BATCH_SLICES = {
+    f"batch{batch}": slice((batch - 1) * frozen.BATCH_SIZE, batch * frozen.BATCH_SIZE)
+    for batch in range(1, frozen.BATCH_COUNT + 1)
+}
+_GATE_FIT = "all_twelve"
+_REFERENCE_SLICES = {**_BATCH_SLICES, "batches_1_2": slice(0, 2 * frozen.BATCH_SIZE)}
+_FIT_SLICES = {_GATE_FIT: slice(0, _REPLICATES), **_REFERENCE_SLICES}
+
+
+class WorkLedger:
+    """Operational §9 counters. Reservations survive exceptions at dispatch."""
+
+    def __init__(self) -> None:
+        self._caps: dict[int | None, dict[str, int]] = {
+            None: _work_counts(frozen.SHARED_CAPS),
+            **{number: _work_counts(frozen.LIBRARY_CAPS) for number in _LIBRARY_NUMBERS},
+        }
+        self._counts = {scope: dict.fromkeys(frozen.WORK_FIELDS, 0) for scope in self._caps}
+        self._total_caps = _work_counts(frozen.TOTAL_CAPS)
+        self._totals = dict.fromkeys(frozen.WORK_FIELDS, 0)
+
+    def reserve(self, library: int | None, kind: str) -> None:
+        counts = self._counts[library]
+        if (
+            counts[kind] >= self._caps[library][kind]
+            or self._totals[kind] >= self._total_caps[kind]
+        ):
+            scope = "shared panel" if library is None else f"L{library}"
+            raise BudgetError(f"{scope} {kind} cap reached before dispatch")
+        counts[kind] += 1
+        self._totals[kind] += 1
+
+    def measured(self, library: int | None) -> dict[str, int]:
+        return dict(self._counts[library])
+
+    @property
+    def totals(self) -> dict[str, int]:
+        return dict(self._totals)
+
+    def require_exact(self) -> None:
+        if self._counts[None] != self._caps[None]:
+            raise BudgetError("measured shared-panel work differs from exact caps")
+        for number in _LIBRARY_NUMBERS:
+            if self._counts[number] != self._caps[number]:
+                raise BudgetError(f"measured L{number} work differs from exact caps")
+        if self._totals != self._total_caps:
+            raise BudgetError("measured total work differs from exact caps")
+
+
+@dataclass(frozen=True)
+class _ScopedCounter:
+    ledger: WorkLedger
+    library: int | None
+
+    def dispatch(self, kind: str) -> None:
+        self.ledger.reserve(self.library, kind)
+
+
+def _verified_parent(
+    root: Path, work_dir: Path, seed: int, counter: _ScopedCounter
+) -> GeneratedNetworks:
+    counter.dispatch("builds")
+    parent = build_parent(root, "ci", seed, work_dir / "parents" / str(seed), write_m4=True)
+    try:
+        generated = parent.generated
+        m2 = generated.m2_input.manifest
+        m3 = generated.m3_input.manifest
+        m4 = generated.config
+        hashes = (m2.logical_content_hash, m3.logical_content_hash, generated.logical_content_hash)
+        if hashes != frozen.PROCESS_HASHES[seed]:
+            raise CampaignError(f"parent logical hash mismatch for {seed}")
+        if any(stage.seed != seed or stage.mode != "ci" for stage in (m2, m3, m4)):
+            raise CampaignError(f"parent seed or mode mismatch for {seed}")
+    except (AttributeError, KeyError) as exc:
+        raise CampaignError(f"parent metadata missing for {seed}") from exc
+    return generated
+
+
+def _adapter_for_seed(
+    config: StudyConfig,
+    root: Path,
+    parameters: RespiratoryParameterSet,
+    work_dir: Path,
+    seed: int,
+    counter: _ScopedCounter,
+) -> _GenerationAdapter:
+    parent = _verified_parent(root, work_dir, seed, counter)
+    # The unchanged adapter uses only Phase-0 constructor fields and dispatch(kind).
+    return _GenerationAdapter(
+        cast(_AdapterConfig, config),
+        root,
+        parameters,
+        {seed: parent},
+        cast(_AdapterCounter, counter),
+        {"latent": 0.0, "transform": 0.0},
+        [],
+    )
+
+
+def _latent_for(
+    adapter: _GenerationAdapter, seed: int, cell: CandidateCell
+) -> tuple[OutbreakRunResult, OutbreakRunConfig]:
+    latent, requested = adapter.latent_for(seed, cell)
+    if not _fixed_run_provenance(latent, requested, seed, cell, frozen.LATENT_DAYS):
+        raise CampaignError("latent metadata differs from the frozen run controls")
+    try:
+        population_size = latent.diagnostics["benchmark"]["n_agents"]
+    except (AttributeError, KeyError, TypeError) as exc:
+        raise CampaignError("latent result missing benchmark.n_agents metadata") from exc
+    if type(population_size) is not int or population_size != _POPULATION_SIZE:
+        raise CampaignError("latent population size differs from the frozen run controls")
+    return latent, requested
+
+
+def _observation_controls_match(
+    config: ObservationConfig, seed: int, config_id: str, cell: CandidateCell
+) -> bool:
+    return (
+        config.observation_seed == seed
+        and config.observation_config_id == config_id
+        and config.analysis_horizon_tail_days == _TAIL_DAYS
+        and config.reporting_delay.kind == "fixed"
+        and config.reporting_delay.days == (2,)
+        and config.detection_delay.kind == "fixed"
+        and config.detection_delay.days == (0,)
+        and config.day_of_week_effect == (1.0,) * 7
+        and config.parameters["symptomatic_detection_probability"].value
+        == cell.symptomatic_detection_probability
+        and config.parameters["asymptomatic_detection_probability"].value
+        == cell.asymptomatic_detection_probability
+    )
+
+
+def _observe(
+    adapter: _GenerationAdapter,
+    latent: OutbreakRunResult,
+    run: OutbreakRunConfig,
+    seed: int,
+    config_id: str,
+    cell: CandidateCell,
+) -> tuple[ObservationRunResult, ObservationConfig, ObservedTables]:
+    try:
+        result, requested, table = adapter.observe(latent, run, seed, config_id, cell)
+        if not _observation_controls_match(result.config, seed, config_id, cell):
+            raise CampaignError("observation metadata differs from the frozen controls")
+    except (AttributeError, KeyError, TypeError) as exc:
+        raise CampaignError("observation result missing metadata or events") from exc
+    return result, requested, table
+
+
+@dataclass(frozen=True)
+class _TargetTable:
+    path: Path
+    sha256: str
+
+    def read(self) -> tuple[ObservedTables, str]:
+        content = self.path.read_bytes()
+        digest = hashlib.sha256(content).hexdigest()
+        if digest != self.sha256:
+            raise CampaignError(f"shared target table SHA-256 mismatch for {self.path.name}")
+        payload = json.loads(content)
+        table = ObservedTables(
+            tuple(payload["dates"]), tuple(payload["symptomatic"]), tuple(payload["asymptomatic"])
+        )
+        if table.dates != observation_dates(_START_DATE, frozen.LATENT_DAYS, _TAIL_DAYS):
+            raise CampaignError("shared target table calendar differs from the frozen declaration")
+        return table, digest
+
+
+@dataclass(frozen=True)
+class _TargetRun:
+    table: _TargetTable
+    latent: OutbreakRunResult
+    observed: ObservationRunResult
+    requested_run: OutbreakRunConfig
+    requested_observation: ObservationConfig
+
+
+def _truth_cell() -> CandidateCell:
+    beta, offset, sym, asym = (spec.truth for spec in _DIMENSIONS)
+    return CandidateCell(beta, int(offset), sym, asym)
+
+
+def _generate_targets(
+    config: StudyConfig,
+    work_dir: Path,
+    root: Path,
+    parameters: RespiratoryParameterSet,
+    ledger: WorkLedger,
+) -> dict[int, _TargetRun]:
+    counter = _ScopedCounter(ledger, None)
+    target_dir = work_dir / "targets"
+    target_dir.mkdir()
+    targets = {}
+    truth = _truth_cell()
+    for row in config.seeds:
+        if row.library is not None:
+            continue
+        seed = row.process
+        adapter = _adapter_for_seed(config, root, parameters, work_dir, seed, counter)
+        latent, run = _latent_for(adapter, seed, truth)
+        run_payload = run.model_dump(mode="json")
+        observed, obs, table = _observe(
+            adapter, latent, run, row.observation, config.target_observation_config_id, truth
+        )
+        if run.model_dump(mode="json") != run_payload:
+            raise CampaignError("latent metadata changed during observation transforms")
+        content = _compact_json_bytes(table.as_dict())
+        file = _TargetTable(target_dir / f"{seed}.json", hashlib.sha256(content).hexdigest())
+        file.path.write_bytes(content)
+        targets[seed] = _TargetRun(file, latent, observed, run, obs)
+    return targets
+
+
+@dataclass(frozen=True)
+class _FitFile:
+    fit: BlindFitResult
+    sha256: str
+    target_sha256: str
+
+    def blind_record(self, seed: int) -> BlindRecord:
+        return BlindRecord(
+            seed,
+            self.fit.estimate_hash,
+            self.fit.selected,
+            self.fit.profiles,
+            self.fit.numerical_tie,
+            len(self.fit.loss_surface),
+        )
+
+
+def _fit_path(directory: Path, name: str, seed: int) -> Path:
+    if name == _GATE_FIT:
+        return directory / "blind_estimates" / f"{seed}.json"
+    return directory / "descriptive_estimates" / name / f"{seed}.json"
+
+
+def _score_fit(
+    target: ObservedTables,
+    grid: tuple[CandidateCell, ...],
+    predictions: Mapping[CandidateCell, Sequence[ObservedTables]],
+    hashes: Mapping[CandidateCell, str],
+    replicates: int,
+    counter: _ScopedCounter,
+    work_kind: str,
+) -> BlindFitResult:
+    def score(cell: CandidateCell) -> float:
+        counter.dispatch(work_kind)
+        return loss(target, predictions[cell], replicates, frozen.CALENDAR_DATES)
+
+    fit = _fit_scored_grid(grid, predictions, score, hashes)
+    if tuple((row.cell, row.config_hash) for row in fit.loss_surface) != tuple(
+        (cell, hashes[cell]) for cell in grid
+    ):
+        raise CampaignError("blind loss surface grid or config provenance mismatch")
+    return fit
+
+
+def _fit_library(
+    directory: Path,
+    targets: Mapping[int, _TargetTable],
+    grid: tuple[CandidateCell, ...],
+    predictions: Mapping[CandidateCell, Sequence[ObservedTables]],
+    configs: Mapping[CandidateCell, Sequence[Mapping[str, Any]]],
+    counter: _ScopedCounter,
+) -> dict[str, dict[int, _FitFile]]:
+    fits = {}
+    for name, positions in _FIT_SLICES.items():
+        subset = {cell: tables[positions] for cell, tables in predictions.items()}
+        hashes = {
+            cell: hashlib.sha256(_compact_json_bytes(entries[positions])).hexdigest()
+            for cell, entries in configs.items()
+        }
+        group = "gate" if name == _GATE_FIT else "descriptive"
+        replicates = positions.stop - positions.start
+        files = {}
+        for seed, source in targets.items():
+            target, target_sha256 = source.read()
+
+            fit = _score_fit(
+                target, grid, subset, hashes, replicates, counter, f"{group}_loss_evaluations"
+            )
+            counter.dispatch(f"{group}_blind_records")
+            file_sha256 = _persist_fit(_fit_path(directory, name, seed), fit)
+            files[seed] = _FitFile(fit, file_sha256, target_sha256)
+        fits[name] = files
+    return fits
+
+
+def _generate_library(
+    config: StudyConfig,
+    root: Path,
+    parameters: RespiratoryParameterSet,
+    work_dir: Path,
+    number: int,
+    targets: Mapping[int, _TargetTable],
+    ledger: WorkLedger,
+) -> dict[str, dict[int, _FitFile]]:
+    counter = _ScopedCounter(ledger, number)
+    directory = work_dir / f"library_{number}"
+    grid = config.candidate_grid
+    latent_cells = tuple(
+        tuple(cells) for _, cells in groupby(grid, attrgetter("beta", "inoculation_day_offset"))
+    )
+    predictions: dict[CandidateCell, list[ObservedTables]] = {}
+    configs: dict[CandidateCell, list[Mapping[str, Any]]] = {}
+    for row in config.seeds:
+        if row.library != number:
+            continue
+        adapter = _adapter_for_seed(config, root, parameters, directory, row.process, counter)
+        for cells in latent_cells:
+            latent, run = _latent_for(adapter, row.process, cells[0])
+            run_payload = run.model_dump(mode="json")
+            for cell in cells:
+                if row.position == 1:
+                    counter.dispatch("candidate_cells")
+                    predictions[cell] = []
+                    configs[cell] = []
+                observed, _, table = _observe(
+                    adapter,
+                    latent,
+                    run,
+                    row.observation,
+                    config.candidate_observation_config_id,
+                    cell,
+                )
+                predictions[cell].append(table)
+                configs[cell].append(
+                    {"run": run_payload, "observation": observed.config.model_dump(mode="json")}
+                )
+            if run.model_dump(mode="json") != run_payload:
+                raise CampaignError("latent metadata changed during observation transforms")
+    if any(len(tables) != _REPLICATES for tables in predictions.values()):
+        raise CampaignError(f"L{number} candidate replicate roster is incomplete")
+    return _fit_library(directory, targets, grid, predictions, configs, counter)
+
+
+@dataclass(frozen=True)
+class BlindGeneration:
+    """In-process inputs for the post-blind phase and the shared table files."""
+
+    config: StudyConfig
+    directory: Path
+    targets: Mapping[int, _TargetRun]
+    libraries: Mapping[int, Mapping[str, Mapping[int, _FitFile]]]
+    ledger: WorkLedger
+
+
+def generate_blind(
+    config_path: Path,
+    predeclaration_path: Path,
+    work_dir: Path,
+    *,
+    root: Path,
+    ledger: WorkLedger | None = None,
+) -> BlindGeneration:
+    """Generate the shared panel and all six libraries and persist the blind fits."""
+    config = StudyConfig.from_yaml(config_path)
+    validate_predeclaration(predeclaration_path)
+    plan_workload(config)
+    if ledger is None:
+        ledger = WorkLedger()
+    if any(ledger.totals.values()):
+        raise BudgetError("generation requires an unused work ledger")
+    work_dir.mkdir(parents=True)
+    parameters = load_parameter_set(root)
+    targets = _generate_targets(config, work_dir, root, parameters, ledger)
+    tables = {seed: output.table for seed, output in targets.items()}
+    libraries = {
+        number: _generate_library(config, root, parameters, work_dir, number, tables, ledger)
+        for number in _LIBRARY_NUMBERS
+    }
+    ledger.require_exact()
+    return BlindGeneration(config, work_dir, targets, libraries, ledger)
+
+
 @dataclass(frozen=True)
 class IntegrityEvidence:
     """Results of completion and provenance checks, plus the operational ledger."""
@@ -545,9 +951,7 @@ def evaluate_recovery(
 ) -> RecoveryEvaluation:
     """Compute the N-target gate from blind records and verified shared and library evidence."""
     seeds = shared_panel.target_seeds
-    n = len(seeds)
-    row_seeds = tuple(row.target_seed for row in rows)
-    complete_roster = len(row_seeds) == n and set(row_seeds) == set(seeds)
+    complete_roster = _complete_roster(rows, seeds)
     library_integrity = {
         "P1": complete_roster
         and evidence.execution_complete is True
@@ -568,6 +972,31 @@ def evaluate_recovery(
             _work_counts(frozen.LIBRARY_CAPS) if expected_work is None else expected_work
         ),
     }
+    return RecoveryEvaluation(
+        shared_panel, library_integrity, **_recovery_metrics(rows, len(seeds), complete_roster)
+    )
+
+
+def _complete_roster(rows: Sequence[BlindRecord], expected: Sequence[int]) -> bool:
+    return len(rows) == len(expected) and {row.target_seed for row in rows} == set(expected)
+
+
+class _RecoveryMetrics(TypedDict):
+    recovery: Mapping[str, bool]
+    hits: Mapping[str, int]
+    joint_hits: int
+    boundary_counts: Mapping[str, int]
+    mean_bias: Mapping[str, Decimal | None]
+    count_margins: tuple[int, ...]
+    bias_margins: Mapping[str, str | None]
+    tie_count: int
+    rows: tuple[TargetRecovery, ...]
+
+
+def _recovery_metrics(
+    rows: Sequence[BlindRecord], n: int, complete_roster: bool
+) -> _RecoveryMetrics:
+    """The identical exact P4–P8 computation for gates and ungated references."""
 
     # Exact arithmetic through the last comparison, independent of the caller's Decimal context.
     with localcontext(Context(traps=[Inexact])):
@@ -602,19 +1031,19 @@ def evaluate_recovery(
         joint - (3 * n + 4) // 5,
         *(n // 5 - count for count in boundaries.values()),
     )
-    return RecoveryEvaluation(
-        shared_panel,
-        library_integrity,
-        recovery,
-        hits,
-        joint,
-        boundaries,
-        means,
-        count_margins,
-        {name: None if margin is None else str(margin) for name, margin in bias_margins.items()},
-        tie_count,
-        target_rows,
-    )
+    return {
+        "recovery": recovery,
+        "hits": hits,
+        "joint_hits": joint,
+        "boundary_counts": boundaries,
+        "mean_bias": means,
+        "count_margins": count_margins,
+        "bias_margins": {
+            name: None if margin is None else str(margin) for name, margin in bias_margins.items()
+        },
+        "tie_count": tie_count,
+        "rows": target_rows,
+    }
 
 
 ReadingClass = Literal["CONSISTENT-PASS", "MIXED", "CONSISTENT-FAIL", "NO-READING"]
@@ -807,6 +1236,279 @@ def reference_sentences(
             "necessary here."
         )
     return tuple(sentences)
+
+
+_DESCRIPTIVE = "descriptive_not_a_gate"
+
+
+@dataclass(frozen=True)
+class ReferenceEvaluation:
+    replicates: int
+    hits: Mapping[str, int]
+    joint_hits: int
+    boundary_counts: Mapping[str, int]
+    mean_bias: Mapping[str, str | None]
+    tie_count: int
+    criteria_4_to_8_met: bool
+    label: str = _DESCRIPTIVE
+
+
+@dataclass(frozen=True)
+class ReferenceSummary:
+    libraries: Mapping[int, Mapping[str, ReferenceEvaluation]]
+    k_prime: int
+    m: int
+    m_by_library: Mapping[int, int]
+    libraries_not_met_with_a_batch_met: int
+    s1: bool
+    s2: bool
+    sentences: tuple[str, ...]
+    label: str = _DESCRIPTIVE
+
+
+def _decimal_strings(values: Mapping[str, Decimal | None]) -> dict[str, str | None]:
+    return {name: None if value is None else str(value) for name, value in values.items()}
+
+
+def _reference_evaluation(rows: Sequence[BlindRecord], replicates: int) -> ReferenceEvaluation:
+    metrics = _recovery_metrics(
+        rows, frozen.TARGET_COUNT, _complete_roster(rows, _TARGET_PROCESS_SEEDS)
+    )
+    return ReferenceEvaluation(
+        replicates,
+        metrics["hits"],
+        metrics["joint_hits"],
+        metrics["boundary_counts"],
+        _decimal_strings(metrics["mean_bias"]),
+        metrics["tie_count"],
+        all(metrics["recovery"].values()),
+    )
+
+
+def _summarize_references(
+    campaign: IntactCampaign, references: Mapping[int, Mapping[str, ReferenceEvaluation]]
+) -> ReferenceSummary:
+    m_by_library = {
+        number: sum(references[number][batch].criteria_4_to_8_met for batch in _BATCH_SLICES)
+        for number in _LIBRARY_NUMBERS
+    }
+    m = sum(m_by_library.values())
+    k_prime = campaign.k_prime
+    missed_with_a_batch_met = sum(
+        not library.recovery_met and m_by_library[number] > 0
+        for number, library in zip(_LIBRARY_NUMBERS, campaign.libraries, strict=True)
+    )
+    s1, s2 = reference_triggers(campaign.reading_class, k_prime=k_prime, m=m)
+    return ReferenceSummary(
+        references,
+        k_prime,
+        m,
+        m_by_library,
+        missed_with_a_batch_met,
+        s1,
+        s2,
+        reference_sentences(campaign.reading_class, k_prime=k_prime, m=m),
+    )
+
+
+def _predicate_descriptive(evaluation: RecoveryEvaluation) -> dict[str, Any]:
+    return {
+        "label": _DESCRIPTIVE,
+        "predicates": evaluation.predicates,
+        "hits": evaluation.hits,
+        "joint_hits": evaluation.joint_hits,
+        "boundary_counts": evaluation.boundary_counts,
+        "mean_bias": _decimal_strings(evaluation.mean_bias),
+        "count_margins": evaluation.count_margins,
+        "min_count_margin": evaluation.min_count_margin,
+        "at_threshold": evaluation.at_threshold,
+        "bias_margins": evaluation.bias_margins,
+    }
+
+
+def _matrix_descriptives(
+    libraries: Sequence[RecoveryEvaluation],
+    fits: Mapping[int, Mapping[str, Mapping[int, _FitFile]]],
+) -> dict[str, Any]:
+    matrix = []
+    summaries = []
+    for rows in zip(*(library.rows for library in libraries), strict=True):
+        seed = rows[0].target_seed
+        offsets = tuple(
+            _offset_descriptive(fits[number][_GATE_FIT][seed].fit)["reprofiled_offset"]
+            for number in _LIBRARY_NUMBERS
+        )
+        matrix.append(
+            tuple(
+                {
+                    "label": _DESCRIPTIVE,
+                    "selected": None if row.selected is None else row.selected.as_dict(),
+                    "joint_hit": row.joint_hit,
+                    "hits": row.hits,
+                    "identified": row.identified,
+                    "boundary_flags": row.boundary_flags,
+                    "numerical_tie": row.numerical_tie,
+                    "reprofiled_offset": offset,
+                }
+                for row, offset in zip(rows, offsets, strict=True)
+            )
+        )
+        summaries.append(
+            {
+                "label": _DESCRIPTIVE,
+                "target_seed": seed,
+                "joint_hits": sum(row.joint_hit for row in rows),
+                "offset_hits": sum(row.hits["inoculation_day_offset"] for row in rows),
+                "distinct_selected_offsets": len(
+                    {
+                        row.selected.inoculation_day_offset
+                        for row in rows
+                        if row.selected is not None
+                    }
+                ),
+                "all_six_offsets_agree": None not in offsets and len(set(offsets)) == 1,
+            }
+        )
+    return {
+        "label": _DESCRIPTIVE,
+        "target_seeds": _TARGET_PROCESS_SEEDS,
+        "library_numbers": _LIBRARY_NUMBERS,
+        "matrix": matrix,
+        "row_summaries": summaries,
+    }
+
+
+def _batch_descriptives(files: Mapping[str, Mapping[int, _FitFile]]) -> dict[str, Any]:
+    targets = []
+    for seed in files[_GATE_FIT]:
+        fits = {name: records[seed].fit for name, records in files.items()}
+        batches = tuple(fits[name] for name in _BATCH_SLICES)
+        targets.append(
+            {
+                "label": STOCHASTIC_REPLICATE_VARIATION,
+                "target_seed": seed,
+                "four_batch_offsets_agree": batch_offset_agreement(batches),
+                "reprofiled_offsets": {
+                    name: {"label": _DESCRIPTIVE, **_offset_descriptive(fit)}
+                    for name, fit in fits.items()
+                },
+                "fixed_tuple_spreads": [
+                    {
+                        "cell": rows[0].cell.as_dict(),
+                        **batch_objective_spread([row.objective for row in rows]),
+                    }
+                    for rows in zip(*(batch.loss_surface for batch in batches), strict=True)
+                ],
+            }
+        )
+    return {
+        "label": STOCHASTIC_REPLICATE_VARIATION,
+        "four_batch_offset_agreement_count": sum(
+            row["four_batch_offsets_agree"] for row in targets
+        ),
+        "targets": targets,
+    }
+
+
+def _read_back_all(generation: BlindGeneration) -> dict[int, ObservedTables]:
+    """Check the complete frozen roster and independently re-read every file (§6)."""
+    generation.ledger.require_exact()
+    if tuple(generation.targets) != _TARGET_PROCESS_SEEDS:
+        raise CampaignError("shared target roster differs from the frozen declaration")
+    tables = {}
+    target_hashes = {}
+    for seed, target in generation.targets.items():
+        if target.table.path != generation.directory / "targets" / f"{seed}.json":
+            raise CampaignError("shared target table path differs from its declared position")
+        tables[seed], target_hashes[seed] = target.table.read()
+
+    if tuple(generation.libraries) != _LIBRARY_NUMBERS:
+        raise CampaignError("blind library roster differs from the frozen declaration")
+    for number, fits in generation.libraries.items():
+        if fits.keys() != _FIT_SLICES.keys():
+            raise CampaignError(f"L{number} blind fit roster is incomplete")
+        directory = generation.directory / f"library_{number}"
+        for name, records in fits.items():
+            if tuple(records) != _TARGET_PROCESS_SEEDS:
+                raise CampaignError(f"L{number} {name} blind target roster is incomplete")
+            for seed, record in records.items():
+                if record.target_sha256 != target_hashes[seed]:
+                    raise CampaignError(f"L{number} {name} used different target table bytes")
+                _verify_blind_readback(_fit_path(directory, name, seed), record.fit, record.sha256)
+    return tables
+
+
+@dataclass(frozen=True)
+class StudyEvaluation:
+    campaign: IntactCampaign
+    truth_diagnostics: Mapping[int, TruthDiagnostics]
+    predicate_descriptives: Mapping[int, Mapping[str, Any]]
+    matrix_descriptives: Mapping[str, Any]
+    batch_descriptives: Mapping[int, Mapping[str, Any]]
+    references: ReferenceSummary
+
+
+def evaluate_after_blind(generation: BlindGeneration) -> StudyEvaluation | VoidCampaign:
+    """Complete the global read-back barrier before accessing any target truth."""
+    plan_workload(generation.config)
+    tables = _read_back_all(generation)
+    diagnostics = {}
+    target_pairs = {
+        row.process: row.observation for row in frozen.FINAL_SEEDS if row.library is None
+    }
+    truth = _truth_cell()
+    provenance_verified = True
+    for seed, target in generation.targets.items():
+        namespace_passed = _namespace_passes(
+            target.latent, target.observed, target.requested_run, target.requested_observation
+        )
+        provenance_verified &= (
+            namespace_passed
+            and _fixed_run_provenance(
+                target.latent, target.requested_run, seed, truth, frozen.LATENT_DAYS
+            )
+            and _observation_controls_match(
+                target.observed.config, target_pairs[seed], _TARGET_CONFIG_ID, truth
+            )
+        )
+        diagnostics[seed] = _truth_diagnostics_from_result(
+            target.latent, target.observed, tables[seed], namespace_passed=namespace_passed
+        )
+
+    panel = evaluate_shared_panel(
+        diagnostics,
+        evidence=IntegrityEvidence(True, provenance_verified, generation.ledger.measured(None)),
+    )
+    evaluations = {
+        number: evaluate_recovery(
+            tuple(record.blind_record(seed) for seed, record in fits[_GATE_FIT].items()),
+            shared_panel=panel,
+            evidence=IntegrityEvidence(True, True, generation.ledger.measured(number)),
+        )
+        for number, fits in generation.libraries.items()
+    }
+    campaign = classify_campaign(tuple(evaluations.values()))
+    if isinstance(campaign, VoidCampaign):
+        return campaign
+
+    references = {
+        number: {
+            name: _reference_evaluation(
+                tuple(record.blind_record(seed) for seed, record in fits[name].items()),
+                positions.stop - positions.start,
+            )
+            for name, positions in _REFERENCE_SLICES.items()
+        }
+        for number, fits in generation.libraries.items()
+    }
+    return StudyEvaluation(
+        campaign,
+        diagnostics,
+        {number: _predicate_descriptive(value) for number, value in evaluations.items()},
+        _matrix_descriptives(campaign.libraries, generation.libraries),
+        {number: _batch_descriptives(fits) for number, fits in generation.libraries.items()},
+        _summarize_references(campaign, references),
+    )
 
 
 _STATUS_PREFIX = (
