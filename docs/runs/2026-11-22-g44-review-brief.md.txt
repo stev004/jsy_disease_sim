@@ -1,0 +1,33 @@
+TASK: JOS · g44-review · independent review of the G43 multi-library harness (U1–U3)
+ROLE: independent implementation reviewer — fresh Claude Opus 5.5 @ high (frozen G43 §12 seat 4). Read-only. You authored none of this code.
+
+GOAL: Decide whether the complete G43 implementation at the head named below conforms to the frozen predeclaration, the owner ruling and owner clarification 1, so that it may go to Steven for an SHA-first merge. Verdict exactly `JOS G43 IMPLEMENTATION REVIEW: PASS` or `JOS G43 IMPLEMENTATION REVIEW: BLOCKED`.
+
+SCOPE:
+- Review clone (read-only for you): `\\wsl$\Ubuntu\home\steven/<REVIEW_CLONE>` (WSL path `/home/steven/<REVIEW_CLONE>`), detached at `<HEAD_SHA>` on branch `codex/g43-multilibrary`, base `9002c59fb07e830a2064c818a447be6b023712da` (main code baseline `0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8` plus docs).
+- Diff under review: `git diff 9002c59fb07e830a2064c818a447be6b023712da <HEAD_SHA>` — expected new paths only: `src/jersey_outbreak/g43_multilibrary.py`, `g43_constants.py`, `g43_recompute.py`, `configs/calibration/v13_g43_multilibrary.yaml`, `tests/test_g43_multilibrary.py`, `tests/fixtures/g43/`.
+- You may run read-only commands and the focused tests in that clone through WSL (write a script file under the Windows scratchpad or `\\wsl$\Ubuntu\tmp\`, run it with `wsl.exe -d Ubuntu -- bash /tmp/<name>.sh`; inline `bash -c` through PowerShell mangles quoting). Use `export PATH="$HOME/.local/bin:$PATH" UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache`. You may write throwaway mutation-test copies only under `/tmp/`. Do NOT edit the clone, commit, push, run any population build / latent run / campaign on a G43 study seed, or run the full suite (the director's full CI mirror already ran; its log is cited below).
+
+CONTEXT — binding documents (read in full):
+1. `docs/research/v1_3/2026-11-20-g43-predeclaration.md` — FROZEN, freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2, committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094. §7.1–§7.11, §8 final seed table, §9 caps, §10 bundle, §12 order/VOID rules, §13 units, §14 commands.
+2. `docs/research/v1_3/2026-11-20-g43-owner-ruling.md` (A1–A10; already applied in the frozen text).
+3. `docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md` (VOID reporting precedence).
+4. `.claude/DIRECTOR.md` — hard rules and lessons, especially 2026-09-22 (evidence checks reject absent metadata; inclusive decimal endpoints exact), 2026-09-23 (every integrity check needs an INDEPENDENT source of truth; an expected value derived from the input under test is a defect), 2026-10-22 (a brief must not add rules the frozen text lacks).
+5. Unit briefs and executor reports on main: `docs/runs/2026-11-21-g44-u{1,2,3}-brief.md.txt`, `docs/runs/2026-11-21-g44-u1-report.md`, `docs/runs/2026-11-22-g44-u{2,3}-report.md`; director acceptance logs `docs/runs/2026-11-2{1,2}-g44-u{1,2,3}-director-acceptance.log`; full CI mirror `<MIRROR_LOG>`. Treat reports as claims to verify, never as evidence.
+
+CHECK AT LEAST:
+1. Scope: only the expected paths changed; `g35b_design_study.py`, `g35b_constants.py`, `phase0_campaign.py` and every protected module are byte-identical to the base; G35-B pure functions are imported, not copied.
+2. Frozen declaration: constants (seeds incl. replacements 87351/87352/87551 at their inherited positions and observation seeds; M2/M3/M4 hashes; earlier seed sets; digests) match the frozen text by an independent re-read; config strict validation; dry-run exact §9 counts.
+3. Evaluator: P1–P10 at N = 20 with integer thresholds 16/12/≤4 and exact decimal bias; P2/P3 per §7.2 and A9 (not `TruthDiagnostics.viable`); endpoint tests; the historical fixture genuinely derives from the retained G35-B bundle and reproduces both CONFIRMED arms.
+4. Classification, readings, S1/S2 and status phrase exactly per §7.3, §7.4, §7.8, §7.11 and clarification 1 (VOID precedence; NO-READING keeps six FAIL verdicts and counts; S1/S2 eligibility and order; forbidden words).
+5. Generation and blind barrier: shared targets generated once and byte-shared via independent re-read; all 720 blind records persisted and read back before any truth access; no truth path reachable earlier; work ledger reserve-before-dispatch, exceptions consume slots, exact equality per column.
+6. Integrity sources: for every P1/P9/P10 and provenance check, name the independent source of truth; flag any expected value derived from the input under test, and any literal `True` evidence.
+7. Retention/bundle/recompute: §10 layout; target latent truth incl. `daily_observed_cases` and `benchmark.n_agents`; P3 recomputation per A8; sealing + `verify_bundle`; `g43_recompute.py` imports only the standard library and recomputes predicates, k, k′, m, m_ℓ, triggers and class; VOID bundles omit scientific outputs; launcher refusals (non-empty dir, exit marker, host-disk rule) and the recorded disk estimate.
+8. Anything that would let a campaign produce a verdict the frozen text does not license, or silently change science.
+Mutation-test where cheap: break one integrity input in a /tmp copy and confirm a test or check fails.
+
+REPORT: First line: exact model name and effort. Then the verdict line. Then findings, each: id (R1, R2 …), severity (BLOCKER / MAJOR / MINOR / NOTE), file:line, the frozen sentence or rule it departs from (quote with line number), a concrete failure scenario, and the smallest fix. Then one line per check 1–8 as OK or FLAG. A BLOCKER or MAJOR means BLOCKED. Final response only; no more than about 2,500 words.
+
+TIMEBOX: one pass; stop and report if you exceed ~300K tokens.
+FORBIDDEN: editing the clone or the repo; commits; pushes; G43 study-seed builds or runs; the full suite; calling anything calibrated or validated; calling replicate spread a confidence interval.
+STANDING: `.claude/DIRECTOR.md` is binding in full.

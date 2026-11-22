@@ -1,7 +1,7 @@
 # RUN — `g44-impl` IN FLIGHT (2026-11-21). Predicate: owner clarification 1 filed; U1–U3 on `codex/g43-multilibrary` per frozen G43 §13; director CI mirror PASS filed; fresh Opus 5.5 review PASS filed on main; branch pushed only after that. No campaign, no merge. Budget: 3 implementation runs (frozen §13).
 
 **Done:** clarification 1 (gpt-6.2-sol) at `9002c59` (ts: trail row `g43-clarification-1`).
-**In flight:** U3 (gpt-6.2-sol @ high), worktree `/home/steven/jos-g44-wt` at local head `61c591d` (U1 fa3cb99 + U2 61c591d kept, not pushed); brief `docs/runs/2026-11-21-g44-u3-brief.md.txt`; log stem `/home/steven/jos-g44-u3-20261122` (ts: trail row `g44-u3-launch`). Next: director full mirror on the integration head, then fresh Opus 5.5 review.
+**In flight:** director full CI mirror on integration head `c723f71a652ce2d11278f0e2958bb72baf9716da` (U1 fa3cb99, U2 61c591d, U3 c723f71; local commits in `/home/steven/jos-g44-wt`, NOT pushed); clone `/home/steven/jos-g44-mirror-20261122`, log `/home/steven/jos-g44-mirror-20261122.log`. Next: file mirror log on main → fresh Opus 5.5 review (brief `docs/runs/2026-11-22-g44-review-brief.md.txt`) → file PASS on main → push branch (ts: trail row `g44-u3-kept`).
 **Resume recipe:** if `<stem>.log` ends `rc=`, read `<stem>.last.md`, re-run the brief's acceptance commands in the worktree, review the full diff (scope: only the five permitted paths), then commit LOCALLY on the branch (never push before the review PASS is filed on main), file the report and acceptance log under `docs/runs/`, and launch U2. If codex died without `rc=`, relaunch U1 from the same brief as attempt 2 (stem suffix `-a2`).
 
 ---
