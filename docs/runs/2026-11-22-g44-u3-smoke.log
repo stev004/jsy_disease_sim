@@ -1,0 +1,21 @@
+Filesystem        1B-blocks         Used  Available Use% Mounted on
+C:\            499442573312 489500966912 9941606400  99% /mnt/c
+2026-11-22T01:34:14.584132+00:00
+Synthetic CI smoke: seed=123; assertion excludes every final, reserve, retired and earlier study seed
+Linux ru_maxrss converted from KiB to bytes; maximum for the process while retaining all 25 results
+parent: regular_files=29 apparent_file_bytes=965125 allocated_bytes_including_directories=1048576 wall_seconds=1.696865
+parent peak_rss_bytes=423112704
+25 latent runs: held_results=25 peak_rss_bytes=497262592 wall_seconds=24.188969
+natural_history returned flag=True
+states returned flag=True
+no_report_before_infection returned flag=True
+latent_incidence_conservation returned flag=True
+physical types: transmission_events=list daily_epidemic=list observation_events=list daily_observed_cases=list
+Filesystem        1B-blocks         Used  Available Use% Mounted on
+C:\            499442573312 489494462464 9948110848  99% /mnt/c
+Synthetic CI retention smoke: seed=123; all earlier and study sets excluded
+Transient build deleted before latent execution: True
+Retained target raw truth row counts: {'transmission_events': 2012, 'daily_epidemic': 30, 'observation_events': 2012, 'daily_observed_cases': 34}
+Retained benchmark.n_agents=3000
+P3 recomputation equals returned flags: {'natural_history.chronology_passed': True, 'states.conserved': True, 'no_report_before_infection': True, 'latent_incidence_conservation': True}
+Real returned/requested configs, namespace and table binding match serialized provenance

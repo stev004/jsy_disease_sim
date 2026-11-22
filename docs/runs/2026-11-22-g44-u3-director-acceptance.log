@@ -1,0 +1,144 @@
++ git rev-parse HEAD
+61c591ddce545df8b1ec2cad473c072e8989318e
++ git status --porcelain
+ M src/jersey_outbreak/g43_constants.py
+ M src/jersey_outbreak/g43_multilibrary.py
+ M tests/test_g43_multilibrary.py
+?? src/jersey_outbreak/g43_recompute.py
++ uv run python -m jersey_outbreak.g43_multilibrary dry-run --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md
+{
+  "predeclaration_sha256": "67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094",
+  "mode": "ci",
+  "latent_days": 30,
+  "calendar_dates": 34,
+  "shared_panel": {
+    "builds": 20,
+    "latent_calls": 20,
+    "observation_transforms": 20,
+    "candidate_cells": 0,
+    "gate_loss_evaluations": 0,
+    "gate_blind_records": 0,
+    "descriptive_loss_evaluations": 0,
+    "descriptive_blind_records": 0,
+    "serosurvey_samples": 0
+  },
+  "libraries": {
+    "L1": {
+      "builds": 12,
+      "latent_calls": 300,
+      "observation_transforms": 7500,
+      "candidate_cells": 625,
+      "gate_loss_evaluations": 12500,
+      "gate_blind_records": 20,
+      "descriptive_loss_evaluations": 62500,
+      "descriptive_blind_records": 100,
+      "serosurvey_samples": 0
+    },
+    "L2": {
+      "builds": 12,
+      "latent_calls": 300,
+      "observation_transforms": 7500,
+      "candidate_cells": 625,
+      "gate_loss_evaluations": 12500,
+      "gate_blind_records": 20,
+      "descriptive_loss_evaluations": 62500,
+      "descriptive_blind_records": 100,
+      "serosurvey_samples": 0
+    },
+    "L3": {
+      "builds": 12,
+      "latent_calls": 300,
+      "observation_transforms": 7500,
+      "candidate_cells": 625,
+      "gate_loss_evaluations": 12500,
+      "gate_blind_records": 20,
+      "descriptive_loss_evaluations": 62500,
+      "descriptive_blind_records": 100,
+      "serosurvey_samples": 0
+    },
+    "L4": {
+      "builds": 12,
+      "latent_calls": 300,
+      "observation_transforms": 7500,
+      "candidate_cells": 625,
+      "gate_loss_evaluations": 12500,
+      "gate_blind_records": 20,
+      "descriptive_loss_evaluations": 62500,
+      "descriptive_blind_records": 100,
+      "serosurvey_samples": 0
+    },
+    "L5": {
+      "builds": 12,
+      "latent_calls": 300,
+      "observation_transforms": 7500,
+      "candidate_cells": 625,
+      "gate_loss_evaluations": 12500,
+      "gate_blind_records": 20,
+      "descriptive_loss_evaluations": 62500,
+      "descriptive_blind_records": 100,
+      "serosurvey_samples": 0
+    },
+    "L6": {
+      "builds": 12,
+      "latent_calls": 300,
+      "observation_transforms": 7500,
+      "candidate_cells": 625,
+      "gate_loss_evaluations": 12500,
+      "gate_blind_records": 20,
+      "descriptive_loss_evaluations": 62500,
+      "descriptive_blind_records": 100,
+      "serosurvey_samples": 0
+    }
+  },
+  "totals": {
+    "builds": 92,
+    "latent_calls": 1820,
+    "observation_transforms": 45020,
+    "candidate_cells": 3750,
+    "gate_loss_evaluations": 75000,
+    "gate_blind_records": 120,
+    "descriptive_loss_evaluations": 375000,
+    "descriptive_blind_records": 600,
+    "serosurvey_samples": 0
+  }
+}
++ uv run python -m jersey_outbreak.g35b_design_study dry-run --config configs/calibration/v13_g35b_design_study.yaml --predeclaration docs/research/v1_3/2026-10-22-g35b-predeclaration.md
++ tail -5
+    "builds": 22
+  },
+  "gate_loss_evaluations": 25000,
+  "descriptive_loss_evaluations": 31250
+}
++ uv run ruff check .
+All checks passed!
++ uv run ruff format --check .
+393 files already formatted
+++ ls src/jersey_outbreak/g43_recompute.py
++ uv run mypy --ignore-missing-imports src/jersey_outbreak/g43_multilibrary.py src/jersey_outbreak/g43_constants.py src/jersey_outbreak/g43_recompute.py
+Success: no issues found in 3 source files
++ git diff --stat 9002c59fb07e830a2064c818a447be6b023712da -- src/jersey_outbreak/g35b_design_study.py src/jersey_outbreak/g35b_constants.py src/jersey_outbreak/phase0_campaign.py
++ uv run pytest -q -p no:cacheprovider
++ tail -15
+tests/test_m8_1_travel_integrity.py: 1 warning
+tests/test_m9_1_job_integrity.py: 2 warnings
+tests/test_perf9_parent_reuse.py: 3 warnings
+tests/test_v121_prov_verifier_fixes.py: 1 warning
+  /home/steven/jos-g44-wt/.venv/lib/python3.12/site-packages/starsim/timeline.py:408: RuntimeWarning: 
+  The difference between start = <2025.01.06> and stop = <2025.01.06> is less than dt = 1; no timesteps will be run.
+    ss.warn(warnmsg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_route4_weekday_memo.py:74: ROUTE-4 parent comparison tree is not present
+SKIPPED [2] tests/test_route5_phase2_columns.py:100: phase-2 base comparison tree is not present
+SKIPPED [1] tests/test_route_snapshot_columns.py:240: base comparison tree is not present
+FAILED tests/test_prov_job_ordering.py::test_missing_head_request_fails_alone_and_scheduler_continues
+1 failed, 1757 passed, 4 skipped, 15 warnings in 1826.19s (0:30:26)
++ echo FULL_PYTEST_EXIT=1
+FULL_PYTEST_EXIT=1
++ git status --porcelain
+ M src/jersey_outbreak/g43_constants.py
+ M src/jersey_outbreak/g43_multilibrary.py
+ M tests/test_g43_multilibrary.py
+?? src/jersey_outbreak/g43_recompute.py
+DONE
