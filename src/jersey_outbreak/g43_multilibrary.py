@@ -3,30 +3,39 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import math
+import shutil
+import subprocess
 import sys
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+import time
+from collections.abc import Iterator, Mapping, Sequence
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass
 from datetime import date
 from decimal import Context, Decimal, Inexact, localcontext
 from itertools import groupby, product
 from operator import attrgetter
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Literal, TypedDict, cast
 
 import yaml  # type: ignore[import-untyped]
 
 from . import g43_constants as frozen
+from . import g43_recompute as audit
 from .g35b_design_study import (
     STOCHASTIC_REPLICATE_VARIATION,
     _compare,
+    _contains_key,
     _fit_scored_grid,
     _fixed_run_provenance,
     _GenerationAdapter,
     _offset_descriptive,
     _persist_fit,
+    _require_clean_worktree,
     _verify_blind_readback,
     batch_objective_spread,
     batch_offset_agreement,
@@ -364,6 +373,7 @@ _BATCH_SLICES = {
 _GATE_FIT = "all_twelve"
 _REFERENCE_SLICES = {**_BATCH_SLICES, "batches_1_2": slice(0, 2 * frozen.BATCH_SIZE)}
 _FIT_SLICES = {_GATE_FIT: slice(0, _REPLICATES), **_REFERENCE_SLICES}
+_TIMED_PHASES = ("build", "latent", "transform", "scoring", "retention")
 
 
 class WorkLedger:
@@ -377,6 +387,21 @@ class WorkLedger:
         self._counts = {scope: dict.fromkeys(frozen.WORK_FIELDS, 0) for scope in self._caps}
         self._total_caps = _work_counts(frozen.TOTAL_CAPS)
         self._totals = dict.fromkeys(frozen.WORK_FIELDS, 0)
+        self.phase_seconds = {scope: dict.fromkeys(_TIMED_PHASES, 0.0) for scope in self._caps}
+        self.latent_runtimes: dict[int | None, list[dict[str, Any]]] = {
+            scope: [] for scope in self._caps
+        }
+        self.fallbacks: dict[int | None, dict[int, dict[str, bool]]] = {
+            scope: {} for scope in self._caps
+        }
+
+    @contextmanager
+    def time_phase(self, library: int | None, phase: str) -> Iterator[None]:
+        started = time.perf_counter()
+        try:
+            yield
+        finally:
+            self.phase_seconds[library][phase] += time.perf_counter() - started
 
     def reserve(self, library: int | None, kind: str) -> None:
         counts = self._counts[library]
@@ -397,12 +422,14 @@ class WorkLedger:
         return dict(self._totals)
 
     def require_exact(self) -> None:
-        if self._counts[None] != self._caps[None]:
+        if not IntegrityEvidence(measured_work=self._counts[None]).work_matches(self._caps[None]):
             raise BudgetError("measured shared-panel work differs from exact caps")
         for number in _LIBRARY_NUMBERS:
-            if self._counts[number] != self._caps[number]:
+            if not IntegrityEvidence(measured_work=self._counts[number]).work_matches(
+                self._caps[number]
+            ):
                 raise BudgetError(f"measured L{number} work differs from exact caps")
-        if self._totals != self._total_caps:
+        if not IntegrityEvidence(measured_work=self._totals).work_matches(self._total_caps):
             raise BudgetError("measured total work differs from exact caps")
 
 
@@ -442,8 +469,13 @@ def _adapter_for_seed(
     work_dir: Path,
     seed: int,
     counter: _ScopedCounter,
-) -> _GenerationAdapter:
-    parent = _verified_parent(root, work_dir, seed, counter)
+) -> tuple[_GenerationAdapter, dict[str, Any]]:
+    # M5 consumes the loaded parent. Its build artifacts can be transient (§9).
+    with TemporaryDirectory(dir=work_dir, prefix=".parent-") as scratch:
+        with counter.ledger.time_phase(counter.library, "build"):
+            parent = _verified_parent(root, Path(scratch), seed, counter)
+        lineage = _parent_lineage(parent)
+    counter.ledger.fallbacks[counter.library][seed] = {key: lineage[key] for key in _FALLBACK_KEYS}
     # The unchanged adapter uses only Phase-0 constructor fields and dispatch(kind).
     return _GenerationAdapter(
         cast(_AdapterConfig, config),
@@ -451,9 +483,30 @@ def _adapter_for_seed(
         parameters,
         {seed: parent},
         cast(_AdapterCounter, counter),
-        {"latent": 0.0, "transform": 0.0},
-        [],
-    )
+        counter.ledger.phase_seconds[counter.library],
+        counter.ledger.latent_runtimes[counter.library],
+    ), lineage
+
+
+def _parent_lineage(parent: GeneratedNetworks) -> dict[str, Any]:
+    m2, m3 = parent.m2_input, parent.m3_input
+    diagnostics = [
+        json.loads((stage.artifact_directory / "diagnostics.json").read_bytes())
+        for stage in (m2, m3)
+    ]
+    if any(not isinstance(payload, dict) for payload in diagnostics):
+        raise CampaignError("parent diagnostics must be objects")
+    return {
+        "m2": m2.manifest.logical_content_hash,
+        "m3": m3.manifest.logical_content_hash,
+        "m4": parent.logical_content_hash,
+        "population_fallback_m2": _contains_key(
+            diagnostics[0], "private_assignment_residual_fallback"
+        ),
+        "population_fallback_m3": _contains_key(
+            diagnostics[1], "destination_reassignment_fallback"
+        ),
+    }
 
 
 def _latent_for(
@@ -533,6 +586,36 @@ class _TargetRun:
     observed: ObservationRunResult
     requested_run: OutbreakRunConfig
     requested_observation: ObservationConfig
+    population_lineage: Mapping[str, Any]
+
+
+def _result_provenance(
+    row: frozen.FinalSeed,
+    cell: CandidateCell,
+    latent: OutbreakRunResult,
+    observed: ObservationRunResult,
+    requested_run: Mapping[str, Any],
+    requested_observation: ObservationConfig,
+    table_sha256: str,
+    population_lineage: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "library": row.library,
+        "batch": row.batch,
+        "position": row.position,
+        "process_seed": row.process,
+        "observation_seed": row.observation,
+        "cell": cell.as_dict(),
+        "table_sha256": table_sha256,
+        "population_lineage": population_lineage,
+        "parent_network_seed": latent.generated.config.seed,
+        "n_agents": latent.diagnostics["benchmark"]["n_agents"],
+        "requested_run_config": requested_run,
+        "returned_run_config": latent.config.model_dump(mode="json"),
+        "requested_observation_config": requested_observation.model_dump(mode="json"),
+        "returned_observation_config": observed.config.model_dump(mode="json"),
+        "observation_rng": observed.diagnostics["observation_rng"],
+    }
 
 
 def _truth_cell() -> CandidateCell:
@@ -556,7 +639,7 @@ def _generate_targets(
         if row.library is not None:
             continue
         seed = row.process
-        adapter = _adapter_for_seed(config, root, parameters, work_dir, seed, counter)
+        adapter, lineage = _adapter_for_seed(config, root, parameters, work_dir, seed, counter)
         latent, run = _latent_for(adapter, seed, truth)
         run_payload = run.model_dump(mode="json")
         observed, obs, table = _observe(
@@ -564,10 +647,11 @@ def _generate_targets(
         )
         if run.model_dump(mode="json") != run_payload:
             raise CampaignError("latent metadata changed during observation transforms")
-        content = _compact_json_bytes(table.as_dict())
-        file = _TargetTable(target_dir / f"{seed}.json", hashlib.sha256(content).hexdigest())
-        file.path.write_bytes(content)
-        targets[seed] = _TargetRun(file, latent, observed, run, obs)
+        with ledger.time_phase(None, "retention"):
+            content = _compact_json_bytes(table.as_dict())
+            file = _TargetTable(target_dir / f"{seed}.json", hashlib.sha256(content).hexdigest())
+            file.path.write_bytes(content)
+        targets[seed] = _TargetRun(file, latent, observed, run, obs, lineage)
     return targets
 
 
@@ -636,11 +720,13 @@ def _fit_library(
         for seed, source in targets.items():
             target, target_sha256 = source.read()
 
-            fit = _score_fit(
-                target, grid, subset, hashes, replicates, counter, f"{group}_loss_evaluations"
-            )
-            counter.dispatch(f"{group}_blind_records")
-            file_sha256 = _persist_fit(_fit_path(directory, name, seed), fit)
+            with counter.ledger.time_phase(counter.library, "scoring"):
+                fit = _score_fit(
+                    target, grid, subset, hashes, replicates, counter, f"{group}_loss_evaluations"
+                )
+            with counter.ledger.time_phase(counter.library, "retention"):
+                counter.dispatch(f"{group}_blind_records")
+                file_sha256 = _persist_fit(_fit_path(directory, name, seed), fit)
             files[seed] = _FitFile(fit, file_sha256, target_sha256)
         fits[name] = files
     return fits
@@ -657,7 +743,9 @@ def _generate_library(
 ) -> dict[str, dict[int, _FitFile]]:
     counter = _ScopedCounter(ledger, number)
     directory = work_dir / f"library_{number}"
+    directory.mkdir()
     grid = config.candidate_grid
+    cell_indexes = {cell: index for index, cell in enumerate(grid)}
     latent_cells = tuple(
         tuple(cells) for _, cells in groupby(grid, attrgetter("beta", "inoculation_day_offset"))
     )
@@ -666,7 +754,9 @@ def _generate_library(
     for row in config.seeds:
         if row.library != number:
             continue
-        adapter = _adapter_for_seed(config, root, parameters, directory, row.process, counter)
+        adapter, lineage = _adapter_for_seed(
+            config, root, parameters, directory, row.process, counter
+        )
         for cells in latent_cells:
             latent, run = _latent_for(adapter, row.process, cells[0])
             run_payload = run.model_dump(mode="json")
@@ -675,7 +765,7 @@ def _generate_library(
                     counter.dispatch("candidate_cells")
                     predictions[cell] = []
                     configs[cell] = []
-                observed, _, table = _observe(
+                observed, requested, table = _observe(
                     adapter,
                     latent,
                     run,
@@ -684,9 +774,26 @@ def _generate_library(
                     cell,
                 )
                 predictions[cell].append(table)
-                configs[cell].append(
-                    {"run": run_payload, "observation": observed.config.model_dump(mode="json")}
-                )
+                with ledger.time_phase(number, "retention"):
+                    table_payload = table.as_dict()
+                    record = _result_provenance(
+                        row,
+                        cell,
+                        latent,
+                        observed,
+                        run_payload,
+                        requested,
+                        audit.table_sha256(table_payload),
+                        lineage,
+                    )
+                    configs[cell].append(audit.candidate_binding(record))
+                    _write_json(
+                        directory
+                        / "candidate_tables"
+                        / str(cell_indexes[cell])
+                        / f"{row.position:02d}.json",
+                        {**record, "table": table_payload},
+                    )
             if run.model_dump(mode="json") != run_payload:
                 raise CampaignError("latent metadata changed during observation transforms")
     if any(len(tables) != _REPLICATES for tables in predictions.values()):
@@ -722,6 +829,12 @@ def generate_blind(
     if any(ledger.totals.values()):
         raise BudgetError("generation requires an unused work ledger")
     work_dir.mkdir(parents=True)
+    return _generate_study(config, work_dir, root, ledger)
+
+
+def _generate_study(
+    config: StudyConfig, work_dir: Path, root: Path, ledger: WorkLedger
+) -> BlindGeneration:
     parameters = load_parameter_set(root)
     targets = _generate_targets(config, work_dir, root, parameters, ledger)
     tables = {seed: output.table for seed, output in targets.items()}
@@ -1420,7 +1533,8 @@ def _read_back_all(generation: BlindGeneration) -> dict[int, ObservedTables]:
     for seed, target in generation.targets.items():
         if target.table.path != generation.directory / "targets" / f"{seed}.json":
             raise CampaignError("shared target table path differs from its declared position")
-        tables[seed], target_hashes[seed] = target.table.read()
+        with generation.ledger.time_phase(None, "retention"):
+            tables[seed], target_hashes[seed] = target.table.read()
 
     if tuple(generation.libraries) != _LIBRARY_NUMBERS:
         raise CampaignError("blind library roster differs from the frozen declaration")
@@ -1434,8 +1548,52 @@ def _read_back_all(generation: BlindGeneration) -> dict[int, ObservedTables]:
             for seed, record in records.items():
                 if record.target_sha256 != target_hashes[seed]:
                     raise CampaignError(f"L{number} {name} used different target table bytes")
-                _verify_blind_readback(_fit_path(directory, name, seed), record.fit, record.sha256)
+                with generation.ledger.time_phase(number, "retention"):
+                    _verify_blind_readback(
+                        _fit_path(directory, name, seed), record.fit, record.sha256
+                    )
     return tables
+
+
+def _library_evidence(
+    generation: BlindGeneration, number: int, fits: Mapping[str, Mapping[int, _FitFile]]
+) -> IntegrityEvidence:
+    grid = StudyConfig().candidate_grid
+    roster = [
+        (
+            number,
+            row.batch,
+            row.position,
+            row.process,
+            row.observation,
+            frozen.PROCESS_HASHES[row.process],
+        )
+        for row in frozen.FINAL_SEEDS
+        if row.library == number and row.batch is not None
+    ]
+    directory = generation.directory / f"library_{number}"
+    dates = observation_dates(_START_DATE, frozen.LATENT_DAYS, _TAIL_DAYS)
+    with generation.ledger.time_phase(number, "retention"):
+        complete, provenance, records = audit.read_candidate_library(
+            directory, [cell.as_dict() for cell in grid], roster, dates
+        )
+    complete &= all(
+        len(record.fit.loss_surface) == frozen.CELLS
+        for view in fits.values()
+        for record in view.values()
+    )
+    if provenance:
+        bindings = [[audit.candidate_binding(record) for record in rows] for rows in records]
+        for name, positions in _FIT_SLICES.items():
+            expected = tuple(
+                (cell, audit.binding_hash(rows[positions]))
+                for cell, rows in zip(grid, bindings, strict=True)
+            )
+            provenance &= all(
+                tuple((row.cell, row.config_hash) for row in record.fit.loss_surface) == expected
+                for record in fits[name].values()
+            )
+    return IntegrityEvidence(complete, provenance, generation.ledger.measured(number))
 
 
 @dataclass(frozen=True)
@@ -1470,6 +1628,10 @@ def evaluate_after_blind(generation: BlindGeneration) -> StudyEvaluation | VoidC
             and _observation_controls_match(
                 target.observed.config, target_pairs[seed], _TARGET_CONFIG_ID, truth
             )
+            and tuple(target.population_lineage[key] for key in ("m2", "m3", "m4"))
+            == frozen.PROCESS_HASHES[seed]
+            and type(target.latent.diagnostics["benchmark"]["n_agents"]) is int
+            and target.latent.diagnostics["benchmark"]["n_agents"] == _POPULATION_SIZE
         )
         diagnostics[seed] = _truth_diagnostics_from_result(
             target.latent, target.observed, tables[seed], namespace_passed=namespace_passed
@@ -1483,7 +1645,7 @@ def evaluate_after_blind(generation: BlindGeneration) -> StudyEvaluation | VoidC
         number: evaluate_recovery(
             tuple(record.blind_record(seed) for seed, record in fits[_GATE_FIT].items()),
             shared_panel=panel,
-            evidence=IntegrityEvidence(True, True, generation.ledger.measured(number)),
+            evidence=_library_evidence(generation, number, fits),
         )
         for number, fits in generation.libraries.items()
     }
@@ -1532,6 +1694,557 @@ def status_phrase(
     )
 
 
+def _write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(_compact_json_bytes(value))
+
+
+def _target_raw_truth(target: _TargetRun) -> dict[str, Any]:
+    latent, observed = target.latent, target.observed
+    return {
+        "transmission_events": latent.transmission_events,
+        "daily_epidemic": latent.daily_epidemic,
+        "natural_history": latent.diagnostics["natural_history"],
+        "states": latent.diagnostics["states"],
+        "observation_events": observed.observation_events,
+        "daily_observed_cases": observed.daily_observed_cases,
+        "benchmark": {"n_agents": latent.diagnostics["benchmark"]["n_agents"]},
+        "observation_diagnostics": {
+            key: observed.diagnostics[key]
+            for key in (
+                "no_report_before_infection",
+                "chronology_violations",
+                "latent_incidence_conservation",
+                "latent_incidence_conservation_difference",
+            )
+            if key in observed.diagnostics
+        },
+    }
+
+
+_P3_SOURCE_NOTES = {
+    "natural_history.chronology_passed": {
+        "raw_rows": ["transmission_events"],
+        "source": "src/jersey_outbreak/outbreak_runner.py:513–524",
+    },
+    "states.conserved": {
+        "raw_rows": ["daily_epidemic", "benchmark.n_agents"],
+        "source": "src/jersey_outbreak/outbreak_runner.py:453–456,488",
+    },
+    "no_report_before_infection": {
+        "raw_rows": ["observation_events"],
+        "source": "src/jersey_outbreak/observation.py:277–309,326",
+    },
+    "latent_incidence_conservation": {
+        "raw_rows": ["daily_observed_cases", "observation_events"],
+        "source": "src/jersey_outbreak/observation.py:306–308,328–329",
+    },
+}
+
+
+def _retain_targets(generation: BlindGeneration, evaluation: StudyEvaluation | None) -> None:
+    directory = generation.directory / "targets"
+    provenance = []
+    diagnostics = {}
+    for row in frozen.FINAL_SEEDS:
+        if row.library is not None:
+            continue
+        target = generation.targets[row.process]
+        provenance.append(
+            _result_provenance(
+                row,
+                _truth_cell(),
+                target.latent,
+                target.observed,
+                target.requested_run.model_dump(mode="json"),
+                target.requested_observation,
+                target.table.sha256,
+                target.population_lineage,
+            )
+        )
+        _write_json(directory / "latent_truth" / f"{row.process}.json", _target_raw_truth(target))
+        if evaluation is not None:
+            returned = evaluation.truth_diagnostics[row.process]
+            p2, p3 = _target_conditions(returned)
+            diagnostics[row.process] = {**returned.as_dict(), "conditions": {**p2, **p3}}
+    _write_json(directory / "target_provenance.json", provenance)
+    if evaluation is not None:
+        _write_json(directory / "truth_diagnostics.json", diagnostics)
+    _write_json(
+        directory / "auditor_recompute_notes.json",
+        {
+            "recomputable": {
+                "P2": {
+                    "inoculation_acquisitions": ["transmission_events.imported"],
+                    "local_secondary_infections": ["transmission_events.source_kind"],
+                    "symptomatic_reports": [
+                        "observation_events.report_date",
+                        "observation_events.symptomatic",
+                    ],
+                    "asymptomatic_reports": [
+                        "observation_events.report_date",
+                        "observation_events.symptomatic",
+                    ],
+                    "nonzero_combined_report_dates": ["observation_events.report_date"],
+                    "source": "src/jersey_outbreak/phase0_campaign.py:2333–2362",
+                },
+                "P3": _P3_SOURCE_NOTES,
+            },
+            "internally_checkable_only": {
+                "P2": [],
+                "P3": [],
+                "reported_flags": (
+                    "Retained diagnostics in each latent_truth JSON and truth_diagnostics.json "
+                    "permit comparison with the independently recomputed flags."
+                ),
+            },
+        },
+    )
+
+
+def _write_recovery_csv(
+    path: Path, library: RecoveryEvaluation, targets: Mapping[int, _TargetRun]
+) -> None:
+    rows = []
+    for row in library.rows:
+        lineage = targets[row.target_seed].population_lineage
+        rows.append(
+            {
+                "target_seed": row.target_seed,
+                "numerical_tie": row.numerical_tie,
+                "joint_hit": row.joint_hit,
+                **library.shared_panel.target_conditions[row.target_seed],
+                **{f"predicate_{key}": value for key, value in library.predicates.items()},
+                **{
+                    f"{name}_{key}": values.get(key)
+                    for name, values in (
+                        ("selected", {} if row.selected is None else row.selected.as_dict()),
+                        ("signed_error", row.signed_errors),
+                        ("identified", row.identified),
+                        ("hit", row.hits),
+                        ("boundary", row.boundary_flags),
+                    )
+                    for key in _DIMENSIONS_NAMES
+                },
+                **{key: lineage[key] for key in _FALLBACK_KEYS},
+            }
+        )
+    with path.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+_DIMENSIONS_NAMES = tuple(spec.name for spec in _DIMENSIONS)
+_FALLBACK_KEYS = ("population_fallback_m2", "population_fallback_m3")
+
+
+def _retain_blind_indexes(generation: BlindGeneration) -> None:
+    for number, views in generation.libraries.items():
+        directory = generation.directory / f"library_{number}"
+        with generation.ledger.time_phase(number, "retention"):
+            _write_json(
+                directory / "blind_readback_hashes.json",
+                [
+                    {
+                        "view": view,
+                        "target_seed": seed,
+                        "path": _fit_path(directory, view, seed).relative_to(directory).as_posix(),
+                        "sha256": record.sha256,
+                        "estimate_hash": record.fit.estimate_hash,
+                        "target_sha256": record.target_sha256,
+                    }
+                    for view, files in views.items()
+                    for seed, record in files.items()
+                ],
+            )
+
+
+def _retain_scientific_outputs(
+    generation: BlindGeneration, evaluation: StudyEvaluation, across: Mapping[str, Any]
+) -> None:
+    for number, library in enumerate(evaluation.campaign.libraries, 1):
+        directory = generation.directory / f"library_{number}"
+        with generation.ledger.time_phase(number, "retention"):
+            _write_recovery_csv(
+                directory / f"g43_L{number}_recovery.csv", library, generation.targets
+            )
+            _write_json(
+                directory / "recovery_evaluation.json",
+                {
+                    **evaluation.predicate_descriptives[number],
+                    "groups": {
+                        "shared_panel": library.shared_panel.predicates,
+                        "library_integrity": library.library_integrity,
+                        "recovery": library.recovery,
+                    },
+                    "nonrecovery_ok": library.nonrecovery_ok,
+                    "recovery_met": library.recovery_met,
+                    "tie_count": library.tie_count,
+                    "scientific_status": library.status,
+                },
+            )
+            _write_json(
+                directory / f"g43_L{number}_descriptives.json",
+                evaluation.batch_descriptives[number],
+            )
+            _write_json(
+                directory / "reference_evaluations.json",
+                {
+                    "label": _DESCRIPTIVE,
+                    "m_library": evaluation.references.m_by_library[number],
+                    "evaluations": {
+                        name: asdict(record)
+                        for name, record in evaluation.references.libraries[number].items()
+                    },
+                },
+            )
+    _write_json(generation.directory / "g43_matrices.json", evaluation.matrix_descriptives)
+    _write_json(generation.directory / "g43_across_library.json", across)
+
+
+def _across_library(evaluation: StudyEvaluation) -> dict[str, Any]:
+    campaign, references = evaluation.campaign, evaluation.references
+    return {
+        "verdicts": dict(zip(_LIBRARY_NUMBERS, campaign.verdicts, strict=True)),
+        "k": campaign.k,
+        "k_prime": campaign.k_prime,
+        "m": references.m,
+        "m_by_library": references.m_by_library,
+        "libraries_not_met_with_a_batch_met": references.libraries_not_met_with_a_batch_met,
+        "s1": references.s1,
+        "s2": references.s2,
+        "class": campaign.reading_class,
+        "reading": reading(campaign),
+        **({} if campaign.cause is None else {"cause": asdict(campaign.cause)}),
+    }
+
+
+def _seed_ledger() -> list[dict[str, Any]]:
+    return [
+        {
+            "role": "target" if row.library is None else "candidate",
+            "library": row.library,
+            "batch": row.batch,
+            "position": row.position,
+            "process_seed": row.process,
+            "observation_seed": row.observation,
+            "observation_config_id": _TARGET_CONFIG_ID if row.library is None else _FIT_CONFIG_ID,
+            "replaces_process_seed": frozen.REPLACEMENTS.get(row.process),
+        }
+        for row in frozen.FINAL_SEEDS
+    ]
+
+
+def _source_snapshot(root: Path) -> dict[str, Any]:
+    _require_clean_worktree(root)
+    git = ["git", "-C", str(root)]
+    head = subprocess.check_output([*git, "rev-parse", "HEAD"]).decode().strip()
+    tracked = (
+        subprocess.check_output(
+            [
+                *git,
+                "ls-tree",
+                "-rz",
+                "--name-only",
+                head,
+                "--",
+                "src/jersey_outbreak",
+                "configs",
+            ]
+        )
+        .decode()
+        .split("\0")
+    )
+    return {
+        "git_head": head,
+        "worktree_clean": True,
+        "source_and_config_sha256": {
+            name: hashlib.sha256(
+                subprocess.check_output([*git, "show", f"{head}:{name}"])
+            ).hexdigest()
+            for name in tracked
+            if Path(name).suffix in (".py", ".yaml", ".json")
+        },
+    }
+
+
+def _execution_inputs(
+    root: Path, config: Path, predeclaration: Path, owner: Path | None, clarification: Path | None
+) -> dict[str, bytes]:
+    documents = (
+        (config, frozen.CONFIG_PATH, frozen.CONFIG_SHA256, "HEAD"),
+        (
+            predeclaration,
+            frozen.PREDECLARATION_PATH,
+            frozen.PREDECLARATION_SHA256,
+            frozen.PREDECLARATION_COMMIT,
+        ),
+        (
+            owner or root / frozen.OWNER_RULING_PATH,
+            frozen.OWNER_RULING_PATH,
+            frozen.OWNER_RULING_SHA256,
+            "HEAD",
+        ),
+        (
+            clarification or root / frozen.CLARIFICATION_PATH,
+            frozen.CLARIFICATION_PATH,
+            frozen.CLARIFICATION_SHA256,
+            "HEAD",
+        ),
+        (root / frozen.PRECHECK_PATH, frozen.PRECHECK_PATH, frozen.PRECHECK_SHA256, "HEAD"),
+    )
+    inputs = {}
+    for path, logical, expected, commit in documents:
+        if path.is_symlink() or path.resolve() != (root / logical).resolve():
+            raise CampaignError(f"frozen input must be the declared repository file: {path}")
+        content = committed_document_bytes(path, commit=commit)
+        if path.read_bytes() != content or hashlib.sha256(content).hexdigest() != expected:
+            raise CampaignError(f"frozen input LF bytes or committed SHA-256 mismatch: {path}")
+        inputs[Path(logical).name] = content
+    return inputs
+
+
+def _launch_checks(
+    output_dir: Path, root: Path, exit_marker: Path | None, bundle_upper_bytes: int | None
+) -> dict[str, Any]:
+    marker = exit_marker or output_dir.parent / "jos-g43-campaign.exit"
+    if marker.exists() or marker.is_symlink():
+        raise CampaignError(f"campaign exit marker already exists: {marker}")
+    if output_dir.is_symlink() or output_dir.resolve().is_relative_to(root.resolve()):
+        raise CampaignError("campaign output must be a fresh directory outside the repository")
+    if output_dir.exists() and (not output_dir.is_dir() or any(output_dir.iterdir())):
+        raise CampaignError("campaign output directory must be empty")
+    default_upper = frozen.EXPLORATORY_BUNDLE_UPPER_BYTES + frozen.PARENT_BUILD_DISK_BYTES
+    upper = default_upper if bundle_upper_bytes is None else bundle_upper_bytes
+    if type(upper) is not int or upper < 0:
+        raise CampaignError("bundle upper estimate must be a nonnegative integer of bytes")
+    host = Path("/mnt/c")
+    free = shutil.disk_usage(host).free
+    required = frozen.HOST_HEADROOM_BYTES + upper
+    if free < required:
+        raise CampaignError(
+            f"host free space {free} bytes at {host} is below required {required} bytes"
+        )
+    return {
+        "host_path": str(host),
+        "host_free_bytes_before_launch": free,
+        "required_free_bytes": required,
+        "parent_build_disk_bytes": frozen.PARENT_BUILD_DISK_BYTES,
+        "parent_builds_on_disk_at_once": 1,
+        "exploratory_upper_bytes": frozen.EXPLORATORY_BUNDLE_UPPER_BYTES,
+        "default_upper_bytes": default_upper,
+        "upper_override_bytes": bundle_upper_bytes,
+        "upper_bytes_used": upper,
+    }
+
+
+def _measured_work(ledger: WorkLedger, plan: Mapping[str, Any]) -> dict[str, Any]:
+    def comparison(planned: Mapping[str, int], measured: Mapping[str, int]) -> dict[str, Any]:
+        return {
+            "planned": planned,
+            "measured": measured,
+            "measured_equals_planned": IntegrityEvidence(measured_work=measured).work_matches(
+                planned
+            ),
+        }
+
+    return {
+        "shared_panel": comparison(plan["shared_panel"], ledger.measured(None)),
+        "libraries": {
+            f"L{number}": comparison(plan["libraries"][f"L{number}"], ledger.measured(number))
+            for number in _LIBRARY_NUMBERS
+        },
+        "totals": comparison(plan["totals"], ledger.totals),
+    }
+
+
+def _write_summary(directory: Path, summary: dict[str, Any]) -> None:
+    # Include the summary and manifest themselves in the exact logical byte size.
+    path = directory / "campaign_summary.json"
+    other_files = [
+        file
+        for file in directory.rglob("*")
+        if file.is_file() and file not in (path, directory / audit.SHA256SUMS)
+    ]
+    manifest_size = sum(
+        67 + len(file.relative_to(directory).as_posix().encode()) for file in [*other_files, path]
+    )
+    fixed_size = sum(file.stat().st_size for file in other_files) + manifest_size
+    disk = summary["disclosures"]["disk"]
+    disk["bundle_size_bytes"] = 0
+    while True:
+        content = _compact_json_bytes(summary)
+        size = fixed_size + len(content)
+        if size == disk["bundle_size_bytes"]:
+            path.write_bytes(content)
+            return
+        disk["bundle_size_bytes"] = size
+
+
+def verify_bundle(output_dir: Path) -> None:
+    """Check exact manifest bytes, file hashes, coverage and all write bits."""
+    try:
+        audit.verify_bundle(output_dir)
+    except (audit.BundleError, OSError) as exc:
+        raise CampaignError(str(exc)) from exc
+
+
+def _seal_bundle(output_dir: Path) -> None:
+    (output_dir / audit.SHA256SUMS).write_bytes(audit._manifest(output_dir, check_modes=False))
+    for path in [*output_dir.rglob("*"), output_dir]:
+        path.chmod(path.stat().st_mode & ~0o222)
+    verify_bundle(output_dir)
+
+
+def _discard_scientific_outputs(output_dir: Path) -> None:
+    # Clarification 1: keep underlying evidence on VOID.
+    for path in [output_dir, *output_dir.rglob("*")]:
+        if not path.is_symlink():
+            path.chmod(path.stat().st_mode | 0o200)
+    for name in ("g43_across_library.json", "g43_matrices.json"):
+        (output_dir / name).unlink(missing_ok=True)
+    for number in _LIBRARY_NUMBERS:
+        directory = output_dir / f"library_{number}"
+        for name in (
+            f"g43_L{number}_recovery.csv",
+            "recovery_evaluation.json",
+            f"g43_L{number}_descriptives.json",
+            "reference_evaluations.json",
+        ):
+            (directory / name).unlink(missing_ok=True)
+
+
+def _disclosures(
+    ledger: WorkLedger,
+    disk: Mapping[str, Any],
+    started: float,
+) -> dict[str, Any]:
+    def scope(number: int | None) -> dict[str, Any]:
+        lineage = ledger.fallbacks[number]
+        return {
+            "label": _DESCRIPTIVE,
+            "wall_time_seconds": ledger.phase_seconds[number],
+            "latent_call_runtimes": ledger.latent_runtimes[number],
+            "population_fallbacks": {
+                "by_process_seed": lineage,
+                "fallback_built_count": sum(any(flags.values()) for flags in lineage.values()),
+            },
+        }
+
+    return {
+        "label": _DESCRIPTIVE,
+        "campaign_wall_time_seconds": time.perf_counter() - started,
+        "shared_panel": scope(None),
+        "libraries": {f"L{number}": scope(number) for number in _LIBRARY_NUMBERS},
+        "disk": dict(disk),
+    }
+
+
+_DEFAULT_SEATS = {
+    "implementer": "gpt-6.2-sol @ high",
+    "reviewer": "Claude Opus 5.5 @ high",
+    "substitutions": "not applicable",
+}
+
+
+def execute(
+    config_path: Path,
+    predeclaration_path: Path,
+    output_dir: Path,
+    *,
+    root: Path,
+    owner_ruling_path: Path | None = None,
+    clarification_path: Path | None = None,
+    exit_marker: Path | None = None,
+    bundle_upper_bytes: int | None = None,
+    seats: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run and seal one campaign after its §12 launch preconditions."""
+    disk = _launch_checks(output_dir, root, exit_marker, bundle_upper_bytes)
+    config = StudyConfig.from_yaml(config_path)
+    validate_predeclaration(predeclaration_path)
+    plan = plan_workload(config)
+    inputs = _execution_inputs(
+        root, config_path, predeclaration_path, owner_ruling_path, clarification_path
+    )
+    snapshot = _source_snapshot(root)
+    if seats is not None and not isinstance(seats, Mapping):
+        raise CampaignError("seats must be an object")
+    seats = dict(_DEFAULT_SEATS if seats is None else seats)
+    if (
+        seats.keys() != _DEFAULT_SEATS.keys()
+        or any(
+            not isinstance(seats[key], str) or not seats[key] for key in ("implementer", "reviewer")
+        )
+        or not seats["substitutions"]
+    ):
+        raise CampaignError("seats require an implementer, reviewer and substitution record")
+    declaration = inputs[Path(frozen.PREDECLARATION_PATH).name].decode()
+    lineage = declaration[
+        declaration.index("**Lineage block**") : declaration.index("## 2.")
+    ].rstrip("\n")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    frozen_inputs = output_dir / "frozen_inputs"
+    frozen_inputs.mkdir()
+    started = time.perf_counter()
+    ledger = WorkLedger()
+    summary: dict[str, Any] = {}
+
+    def finish(campaign: IntactCampaign | VoidCampaign, scientific: Mapping[str, Any]) -> None:
+        summary.clear()
+        summary.update(
+            {
+                "lineage": {"frozen_section_1": lineage, "reviewer": seats["reviewer"]},
+                "seats": seats,
+                "software_status": "VOID" if isinstance(campaign, VoidCampaign) else "PASS",
+                **scientific,
+                "status_phrase": status_phrase(campaign),
+                "measured_work": _measured_work(ledger, plan),
+                "disclosures": _disclosures(ledger, disk, started),
+            }
+        )
+        _write_summary(output_dir, summary)
+        _seal_bundle(output_dir)
+
+    try:
+        for name, content in inputs.items():
+            (frozen_inputs / name).write_bytes(content)
+        _write_json(
+            frozen_inputs / "sha256.json",
+            {name: hashlib.sha256(content).hexdigest() for name, content in inputs.items()},
+        )
+        _write_json(frozen_inputs / "source_and_config_hashes.json", snapshot)
+        _write_json(output_dir / "seed_ledger.json", _seed_ledger())
+        generation = _generate_study(config, output_dir, root, ledger)
+        evaluation = evaluate_after_blind(generation)
+        _retain_blind_indexes(generation)
+        with ledger.time_phase(None, "retention"):
+            _retain_targets(
+                generation, evaluation if isinstance(evaluation, StudyEvaluation) else None
+            )
+        if isinstance(evaluation, VoidCampaign):
+            finish(evaluation, {"cause": evaluation.cause})
+        else:
+            across = _across_library(evaluation)
+            _retain_scientific_outputs(generation, evaluation, across)
+            finish(
+                evaluation.campaign,
+                {
+                    "scientific_status": across["verdicts"],
+                    "class": across["class"],
+                    "reading": across["reading"],
+                    "reference_sentences": evaluation.references.sentences,
+                    "exit_audit_pending": True,
+                },
+            )
+    except Exception as exc:
+        _discard_scientific_outputs(output_dir)
+        cause = f"{type(exc).__name__}: {exc}"
+        finish(VoidCampaign("campaign_exception"), {"cause": cause})
+    return summary
+
+
 def dry_run(config_path: Path, predeclaration_path: Path) -> dict[str, Any]:
     config = StudyConfig.from_yaml(config_path)
     digest = validate_predeclaration(predeclaration_path)
@@ -1546,10 +2259,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     dry = commands.add_parser("dry-run")
     dry.add_argument("--config", required=True, type=Path)
     dry.add_argument("--predeclaration", required=True, type=Path)
+    run = commands.add_parser("execute")
+    for option in ("config", "predeclaration", "output-dir"):
+        run.add_argument(f"--{option}", required=True, type=Path)
+    for option in ("owner-ruling", "clarification", "exit-marker", "seats"):
+        run.add_argument(f"--{option}", type=Path)
+    run.add_argument("--bundle-upper-bytes", type=int)
     args = parser.parse_args(argv)
     try:
-        dry_run(args.config, args.predeclaration)
-    except (CampaignError, OSError) as exc:
+        if args.command == "dry-run":
+            dry_run(args.config, args.predeclaration)
+        else:
+            summary = execute(
+                args.config,
+                args.predeclaration,
+                args.output_dir,
+                root=Path(__file__).resolve().parents[2],
+                owner_ruling_path=args.owner_ruling,
+                clarification_path=args.clarification,
+                exit_marker=args.exit_marker,
+                bundle_upper_bytes=args.bundle_upper_bytes,
+                seats=None if args.seats is None else json.loads(args.seats.read_bytes()),
+            )
+            print(summary["status_phrase"])
+            if summary["software_status"] == "VOID":
+                print(summary["cause"], file=sys.stderr)
+                return 1
+    except (CampaignError, OSError, ValueError, subprocess.CalledProcessError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
     return 0

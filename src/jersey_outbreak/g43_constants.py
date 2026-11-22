@@ -7,6 +7,21 @@ PREDECLARATION_COMMIT = "fc16adcb3f8817eb2630ae5a31cd0508990bebd2"
 PREDECLARATION_SHA256 = "67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094"
 # Exact LF bytes of the U1 config, pending the director's commit.
 CONFIG_SHA256 = "118d990be856e5f5783a1d991cba4cd29982ef67bb0891e6a31d9958ff3602d2"
+CONFIG_PATH = "configs/calibration/v13_g43_multilibrary.yaml"
+OWNER_RULING_PATH = "docs/research/v1_3/2026-11-20-g43-owner-ruling.md"
+OWNER_RULING_SHA256 = "ba442e94e4791d9c0a502d4656e580c591c4eed2c8ece50fbaecd6a655cd117c"
+CLARIFICATION_PATH = "docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md"
+CLARIFICATION_SHA256 = "55df2b8dd612e297915ef90221f5775e1e2d298d9b8b9913918d3552d65d1804"
+PRECHECK_PATH = "docs/runs/2026-11-20-g43-seed-precheck.json"
+PRECHECK_SHA256 = "015c8b6b0d24da99fffd4b0908979199aef756757acaf1612de1e3305cf5a379"
+
+# §9, decimal GB. The allocated parent-build bytes come from the U3 seed-123 smoke.
+HOST_HEADROOM_BYTES = 5_000_000_000
+EXPLORATORY_BUNDLE_UPPER_BYTES = 1_000_000_000
+PARENT_BUILD_DISK_BYTES = 1_048_576
+
+# §8 exclusions, paired with their successful substitutes.
+REPLACEMENTS = {87351: 87301, 87352: 87305, 87551: 87506}
 
 # §8, in declaration order. Range bounds here are inclusive.
 EARLIER_SEED_RANGES = (

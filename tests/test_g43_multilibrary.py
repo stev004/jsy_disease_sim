@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import ast
+import csv
 import hashlib
 import json
 import re
 import subprocess
+import sys
 from collections import Counter
 from copy import deepcopy
 from dataclasses import asdict, replace
@@ -20,6 +23,7 @@ import yaml
 from jersey_outbreak import g35b_design_study as g35b
 from jersey_outbreak import g43_constants as frozen
 from jersey_outbreak import g43_multilibrary as study
+from jersey_outbreak import g43_recompute as audit
 from jersey_outbreak import phase0_campaign as phase0
 from jersey_outbreak.observation_scheduler import observation_stream_seed
 from jersey_outbreak.observation_schemas import ObservationConfig
@@ -1000,7 +1004,19 @@ class _MockLatent(SimpleNamespace):
     @property
     def transmission_events(self) -> list[dict[str, Any]]:
         self.on_truth(self.config.seed)
-        return [{"imported": True}] * 10 + [{"source_kind": "local"}] * (_MOCK_LATENT_COUNT - 10)
+        return [
+            {
+                "imported": index < 10,
+                "source_kind": "import" if index < 10 else "local",
+                "infection_date": _MOCK_DATES[2],
+                "infectious_start_date": _MOCK_DATES[4],
+                "recovery_date": _MOCK_DATES[9],
+                "symptomatic": index % 2 == 0,
+                "symptom_onset_date": _MOCK_DATES[4] if index % 2 == 0 else None,
+                "infected_uid": index,
+            }
+            for index in range(_MOCK_LATENT_COUNT)
+        ]
 
 
 def _mock_dispatches(
@@ -1027,14 +1043,26 @@ def _mock_dispatches(
         assert root == ROOT and mode == "ci" and options == {"write_m4": True}
         assert path.name == str(seed)
         m2, m3, m4 = process_hashes[seed]
+        for stage, diagnostic in (
+            (
+                "m2",
+                {"builder": {"private_assignment_residual_fallback": {}}} if seed == 86005 else {},
+            ),
+            ("m3", {"builder": {"destination_reassignment_fallback": {}}} if seed == 87103 else {}),
+        ):
+            directory = path / stage
+            directory.mkdir(parents=True)
+            (directory / "diagnostics.json").write_text(json.dumps(diagnostic))
         return SimpleNamespace(
             generated=SimpleNamespace(
                 config=SimpleNamespace(seed=seed, mode=mode),
                 m2_input=SimpleNamespace(
-                    manifest=SimpleNamespace(seed=seed, mode=mode, logical_content_hash=m2)
+                    manifest=SimpleNamespace(seed=seed, mode=mode, logical_content_hash=m2),
+                    artifact_directory=path / "m2",
                 ),
                 m3_input=SimpleNamespace(
-                    manifest=SimpleNamespace(seed=seed, mode=mode, logical_content_hash=m3)
+                    manifest=SimpleNamespace(seed=seed, mode=mode, logical_content_hash=m3),
+                    artifact_directory=path / "m3",
                 ),
                 logical_content_hash=m4,
             )
@@ -1058,6 +1086,10 @@ def _mock_dispatches(
             generated=parent,
             offset=offset,
             on_truth=before_truth,
+            daily_epidemic=[
+                {"date": day, "susceptible": 2990, "exposed": 3, "infectious": 2, "recovered": 5}
+                for day in _MOCK_DATES[:30]
+            ],
             diagnostics={
                 "benchmark": {"n_agents": 3000, "runtime_seconds": 0.125},
                 "natural_history": {"chronology_passed": True},
@@ -1104,13 +1136,29 @@ def _mock_dispatches(
             {"report_date": None, "symptomatic": False}
             for _ in range(_MOCK_LATENT_COUNT - len(events))
         )
+        for event in events:
+            event.update(
+                {
+                    "infection_date": _MOCK_DATES[2],
+                    "infectious_start_date": _MOCK_DATES[4],
+                    "recovery_date": _MOCK_DATES[9],
+                    "symptom_onset_date": _MOCK_DATES[4] if event["symptomatic"] else None,
+                    "detection_date": _MOCK_DATES[4] if event["report_date"] is not None else None,
+                }
+            )
         return SimpleNamespace(
             config=config,
             latent_run=result,
             observation_events=events,
+            daily_observed_cases=[
+                {"date": day, "latent_infections": _MOCK_LATENT_COUNT if index == 2 else 0}
+                for index, day in enumerate(_MOCK_DATES)
+            ],
             diagnostics={
                 "no_report_before_infection": True,
                 "latent_incidence_conservation": True,
+                "chronology_violations": 0,
+                "latent_incidence_conservation_difference": 0,
                 "observation_rng": {
                     "stream_namespace": "observation",
                     "stream_key_inputs": [
@@ -1682,3 +1730,485 @@ def test_void_omits_all_reference_counts_and_sentences(
     result = study.evaluate_after_blind(mocked_full_run.generation)
     assert result == study.VoidCampaign("shared panel P9")
     assert set(asdict(result)) == {"cause", "campaign_status"}
+
+
+@pytest.mark.parametrize("corruption", ["seed", "namespace", "replicate_order", "table_sha256"])
+def test_persisted_candidate_corruption_fails_library_p9_and_voids_campaign(
+    mocked_full_run: Any, monkeypatch: pytest.MonkeyPatch, corruption: str
+) -> None:
+    generation = mocked_full_run.generation
+    directory = generation.directory / "library_1/candidate_tables/0"
+    first, second = directory / "01.json", directory / "02.json"
+    # U2 has no retained candidate files. Supply the corrupted evidence there to
+    # demonstrate that its post-blind P9 ignores the records altogether.
+    original = first.read_bytes() if first.exists() else None
+    second_original = second.read_bytes() if second.exists() else None
+    directory.mkdir(parents=True, exist_ok=True)
+    payload = (
+        json.loads(original)
+        if original
+        else {
+            "process_seed": 87101,
+            "returned_observation_config": {"observation_config_id": "v13-g43-fit"},
+            "position": 1,
+            "table_sha256": "1" * 64,
+        }
+    )
+    if corruption == "seed":
+        payload["process_seed"] = 87102
+    elif corruption == "namespace":
+        payload["returned_observation_config"]["observation_config_id"] = "v13-g43-target"
+    elif corruption == "replicate_order":
+        if original is not None and second_original is not None:
+            second.write_bytes(original)
+        payload = json.loads(second_original) if second_original else {**payload, "position": 2}
+    else:
+        payload["table_sha256"] = "0" * 64
+    first.write_text(json.dumps(payload), encoding="utf-8")
+
+    integrity = []
+    original_evaluate = study.evaluate_recovery
+
+    def capture(*args: Any, **kwargs: Any) -> study.RecoveryEvaluation:
+        evaluation = original_evaluate(*args, **kwargs)
+        integrity.append(evaluation.library_integrity)
+        return evaluation
+
+    monkeypatch.setattr(study, "evaluate_recovery", capture)
+    try:
+        result = study.evaluate_after_blind(generation)
+        assert integrity[0]["P9"] is False
+        assert all(item["P9"] for item in integrity[1:])
+        assert result == study.VoidCampaign("L1 P9")
+    finally:
+        if original is None:
+            first.unlink()
+        else:
+            first.write_bytes(original)
+        if second_original is not None and corruption == "replicate_order":
+            second.write_bytes(second_original)
+
+
+def _json(path: Path) -> Any:
+    return json.loads(path.read_bytes())
+
+
+_BUNDLE_UPPER = 1_000_000_000 + 1_048_576
+_REQUIRED_FREE = 5_000_000_000 + _BUNDLE_UPPER
+
+
+def _mock_host_disk(patch: pytest.MonkeyPatch, free: int) -> None:
+    def disk_usage(path: Path) -> SimpleNamespace:
+        assert path == Path("/mnt/c")
+        return SimpleNamespace(free=free)
+
+    patch.setattr(study.shutil, "disk_usage", disk_usage)
+
+
+def _execute_cli_args(output: Path) -> list[str]:
+    return [
+        "execute",
+        "--config",
+        str(CONFIG),
+        "--predeclaration",
+        str(PREDECLARATION),
+        "--owner-ruling",
+        str(ROOT / "docs/research/v1_3/2026-11-20-g43-owner-ruling.md"),
+        "--output-dir",
+        str(output),
+    ]
+
+
+@pytest.fixture(scope="module")
+def mocked_execute_bundle(
+    tmp_path_factory: pytest.TempPathFactory, declared_process_hashes: dict[int, tuple[str, ...]]
+) -> Any:
+    output = tmp_path_factory.mktemp("g43-bundle") / "empty"
+    output.mkdir()
+    ledger = study.WorkLedger()
+    evaluations = []
+    original = study.evaluate_after_blind
+
+    def evaluate(generation: study.BlindGeneration) -> study.StudyEvaluation | study.VoidCampaign:
+        result = original(generation)
+        evaluations.append(result)
+        return result
+
+    with pytest.MonkeyPatch.context() as patch:
+        _mock_dispatches(patch, declared_process_hashes, ledger, on_truth=lambda _: None)
+        patch.setattr(study, "_require_clean_worktree", lambda _: None)
+        patch.setattr(study, "WorkLedger", lambda: ledger)
+        patch.setattr(study, "evaluate_after_blind", evaluate)
+        _mock_host_disk(patch, _REQUIRED_FREE + 11)
+        assert (
+            study.main(
+                [*_execute_cli_args(output), "--bundle-upper-bytes", str(_BUNDLE_UPPER + 11)]
+            )
+            == 0
+        )
+    [evaluation] = evaluations
+    assert isinstance(evaluation, study.StudyEvaluation)
+    return SimpleNamespace(
+        path=output, summary=_json(output / "campaign_summary.json"), output=evaluation
+    )
+
+
+def test_execute_seals_exact_frozen_layout_and_single_source_disclosures(
+    mocked_execute_bundle: Any, frozen_document: str
+) -> None:
+    run = mocked_execute_bundle
+    directory = run.path
+    study.verify_bundle(directory)
+    expected_paths = {
+        "SHA256SUMS",
+        "campaign_summary.json",
+        "seed_ledger.json",
+        "g43_matrices.json",
+        "g43_across_library.json",
+        "frozen_inputs/2026-11-20-g43-predeclaration.md",
+        "frozen_inputs/2026-11-20-g43-owner-ruling.md",
+        "frozen_inputs/2026-11-21-g43-owner-clarification-1.md",
+        "frozen_inputs/2026-11-20-g43-seed-precheck.json",
+        "frozen_inputs/v13_g43_multilibrary.yaml",
+        "frozen_inputs/sha256.json",
+        "frozen_inputs/source_and_config_hashes.json",
+        "targets/target_provenance.json",
+        "targets/truth_diagnostics.json",
+        "targets/auditor_recompute_notes.json",
+        *(f"targets/{seed}.json" for seed in _TARGET_SEEDS),
+        *(f"targets/latent_truth/{seed}.json" for seed in _TARGET_SEEDS),
+    }
+    for number in range(1, 7):
+        library = f"library_{number}"
+        expected_paths.update(
+            f"{library}/{name}"
+            for name in (
+                f"g43_L{number}_recovery.csv",
+                f"g43_L{number}_descriptives.json",
+                "recovery_evaluation.json",
+                "reference_evaluations.json",
+                "blind_readback_hashes.json",
+            )
+        )
+        expected_paths.update(
+            f"{library}/candidate_tables/{cell}/{rep:02d}.json"
+            for cell, rep in product(range(625), range(1, 13))
+        )
+        expected_paths.update(f"{library}/blind_estimates/{seed}.json" for seed in _TARGET_SEEDS)
+        expected_paths.update(
+            f"{library}/descriptive_estimates/{view}/{seed}.json"
+            for view, seed in product(
+                ("batch1", "batch2", "batch3", "batch4", "batches_1_2"), _TARGET_SEEDS
+            )
+        )
+    paths = [directory, *directory.rglob("*")]
+    assert all(not path.stat().st_mode & 0o222 for path in paths)
+    files = [path for path in paths if path.is_file()]
+    assert {path.relative_to(directory).as_posix() for path in files} == expected_paths
+
+    inputs = _json(directory / "frozen_inputs/sha256.json")
+    assert set(inputs) == {
+        "2026-11-20-g43-predeclaration.md",
+        "2026-11-20-g43-owner-ruling.md",
+        "2026-11-21-g43-owner-clarification-1.md",
+        "2026-11-20-g43-seed-precheck.json",
+        "v13_g43_multilibrary.yaml",
+    }
+    for name, digest in inputs.items():
+        tracked = (
+            subprocess.check_output(["git", "ls-files", "--", f"**/{name}"], cwd=ROOT)
+            .decode()
+            .strip()
+        )
+        content = subprocess.check_output(["git", "show", f"HEAD:{tracked}"], cwd=ROOT)
+        assert (directory / "frozen_inputs" / name).read_bytes() == content
+        assert digest == hashlib.sha256(content).hexdigest()
+    source = _json(directory / "frozen_inputs/source_and_config_hashes.json")
+    tracked = (
+        subprocess.check_output(
+            ["git", "ls-files", "-z", "src/jersey_outbreak", "configs"], cwd=ROOT
+        )
+        .decode()
+        .split("\0")
+    )
+    assert set(source["source_and_config_sha256"]) == {
+        name for name in tracked if Path(name).suffix in (".py", ".yaml", ".json")
+    }
+    for name, digest in source["source_and_config_sha256"].items():
+        assert (
+            hashlib.sha256(
+                subprocess.check_output(["git", "show", f"{source['git_head']}:{name}"], cwd=ROOT)
+            ).hexdigest()
+            == digest
+        )
+    assert run.summary["lineage"]["frozen_section_1"] == frozen_document[
+        frozen_document.index("**Lineage block**") : frozen_document.index("## 2.")
+    ].rstrip("\n")
+    assert run.summary["lineage"]["reviewer"] == run.summary["seats"]["reviewer"]
+    assert run.summary["seats"]["substitutions"] == "not applicable"
+    assert (
+        run.summary["exit_audit_pending"] is True
+        and "exit audit pending" not in run.summary["status_phrase"]
+    )
+
+    expected_work = {"shared_panel": _SHARED, "totals": _TOTALS}
+    for scope, expected in expected_work.items():
+        assert run.summary["measured_work"][scope] == {
+            "measured": expected,
+            "planned": expected,
+            "measured_equals_planned": True,
+        }
+    assert run.summary["measured_work"]["libraries"] == {
+        f"L{i}": {"measured": _LIBRARY, "planned": _LIBRARY, "measured_equals_planned": True}
+        for i in range(1, 7)
+    }
+    disclosures = run.summary["disclosures"]
+    assert disclosures["disk"]["default_upper_bytes"] == _BUNDLE_UPPER
+    assert disclosures["disk"]["upper_override_bytes"] == _BUNDLE_UPPER + 11
+    assert disclosures["disk"]["required_free_bytes"] == _REQUIRED_FREE + 11
+    assert disclosures["disk"]["bundle_size_bytes"] == sum(path.stat().st_size for path in files)
+    for scope, count in [
+        (disclosures["shared_panel"], 20),
+        *((scope, 300) for scope in disclosures["libraries"].values()),
+    ]:
+        assert set(scope["wall_time_seconds"]) == {
+            "build",
+            "latent",
+            "transform",
+            "scoring",
+            "retention",
+        }
+        assert all(seconds >= 0 for seconds in scope["wall_time_seconds"].values())
+        assert [entry["runtime_seconds"] for entry in scope["latent_call_runtimes"]] == [
+            0.125
+        ] * count
+    assert disclosures["shared_panel"]["population_fallbacks"]["fallback_built_count"] == 1
+    assert disclosures["libraries"]["L1"]["population_fallbacks"]["fallback_built_count"] == 1
+    for name in ("target_provenance.json", "latent_truth/86001.json"):
+        assert "runtime_seconds" not in (directory / "targets" / name).read_text()
+    for name in (
+        "candidate_tables/0/01.json",
+        "g43_L1_descriptives.json",
+        "reference_evaluations.json",
+    ):
+        assert "wall_time_seconds" not in (directory / "library_1" / name).read_text()
+    with (directory / "library_1/g43_L1_recovery.csv").open() as file:
+        rows = list(csv.DictReader(file))
+    assert len(rows) == 20
+    assert (
+        rows[4]["population_fallback_m2"] == "True" and rows[4]["population_fallback_m3"] == "False"
+    )
+    assert rows[4]["boundary_beta"] == "False" and rows[4]["predicate_P1"] == "True"
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    ["file_byte", "manifest_byte", "missing_file", "file_write_bit", "directory_write_bit"],
+)
+def test_verify_bundle_rejects_corruption_and_any_remaining_write_bit(
+    mocked_execute_bundle: Any, corruption: str
+) -> None:
+    directory = mocked_execute_bundle.path
+    path = directory / ("SHA256SUMS" if corruption == "manifest_byte" else "seed_ledger.json")
+    root_mode, mode = directory.stat().st_mode, path.stat().st_mode
+    original = path.read_bytes()
+    moved = directory.parent / "temporarily-missing.json"
+    try:
+        if corruption == "missing_file":
+            directory.chmod(root_mode | 0o200)
+            path.rename(moved)
+            directory.chmod(root_mode)
+        elif corruption == "directory_write_bit":
+            directory.chmod(root_mode | 0o020)
+        else:
+            path.chmod(mode | 0o200)
+            if corruption in {"file_byte", "manifest_byte"}:
+                path.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+                path.chmod(mode)
+        with pytest.raises(study.CampaignError, match="SHA256SUMS|write bits"):
+            study.verify_bundle(directory)
+    finally:
+        if moved.exists():
+            directory.chmod(root_mode | 0o200)
+            moved.rename(path)
+        path.chmod(mode | 0o200)
+        path.write_bytes(original)
+        path.chmod(mode)
+        directory.chmod(root_mode)
+    study.verify_bundle(directory)
+
+
+def test_stdlib_recomputes_predicates_all_reference_evaluations_and_class(
+    mocked_execute_bundle: Any,
+) -> None:
+    run = mocked_execute_bundle
+    path = Path(audit.__file__)
+    imports = [
+        node
+        for node in ast.walk(ast.parse(path.read_bytes()))
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+    ]
+    assert imports
+    for node in imports:
+        if isinstance(node, ast.ImportFrom):
+            assert node.level == 0 and node.module is not None
+            assert node.module.split(".")[0] in sys.stdlib_module_names
+        else:
+            assert all(alias.name.split(".")[0] in sys.stdlib_module_names for alias in node.names)
+    completed = subprocess.run(
+        [sys.executable, "-I", str(path), str(run.path)], check=True, capture_output=True, text=True
+    )
+    result = json.loads(completed.stdout)
+    evaluation = run.output
+    across = result["across_library"]
+    assert across["k"] == evaluation.campaign.k == 6
+    assert across["k_prime"] == evaluation.campaign.k_prime == 6
+    assert across["m"] == evaluation.references.m == 24
+    assert across["m_by_library"] == {
+        str(k): v for k, v in evaluation.references.m_by_library.items()
+    }
+    assert across["s1"] is evaluation.references.s1 is True
+    assert across["s2"] is evaluation.references.s2 is True
+    assert across["class"] == evaluation.campaign.reading_class == "CONSISTENT-PASS"
+    assert result["reference_sentences"] == list(evaluation.references.sentences)
+    assert across["reading"] == study.reading(evaluation.campaign)
+    for number, library in enumerate(evaluation.campaign.libraries, 1):
+        assert result["libraries"][str(number)]["predicates"] == library.predicates
+        assert result["references"][str(number)] == {
+            name: asdict(record) for name, record in evaluation.references.libraries[number].items()
+        }
+
+
+@pytest.mark.parametrize(
+    "source,key,field,value",
+    [
+        (
+            "transmission_events",
+            "natural_history.chronology_passed",
+            "infectious_start_date",
+            "2025-01-07",
+        ),
+        ("daily_epidemic", "states.conserved", "susceptible", 2989),
+        ("observation_events", "no_report_before_infection", "report_date", "2025-01-07"),
+        ("daily_observed_cases", "latent_incidence_conservation", "latent_infections", 1),
+    ],
+)
+def test_p3_recomputation_uses_raw_source_and_detects_one_corrupted_row(
+    mocked_execute_bundle: Any,
+    source: str,
+    key: str,
+    field: str,
+    value: Any,
+) -> None:
+    targets = mocked_execute_bundle.path / "targets"
+    raw = _json(targets / "latent_truth/86001.json")
+    assert set(raw) == {
+        "transmission_events",
+        "daily_epidemic",
+        "natural_history",
+        "states",
+        "observation_events",
+        "daily_observed_cases",
+        "benchmark",
+        "observation_diagnostics",
+    }
+    assert raw["benchmark"]["n_agents"] == 3000
+    assert len(raw["transmission_events"]) == len(raw["observation_events"]) == _MOCK_LATENT_COUNT
+    assert len(raw["daily_epidemic"]) == 30 and len(raw["daily_observed_cases"]) == 34
+    assert raw["transmission_events"][-1]["infected_uid"] == _MOCK_LATENT_COUNT - 1
+    retained = _json(targets / "truth_diagnostics.json")["86001"]["conditions"]
+    expected = {
+        name: passed for name, passed in retained.items() if name in audit.recompute_p3(raw)
+    }
+    assert (
+        audit.recompute_p3(raw)
+        == expected
+        == {
+            "natural_history.chronology_passed": raw["natural_history"]["chronology_passed"],
+            "states.conserved": raw["states"]["conserved"],
+            "no_report_before_infection": raw["observation_diagnostics"][
+                "no_report_before_infection"
+            ],
+            "latent_incidence_conservation": raw["observation_diagnostics"][
+                "latent_incidence_conservation"
+            ],
+        }
+    )
+    assert all(expected.values())
+    raw[source][0][field] = value
+    assert audit.recompute_p3(raw) == {**expected, key: False}
+    notes = _json(targets / "auditor_recompute_notes.json")["recomputable"]["P3"]
+    assert source in notes[key]["raw_rows"]
+    assert re.search(r"\.py:\d+", notes[key]["source"])
+
+
+@pytest.mark.parametrize("precondition", ["nonempty", "exit_marker", "disk"])
+def test_execute_refuses_failed_launch_preconditions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    precondition: str,
+) -> None:
+    output = tmp_path / "bundle"
+    args = _execute_cli_args(output)
+    if precondition == "nonempty":
+        output.mkdir()
+        (output / "existing").write_text("keep")
+        expected = "output directory must be empty"
+    elif precondition == "exit_marker":
+        (tmp_path / "jos-g43-campaign.exit").touch()
+        expected = "exit marker already exists"
+    else:
+        expected = f"below required {_REQUIRED_FREE} bytes"
+    _mock_host_disk(monkeypatch, _REQUIRED_FREE - 1)
+    monkeypatch.setattr(
+        study, "_generate_study", lambda *_, **__: pytest.fail("generation dispatched")
+    )
+    assert study.main(args) == 1
+    assert expected in capsys.readouterr().err
+    assert (
+        (output / "existing").read_text() == "keep"
+        if precondition == "nonempty"
+        else not output.exists()
+    )
+
+
+def test_execute_seals_partial_void_and_recompute_omits_science(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    declared_process_hashes: dict[int, tuple[str, ...]],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output = tmp_path / "void"
+    ledger = study.WorkLedger()
+    calls = _mock_dispatches(monkeypatch, declared_process_hashes, ledger, on_truth=lambda _: None)
+    monkeypatch.setattr(study, "WorkLedger", lambda: ledger)
+    monkeypatch.setattr(study, "_require_clean_worktree", lambda _: None)
+    _mock_host_disk(monkeypatch, _REQUIRED_FREE)
+    original = g35b.run_outbreak
+
+    def failure(parent: Any, config: OutbreakRunConfig, parameters: Any) -> Any:
+        if config.seed == 86002:
+            raise RuntimeError("injected dispatch failure")
+        return original(parent, config, parameters)
+
+    monkeypatch.setattr(g35b, "run_outbreak", failure)
+    assert study.main(_execute_cli_args(output)) == 1
+    captured = capsys.readouterr()
+    assert captured.out.rstrip().endswith("; G43: VOID")
+    assert captured.err == "RuntimeError: injected dispatch failure\n"
+    study.verify_bundle(output)
+    summary = _json(output / "campaign_summary.json")
+    assert summary["software_status"] == "VOID"
+    assert summary["measured_work"]["shared_panel"]["measured"]["latent_calls"] == 2
+    assert not summary["measured_work"]["shared_panel"]["measured_equals_planned"]
+    assert summary["disclosures"]["disk"]["upper_override_bytes"] is None
+    assert calls["builds"] == {86001: 1, 86002: 1}
+    assert (output / "targets/86001.json").is_file()
+    assert not (output / "g43_across_library.json").exists()
+    assert audit.recompute_bundle(output) == {
+        "software_status": "VOID",
+        "status_phrase": summary["status_phrase"],
+        "cause": "RuntimeError: injected dispatch failure",
+    }
+    assert not {"scientific_status", "class", "reading", "reference_sentences"} & summary.keys()
