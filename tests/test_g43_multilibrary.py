@@ -8,6 +8,8 @@ import re
 import subprocess
 import sys
 from collections import Counter
+from collections.abc import Iterator
+from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict, replace
 from datetime import date, timedelta
@@ -74,6 +76,10 @@ def test_config_lf_bytes_match_independent_digest() -> None:
     assert b"\r" not in content
     assert hashlib.sha256(content).hexdigest() == frozen.CONFIG_SHA256
     assert study.StudyConfig.from_yaml(CONFIG) == study.StudyConfig()
+
+
+def test_config_digest_comment_no_longer_marks_commit_pending() -> None:
+    assert "pending the director's commit" not in Path(frozen.__file__).read_text()
 
 
 def test_final_seed_and_hash_table_matches_frozen_commit(frozen_document: str) -> None:
@@ -1155,6 +1161,7 @@ def _mock_dispatches(
                 for index, day in enumerate(_MOCK_DATES)
             ],
             diagnostics={
+                "status": "passed",
                 "no_report_before_infection": True,
                 "latent_incidence_conservation": True,
                 "chronology_violations": 0,
@@ -1732,7 +1739,20 @@ def test_void_omits_all_reference_counts_and_sentences(
     assert set(asdict(result)) == {"cause", "campaign_status"}
 
 
-@pytest.mark.parametrize("corruption", ["seed", "namespace", "replicate_order", "table_sha256"])
+def _change_candidate_table_body(payload: dict[str, Any]) -> None:
+    table = payload["table"]
+    recorded = payload["table_sha256"]
+    assert audit.table_sha256(table) == recorded
+    count = table["symptomatic"][0]
+    # Preserve the numerical input to the fitter while changing the hashed JSON.
+    table["symptomatic"][0] = int(count) if type(count) is float else float(count)
+    assert table["symptomatic"][0] == count
+    assert payload["table_sha256"] == recorded != audit.table_sha256(table)
+
+
+@pytest.mark.parametrize(
+    "corruption", ["seed", "namespace", "replicate_order", "table_sha256", "table_body"]
+)
 def test_persisted_candidate_corruption_fails_library_p9_and_voids_campaign(
     mocked_full_run: Any, monkeypatch: pytest.MonkeyPatch, corruption: str
 ) -> None:
@@ -1762,8 +1782,10 @@ def test_persisted_candidate_corruption_fails_library_p9_and_voids_campaign(
         if original is not None and second_original is not None:
             second.write_bytes(original)
         payload = json.loads(second_original) if second_original else {**payload, "position": 2}
-    else:
+    elif corruption == "table_sha256":
         payload["table_sha256"] = "0" * 64
+    else:
+        _change_candidate_table_body(payload)
     first.write_text(json.dumps(payload), encoding="utf-8")
 
     integrity = []
@@ -1793,6 +1815,54 @@ def _json(path: Path) -> Any:
     return json.loads(path.read_bytes())
 
 
+_INCOMPLETE_TARGETS = ["latent_29", "latent_empty", "dates_33"]
+
+
+def _incomplete_target_result(
+    latent_rows: list[Any],
+    observed_rows: list[Any],
+    observation_diagnostics: dict[str, Any],
+    corruption: str,
+) -> None:
+    if corruption == "latent_29":
+        assert len(latent_rows) == 30
+        latent_rows.pop()
+    elif corruption == "latent_empty":
+        latent_rows.clear()
+    else:
+        assert corruption == "dates_33" and len(observed_rows) == 34
+        observed_rows.pop()
+
+
+@pytest.mark.parametrize("corruption", _INCOMPLETE_TARGETS)
+def test_incomplete_returned_target_fails_shared_p1(
+    mocked_full_run: Any, monkeypatch: pytest.MonkeyPatch, corruption: str
+) -> None:
+    generation = mocked_full_run.generation
+    target = generation.targets[86001]
+    latent_rows = list(target.latent.daily_epidemic)
+    observed_rows = list(target.observed.daily_observed_cases)
+    observation_diagnostics = dict(target.observed.diagnostics)
+    _incomplete_target_result(latent_rows, observed_rows, observation_diagnostics, corruption)
+    monkeypatch.setattr(target.latent, "daily_epidemic", latent_rows)
+    monkeypatch.setattr(target.observed, "daily_observed_cases", observed_rows)
+    monkeypatch.setattr(target.observed, "diagnostics", observation_diagnostics)
+
+    panels = []
+    original = study.evaluate_shared_panel
+
+    def capture(*args: Any, **kwargs: Any) -> study.SharedPanelEvaluation:
+        panel = original(*args, **kwargs)
+        panels.append(panel.predicates)
+        return panel
+
+    monkeypatch.setattr(study, "evaluate_shared_panel", capture)
+    result = study.evaluate_after_blind(generation)
+    [predicates] = panels
+    assert predicates["P1"] is False
+    assert result == study.VoidCampaign("shared panel P1")
+
+
 _BUNDLE_UPPER = 1_000_000_000 + 1_048_576
 _REQUIRED_FREE = 5_000_000_000 + _BUNDLE_UPPER
 
@@ -1817,6 +1887,22 @@ def _execute_cli_args(output: Path) -> list[str]:
         "--output-dir",
         str(output),
     ]
+
+
+@pytest.mark.parametrize("override", [0, _BUNDLE_UPPER - 1, _BUNDLE_UPPER, _BUNDLE_UPPER + 1])
+def test_launch_bundle_upper_estimate_has_frozen_floor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, override: int
+) -> None:
+    output = tmp_path / "bundle"
+    _mock_host_disk(monkeypatch, _REQUIRED_FREE + 1)
+    if override < _BUNDLE_UPPER:
+        with pytest.raises(study.CampaignError, match=f"at least {_BUNDLE_UPPER} bytes"):
+            study._launch_checks(output, ROOT, None, override)
+    else:
+        report = study._launch_checks(output, ROOT, None, override)
+        assert report["upper_bytes_used"] == override
+        assert report["required_free_bytes"] == _REQUIRED_FREE + override - _BUNDLE_UPPER
+    assert not output.exists()
 
 
 @pytest.fixture(scope="module")
@@ -1851,6 +1937,23 @@ def mocked_execute_bundle(
     return SimpleNamespace(
         path=output, summary=_json(output / "campaign_summary.json"), output=evaluation
     )
+
+
+def test_intact_execute_creates_exit_marker_and_refuses_sibling(
+    mocked_execute_bundle: Any, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output = mocked_execute_bundle.path
+    marker = output.parent / "jos-g43-campaign.exit"
+    assert _json(marker) == {"output_dir": str(output), "software_status": "PASS"}
+    sibling = output.with_name("second")
+    sibling.mkdir()
+    _mock_host_disk(monkeypatch, _REQUIRED_FREE)
+    monkeypatch.setattr(
+        study, "_generate_study", lambda *_, **__: pytest.fail("generation dispatched")
+    )
+    assert study.main(_execute_cli_args(sibling)) == 1
+    assert "exit marker already exists" in capsys.readouterr().err
+    assert not list(sibling.iterdir())
 
 
 def test_execute_seals_exact_frozen_layout_and_single_source_disclosures(
@@ -2079,6 +2182,75 @@ def test_stdlib_recomputes_predicates_all_reference_evaluations_and_class(
         }
 
 
+def _rewrite_readonly_bytes(path: Path, content: bytes) -> None:
+    mode = path.stat().st_mode
+    path.chmod(mode | 0o200)
+    try:
+        path.write_bytes(content)
+    finally:
+        path.chmod(mode)
+
+
+@contextmanager
+def _replace_sealed_json(directory: Path, path: Path, payload: Any) -> Iterator[None]:
+    original = path.read_bytes()
+    content = study._compact_json_bytes(payload)
+    manifest = directory / "SHA256SUMS"
+    original_manifest = manifest.read_bytes()
+    relative = path.relative_to(directory).as_posix()
+    old = f"{hashlib.sha256(original).hexdigest()}  {relative}\n".encode()
+    new = f"{hashlib.sha256(content).hexdigest()}  {relative}\n".encode()
+    assert original_manifest.count(old) == 1
+    try:
+        _rewrite_readonly_bytes(path, content)
+        _rewrite_readonly_bytes(manifest, original_manifest.replace(old, new))
+        yield
+    finally:
+        _rewrite_readonly_bytes(path, original)
+        _rewrite_readonly_bytes(manifest, original_manifest)
+
+
+def _assert_recomputed_void(directory: Path, cause: str) -> None:
+    completed = subprocess.run(
+        [sys.executable, "-I", str(Path(audit.__file__)), str(directory)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    result = json.loads(completed.stdout)
+    assert result["software_status"] == "VOID"
+    assert result["cause"] == cause
+    assert set(result) == {"software_status", "status_phrase", "cause"}
+
+
+@pytest.mark.parametrize("corruption", _INCOMPLETE_TARGETS)
+def test_stdlib_recomputation_fails_shared_p1_for_incomplete_target(
+    mocked_execute_bundle: Any, corruption: str
+) -> None:
+    directory = mocked_execute_bundle.path
+    path = directory / "targets/latent_truth/86001.json"
+    raw = _json(path)
+    _incomplete_target_result(
+        raw["daily_epidemic"],
+        raw["daily_observed_cases"],
+        raw["observation_diagnostics"],
+        corruption,
+    )
+    with _replace_sealed_json(directory, path, raw):
+        _assert_recomputed_void(directory, "shared panel P1")
+
+
+def test_stdlib_recomputation_fails_library_p9_for_changed_table_body(
+    mocked_execute_bundle: Any,
+) -> None:
+    directory = mocked_execute_bundle.path
+    path = directory / "library_1/candidate_tables/0/01.json"
+    payload = _json(path)
+    _change_candidate_table_body(payload)
+    with _replace_sealed_json(directory, path, payload):
+        _assert_recomputed_void(directory, "L1 P9")
+
+
 @pytest.mark.parametrize(
     "source,key,field,value",
     [
@@ -2171,6 +2343,8 @@ def test_execute_refuses_failed_launch_preconditions(
         if precondition == "nonempty"
         else not output.exists()
     )
+    if precondition != "exit_marker":
+        assert not (tmp_path / "jos-g43-campaign.exit").exists()
 
 
 def test_execute_seals_partial_void_and_recompute_omits_science(
@@ -2180,6 +2354,7 @@ def test_execute_seals_partial_void_and_recompute_omits_science(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     output = tmp_path / "void"
+    marker = tmp_path / "custom.exit"
     ledger = study.WorkLedger()
     calls = _mock_dispatches(monkeypatch, declared_process_hashes, ledger, on_truth=lambda _: None)
     monkeypatch.setattr(study, "WorkLedger", lambda: ledger)
@@ -2193,7 +2368,7 @@ def test_execute_seals_partial_void_and_recompute_omits_science(
         return original(parent, config, parameters)
 
     monkeypatch.setattr(g35b, "run_outbreak", failure)
-    assert study.main(_execute_cli_args(output)) == 1
+    assert study.main([*_execute_cli_args(output), "--exit-marker", str(marker)]) == 1
     captured = capsys.readouterr()
     assert captured.out.rstrip().endswith("; G43: VOID")
     assert captured.err == "RuntimeError: injected dispatch failure\n"
@@ -2212,3 +2387,77 @@ def test_execute_seals_partial_void_and_recompute_omits_science(
         "cause": "RuntimeError: injected dispatch failure",
     }
     assert not {"scientific_status", "class", "reading", "reference_sentences"} & summary.keys()
+    assert _json(marker) == {"output_dir": str(output), "software_status": "VOID"}
+    sibling = output.with_name("second")
+    sibling.mkdir()
+    assert study.main([*_execute_cli_args(sibling), "--exit-marker", str(marker)]) == 1
+    assert "exit marker already exists" in capsys.readouterr().err
+    assert not list(sibling.iterdir())
+
+
+@pytest.mark.parametrize("exception_type", [KeyboardInterrupt, SystemExit])
+def test_execute_seals_void_before_propagating_base_exception(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    declared_process_hashes: dict[int, tuple[str, ...]],
+    exception_type: type[BaseException],
+) -> None:
+    output = tmp_path / "interrupted"
+    ledger = study.WorkLedger()
+    calls = _mock_dispatches(monkeypatch, declared_process_hashes, ledger, on_truth=lambda _: None)
+    monkeypatch.setattr(study, "WorkLedger", lambda: ledger)
+    monkeypatch.setattr(study, "_require_clean_worktree", lambda _: None)
+    _mock_host_disk(monkeypatch, _REQUIRED_FREE)
+    original = g35b.run_outbreak
+    failure = exception_type("injected termination")
+
+    def interrupt(parent: Any, config: OutbreakRunConfig, parameters: Any) -> Any:
+        if config.seed == 86002:
+            raise failure
+        return original(parent, config, parameters)
+
+    monkeypatch.setattr(g35b, "run_outbreak", interrupt)
+    with pytest.raises(exception_type) as caught:
+        study.main(_execute_cli_args(output))
+    assert caught.value is failure
+    study.verify_bundle(output)
+    assert calls["builds"] == {86001: 1, 86002: 1}
+    assert (output / "targets/86001.json").is_file()
+    summary = _json(output / "campaign_summary.json")
+    assert summary["software_status"] == "VOID"
+    assert summary["cause"] == f"{exception_type.__name__}: injected termination"
+    assert not {"scientific_status", "class", "reading", "reference_sentences"} & summary.keys()
+    assert not (output / "g43_across_library.json").exists()
+    assert not (output / "g43_matrices.json").exists()
+    assert _json(tmp_path / "jos-g43-campaign.exit") == {
+        "output_dir": str(output),
+        "software_status": "VOID",
+    }
+
+
+def test_first_void_finish_failure_preserves_original_error_and_rejects_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "failed-seal"
+    failure = RuntimeError("injected generation error")
+
+    def fail_generation(*args: Any) -> None:
+        raise failure
+
+    def fail_summary(directory: Path, summary: dict[str, Any]) -> None:
+        assert directory == output and summary["software_status"] == "VOID"
+        raise OSError("injected VOID finish error")
+
+    monkeypatch.setattr(study, "_generate_study", fail_generation)
+    monkeypatch.setattr(study, "_write_summary", fail_summary)
+    monkeypatch.setattr(study, "_require_clean_worktree", lambda _: None)
+    _mock_host_disk(monkeypatch, _REQUIRED_FREE)
+    with pytest.raises(RuntimeError) as caught:
+        study.execute(CONFIG, PREDECLARATION, output, root=ROOT)
+    assert caught.value is failure
+    with pytest.raises(study.CampaignError, match="SHA256SUMS|write bits"):
+        study.verify_bundle(output)
+    assert _json(tmp_path / "jos-g43-campaign.exit") == {
+        "output_dir": str(output),
+        "software_status": "VOID",
+    }

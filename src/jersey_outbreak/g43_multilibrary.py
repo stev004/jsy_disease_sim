@@ -13,7 +13,7 @@ import sys
 import time
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import date
 from decimal import Context, Decimal, Inexact, localcontext
 from itertools import groupby, product
@@ -1615,6 +1615,7 @@ def evaluate_after_blind(generation: BlindGeneration) -> StudyEvaluation | VoidC
         row.process: row.observation for row in frozen.FINAL_SEEDS if row.library is None
     }
     truth = _truth_cell()
+    dates = observation_dates(_START_DATE, frozen.LATENT_DAYS, _TAIL_DAYS)
     provenance_verified = True
     for seed, target in generation.targets.items():
         namespace_passed = _namespace_passes(
@@ -1633,13 +1634,29 @@ def evaluate_after_blind(generation: BlindGeneration) -> StudyEvaluation | VoidC
             and type(target.latent.diagnostics["benchmark"]["n_agents"]) is int
             and target.latent.diagnostics["benchmark"]["n_agents"] == _POPULATION_SIZE
         )
-        diagnostics[seed] = _truth_diagnostics_from_result(
+        returned = _truth_diagnostics_from_result(
             target.latent, target.observed, tables[seed], namespace_passed=namespace_passed
         )
+        latent_days = getattr(target.latent, "daily_epidemic", None)
+        observed_days = getattr(target.observed, "daily_observed_cases", None)
+        complete = (
+            isinstance(latent_days, list)
+            and len(latent_days) == frozen.LATENT_DAYS
+            and getattr(getattr(target.latent, "config", None), "duration_days", None)
+            == frozen.LATENT_DAYS
+            and tables[seed].dates == dates
+            and isinstance(observed_days, list)
+            and tuple(row.get("date") for row in observed_days) == dates
+        )
+        diagnostics[seed] = replace(returned, complete=complete)
 
     panel = evaluate_shared_panel(
         diagnostics,
-        evidence=IntegrityEvidence(True, provenance_verified, generation.ledger.measured(None)),
+        evidence=IntegrityEvidence(
+            all(row.complete for row in diagnostics.values()),
+            provenance_verified,
+            generation.ledger.measured(None),
+        ),
     )
     evaluations = {
         number: evaluate_recovery(
@@ -1712,6 +1729,7 @@ def _target_raw_truth(target: _TargetRun) -> dict[str, Any]:
         "observation_diagnostics": {
             key: observed.diagnostics[key]
             for key in (
+                "status",
                 "no_report_before_infection",
                 "chronology_violations",
                 "latent_incidence_conservation",
@@ -2005,20 +2023,28 @@ def _execution_inputs(
     return inputs
 
 
+def _exit_marker_path(output_dir: Path, exit_marker: Path | None) -> Path:
+    return exit_marker or output_dir.parent / "jos-g43-campaign.exit"
+
+
 def _launch_checks(
     output_dir: Path, root: Path, exit_marker: Path | None, bundle_upper_bytes: int | None
 ) -> dict[str, Any]:
-    marker = exit_marker or output_dir.parent / "jos-g43-campaign.exit"
+    marker = _exit_marker_path(output_dir, exit_marker)
     if marker.exists() or marker.is_symlink():
         raise CampaignError(f"campaign exit marker already exists: {marker}")
     if output_dir.is_symlink() or output_dir.resolve().is_relative_to(root.resolve()):
         raise CampaignError("campaign output must be a fresh directory outside the repository")
     if output_dir.exists() and (not output_dir.is_dir() or any(output_dir.iterdir())):
         raise CampaignError("campaign output directory must be empty")
+    if marker.resolve().is_relative_to(output_dir.resolve()):
+        raise CampaignError("campaign exit marker must be outside the bundle directory")
     default_upper = frozen.EXPLORATORY_BUNDLE_UPPER_BYTES + frozen.PARENT_BUILD_DISK_BYTES
     upper = default_upper if bundle_upper_bytes is None else bundle_upper_bytes
     if type(upper) is not int or upper < 0:
         raise CampaignError("bundle upper estimate must be a nonnegative integer of bytes")
+    if upper < default_upper:
+        raise CampaignError(f"bundle upper estimate must be at least {default_upper} bytes")
     host = Path("/mnt/c")
     free = shutil.disk_usage(host).free
     required = frozen.HOST_HEADROOM_BYTES + upper
@@ -2099,7 +2125,9 @@ def _seal_bundle(output_dir: Path) -> None:
 
 def _discard_scientific_outputs(output_dir: Path) -> None:
     # Clarification 1: keep underlying evidence on VOID.
-    for path in [output_dir, *output_dir.rglob("*")]:
+    output_dir.chmod(output_dir.stat().st_mode | 0o200)
+    (output_dir / audit.SHA256SUMS).unlink(missing_ok=True)
+    for path in output_dir.rglob("*"):
         if not path.is_symlink():
             path.chmod(path.stat().st_mode | 0o200)
     for name in ("g43_across_library.json", "g43_matrices.json"):
@@ -2161,7 +2189,9 @@ def execute(
     seats: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run and seal one campaign after its §12 launch preconditions."""
+    # Verify all read-only launch inputs before starting campaign work.
     disk = _launch_checks(output_dir, root, exit_marker, bundle_upper_bytes)
+    marker = _exit_marker_path(output_dir, exit_marker)
     config = StudyConfig.from_yaml(config_path)
     validate_predeclaration(predeclaration_path)
     plan = plan_workload(config)
@@ -2184,11 +2214,8 @@ def execute(
     lineage = declaration[
         declaration.index("**Lineage block**") : declaration.index("## 2.")
     ].rstrip("\n")
-    output_dir.mkdir(parents=True, exist_ok=True)
     frozen_inputs = output_dir / "frozen_inputs"
-    frozen_inputs.mkdir()
     started = time.perf_counter()
-    ledger = WorkLedger()
     summary: dict[str, Any] = {}
 
     def finish(campaign: IntactCampaign | VoidCampaign, scientific: Mapping[str, Any]) -> None:
@@ -2207,7 +2234,18 @@ def execute(
         _write_summary(output_dir, summary)
         _seal_bundle(output_dir)
 
+    def write_marker(software_status: str) -> None:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        content = _compact_json_bytes(
+            {"output_dir": str(output_dir.resolve()), "software_status": software_status}
+        )
+        with marker.open("xb") as stream:
+            stream.write(content)
+
     try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        ledger = WorkLedger()
+        frozen_inputs.mkdir()
         for name, content in inputs.items():
             (frozen_inputs / name).write_bytes(content)
         _write_json(
@@ -2238,10 +2276,23 @@ def execute(
                     "exit_audit_pending": True,
                 },
             )
-    except Exception as exc:
-        _discard_scientific_outputs(output_dir)
-        cause = f"{type(exc).__name__}: {exc}"
-        finish(VoidCampaign("campaign_exception"), {"cause": cause})
+        write_marker(summary["software_status"])
+    except BaseException as exc:
+        recovery_failed = False
+        try:
+            _discard_scientific_outputs(output_dir)
+            cause = f"{type(exc).__name__}: {exc}"
+            finish(VoidCampaign("campaign_exception"), {"cause": cause})
+        except BaseException as sealing_error:
+            exc.add_note(f"VOID bundle sealing failed: {sealing_error!r}")
+            recovery_failed = True
+        try:
+            write_marker("VOID")
+        except BaseException as marker_error:
+            exc.add_note(f"VOID exit marker creation failed: {marker_error!r}")
+            recovery_failed = True
+        if recovery_failed or not isinstance(exc, Exception):
+            raise
     return summary
 
 

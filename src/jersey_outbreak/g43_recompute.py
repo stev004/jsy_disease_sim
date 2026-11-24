@@ -58,6 +58,7 @@ VIEWS = {
     "batches_1_2": slice(0, 6),
 }
 START = date(2025, 1, 6)
+LATENT_DAYS = 30
 DATES = tuple((START + timedelta(days=index)).isoformat() for index in range(34))
 ROUTES = (
     "bus",
@@ -215,7 +216,7 @@ def _model_controls_match(
         and record["parent_network_seed"] == process_seed == run["seed"]
         and run["mode"] == "ci"
         and run["start_date"] == START.isoformat()
-        and run["duration_days"] == 30
+        and run["duration_days"] == LATENT_DAYS
         and run["dt_days"] == 1
         and run["beta"] == cell["beta"]
         and run["initial_seed_count"] == 0
@@ -818,10 +819,24 @@ def _recompute_panel(
             table_path = directory / f"{seed}.json"
             table = _read_json(table_path)
             raw = _read_json(raw_dir / f"{seed}.json")
+            record = provenance_by_seed.get(seed, {})
+            latent_days = raw.get("daily_epidemic")
+            observed_days = raw.get("daily_observed_cases")
+            complete &= (
+                isinstance(latent_days, list)
+                and len(latent_days) == LATENT_DAYS
+                and record.get("returned_run_config", {}).get("duration_days") == LATENT_DAYS
+                and table.get("dates") == list(DATES)
+                and isinstance(observed_days, list)
+                and tuple(day.get("date") for day in observed_days) == DATES
+            )
+            if not latent_days:
+                # An absent state series provides no conservation evidence.
+                p3 = False
+                continue
             rebuilt, conditions = _p2_and_p3(raw)
             target_hashes[seed] = _file_digest(table_path)
             targets[seed] = _roots(table)
-            record = provenance_by_seed.get(seed, {})
             provenance &= (
                 table == rebuilt
                 and target_hashes[seed] == table_sha256(table)

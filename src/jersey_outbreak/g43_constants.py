@@ -5,7 +5,7 @@ from typing import NamedTuple
 PREDECLARATION_PATH = "docs/research/v1_3/2026-11-20-g43-predeclaration.md"
 PREDECLARATION_COMMIT = "fc16adcb3f8817eb2630ae5a31cd0508990bebd2"
 PREDECLARATION_SHA256 = "67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094"
-# Exact LF bytes of the U1 config, pending the director's commit.
+# Exact LF bytes of the U1 config.
 CONFIG_SHA256 = "118d990be856e5f5783a1d991cba4cd29982ef67bb0891e6a31d9958ff3602d2"
 CONFIG_PATH = "configs/calibration/v13_g43_multilibrary.yaml"
 OWNER_RULING_PATH = "docs/research/v1_3/2026-11-20-g43-owner-ruling.md"
