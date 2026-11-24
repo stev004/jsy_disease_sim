@@ -4,9 +4,15 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). **G45 OPEN** (authorize one corrective for review findings R1–R7, then re-review; default HOLD). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective authorized 2026-11-24; unit g44-u4 in flight). G5 open.
 
-### G45 — Authorize one corrective unit for the G43 harness review findings (R1–R7), then re-review? No merge yet.
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G45 — RESOLVED 2026-11-24: A (Steven, chat: "Authorize corrective") — Authorize one corrective unit for the G43 harness review findings (R1–R7), then re-review? No merge yet.
 - **What:** branch `codex/g43-multilibrary` @ `c723f71a652ce2d11278f0e2958bb72baf9716da` (six new files; no protected module touched) passed the independent review (`docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md`), but the review named defects. Frozen G43 §12 (line 702): "A step-4 defect blocks progression until corrected and independently reviewed." So a merge is not available until they are fixed (trail audit `docs/audits/2026-11-22-g44-trail-audit-astra62.md` caught the director offering it).
 - **Findings to correct:**
   - R1 (MINOR): `--bundle-upper-bytes` can lower the §9 host-disk requirement below the measured estimate (host C: ≈ 9.9 GB free on 2026-11-22; rule needs ≈ 6.0 GB).
@@ -18,12 +24,7 @@
   - **B — HOLD.**
 - **Later gates:** SHA-first merge; then the single campaign (frozen §12 step 6) and a fresh exit audit (gpt-6.2-astra @ high). Real-data fitting stays STOPPED.
 - **Default on no answer:** HOLD.
-
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
+- **Execution:** corrective unit `g44-u4` (gpt-6.2-sol @ high; brief `docs/runs/2026-11-24-g44-u4-brief.md.txt`) on `/home/steven/jos-g44-wt` from `c723f71`; then director acceptance, full mirror, bounded re-review by a fresh Opus 5.5, push; then a merge gate.
 
 ### G44 — RESOLVED 2026-11-21: AUTHORIZED (Steven, chat: "Authorize G44") — Authorize implementation of the frozen G43 study (U1–U3 + independent review)? No campaign.
 - **Frozen text:** `docs/research/v1_3/2026-11-20-g43-predeclaration.md` @ `fc16adcb3f8817eb2630ae5a31cd0508990bebd2`, committed-bytes sha256 `67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094`. Owner ruling (gpt-6.2-sol @ high): ACCEPT WITH AMENDMENTS A1–A10, `docs/research/v1_3/2026-11-20-g43-owner-ruling.md` @ `f2062d5`.

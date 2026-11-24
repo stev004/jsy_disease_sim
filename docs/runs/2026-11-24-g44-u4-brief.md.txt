@@ -1,0 +1,73 @@
+TASK: JOS · g44-u4 · G43 harness corrective: review findings R1 R2 R3 R4 R5 R7
+ROLE: implementer — gpt-6.2-sol @ high. Class: numerical. Corrective unit (G45 extension of frozen G43 §13 budget by one run).
+
+GOAL: Correct exactly the findings R1, R2, R3, R4, R5 and R7 named by the independent implementation review of the complete G43 harness at `c723f71a652ce2d11278f0e2958bb72baf9716da`, each with a regression that fails on that head and passes after your change, and change nothing else. No campaign.
+
+SCOPE: the worktree you run in (branch `codex/g43-multilibrary`, HEAD `c723f71a652ce2d11278f0e2958bb72baf9716da`, which contains U1–U3 committed by the director). You may edit only:
+- `src/jersey_outbreak/g43_multilibrary.py`
+- `src/jersey_outbreak/g43_constants.py` (R5 comment only)
+- `src/jersey_outbreak/g43_recompute.py` (standard library imports only, as now)
+- `tests/test_g43_multilibrary.py`
+Edit NOTHING else: not the config, not the fixtures, not `g35b_design_study.py`, `g35b_constants.py`, `phase0_campaign.py` or any protected module. You cannot commit; the director commits after acceptance. No subagents.
+
+CONTEXT. Problem in my own words: the reviewer passed the harness but named two minor defects and five notes. Frozen §12 (line 702) says "A step-4 defect blocks progression until corrected and independently reviewed." So these must be fixed, narrowly, and re-reviewed before any merge. R6 needs no code change (it goes into the later exit-audit brief); leave it alone.
+
+Binding documents, in this order (read in full before coding):
+1. `docs/research/v1_3/2026-11-20-g43-predeclaration.md` — FROZEN (freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2; committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094).
+2. Owner ruling `docs/research/v1_3/2026-11-20-g43-owner-ruling.md`; owner clarification 1 `docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md`.
+3. The review: `docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md` (copied into this worktree, untracked). Each finding there gives file:line, rule, failure scenario and smallest fix.
+4. Earlier unit reports `docs/runs/2026-11-2[12]-g44-u*-report.md` (untracked copies). Do not silently resolve any OPEN item they list.
+5. `.claude/DIRECTOR.md` — STANDING, binding in full.
+
+Findings to correct (the governing frozen sentence is quoted verbatim with its line number; director elaborations are labelled):
+
+R1 — `--bundle-upper-bytes` can lower the host-disk requirement (`g43_multilibrary.py` `_launch_checks`, ~2018–2025).
+- Frozen line 627: "The launcher refuses to start unless host free space is at least 5 GB plus the upper size estimate as updated by U3's measurement."
+- MECHANICAL CONSEQUENCE: the U3-updated estimate (`EXPLORATORY_BUNDLE_UPPER_BYTES + PARENT_BUILD_DISK_BYTES`) is a floor. An override may only raise it: refuse (CampaignError, before any work) any override below the default. Regression: override `default_upper - 1` refused; override `default_upper` and `default_upper + 1` accepted; `0` refused.
+
+R2 — shared-panel P1 "execution complete" is a literal `True` (`g43_multilibrary.py` ~1642: `IntegrityEvidence(True, provenance_verified, ...)`).
+- Frozen line 185: shared-panel group includes "the target-side components of P1 (20 target runs complete)". Frozen line 82: "exactly 30 latent days". Frozen line 84: "34 zero-filled dates `2025-01-06` to `2025-02-08` (T = 34)". Frozen line 197: "Completion is checked under P1". DIRECTOR lesson 2026-09-22: "evidence checks require returned metadata and reject absence".
+- MECHANICAL CONSEQUENCE: compute target-side completion after the barrier from returned metadata, per target, against independent constants: the roster equals the 20 frozen target seeds; each target's latent result reports exactly 30 latent days (e.g. `len(daily_epidemic) == 30` and the returned horizon/config field if one exists); its observation result reports status `passed` (or the equivalent returned status field the code already reads — use whichever the real result objects carry; do not invent a field); its observed table has exactly the 34 frozen dates. Shared P1 is the conjunction. Mirror the same completion check in `g43_recompute._recompute_panel` (so that `states.conserved` over an empty `daily_epidemic` cannot be vacuously true there). Regressions: a target with a truncated `daily_epidemic` (29 rows), an empty one, a missing/failed observation status, and a 33-date table each make shared P1 false and the campaign VOID in BOTH the evaluator and the recompute script; the intact mock stays as before.
+
+R3 — `execute` checks the exit marker but never writes it (~2011–2013).
+- Frozen line 682: "The launcher refuses to start if an exit marker exists or if the host-disk rule of §9 is not met."
+- MECHANICAL CONSEQUENCE (the reviewer's second option): after the bundle is sealed (intact or VOID), `execute` creates the marker at the same path it checks (`--exit-marker` or `<output parent>/jos-g43-campaign.exit`), containing the output directory path and the software status. Creating the marker must not happen before launch checks pass. Regressions: after a mocked intact `execute` and after a mocked VOID `execute`, the marker exists; a second `execute` into a different empty sibling directory is refused.
+
+R4 — test gap: no corruption case changes a candidate table body while keeping its recorded `table_sha256` (`tests/test_g43_multilibrary.py` ~1736–1789).
+- DIRECTOR lesson 2026-09-23 (independent source of truth for each integrity check).
+- Add that corruption case (body bytes changed, recorded digest unchanged) and assert the library's P9 turns false and the campaign is VOID, in the evaluator and in the recompute script. Test-only; no code change expected. If the test fails on the current head, that is a defect: report it and fix it narrowly.
+
+R5 — stale comment `g43_constants.py:8` "Exact LF bytes of the U1 config, pending the director's commit."
+- Drop "pending the director's commit". No value changes.
+
+R7 — `except Exception` (~2241) does not catch `KeyboardInterrupt`/`SystemExit`, and an exception inside the VOID `finish()` itself is unhandled, so a partial bundle can be left unsealed.
+- Frozen line 701: "A software exception during the campaign stops all work, seals a partial bundle with `software_status` VOID, and makes the campaign VOID."
+- MECHANICAL CONSEQUENCE: on any BaseException after launch checks pass, discard scientific outputs, seal the partial bundle with `software_status` VOID on a best-effort basis (an error during that sealing must not mask the original exception), write the exit marker (R3), then re-raise `KeyboardInterrupt`/`SystemExit` after sealing. Regressions: a `KeyboardInterrupt` raised mid-generation leaves a sealed VOID bundle that `verify_bundle` accepts and that has no scientific outputs, the marker exists, and the interrupt propagates; an exception raised inside the first `finish()` attempt still leaves either a sealed VOID bundle or a destination that `verify_bundle` rejects (state which, and test it).
+
+Do not touch anything else. If correcting one finding seems to need a semantic choice the frozen text does not make, implement nothing for it, leave a `NotImplementedError` with a comment citing the frozen line, and list it in your report.
+
+ACCEPTANCE (run from the worktree root; paste real output in your report):
+```
+export UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache
+uv run python -m jersey_outbreak.g43_multilibrary dry-run --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md
+uv run python -m jersey_outbreak.g35b_design_study dry-run --config configs/calibration/v13_g35b_design_study.yaml --predeclaration docs/research/v1_3/2026-10-22-g35b-predeclaration.md
+uv run ruff check . && uv run ruff format --check .
+uv run mypy --ignore-missing-imports src/jersey_outbreak/g43_multilibrary.py src/jersey_outbreak/g43_constants.py
+uv run pytest tests/test_g43_multilibrary.py tests/test_g35b_design_study.py tests/test_phase0_campaign.py tests/test_phase0b_campaign.py -q
+uv run pytest -q          # full suite ONCE, last, on final bytes (the sandbox may block socketpair; if so, say so and stop it — the director runs it)
+git status --porcelain; git diff --stat
+```
+- G43 and G35-B dry-run stdout byte-identical to the base (G43 92/1,820/45,020; 75,000/375,000; 120/600; G35-B 2500/395/9395/85/22).
+- Every regression named above exists, and you show each one FAILING on `c723f71` (e.g. run the new tests against a `git stash`ed tree, or a /tmp copy of the base) and PASSING after the change. Paste both outputs.
+- All earlier tests pass unchanged (a test may be edited only to extend it, never to weaken it; say which and why).
+- Only the four permitted files changed; nothing new outside them.
+
+VERIFY ORDER (DIRECTOR lesson 2026-09-22): formatting, lint, mypy and focused tests first; the full suite once on final bytes; if anything changes after it, say so.
+
+TIMEBOX: ~45 minutes of work; stop and report if you exceed ~300K tokens or hit the usage limit.
+
+FORBIDDEN: editing any file outside SCOPE; any population build, latent run, simulation or campaign on any seed (this unit needs none — mocks only); real data; commits/pushes; calling anything calibrated or validated; calling replicate spread a confidence interval; inventing any threshold, seed, tolerance or rule not in the frozen text; changing any predicate, threshold, reading, class rule or S1/S2 rule.
+
+REPORT: (1) changed files with `git diff --stat` and `git status --porcelain`; (2) acceptance commands with real output; (3) per finding R1, R2, R3, R4, R5, R7: what changed (file:line), the regression test names, and fail-before / pass-after evidence; (4) every place you interpreted the frozen text, with the line relied on; (5) any OPEN item left as NotImplementedError; (6) anything that looked inconsistent.
+
+STANDING: `.claude/DIRECTOR.md` in the worktree is binding in full; read it.

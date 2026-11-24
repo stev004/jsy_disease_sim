@@ -1,7 +1,16 @@
-# RUN — nothing in flight. Run `g44-impl` COMPLETE (predicate met); awaiting Steven on G45.
+# RUN — IN FLIGHT: run `g44-corr` (G45 = A, Steven 2026-11-24 "Authorize corrective").
+
+**Predicate:** review findings R1, R2, R3, R4, R5, R7 (`docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md`) corrected on `codex/g43-multilibrary` with fail-before/pass-after regressions; director acceptance + full CI mirror filed; bounded re-review PASS by a fresh Opus 5.5 filed on main; branch pushed after that; merge gate parked. No merge, no campaign.
+**Budget:** one implementation run (G45 extension of frozen §13's three) + one bounded re-review.
+**In flight:** unit `g44-u4` — gpt-6.2-sol @ high, workspace-write, worktree `/home/steven/jos-g44-wt` from `c723f71a652ce2d11278f0e2958bb72baf9716da`, brief `docs/runs/2026-11-24-g44-u4-brief.md.txt`, stem `/home/steven/jos-g44-u4-20261124` (`.log`, `.last.md`, `.launch`). Launch: ts: trail row `g44-u4-launch`.
+**Resume recipe:** if `.last.md` exists → read it, scope-check `git -C /home/steven/jos-g44-wt diff --stat` (four permitted files only), run `/tmp/g44acc.sh u4` unsandboxed, file the acceptance log on main BEFORE committing the code (commit message cites it), commit locally; then the full mirror (commands as `docs/runs/2026-11-22-g44-ci-mirror-commands.sh.txt`, report PASS WITH DESELECTION if the pre-existing prov_job_ordering failure is deselected), file it; bounded re-review by a fresh Opus 5.5 (diff c723f71..new head, findings R1–R7 only + regressions); file the PASS, sync, THEN push the branch with ls-remote receipt; park the merge gate. If the log has had no write for 20 min and no `.last.md`: hung — kill, log, stop (no second run without Steven).
+
+---
+
+## Previous: run `g44-impl` COMPLETE.
 
 **Run `g44-impl` (2026-11-21/22):** owner clarification 1 `9002c59`; U1 `fa3cb99`, U2 `61c591d`, U3 `c723f71` (gpt-6.2-sol @ high; 279,209 / 313,264 / 318,499 tokens); director acceptance per unit and full CI mirror PASS on `c723f71`; independent review PASS (fresh Opus 5.5, 292,223 tokens; 2 MINOR + 5 NOTES); branch `codex/g43-multilibrary` pushed at `c723f71a652ce2d11278f0e2958bb72baf9716da` after the PASS was filed (main `434f3d3`). Trail rows `g44-run-start` → `g44-review-PASS`. Nothing merged; no campaign.
-**Resume recipe:** on G45 = A, brief one corrective unit (R1, R2, R3, R4, R5, R7) on the existing worktree `/home/steven/jos-g44-wt` at `c723f71`, director acceptance + mirror, bounded re-review by a fresh Opus 5.5, push; then park a merge gate. Frozen §12 line 702 forbids merging before the named defects are corrected and re-reviewed. Either way the campaign waits for its own gate; check host disk first (≈ 9.9 GB free on 2026-11-22).
+**(Superseded resume recipe)** on G45 = A, brief one corrective unit (R1, R2, R3, R4, R5, R7) on the existing worktree `/home/steven/jos-g44-wt` at `c723f71`, director acceptance + mirror, bounded re-review by a fresh Opus 5.5, push; then park a merge gate. Frozen §12 line 702 forbids merging before the named defects are corrected and re-reviewed. Either way the campaign waits for its own gate; check host disk first (≈ 9.9 GB free on 2026-11-22).
 
 ---
 
