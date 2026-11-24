@@ -4,7 +4,20 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective authorized 2026-11-24; unit g44-u4 in flight). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective `7397842`, re-review PASS with N1 MINOR + 3 notes). **G46 OPEN** (authorize a second small corrective for N1–N4, then re-review; default HOLD). G5 open.
+
+### G46 — Authorize a second small corrective for the re-review findings (N1–N4), then one more bounded re-review? No merge yet.
+- **What:** branch `codex/g43-multilibrary` @ `73978427f5dabff70dde4a0a8b06aab372df7f4c` (corrective for R1–R5, R7) passed the bounded re-review (`docs/audits/2026-11-24-g44-corrective-rereview-opus-PASS.md`). Full CI mirror PASS WITH DESELECTION of the pre-existing `test_prov_job_ordering` failure (`docs/runs/2026-11-24-g44-u4-ci-mirror.log`). The re-review names one MINOR defect and three notes; frozen §12 line 702 and DIRECTOR lesson 2026-11-22 mean no merge option until they are corrected and re-reviewed.
+- **Findings:**
+  - N1 (MINOR): the exit marker is written after an intact bundle is sealed, and launch checks never test that the marker's directory is writable. A non-writable `--exit-marker` location would turn a completed campaign into VOID. Fix: refuse at launch unless the marker's parent exists and is writable (or write the intact marker outside the `try`).
+  - N2 (NOTE): two few-bytecode interrupt windows can leave the marker and the bundle disagreeing (the bundle stays authoritative). Fix: atomic marker write (temp file + link) and/or a note in the campaign launcher brief.
+  - N3 (NOTE): two new checks have no test (marker-inside-bundle refusal; the evidence-level P1 conjunction, which `evaluate_shared_panel` also enforces). Fix: add the tests.
+  - N4 (NOTE): leftover from the director's removal of the status condition — `status` retained but unused, and an unused test-helper parameter. Fix: drop or annotate.
+- **Options:**
+  - **A — Authorize the second corrective (director recommendation):** one more run (gpt-6.2-sol @ high) for N1–N4, director acceptance + mirror, bounded re-review by a fresh Opus 5.5, push; then a merge gate. Small: one launch check, one marker write, three tests, one cleanup.
+  - **B — HOLD.**
+- **Note:** the default `--exit-marker` path (the output directory's parent) avoids N1 in a normal launch, but the frozen order does not allow a merge with a named defect open.
+- **Default on no answer:** HOLD.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
@@ -25,6 +38,7 @@
 - **Later gates:** SHA-first merge; then the single campaign (frozen §12 step 6) and a fresh exit audit (gpt-6.2-astra @ high). Real-data fitting stays STOPPED.
 - **Default on no answer:** HOLD.
 - **Execution:** corrective unit `g44-u4` (gpt-6.2-sol @ high; brief `docs/runs/2026-11-24-g44-u4-brief.md.txt`) on `/home/steven/jos-g44-wt` from `c723f71`; then director acceptance, full mirror, bounded re-review by a fresh Opus 5.5, push; then a merge gate.
+- **Outcome:** corrective `73978427f5dabff70dde4a0a8b06aab372df7f4c` (executor + one disclosed director removal of a brief-induced P1 condition); director acceptance and mirror PASS WITH DESELECTION; re-review PASS with N1 MINOR + N2–N4 notes → G46.
 
 ### G44 — RESOLVED 2026-11-21: AUTHORIZED (Steven, chat: "Authorize G44") — Authorize implementation of the frozen G43 study (U1–U3 + independent review)? No campaign.
 - **Frozen text:** `docs/research/v1_3/2026-11-20-g43-predeclaration.md` @ `fc16adcb3f8817eb2630ae5a31cd0508990bebd2`, committed-bytes sha256 `67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094`. Owner ruling (gpt-6.2-sol @ high): ACCEPT WITH AMENDMENTS A1–A10, `docs/research/v1_3/2026-11-20-g43-owner-ruling.md` @ `f2062d5`.
