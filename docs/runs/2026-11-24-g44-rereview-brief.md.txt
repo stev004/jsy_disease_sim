@@ -1,0 +1,32 @@
+TASK: JOS · g44-rereview · bounded re-review of the G43 harness corrective (R1–R7)
+ROLE: independent implementation reviewer — fresh Claude Opus 5.5 @ high (frozen G43 §12 seat 4). Read-only. You authored none of this code.
+
+GOAL: Decide whether the corrective commit `73978427f5dabff70dde4a0a8b06aab372df7f4c` (parent `c723f71a652ce2d11278f0e2958bb72baf9716da`) corrects the step-4 review findings R1, R2, R3, R4, R5 and R7 without changing anything else the frozen text governs, so that the head may go to Steven for an SHA-first merge. Verdict exactly `JOS G43 IMPLEMENTATION RE-REVIEW: PASS` or `JOS G43 IMPLEMENTATION RE-REVIEW: BLOCKED`.
+
+SCOPE:
+- Review clone (read-only for you): WSL path `/home/steven/jos-g44u4-mirror-20261124` (Windows `\\wsl$\Ubuntu\home\steven\jos-g44u4-mirror-20261124`), detached at `73978427f5dabff70dde4a0a8b06aab372df7f4c`. Use it read-only; if you need to run tests, make your own copy under `/tmp/` (e.g. `git clone /home/steven/jos-g44u4-mirror-20261124 /tmp/jos-g44-rereview-20261124 && git -C /tmp/jos-g44-rereview-20261124 checkout --detach 73978427f5dabff70dde4a0a8b06aab372df7f4c`).
+- Diff under review: `git diff c723f71a652ce2d11278f0e2958bb72baf9716da 73978427f5dabff70dde4a0a8b06aab372df7f4c` — expected paths only: `src/jersey_outbreak/g43_multilibrary.py`, `g43_constants.py`, `g43_recompute.py`, `tests/test_g43_multilibrary.py`.
+- Run commands through WSL by writing a script file under `\\wsl$\Ubuntu\tmp\` and running `wsl.exe -d Ubuntu -- bash /tmp/<name>.sh` (inline `bash -c` through PowerShell mangles quoting). Use `export PATH="$HOME/.local/bin:$PATH" UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache`. Throwaway mutation copies only under `/tmp/`. Do NOT edit the clone or the repo, commit, push, run any population build, latent run or campaign on any G43 study seed, or run the full suite (the director's full CI mirror already ran; log cited below).
+
+CONTEXT — binding documents:
+1. `docs/research/v1_3/2026-11-20-g43-predeclaration.md` — FROZEN, freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2, committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094. Especially lines 82, 84, 185, 190, 197, 201–207 (§7.3), 627 (§9 host-disk rule), 682 (§12 step 6), 701–702 (VOID rules).
+2. Owner ruling `docs/research/v1_3/2026-11-20-g43-owner-ruling.md`; owner clarification 1 `docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md`.
+3. The first review, which named the findings: `docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md`.
+4. On main (Windows checkout `C:\Users\StevBeast\Documents\jsy_disease_sim`): corrective brief `docs/runs/2026-11-24-g44-u4-brief.md.txt`; executor report `docs/runs/2026-11-24-g44-u4-report.md`; director post-executor fix `docs/runs/2026-11-24-g44-u4-director-fix.py.txt`; director acceptance `docs/runs/2026-11-24-g44-u4-director-acceptance.log`; full CI mirror `docs/runs/2026-11-24-g44-u4-ci-mirror.log` (reported as PASS WITH DESELECTION of `tests/test_prov_job_ordering.py::test_missing_head_request_fails_alone_and_scheduler_continues`, which fails identically on the clean base: `docs/runs/2026-11-22-g44-flaky-test-basecheck-full.log`). Treat reports as claims to verify, never as evidence.
+5. `.claude/DIRECTOR.md` — hard rules and lessons, especially 2026-09-22 (evidence checks reject absent metadata), 2026-09-23 (an independent source of truth for each integrity check), 2026-10-22 (a brief must not add rules the frozen text lacks).
+
+DISCLOSURE: after the executor finished, the director removed one condition the director's own brief had asked for — "observation status == passed" — from the new shared-P1 completion check, in both the evaluator and `g43_recompute.py`, plus its two test cases. Reason: `observation.py` sets that status from the chronology check, which is one of P3's four inputs, so requiring it under P1 would turn a P3 failure (NO-READING) into VOID. Judge that change on its merits like the rest.
+
+CHECK AT LEAST:
+1. Scope: only the four expected paths changed; no protected module, config or fixture touched.
+2. Each finding R1, R2, R3, R4, R5, R7: is it corrected as the frozen sentence requires, and does its regression genuinely fail on `c723f71` and pass on `7397842`? Run the named tests yourself on both heads (focused selections only).
+3. No new departure: the P1/P2/P3/P9/P10 partition and the VOID → NO-READING → class precedence of §7.3 and A3 are unchanged; in particular a P3-only failure (any of its four inputs, including chronology) still yields NO-READING, not VOID, in both the evaluator and the recompute script; the new completion check takes its expected values from frozen constants, not from the input under test; no threshold, seed, reading or S1/S2 rule changed.
+4. R7 path: the BaseException handling cannot mask the original exception, cannot produce an intact-looking bundle after an interrupt, and re-raises non-`Exception` interrupts; the exit marker is outside the sealed bundle and is created only after launch checks pass.
+5. Dry-run counts unchanged (G43 92/1,820/45,020; 75,000/375,000; 120/600).
+Mutation-test where cheap (in /tmp): e.g. drop the R1 floor check or the R2 length check and confirm a test fails.
+
+REPORT: First line: exact model name and effort. Then the verdict line. Then findings, each: id (N1, N2 …), severity (BLOCKER / MAJOR / MINOR / NOTE), file:line, the frozen sentence or rule it departs from (quote with line number), a concrete failure scenario, and the smallest fix. Then one line per check 1–5 as OK or FLAG. Any finding at any severity must be stated; a BLOCKER or MAJOR means BLOCKED. Final response only; no more than about 1,500 words.
+
+TIMEBOX: one pass; stop and report if you exceed ~250K tokens.
+FORBIDDEN: editing the clone or the repo; commits; pushes; G43 study-seed builds or runs; the full suite; calling anything calibrated or validated; calling replicate spread a confidence interval.
+STANDING: `.claude/DIRECTOR.md` is binding in full.
