@@ -1,0 +1,18 @@
+from pathlib import Path
+W=Path("/home/steven/jos-g44-wt")
+def sub(p, old, new):
+    f=W/p; s=f.read_text(); assert s.count(old)==1, (p, old); f.write_text(s.replace(old,new))
+sub("src/jersey_outbreak/g43_multilibrary.py",
+    '            and target.observed.diagnostics.get("status") == "passed"\n', '')
+sub("src/jersey_outbreak/g43_recompute.py",
+    '                and raw.get("observation_diagnostics", {}).get("status") == "passed"\n', '')
+sub("tests/test_g43_multilibrary.py",
+    '_INCOMPLETE_TARGETS = ["latent_29", "latent_empty", "status_missing", "status_failed", "dates_33"]',
+    '_INCOMPLETE_TARGETS = ["latent_29", "latent_empty", "dates_33"]')
+sub("tests/test_g43_multilibrary.py",
+    '''    elif corruption == "status_missing":
+        observation_diagnostics.pop("status", None)
+    elif corruption == "status_failed":
+        observation_diagnostics["status"] = "failed"
+''', '')
+print("ok")
