@@ -1,0 +1,18 @@
+#!/bin/bash
+set -u
+die(){ echo "DIE $*" >> /home/steven/jos-g44u6-mirror.log; exit 9; }
+SHA=98289b3c04262a513ed2482f9bf18b9e86726435
+C=/dev/shm/jos-g44u6-mirror-20261125
+mkdir -p /dev/shm/g44u6-mirror-tmp || die tmp
+export TMPDIR=/dev/shm/g44u6-mirror-tmp
+test ! -e $C || die clone-exists
+rm -rf /tmp/jos-g44u6-mirror-population /tmp/jos-g44u6-mirror-structure /tmp/jos-g44u6-mirror-network
+git clone -q https://github.com/stev004/jsy_disease_sim.git $C || die clone
+cd $C || die cd
+git fetch -q /home/steven/jos-g44-wt $SHA || die fetch-sha
+git checkout -q --detach $SHA || die checkout
+git branch -f main origin/main || die mainref
+test -z "$(git diff --name-only 0c9c3711b4e1be3fa90e9ef7f1e8e883dbdb48d8 origin/main -- src configs tests scripts)" || die main-code-moved
+JOS_EXPECTED_SHA=$SHA bash /tmp/u6mc.sh > /home/steven/jos-g44u6-mirror.log 2>&1
+echo "rc=$?" >> /home/steven/jos-g44u6-mirror.log
+echo MIRROR_DONE >> /home/steven/jos-g44u6-mirror.log

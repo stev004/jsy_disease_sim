@@ -1,0 +1,31 @@
+TASK: JOS · g44-rereview3 · bounded re-review of the G43 harness corrective 3 (Q1–Q3)
+ROLE: independent implementation reviewer — fresh Claude Opus 5.5 @ high (frozen G43 §12 seat 4). Read-only. You authored none of this code.
+
+GOAL: Decide whether the third corrective commit `98289b3c04262a513ed2482f9bf18b9e86726435` (parent `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8`) corrects the re-review notes Q1, Q2 and Q3 without changing anything else, so that the head may go to Steven for an SHA-first merge. This review is BOUNDED to the diff `2b2cd2a..98289b3`: report anything wrong in or caused by that diff; do not re-review code the diff does not touch (earlier reviews covered it). Verdict exactly `JOS G43 IMPLEMENTATION RE-REVIEW: PASS` or `JOS G43 IMPLEMENTATION RE-REVIEW: BLOCKED`.
+
+SCOPE:
+- Make your own read-only copy: `git clone /home/steven/jos-g44-wt /tmp/jos-g44-rereview3-20261125 && git -C /tmp/jos-g44-rereview3-20261125 checkout --detach 98289b3c04262a513ed2482f9bf18b9e86726435`, and a base copy at `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8`. Never write inside `/home/steven/jos-g44-wt`.
+- Host disk is below 5 GB free: put every pytest temporary directory on the RAM disk (`export TMPDIR=/dev/shm/g44rr3-tmp` after `mkdir -p` it, and/or `--basetemp=/dev/shm/g44rr3-tmp/<name>`).
+- Run commands through WSL by writing a script file under `\\wsl$\Ubuntu\tmp\` and running `wsl.exe -d Ubuntu -- bash /tmp/<name>.sh`. Use `export PATH="$HOME/.local/bin:$PATH" UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache`. Do NOT edit the repo or the worktree, commit, push, run any population build, latent run or campaign on any G43 study seed, or run the full suite.
+
+CONTEXT — binding documents (Windows checkout `C:\Users\StevBeast\Documents\jsy_disease_sim`, main):
+1. `docs/research/v1_3/2026-11-20-g43-predeclaration.md` — FROZEN, freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2, sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094. Lines 682 and 701 govern the marker and VOID sealing.
+2. Owner clarification 1 `docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md`.
+3. The re-review that named Q1–Q4: `docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md`.
+4. Corrective brief `docs/runs/2026-11-25-g44-u6-brief.md.txt`; executor report `docs/runs/2026-11-25-g44-u6-report.md`; director acceptance `docs/runs/2026-11-25-g44-u6-director-acceptance.log` (full suite, exit 0, tmp on /dev/shm); full CI mirror `docs/runs/2026-11-25-g44-u6-ci-mirror.log`. Reports are claims to verify, never evidence.
+5. `.claude/DIRECTOR.md` — binding.
+
+DISCLOSURE: no director edits to the executor's diff.
+
+CHECK:
+1. Scope: only `src/jersey_outbreak/g43_multilibrary.py` (inside `execute`) and `tests/test_g43_multilibrary.py` changed.
+2. Q1: the new test fails under M15 (`os.link` → `os.replace`) and passes on the head; it asserts FileExistsError, unchanged marker bytes, an intact verified bundle and no stray temp file.
+3. Q2: after a non-exception VOID (e.g. shared panel P1), a marker-write failure propagates and leaves the sealed VOID bundle, its cause and summary bytes unchanged; the regression fails on `2b2cd2a`. The intact path still writes `PASS`; the exception path is unchanged; the original-exception and re-raise guarantees still hold.
+4. Q3: the published marker is mode 0644 on intact and VOID paths; the regressions fail on `2b2cd2a`.
+5. G43 dry-run stdout byte-identical between the two heads.
+
+REPORT: First line: exact model name and effort. Then the verdict line. Then findings (id, severity BLOCKER / MAJOR / MINOR / NOTE, file:line, rule quoted with line number, concrete failure scenario, smallest fix) — only ones in or caused by the diff; say "No findings" if none. Then one line per check 1–5 as OK or FLAG. Final response only; at most about 800 words.
+
+TIMEBOX: one pass; stop and report if you exceed ~150K tokens.
+FORBIDDEN: editing anything; commits; pushes; study-seed builds or runs; the full suite; calling anything calibrated or validated.
+STANDING: `.claude/DIRECTOR.md` is binding in full.
