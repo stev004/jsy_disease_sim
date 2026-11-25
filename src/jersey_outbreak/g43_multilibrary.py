@@ -2245,6 +2245,7 @@ def execute(
         with NamedTemporaryFile(mode="wb", dir=marker.parent, delete_on_close=False) as stream:
             stream.write(content)
             stream.flush()
+            os.chmod(stream.name, 0o644)
             os.fsync(stream.fileno())
             stream.close()
             os.link(stream.name, marker)
@@ -2270,20 +2271,19 @@ def execute(
             )
         if isinstance(evaluation, VoidCampaign):
             finish(evaluation, {"cause": evaluation.cause})
-            write_marker("VOID")
-            return summary
-        across = _across_library(evaluation)
-        _retain_scientific_outputs(generation, evaluation, across)
-        finish(
-            evaluation.campaign,
-            {
-                "scientific_status": across["verdicts"],
-                "class": across["class"],
-                "reading": across["reading"],
-                "reference_sentences": evaluation.references.sentences,
-                "exit_audit_pending": True,
-            },
-        )
+        else:
+            across = _across_library(evaluation)
+            _retain_scientific_outputs(generation, evaluation, across)
+            finish(
+                evaluation.campaign,
+                {
+                    "scientific_status": across["verdicts"],
+                    "class": across["class"],
+                    "reading": across["reading"],
+                    "reference_sentences": evaluation.references.sentences,
+                    "exit_audit_pending": True,
+                },
+            )
     except BaseException as exc:
         recovery_failed = False
         try:
@@ -2302,7 +2302,8 @@ def execute(
         if recovery_failed or not isinstance(exc, Exception):
             raise
     else:
-        write_marker("PASS")
+        # Publication errors leave the sealed bundle and its summary intact.
+        write_marker(summary["software_status"])
     return summary
 
 

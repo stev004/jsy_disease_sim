@@ -7,6 +7,7 @@ import io
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 from collections import Counter
@@ -2022,6 +2023,82 @@ def test_exit_marker_failure_preserves_sealed_intact_bundle(
     assert (output / "SHA256SUMS").read_bytes() == manifest
 
 
+@pytest.fixture
+def mocked_marker_run(
+    monkeypatch: pytest.MonkeyPatch, mocked_full_run: Any
+) -> study.StudyEvaluation:
+    generation = mocked_full_run.generation
+    monkeypatch.setattr(study, "_require_clean_worktree", lambda _: None)
+    monkeypatch.setattr(study, "WorkLedger", lambda: deepcopy(generation.ledger))
+    monkeypatch.setattr(
+        study,
+        "_generate_study",
+        lambda config, directory, root, ledger: replace(
+            generation, config=config, directory=directory, ledger=ledger
+        ),
+    )
+    _mock_host_disk(monkeypatch, _REQUIRED_FREE)
+    return mocked_full_run.output
+
+
+def test_exit_marker_created_during_intact_run_is_not_overwritten(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mocked_marker_run: study.StudyEvaluation
+) -> None:
+    output = tmp_path / "bundle"
+    marker = tmp_path / "markers" / "campaign.exit"
+    marker.parent.mkdir()
+    existing = b"existing exit marker\n"
+
+    def evaluate(_: study.BlindGeneration) -> study.StudyEvaluation:
+        assert not marker.exists()
+        marker.write_bytes(existing)
+        return mocked_marker_run
+
+    monkeypatch.setattr(study, "evaluate_after_blind", evaluate)
+    with pytest.raises(FileExistsError):
+        study.execute(CONFIG, PREDECLARATION, output, root=ROOT, exit_marker=marker)
+    assert marker.read_bytes() == existing
+    assert list(marker.parent.iterdir()) == [marker]
+    study.verify_bundle(output)
+    summary = _json(output / "campaign_summary.json")
+    assert summary["software_status"] == "PASS"
+    assert summary["scientific_status"] == {f"{number}": "PASS" for number in range(1, 7)}
+    assert (output / "g43_across_library.json").is_file()
+    assert (output / "g43_matrices.json").is_file()
+
+
+@pytest.mark.usefixtures("mocked_marker_run")
+def test_exit_marker_link_failure_preserves_sealed_shared_panel_void_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "void"
+    marker = tmp_path / "markers" / "campaign.exit"
+    marker.parent.mkdir()
+    summary_path = output / "campaign_summary.json"
+    manifest_path = output / "SHA256SUMS"
+    sealed = []
+    failure = OSError("injected link failure")
+
+    def fail_link(_source: str, destination: Path) -> None:
+        assert destination == marker
+        sealed.append((summary_path.read_bytes(), manifest_path.read_bytes()))
+        raise failure
+
+    monkeypatch.setattr(
+        study, "evaluate_after_blind", lambda _: study.VoidCampaign("shared panel P1")
+    )
+    monkeypatch.setattr(study.os, "link", fail_link)
+    with pytest.raises(OSError) as caught:
+        study.execute(CONFIG, PREDECLARATION, output, root=ROOT, exit_marker=marker)
+    assert caught.value is failure
+    study.verify_bundle(output)
+    summary = _json(summary_path)
+    assert summary["software_status"] == "VOID"
+    assert summary["cause"] == "shared panel P1"
+    assert sealed == [(summary_path.read_bytes(), manifest_path.read_bytes())]
+    assert not list(marker.parent.iterdir())
+
+
 @pytest.fixture(scope="module")
 def mocked_execute_bundle(
     tmp_path_factory: pytest.TempPathFactory, declared_process_hashes: dict[int, tuple[str, ...]]
@@ -2062,6 +2139,7 @@ def test_intact_execute_creates_exit_marker_and_refuses_sibling(
     output = mocked_execute_bundle.path
     marker = output.parent / "jos-g43-campaign.exit"
     assert _json(marker) == {"output_dir": str(output), "software_status": "PASS"}
+    assert stat.S_IMODE(marker.stat().st_mode) == 0o644
     sibling = output.with_name("second")
     sibling.mkdir()
     _mock_host_disk(monkeypatch, _REQUIRED_FREE)
@@ -2504,6 +2582,7 @@ def test_execute_seals_partial_void_and_recompute_omits_science(
     }
     assert not {"scientific_status", "class", "reading", "reference_sentences"} & summary.keys()
     assert _json(marker) == {"output_dir": str(output), "software_status": "VOID"}
+    assert stat.S_IMODE(marker.stat().st_mode) == 0o644
     sibling = output.with_name("second")
     sibling.mkdir()
     assert study.main([*_execute_cli_args(sibling), "--exit-marker", str(marker)]) == 1
