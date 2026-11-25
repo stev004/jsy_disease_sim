@@ -1,0 +1,60 @@
+TASK: JOS · g44-u5 · G43 harness corrective 2: re-review findings N1 N2 N3 N4
+ROLE: implementer — gpt-6.2-sol @ high. Class: numerical. Second corrective unit (G46 extension of the frozen G43 §13 budget by one more run).
+
+GOAL: Correct exactly the findings N1, N2, N3 and N4 named by the bounded re-review of the G43 harness at `73978427f5dabff70dde4a0a8b06aab372df7f4c`, each with a regression that fails on that head and passes after your change (N4 excepted: it is cleanup), and change nothing else. No campaign.
+
+SCOPE: the worktree you run in (branch `codex/g43-multilibrary`, HEAD `73978427f5dabff70dde4a0a8b06aab372df7f4c`). You may edit only:
+- `src/jersey_outbreak/g43_multilibrary.py`
+- `tests/test_g43_multilibrary.py`
+Edit NOTHING else: not `g43_constants.py`, `g43_recompute.py`, the config, the fixtures, `g35b_design_study.py`, `g35b_constants.py`, `phase0_campaign.py` or any protected module. You cannot commit; the director commits after acceptance. No subagents.
+
+CONTEXT. Problem in my own words: the first corrective (R1–R7) passed its re-review, but the re-reviewer found that the new exit-marker write can destroy a completed campaign if the marker location is not writable, that two short interrupt windows can leave the marker and bundle disagreeing, that two new checks are untested, and that a now-unused field and parameter remain. Frozen §12 line 702: "A step-4 defect blocks progression until corrected and independently reviewed." So these are fixed narrowly and re-reviewed before any merge.
+
+Binding documents, in this order (read in full before coding):
+1. `docs/research/v1_3/2026-11-20-g43-predeclaration.md` — FROZEN (freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2; committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094).
+2. Owner ruling `docs/research/v1_3/2026-11-20-g43-owner-ruling.md`; owner clarification 1 `docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md`.
+3. The re-review that names the findings: `docs/audits/2026-11-24-g44-corrective-rereview-opus-PASS.md` (copied into this worktree, untracked). Each finding gives file:line, rule, failure scenario and smallest fix. Also the first review `docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md` and the first corrective report `docs/runs/2026-11-24-g44-u4-report.md` (untracked copies) for context.
+4. `.claude/DIRECTOR.md` — STANDING, binding in full.
+
+Findings to correct (governing frozen sentence quoted verbatim with line number; director elaborations labelled):
+
+N1 (MINOR) — the intact-path `write_marker(...)` (~2279) runs inside the `try` after the intact bundle is sealed, and `_launch_checks` (~2030–2050) never checks the marker location is writable, so a marker-write failure turns a completed campaign into VOID.
+- Frozen line 682: "The launcher refuses to start if an exit marker exists or if the host-disk rule of §9 is not met." Frozen line 701: "A software exception during the campaign stops all work, seals a partial bundle with `software_status` VOID, and makes the campaign VOID."
+- MECHANICAL CONSEQUENCE (both of the reviewer's options, together): (a) `_launch_checks` refuses (CampaignError, before any work) unless the marker's parent directory already exists, is a directory, and is writable by the process; do not create it at write time any more (remove the `mkdir` in `write_marker`). (b) The intact-path marker write happens after the `try`/`except` that converts campaign exceptions to VOID, so a marker-write failure after an intact seal is raised to the caller with the sealed intact bundle left untouched (it is not a campaign exception: the campaign is finished and sealed). Regressions: launch refused for a missing marker parent and for a non-writable one (chmod in tmp_path; skip only if running as root, and say so); with the marker write forced to fail after an intact mocked run, the bundle still verifies as intact with its scientific outputs and the error propagates.
+
+N2 (NOTE) — two interrupt windows (~2237–2243, ~2280–2295) can leave marker and bundle disagreeing.
+- MECHANICAL CONSEQUENCE: write the marker atomically — write the bytes to a temporary file in the marker's directory, fsync, then `os.link` it to the marker path (which fails if the marker exists) and unlink the temporary file — so a marker is either absent or complete. The bundle remains authoritative. You need not close window 2 (a second interrupt inside the handler); state in a code comment that the sealed bundle, not the marker, is the record. Regression: an interrupt raised after the temp write but before the link leaves no marker at the marker path.
+
+N3 (NOTE) — two checks without a test.
+- Add a launch test with `--exit-marker` inside the output directory (refused). Add a test that the evidence-level P1 conjunction in `evaluate_after_blind` is independently effective: e.g. monkeypatch `evaluate_shared_panel`'s own per-row completion check out of the way (or construct the case directly) and show `IntegrityEvidence.execution_complete` is False for an incomplete target. Test-only; show each fails under the mutation the re-review named (M10: remove the inside-bundle refusal; M4: replace `all(row.complete …)` with `True`) and passes on the real code.
+
+N4 (NOTE) — leftover from the removed status condition.
+- Remove `"status"` from the retained `observation_diagnostics` keys (~1732) ONLY IF no test or recompute path reads it from there; otherwise leave it and add a one-line comment saying it is retained for disclosure and unused by any predicate. Remove the now-unused `observation_diagnostics` parameter from the test helper `_incomplete_target_result` and its two call sites. Frozen line 637 lists "the observation diagnostics keys used by P3" — say which choice you made and why.
+
+Do not touch anything else. If correcting a finding seems to need a semantic choice the frozen text does not make, implement nothing for it, leave a `NotImplementedError` with a comment citing the frozen line, and list it in your report.
+
+ACCEPTANCE (run from the worktree root; paste real output in your report):
+```
+export UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache
+uv run python -m jersey_outbreak.g43_multilibrary dry-run --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md
+uv run python -m jersey_outbreak.g35b_design_study dry-run --config configs/calibration/v13_g35b_design_study.yaml --predeclaration docs/research/v1_3/2026-10-22-g35b-predeclaration.md
+uv run ruff check . && uv run ruff format --check .
+uv run mypy --ignore-missing-imports src/jersey_outbreak/g43_multilibrary.py src/jersey_outbreak/g43_constants.py src/jersey_outbreak/g43_recompute.py
+uv run pytest tests/test_g43_multilibrary.py -q
+git status --porcelain; git diff --stat
+```
+Do NOT run the full suite (the director runs it unsandboxed).
+- G43 and G35-B dry-run stdout byte-identical to the base.
+- Every regression named above exists; show each new N1/N2 regression FAILING on `7397842` (e.g. a /tmp copy of the base with only the new test file overlaid) and PASSING after the change, and the N3 tests failing under their mutation and passing on the real code. Paste both outputs.
+- All earlier tests pass unchanged (a test may be edited only to extend it, or for the N4 helper-signature cleanup; say which and why).
+- Only the two permitted files changed.
+
+VERIFY ORDER (DIRECTOR lesson 2026-09-22): formatting, lint, mypy, focused tests; if anything changes after them, re-run them.
+
+TIMEBOX: ~40 minutes of work; stop and report if you exceed ~250K tokens or hit the usage limit.
+
+FORBIDDEN: editing any file outside SCOPE; any population build, latent run, simulation or campaign on any seed (mocks only); real data; commits/pushes; calling anything calibrated or validated; calling replicate spread a confidence interval; inventing any threshold, seed, tolerance or rule not in the frozen text; changing any predicate, threshold, reading, class rule or S1/S2 rule.
+
+REPORT: (1) changed files with `git diff --stat` and `git status --porcelain`; (2) acceptance commands with real output; (3) per finding N1–N4: what changed (file:line), the regression test names, and fail-before / pass-after (or mutation) evidence; (4) every place you interpreted the frozen text, with the line relied on; (5) any OPEN item left as NotImplementedError; (6) anything that looked inconsistent.
+
+STANDING: `.claude/DIRECTOR.md` in the worktree is binding in full; read it.
