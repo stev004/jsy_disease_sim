@@ -1,9 +1,7 @@
-# RUN — IN FLIGHT: run `g44-corr3` (G47 = A, Steven 2026-11-25 "Fix the notes").
+# RUN — nothing in flight. Run `g44-corr3` ENDED: Q1–Q3 corrected and re-reviewed PASS; the merge gate was NOT parked because re-review 3 named one NOTE (R3-1, a missing test) — G48 asks Steven.
 
-**Predicate:** re-review 2 notes Q1–Q3 corrected on `codex/g43-multilibrary` with regressions; acceptance + mirror filed; re-review bounded to those changes PASS filed on main; branch pushed after that; then the merge gate parked (if the re-review names anything, it goes to Steven as a gate instead). No merge, no campaign.
-**Budget:** one implementation run (G47) + one bounded re-review.
-**In flight:** unit `g44-u6` — gpt-6.2-sol @ high, worktree `/home/steven/jos-g44-wt` from `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8`, brief `docs/runs/2026-11-25-g44-u6-brief.md.txt`, stem `/home/steven/jos-g44-u6-20261125`. Launch: ts: trail row `g44-u6-launch`.
-**Resume recipe:** as run `g44-corr2` below (launcher `docs/runs/2026-11-25-g44-u6-launcher.sh.txt`). The PASS-filing commit says "push pending"; "pushed" only after ls-remote. Every `fm.sh log` decision begins with `[skip ci]`.
+**Run `g44-corr3` (2026-11-25, G47 = A):** corrective U6 (gpt-6.2-sol @ high, 181,562 tokens; report `docs/runs/2026-11-25-g44-u6-report.md`; no director edits). Acceptance `docs/runs/2026-11-25-g44-u6-director-acceptance.log` (full suite exit 0 with temp files on /dev/shm, host disk below 5 GB); mirror `docs/runs/2026-11-25-g44-u6-ci-mirror.log` PASS WITH DESELECTION (the deselected test passed in its own rerun); re-review 3 PASS (105,901 tokens; `docs/audits/2026-11-25-g44-corrective3-rereview-opus-PASS.md`). Push and trail audit: trail rows `g44-corr3-pushed`, `g44-corr3-trail-audit`. Nothing merged; no campaign.
+**Resume recipe:** G48 = A → test-only corrective on `/home/steven/jos-g44-wt` at `98289b3` (launcher pattern `docs/runs/2026-11-25-g44-u6-launcher.sh.txt`), acceptance `/tmp/g44acc-shm.sh`, mirror on /dev/shm, re-review restricted to the new test, push, merge gate. G48 = B → park the SHA-first merge gate for `98289b3`. Host disk ≈ 4.7 GB: keep temp files on /dev/shm.
 
 ---
 
