@@ -1,0 +1,27 @@
+#!/bin/bash
+# g44-u6 corrective launcher in the existing worktree. Args: expected_head stem_token
+set -u
+H=$1; T=$2
+W=/home/steven/jos-g44-wt
+S=/home/steven/jos-g44-u6-$T
+die(){ echo "DIE: $*" >> $S.launch; exit 9; }
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH" UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache
+test ! -e $S.log || die log-exists
+cd $W || die cd
+test "$(git rev-parse HEAD)" = "$H" || die head
+git diff --quiet && git diff --cached --quiet || die dirty-tracked
+git fetch -q origin main || die fetch
+mkdir -p docs/runs docs/audits
+for r in $(git ls-tree --name-only origin/main docs/runs/ | grep -E '2026-11-2[12]-g44-u[0-9]-report.md'); do git show origin/main:$r > $r || die report; done
+git show origin/main:docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md > docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md || die review
+git show origin/main:docs/audits/2026-11-24-g44-corrective-rereview-opus-PASS.md > docs/audits/2026-11-24-g44-corrective-rereview-opus-PASS.md || die rereview
+git show origin/main:docs/runs/2026-11-24-g44-u4-report.md > docs/runs/2026-11-24-g44-u4-report.md || die u4report
+git show origin/main:docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md > docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md || die rereview2
+git show origin/main:docs/runs/2026-11-25-g44-u5-report.md > docs/runs/2026-11-25-g44-u5-report.md || die u5report
+git show origin/main:docs/runs/2026-11-25-g44-u6-brief.md.txt | tr -d '\r' > $S-brief.md || die brief
+test -s $S-brief.md || die empty-brief
+sha256sum $S-brief.md >> $S.launch
+git ls-files --others --exclude-standard >> $S.launch
+echo "launched $(date -u +%FT%TZ)" >> $S.launch
+codex exec --sandbox workspace-write -m gpt-6.2-sol -c model_reasoning_effort="high" --output-last-message $S.last.md "$(cat $S-brief.md)" < /dev/null > $S.log 2>&1
+echo "rc=$?" >> $S.log

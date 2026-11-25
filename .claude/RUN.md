@@ -1,4 +1,13 @@
-# RUN — nothing in flight. Run `g44-corr2` ENDED: N1–N4 corrected and re-reviewed PASS; the merge gate was NOT parked because the re-review named four NOTES — G47 asks Steven whether they block.
+# RUN — IN FLIGHT: run `g44-corr3` (G47 = A, Steven 2026-11-25 "Fix the notes").
+
+**Predicate:** re-review 2 notes Q1–Q3 corrected on `codex/g43-multilibrary` with regressions; acceptance + mirror filed; re-review bounded to those changes PASS filed on main; branch pushed after that; then the merge gate parked (if the re-review names anything, it goes to Steven as a gate instead). No merge, no campaign.
+**Budget:** one implementation run (G47) + one bounded re-review.
+**In flight:** unit `g44-u6` — gpt-6.2-sol @ high, worktree `/home/steven/jos-g44-wt` from `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8`, brief `docs/runs/2026-11-25-g44-u6-brief.md.txt`, stem `/home/steven/jos-g44-u6-20261125`. Launch: ts: trail row `g44-u6-launch`.
+**Resume recipe:** as run `g44-corr2` below (launcher `docs/runs/2026-11-25-g44-u6-launcher.sh.txt`). The PASS-filing commit says "push pending"; "pushed" only after ls-remote. Every `fm.sh log` decision begins with `[skip ci]`.
+
+---
+
+## Previous: run `g44-corr2` ENDED: N1–N4 corrected and re-reviewed PASS; the merge gate was NOT parked because the re-review named four NOTES — G47 asks Steven whether they block.
 
 **Run `g44-corr2` (2026-11-25, G46 = A):** corrective U5 (gpt-6.2-sol @ high, 202,085 tokens; report `docs/runs/2026-11-25-g44-u5-report.md`; no director edits). Director acceptance `docs/runs/2026-11-25-g44-u5-director-acceptance.log`; full mirror PASS WITH DESELECTION `docs/runs/2026-11-25-g44-u5-ci-mirror.log` on `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8`; re-review 2 PASS by a fresh Opus 5.5 (134,370 tokens; `docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md`) with Q1–Q4 NOTES. Branch push and trail audit: trail rows `g44-corr2-pushed`, `g44-corr2-trail-audit`. Nothing merged; no campaign. Host C: ≈ 6.2 GB free (2026-11-25), ≈ 0.2 GB above the launch rule (5 GB + 1.001 GB). Trail audit `docs/audits/2026-11-25-g44-corr2-trail-audit-astra62.md`; dispositions in row `g44-corr2-trail-correction`.
 **Resume recipe:** G47 = A → one corrective for Q1–Q3 on `/home/steven/jos-g44-wt` at `2b2cd2a` (launcher pattern `docs/runs/2026-11-25-g44-u5-launcher.sh.txt`), acceptance `/tmp/g44acc.sh`, mirror, re-review bounded to those changes, push, then the merge gate. G47 = B → park the SHA-first merge gate for `2b2cd2a` (full mirror on the merge commit before push). Every `fm.sh log` decision begins with `[skip ci]`.

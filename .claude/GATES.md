@@ -4,9 +4,15 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective `7397842`, re-review PASS with N1 MINOR + 3 notes). G46 RESOLVED A (corrective 2 `2b2cd2a`, re-review PASS with 4 NOTES, no defect). **G47 OPEN** (fix the notes, or rule them non-blocking and go to the merge gate; default HOLD). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective `7397842`, re-review PASS with N1 MINOR + 3 notes). G46 RESOLVED A (corrective 2 `2b2cd2a`, re-review PASS with 4 NOTES, no defect). G47 RESOLVED A (third corrective authorized 2026-11-25; unit g44-u6 in flight). G5 open.
 
-### G47 — The second re-review passed with four NOTES and no defect. Fix them first, or rule them non-blocking and move to the merge gate?
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G47 — RESOLVED 2026-11-25: A (Steven, chat: "Fix the notes") — The second re-review passed with four NOTES and no defect. Fix them first, or rule them non-blocking and move to the merge gate?
 - **What:** branch `codex/g43-multilibrary` @ `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8` (pushed). Re-review 2 PASS, fresh Opus 5.5: `docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md`. N1–N4 corrected and confirmed by fail-before/pass-after and mutation. Full CI mirror PASS WITH DESELECTION of the pre-existing `test_prov_job_ordering` failure (`docs/runs/2026-11-25-g44-u5-ci-mirror.log`).
 - **The notes:**
   - Q1: no test pins "never overwrite an existing marker" (the code is correct; a refactor to `os.replace` would pass CI).
@@ -20,12 +26,7 @@
   - **C — HOLD.**
 - **Separately, before any campaign:** host C: had about 6.2 GB free on 2026-11-25 (WSL `df -h /mnt/c`, tool output only, not retained). The launcher's rule is 5 GB headroom + the 1,001,048,576-byte upper bundle estimate = 6,001,048,576 bytes, which already includes the bundle — so 6.2 GB passes by only ≈ 0.2 GB. Freeing disk before the campaign gate is advisable, not required. *(Corrected 2026-11-25 per the g44-corr2 trail audit: an earlier wording said 6.2 GB was below the rule and counted the bundle twice.)*
 - **Default on no answer:** HOLD.
-
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
+- **Execution:** corrective unit `g44-u6` (gpt-6.2-sol @ high; brief `docs/runs/2026-11-25-g44-u6-brief.md.txt`) on `/home/steven/jos-g44-wt` from `2b2cd2a`, Q1–Q3 (Q4 goes into the campaign launcher brief); then acceptance, mirror, re-review bounded to those changes, push; then the merge gate.
 
 ### G46 — RESOLVED 2026-11-25: A (Steven, chat: "Authorize corrective") — Authorize a second small corrective for the re-review findings (N1–N4), then one more bounded re-review? No merge yet.
 - **What:** branch `codex/g43-multilibrary` @ `73978427f5dabff70dde4a0a8b06aab372df7f4c` (corrective for R1–R5, R7) passed the bounded re-review (`docs/audits/2026-11-24-g44-corrective-rereview-opus-PASS.md`). Full CI mirror PASS WITH DESELECTION of the pre-existing `test_prov_job_ordering` failure (`docs/runs/2026-11-24-g44-u4-ci-mirror.log`). The re-review names one MINOR defect and three notes; frozen §12 line 702 and DIRECTOR lesson 2026-11-22 mean no merge option until they are corrected and re-reviewed.

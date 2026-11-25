@@ -1,0 +1,59 @@
+TASK: JOS · g44-u6 · G43 harness corrective 3: re-review notes Q1 Q2 Q3
+ROLE: implementer — gpt-6.2-sol @ high. Class: numerical. Third corrective unit (G47 extension of the frozen G43 §13 budget by one more run).
+
+GOAL: Correct exactly the notes Q1, Q2 and Q3 named by the second bounded re-review of the G43 harness at `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8`, each with a regression that fails on that head (Q1: fails under the named mutation instead) and passes after your change, and change nothing else. Q4 needs no code change. No campaign.
+
+SCOPE: the worktree you run in (branch `codex/g43-multilibrary`, HEAD `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8`). You may edit only:
+- `src/jersey_outbreak/g43_multilibrary.py` (the `execute` function's marker handling only)
+- `tests/test_g43_multilibrary.py`
+Edit NOTHING else. You cannot commit; the director commits after acceptance. No subagents.
+
+CONTEXT. Problem in my own words: the exit-marker code is now correct in its main paths, but the reviewer found that nothing pins its no-overwrite behaviour, that the VOID path reached without an exception still writes its marker inside the `try` (so a marker-write failure re-seals the bundle with the marker error as the VOID cause, losing the real cause), and that the marker now has owner-only permissions. Steven chose to fix these before the merge gate.
+
+Binding documents (read in full before coding):
+1. `docs/research/v1_3/2026-11-20-g43-predeclaration.md` — FROZEN (freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2; committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094).
+2. Owner clarification 1 `docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md`.
+3. The re-review naming the notes: `docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md` (copied into this worktree, untracked). Earlier reports `docs/runs/2026-11-24-g44-u4-report.md` and `docs/runs/2026-11-25-g44-u5-report.md` (untracked copies) for context.
+4. `.claude/DIRECTOR.md` — STANDING, binding in full.
+
+Notes to correct (governing frozen sentence quoted verbatim with line number; director elaborations labelled):
+
+Q1 — no test that an existing marker is never overwritten (`g43_multilibrary.py` ~2241–2250).
+- Frozen line 682: "The launcher refuses to start if an exit marker exists or if the host-disk rule of §9 is not met."
+- Test-only. Add a regression that creates the marker file during a mocked intact run (after launch checks pass, before the marker write), then asserts the call raises `FileExistsError`, the pre-existing marker bytes are unchanged, the sealed bundle still verifies as intact with its scientific outputs, and no temporary file remains in the marker directory. Show it FAILS under mutation M15 (replace `os.link(stream.name, marker)` with `os.replace(stream.name, marker)`) and passes on the real code.
+
+Q2 — after a VOID evaluation reached without an exception, `write_marker("VOID")` (~2273) runs inside the `try`, so a marker-write failure enters the exception handler, which re-seals the bundle with cause `"<ExceptionType>: ..."` instead of the evaluation's cause (e.g. `shared panel P1`).
+- Frozen line 701: "A software exception during the campaign stops all work, seals a partial bundle with `software_status` VOID, and makes the campaign VOID." Owner clarification 1 governs what a VOID bundle reports.
+- MECHANICAL CONSEQUENCE (the reviewer's smallest fix, mirroring what U5 did for the intact path): the bundle is already sealed VOID with its true cause when that marker write runs, so the write moves after the `try`/`except`, exactly like the intact-path write. A marker-write failure there propagates to the caller and leaves the sealed VOID bundle, its cause and its summary untouched. The exception-path `write_marker("VOID")` inside the handler stays where it is. Regression: a shared-panel-P1 VOID run with `os.link` forced to fail keeps cause `shared panel P1`, still verifies, and the error propagates. It must fail on `2b2cd2a` and pass after.
+
+Q3 — the marker is created by `NamedTemporaryFile` with mode 0600, so the published marker is 0600 instead of the 0644 an ordinary file gets on this host.
+- Not governed by the frozen text. MECHANICAL CONSEQUENCE: set the temporary file's mode to 0o644 before the `os.link`, so the marker has the mode `7397842` produced. Regression: after mocked intact and VOID runs, `stat.S_IMODE` of the marker is 0o644. It must fail on `2b2cd2a` and pass after.
+
+Q4 — no code change (the director records the residual windows in the campaign launcher brief).
+
+Do not touch anything else. If correcting a note seems to need a semantic choice the frozen text does not make, implement nothing for it, leave a `NotImplementedError` with a comment citing the frozen line, and list it in your report.
+
+ACCEPTANCE (run from the worktree root; paste real output in your report):
+```
+export UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache
+uv run python -m jersey_outbreak.g43_multilibrary dry-run --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md
+uv run ruff check . && uv run ruff format --check .
+uv run mypy --ignore-missing-imports src/jersey_outbreak/g43_multilibrary.py src/jersey_outbreak/g43_constants.py src/jersey_outbreak/g43_recompute.py
+uv run pytest tests/test_g43_multilibrary.py -q
+git status --porcelain; git diff --stat
+```
+Do NOT run the full suite (the director runs it unsandboxed).
+- G43 dry-run stdout byte-identical to the base.
+- Q2 and Q3 regressions FAIL on `2b2cd2a` (a /tmp copy of the base with only the new test file overlaid) and PASS after; the Q1 test fails under M15 and passes on the real code. Paste both outputs.
+- All earlier tests pass unchanged (a test may be edited only to extend it; say which and why).
+- Only the two permitted files changed.
+
+VERIFY ORDER: formatting, lint, mypy, focused tests; if anything changes after them, re-run them.
+
+TIMEBOX: ~30 minutes of work; stop and report if you exceed ~200K tokens or hit the usage limit.
+
+FORBIDDEN: editing any file outside SCOPE; any population build, latent run, simulation or campaign on any seed (mocks only); real data; commits/pushes; calling anything calibrated or validated; calling replicate spread a confidence interval; inventing any threshold, seed, tolerance or rule not in the frozen text; changing any predicate, threshold, reading, class rule or S1/S2 rule.
+
+REPORT: (1) changed files with `git diff --stat` and `git status --porcelain`; (2) acceptance commands with real output; (3) per note Q1–Q3: what changed (file:line), the regression test names, and fail-before / pass-after (or mutation) evidence; (4) every interpretation of the frozen text, with the line relied on; (5) any OPEN item left as NotImplementedError; (6) anything that looked inconsistent.
+
+STANDING: `.claude/DIRECTOR.md` in the worktree is binding in full; read it.
