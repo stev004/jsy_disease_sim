@@ -1,0 +1,21 @@
+#!/bin/bash
+# director acceptance for a g44 unit: $1 = unit tag
+set -u
+U=$1
+W=/home/steven/jos-g44-wt
+O=/home/steven/jos-g44-$U-director-accept.log
+mkdir -p /dev/shm/g44acc-tmp; export PATH="$HOME/.local/bin:$PATH" UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache TMPDIR=/dev/shm/g44acc-tmp
+cd $W || exit 9
+{
+set -x
+git rev-parse HEAD; git status --porcelain
+uv run python -m jersey_outbreak.g43_multilibrary dry-run --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md
+uv run python -m jersey_outbreak.g35b_design_study dry-run --config configs/calibration/v13_g35b_design_study.yaml --predeclaration docs/research/v1_3/2026-10-22-g35b-predeclaration.md | tail -5
+uv run ruff check . && uv run ruff format --check .
+uv run mypy --ignore-missing-imports src/jersey_outbreak/g43_multilibrary.py src/jersey_outbreak/g43_constants.py $(ls src/jersey_outbreak/g43_recompute.py 2>/dev/null)
+git diff --stat 9002c59fb07e830a2064c818a447be6b023712da -- src/jersey_outbreak/g35b_design_study.py src/jersey_outbreak/g35b_constants.py src/jersey_outbreak/phase0_campaign.py
+uv run pytest -q -p no:cacheprovider --basetemp=/dev/shm/g44acc-tmp/pytest 2>&1 | tail -15
+echo "FULL_PYTEST_EXIT=${PIPESTATUS[0]}"
+git status --porcelain
+} > $O 2>&1
+echo DONE >> $O
