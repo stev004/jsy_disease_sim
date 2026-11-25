@@ -18,7 +18,7 @@
   - **A — Third tiny corrective (director recommendation):** Q1 test, Q2 move the VOID-path marker write after the `try` like the intact one, Q3 chmod 0644; Q4 recorded in the campaign launcher brief. Re-review bounded strictly to those three changes. Then the merge gate.
   - **B — Rule the notes non-blocking:** go straight to the SHA-first merge gate for `2b2cd2a`, with Q1–Q4 recorded in the campaign launcher and exit-audit briefs.
   - **C — HOLD.**
-- **Separately, before any campaign:** host C: had 6.2 GB free on 2026-11-25; the launcher requires 5 GB + 1.001 GB ≈ 6.0 GB, and the bundle itself then needs up to ~1 GB. Disk must be freed before the campaign gate.
+- **Separately, before any campaign:** host C: had about 6.2 GB free on 2026-11-25 (WSL `df -h /mnt/c`, tool output only, not retained). The launcher's rule is 5 GB headroom + the 1,001,048,576-byte upper bundle estimate = 6,001,048,576 bytes, which already includes the bundle — so 6.2 GB passes by only ≈ 0.2 GB. Freeing disk before the campaign gate is advisable, not required. *(Corrected 2026-11-25 per the g44-corr2 trail audit: an earlier wording said 6.2 GB was below the rule and counted the bundle twice.)*
 - **Default on no answer:** HOLD.
 
 ### G5 — Branch cleanup
