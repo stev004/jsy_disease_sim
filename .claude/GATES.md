@@ -15,7 +15,7 @@
   - **B — Rule R3-1 non-blocking:** go straight to the SHA-first merge gate for `98289b3`, and record the missing test as a backlog item.
   - **C — HOLD.**
 - **Also for your judgment:** whether, from now on, NOTE-level findings with no defect are recorded on a list instead of opening a gate (it would change the 2026-11-22 DIRECTOR rule).
-- **Separately, before any campaign:** host C: had ≈ 4.7 GB free on 2026-11-25 evening (tool output), below the launch rule of 6,001,048,576 bytes (5 GB headroom + 1.001 GB bundle estimate). The WSL guest uses 33 GB, so the shrinkage is on the Windows side; disk must be freed before the campaign gate.
+- **Separately, before any campaign:** host C: had 4,828,086,272 bytes free at 2026-11-25T22:23Z (`docs/runs/2026-11-25-host-disk-df.txt`, `df -B1 /mnt/c`), below the launch rule `HOST_HEADROOM_BYTES + EXPLORATORY_BUNDLE_UPPER_BYTES + PARENT_BUILD_DISK_BYTES` = 6,001,048,576 bytes (`g43_multilibrary.py` `_launch_checks`), and below the DIRECTOR 5 GB floor. The cause of the drop is not established (the WSL guest's used bytes are in the same file; the g44/g35b/uv-cache directories total 3,106,511,836 bytes). Disk must be freed before the campaign gate.
 - **Default on no answer:** HOLD.
 
 ### G5 — Branch cleanup
