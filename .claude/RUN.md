@@ -1,9 +1,7 @@
-# RUN — IN FLIGHT: run `g44-corr2` (G46 = A, Steven 2026-11-25 "Authorize corrective").
+# RUN — nothing in flight. Run `g44-corr2` ENDED: N1–N4 corrected and re-reviewed PASS; the merge gate was NOT parked because the re-review named four NOTES — G47 asks Steven whether they block.
 
-**Predicate:** re-review findings N1–N4 (`docs/audits/2026-11-24-g44-corrective-rereview-opus-PASS.md`) corrected on `codex/g43-multilibrary` with fail-before/pass-after regressions; director acceptance + full CI mirror filed; bounded re-review PASS filed on main with NO named finding at any severity (else a new gate, not a merge gate); branch pushed after that; merge gate parked. No merge, no campaign.
-**Budget:** one implementation run (G46) + one bounded re-review.
-**In flight:** unit `g44-u5` — gpt-6.2-sol @ high, workspace-write, worktree `/home/steven/jos-g44-wt` from `73978427f5dabff70dde4a0a8b06aab372df7f4c`, brief `docs/runs/2026-11-25-g44-u5-brief.md.txt`, stem `/home/steven/jos-g44-u5-20261125`. Launch: ts: trail row `g44-u5-launch`.
-**Resume recipe:** as run `g44-corr` below (launcher `docs/runs/2026-11-25-g44-u5-launcher.sh.txt`; acceptance `/tmp/g44acc.sh u5`; mirror commands as `docs/runs/2026-11-24-g44-u4-ci-mirror-commands.sh.txt` with new paths and the PASS WITH DESELECTION label; push only after the re-review PASS is on main). Every `fm.sh log` decision begins with `[skip ci]`.
+**Run `g44-corr2` (2026-11-25, G46 = A):** corrective U5 (gpt-6.2-sol @ high, 202,085 tokens; report `docs/runs/2026-11-25-g44-u5-report.md`; no director edits). Director acceptance `docs/runs/2026-11-25-g44-u5-director-acceptance.log`; full mirror PASS WITH DESELECTION `docs/runs/2026-11-25-g44-u5-ci-mirror.log` on `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8`; re-review 2 PASS by a fresh Opus 5.5 (134,370 tokens; `docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md`) with Q1–Q4 NOTES. Branch push and trail audit: trail rows `g44-corr2-pushed`, `g44-corr2-trail-audit`. Nothing merged; no campaign. Host C: 6.2 GB free (2026-11-25) — below what the campaign needs.
+**Resume recipe:** G47 = A → one corrective for Q1–Q3 on `/home/steven/jos-g44-wt` at `2b2cd2a` (launcher pattern `docs/runs/2026-11-25-g44-u5-launcher.sh.txt`), acceptance `/tmp/g44acc.sh`, mirror, re-review bounded to those changes, push, then the merge gate. G47 = B → park the SHA-first merge gate for `2b2cd2a` (full mirror on the merge commit before push). Every `fm.sh log` decision begins with `[skip ci]`.
 
 ---
 

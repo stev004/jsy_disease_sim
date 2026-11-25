@@ -4,7 +4,22 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective `7397842`, re-review PASS with N1 MINOR + 3 notes). G46 RESOLVED A (second corrective authorized 2026-11-25; unit g44-u5 in flight). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective `7397842`, re-review PASS with N1 MINOR + 3 notes). G46 RESOLVED A (corrective 2 `2b2cd2a`, re-review PASS with 4 NOTES, no defect). **G47 OPEN** (fix the notes, or rule them non-blocking and go to the merge gate; default HOLD). G5 open.
+
+### G47 — The second re-review passed with four NOTES and no defect. Fix them first, or rule them non-blocking and move to the merge gate?
+- **What:** branch `codex/g43-multilibrary` @ `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8` (pushed). Re-review 2 PASS, fresh Opus 5.5: `docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md`. N1–N4 corrected and confirmed by fail-before/pass-after and mutation. Full CI mirror PASS WITH DESELECTION of the pre-existing `test_prov_job_ordering` failure (`docs/runs/2026-11-25-g44-u5-ci-mirror.log`).
+- **The notes:**
+  - Q1: no test pins "never overwrite an existing marker" (the code is correct; a refactor to `os.replace` would pass CI).
+  - Q2: after a VOID result reached without an exception, a marker-write failure would re-seal the bundle with the exception as its cause instead of `shared panel P1`. Still VOID, still verifies; unchanged from `7397842`.
+  - Q3: the marker file is now mode 0600 instead of 0644 (not governed by the frozen text).
+  - Q4: residual tiny windows, reported as not defects.
+- **Why it's a gate:** frozen §12 line 702 blocks on a step-4 *defect*; DIRECTOR lesson 2026-11-22 (mine, after the g44-impl trail audit) goes further and says any named finding at any severity is corrected before a merge option is offered. These are notes, two explicitly "not defects", so whether they block is your call, not mine.
+- **Options:**
+  - **A — Third tiny corrective (director recommendation):** Q1 test, Q2 move the VOID-path marker write after the `try` like the intact one, Q3 chmod 0644; Q4 recorded in the campaign launcher brief. Re-review bounded strictly to those three changes. Then the merge gate.
+  - **B — Rule the notes non-blocking:** go straight to the SHA-first merge gate for `2b2cd2a`, with Q1–Q4 recorded in the campaign launcher and exit-audit briefs.
+  - **C — HOLD.**
+- **Separately, before any campaign:** host C: had 6.2 GB free on 2026-11-25; the launcher requires 5 GB + 1.001 GB ≈ 6.0 GB, and the bundle itself then needs up to ~1 GB. Disk must be freed before the campaign gate.
+- **Default on no answer:** HOLD.
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
@@ -25,6 +40,7 @@
 - **Note:** the default `--exit-marker` path (the output directory's parent) avoids N1 in a normal launch, but the frozen order does not allow a merge with a named defect open.
 - **Default on no answer:** HOLD.
 - **Execution:** corrective unit `g44-u5` (gpt-6.2-sol @ high; brief `docs/runs/2026-11-25-g44-u5-brief.md.txt`) on `/home/steven/jos-g44-wt` from `7397842`; then director acceptance, full mirror, bounded re-review by a fresh Opus 5.5, push; then a merge gate.
+- **Outcome:** corrective 2 `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8` (no director edits); acceptance and mirror PASS WITH DESELECTION; re-review 2 PASS with Q1–Q4 NOTES → G47.
 
 ### G45 — RESOLVED 2026-11-24: A (Steven, chat: "Authorize corrective") — Authorize one corrective unit for the G43 harness review findings (R1–R7), then re-review? No merge yet.
 - **What:** branch `codex/g43-multilibrary` @ `c723f71a652ce2d11278f0e2958bb72baf9716da` (six new files; no protected module touched) passed the independent review (`docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md`), but the review named defects. Frozen G43 §12 (line 702): "A step-4 defect blocks progression until corrected and independently reviewed." So a merge is not available until they are fixed (trail audit `docs/audits/2026-11-22-g44-trail-audit-astra62.md` caught the director offering it).
