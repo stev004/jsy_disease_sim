@@ -1,0 +1,13 @@
+#!/bin/bash
+set -u
+die(){ echo "DIE $*"; exit 9; }
+SHA=2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8
+cd /home/steven/jos-g44-wt || die cd
+test "$(git rev-parse HEAD)" = "$SHA" || die head
+git fetch -q origin main || die fetch
+git cat-file -e origin/main:docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md || die review-not-on-main
+git push -q origin $SHA:refs/heads/codex/g43-multilibrary || die push
+R=$(git ls-remote origin refs/heads/codex/g43-multilibrary)
+echo "$R"
+test "${R%%[[:space:]]*}" = "$SHA" || die lsremote-mismatch
+echo PUSH_OK
