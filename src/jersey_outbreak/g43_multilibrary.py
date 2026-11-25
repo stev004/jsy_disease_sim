@@ -7,6 +7,7 @@ import csv
 import hashlib
 import json
 import math
+import os
 import shutil
 import subprocess
 import sys
@@ -19,7 +20,7 @@ from decimal import Context, Decimal, Inexact, localcontext
 from itertools import groupby, product
 from operator import attrgetter
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Any, Literal, TypedDict, cast
 
 import yaml  # type: ignore[import-untyped]
@@ -1729,7 +1730,6 @@ def _target_raw_truth(target: _TargetRun) -> dict[str, Any]:
         "observation_diagnostics": {
             key: observed.diagnostics[key]
             for key in (
-                "status",
                 "no_report_before_infection",
                 "chronology_violations",
                 "latent_incidence_conservation",
@@ -2039,6 +2039,10 @@ def _launch_checks(
         raise CampaignError("campaign output directory must be empty")
     if marker.resolve().is_relative_to(output_dir.resolve()):
         raise CampaignError("campaign exit marker must be outside the bundle directory")
+    if not marker.parent.is_dir() or not os.access(marker.parent, os.W_OK | os.X_OK):
+        raise CampaignError(
+            f"campaign exit marker parent must be an existing writable directory: {marker.parent}"
+        )
     default_upper = frozen.EXPLORATORY_BUNDLE_UPPER_BYTES + frozen.PARENT_BUILD_DISK_BYTES
     upper = default_upper if bundle_upper_bytes is None else bundle_upper_bytes
     if type(upper) is not int or upper < 0:
@@ -2235,12 +2239,15 @@ def execute(
         _seal_bundle(output_dir)
 
     def write_marker(software_status: str) -> None:
-        marker.parent.mkdir(parents=True, exist_ok=True)
         content = _compact_json_bytes(
             {"output_dir": str(output_dir.resolve()), "software_status": software_status}
         )
-        with marker.open("xb") as stream:
+        with NamedTemporaryFile(mode="wb", dir=marker.parent, delete_on_close=False) as stream:
             stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+            stream.close()
+            os.link(stream.name, marker)
 
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -2263,20 +2270,20 @@ def execute(
             )
         if isinstance(evaluation, VoidCampaign):
             finish(evaluation, {"cause": evaluation.cause})
-        else:
-            across = _across_library(evaluation)
-            _retain_scientific_outputs(generation, evaluation, across)
-            finish(
-                evaluation.campaign,
-                {
-                    "scientific_status": across["verdicts"],
-                    "class": across["class"],
-                    "reading": across["reading"],
-                    "reference_sentences": evaluation.references.sentences,
-                    "exit_audit_pending": True,
-                },
-            )
-        write_marker(summary["software_status"])
+            write_marker("VOID")
+            return summary
+        across = _across_library(evaluation)
+        _retain_scientific_outputs(generation, evaluation, across)
+        finish(
+            evaluation.campaign,
+            {
+                "scientific_status": across["verdicts"],
+                "class": across["class"],
+                "reading": across["reading"],
+                "reference_sentences": evaluation.references.sentences,
+                "exit_audit_pending": True,
+            },
+        )
     except BaseException as exc:
         recovery_failed = False
         try:
@@ -2286,6 +2293,7 @@ def execute(
         except BaseException as sealing_error:
             exc.add_note(f"VOID bundle sealing failed: {sealing_error!r}")
             recovery_failed = True
+        # If recovery is interrupted, the sealed bundle remains the authoritative record.
         try:
             write_marker("VOID")
         except BaseException as marker_error:
@@ -2293,6 +2301,8 @@ def execute(
             recovery_failed = True
         if recovery_failed or not isinstance(exc, Exception):
             raise
+    else:
+        write_marker("PASS")
     return summary
 
 

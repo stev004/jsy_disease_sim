@@ -3,7 +3,9 @@ from __future__ import annotations
 import ast
 import csv
 import hashlib
+import io
 import json
+import os
 import re
 import subprocess
 import sys
@@ -1821,7 +1823,6 @@ _INCOMPLETE_TARGETS = ["latent_29", "latent_empty", "dates_33"]
 def _incomplete_target_result(
     latent_rows: list[Any],
     observed_rows: list[Any],
-    observation_diagnostics: dict[str, Any],
     corruption: str,
 ) -> None:
     if corruption == "latent_29":
@@ -1842,11 +1843,9 @@ def test_incomplete_returned_target_fails_shared_p1(
     target = generation.targets[86001]
     latent_rows = list(target.latent.daily_epidemic)
     observed_rows = list(target.observed.daily_observed_cases)
-    observation_diagnostics = dict(target.observed.diagnostics)
-    _incomplete_target_result(latent_rows, observed_rows, observation_diagnostics, corruption)
+    _incomplete_target_result(latent_rows, observed_rows, corruption)
     monkeypatch.setattr(target.latent, "daily_epidemic", latent_rows)
     monkeypatch.setattr(target.observed, "daily_observed_cases", observed_rows)
-    monkeypatch.setattr(target.observed, "diagnostics", observation_diagnostics)
 
     panels = []
     original = study.evaluate_shared_panel
@@ -1861,6 +1860,28 @@ def test_incomplete_returned_target_fails_shared_p1(
     [predicates] = panels
     assert predicates["P1"] is False
     assert result == study.VoidCampaign("shared panel P1")
+
+
+def test_incomplete_target_fails_p1_via_execution_evidence(
+    mocked_full_run: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    generation = mocked_full_run.generation
+    target = generation.targets[86001]
+    monkeypatch.setattr(target.latent, "daily_epidemic", target.latent.daily_epidemic[:-1])
+    original = study.evaluate_shared_panel
+
+    def evaluate_without_row_completion(
+        diagnostics: dict[int, phase0.TruthDiagnostics], *, evidence: study.IntegrityEvidence
+    ) -> study.SharedPanelEvaluation:
+        assert diagnostics[86001].complete is False
+        assert evidence.execution_complete is False
+        return original(
+            {seed: replace(row, complete=True) for seed, row in diagnostics.items()},
+            evidence=evidence,
+        )
+
+    monkeypatch.setattr(study, "evaluate_shared_panel", evaluate_without_row_completion)
+    assert study.evaluate_after_blind(generation) == study.VoidCampaign("shared panel P1")
 
 
 _BUNDLE_UPPER = 1_000_000_000 + 1_048_576
@@ -1903,6 +1924,102 @@ def test_launch_bundle_upper_estimate_has_frozen_floor(
         assert report["upper_bytes_used"] == override
         assert report["required_free_bytes"] == _REQUIRED_FREE + override - _BUNDLE_UPPER
     assert not output.exists()
+
+
+@pytest.mark.parametrize("case", ["missing_parent", "unwritable_parent", "inside_bundle"])
+def test_execute_refuses_invalid_exit_marker_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    case: str,
+) -> None:
+    output = tmp_path / "bundle"
+    parent = output if case == "inside_bundle" else tmp_path / "markers"
+    marker = parent / "campaign.exit"
+    expected = "exit marker parent must be an existing writable directory"
+    if case == "inside_bundle":
+        output.mkdir()
+        expected = "exit marker must be outside the bundle directory"
+    elif case == "unwritable_parent":
+        if os.geteuid() == 0:
+            pytest.skip("root can write to the chmod-restricted marker parent")
+        parent.mkdir()
+        parent.chmod(0o500)
+    _mock_host_disk(monkeypatch, _REQUIRED_FREE)
+    monkeypatch.setattr(
+        study, "_execution_inputs", lambda *_: pytest.fail("launch reached execution inputs")
+    )
+
+    try:
+        assert study.main([*_execute_cli_args(output), "--exit-marker", str(marker)]) == 1
+        assert expected in capsys.readouterr().err
+        assert not marker.exists()
+        if case == "inside_bundle":
+            assert not list(output.iterdir())
+        else:
+            assert not output.exists()
+    finally:
+        if case == "unwritable_parent":
+            parent.chmod(0o700)
+
+
+@pytest.mark.parametrize("error_type", [PermissionError, KeyboardInterrupt])
+def test_exit_marker_failure_preserves_sealed_intact_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mocked_full_run: Any,
+    error_type: type[BaseException],
+) -> None:
+    output = tmp_path / "bundle"
+    marker = tmp_path / "markers" / "campaign.exit"
+    marker.parent.mkdir()
+    failure = error_type("injected marker failure")
+    generation = mocked_full_run.generation
+    monkeypatch.setattr(study, "_require_clean_worktree", lambda _: None)
+    monkeypatch.setattr(study, "WorkLedger", lambda: deepcopy(generation.ledger))
+    monkeypatch.setattr(
+        study,
+        "_generate_study",
+        lambda config, directory, root, ledger: replace(
+            generation, config=config, directory=directory, ledger=ledger
+        ),
+    )
+    monkeypatch.setattr(study, "evaluate_after_blind", lambda _: mocked_full_run.output)
+    _mock_host_disk(monkeypatch, _REQUIRED_FREE)
+    manifests = []
+    open_file = io.open
+
+    def open_marker(file: Any, mode: str = "r", *args: Any, **kwargs: Any) -> Any:
+        # Path.open opens the marker itself on the base. NamedTemporaryFile opens in its parent.
+        if mode not in ("xb", "wb") or Path(file) not in (marker, marker.parent):
+            return open_file(file, mode, *args, **kwargs)
+        manifests.append((output / "SHA256SUMS").read_bytes())
+        if isinstance(failure, PermissionError):
+            raise failure
+        stream = open_file(file, mode, *args, **kwargs)
+        write = stream.write
+
+        def interrupt_after_write(content: bytes) -> None:
+            write(content)
+            stream.flush()
+            raise failure
+
+        stream.write = interrupt_after_write
+        return stream
+
+    monkeypatch.setattr(io, "open", open_marker)
+    with pytest.raises(error_type) as caught:
+        study.execute(CONFIG, PREDECLARATION, output, root=ROOT, exit_marker=marker)
+    assert caught.value is failure
+    assert not list(marker.parent.iterdir())
+    study.verify_bundle(output)
+    summary = _json(output / "campaign_summary.json")
+    assert summary["software_status"] == "PASS"
+    assert summary["scientific_status"] == {f"{number}": "PASS" for number in range(1, 7)}
+    assert (output / "g43_across_library.json").is_file()
+    assert (output / "g43_matrices.json").is_file()
+    [manifest] = manifests
+    assert (output / "SHA256SUMS").read_bytes() == manifest
 
 
 @pytest.fixture(scope="module")
@@ -2233,7 +2350,6 @@ def test_stdlib_recomputation_fails_shared_p1_for_incomplete_target(
     _incomplete_target_result(
         raw["daily_epidemic"],
         raw["daily_observed_cases"],
-        raw["observation_diagnostics"],
         corruption,
     )
     with _replace_sealed_json(directory, path, raw):
