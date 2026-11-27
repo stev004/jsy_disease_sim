@@ -1,9 +1,7 @@
-# RUN — IN FLIGHT: run `g49-g50` (Steven 2026-11-27: merge + single campaign; G48 = B).
+# RUN — nothing in flight. Run `g49-g50` COMPLETE (predicate met); awaiting Steven on G51.
 
-**Predicate:** `98289b3` merged into main (mirror PASS on the merge commit filed before push, ls-remote receipt); the single G43 campaign run at the merge commit and its bundle sealed; a fresh exit audit (gpt-6.2-astra @ high) filed; status phrase updated per frozen §7.11. Real-data fitting stays STOPPED.
-**Done:** G49 merged — main `c0821180d73b258ad29fa5578b1fbf5643a4b8cb` (trail row `g49-merged`).
-**In flight:** the single G43 campaign at `c082118` — clone `/home/steven/jos-g50-clone-20261127`, output `/home/steven/jos-g43-campaign-20261127/bundle`, marker `/home/steven/jos-g43-campaign-20261127/jos-g43-campaign.exit`, log `/home/steven/jos-g50-campaign-20261127.log`, launcher `docs/runs/2026-11-27-g50-campaign-launcher.sh.txt`. Launch: trail row `g50-launch`. NEVER relaunch: if the marker or the log exists, the campaign has happened.
-**Resume recipe:** if the merge clone exists and origin/main lacks the merge: check the mirror log `/home/steven/jos-g49-merge-mirror.log`; if PASS and origin/main is unchanged since the clone, push with ls-remote check; else redo the merge from fresh origin/main. Campaign: never retry or resume; if an exit marker exists, the campaign happened — go to the exit audit.
+**Run `g49-g50` (2026-11-27):** G48 = B (director, delegated); G49 merged `98289b3` → main `c0821180d73b258ad29fa5578b1fbf5643a4b8cb` (merge-commit mirror PASS WITH DESELECTION `docs/runs/2026-11-27-g49-merge-mirror.log`, filed before push; final merge's code tree identical to mirrored `83d20da`; receipt `docs/runs/2026-11-27-g49-merge-push-receipt.txt`). G50 single campaign at `c082118`: rc 0, 1:54:25 wall, bundle `/home/steven/jos-g43-campaign-20261127/bundle` (559,977,636 bytes, 45,805 files, SHA256SUMS sha256 a8c51550…fdc3, sealed read-only). Software PASS; MIXED, L5 PASS, L1–L4 and L6 FAIL; k = 1, k′ = 1, m = 0. Exit audit CONFIRMED (fresh gpt-6.2-astra @ high, 116,761 tokens; `docs/audits/2026-11-27-g43-campaign-exit-audit-astra62-CONFIRMED.md`). Status phrase FINAL.
+**Resume recipe:** on G51 — A: record STOP in FRONTIER; B or C: scope a new predeclaration/demo task. Nothing else runs on G43 (no second campaign).
 
 ---
 

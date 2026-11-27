@@ -1,0 +1,17 @@
+#!/bin/bash
+set -u
+H=2a464e8dd63eb3850997200c40a55c808b3ae08e
+S=/home/steven/jos-g50-exit-astra62
+C=/home/steven/jos-g50-exit-ro
+die(){ echo "DIE $*" >> $S.launch; exit 9; }
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
+test ! -e $S.log || die log-exists
+test ! -e $C || die clone-exists
+git clone -q https://github.com/stev004/jsy_disease_sim.git $C || die clone
+cd $C || die cd
+git checkout -q --detach $H || die checkout
+test -z "$(git diff --name-only c0821180d73b258ad29fa5578b1fbf5643a4b8cb HEAD -- src configs tests scripts)" || die code-moved
+git show HEAD:docs/runs/2026-11-27-g50-exit-audit-brief.md.txt | tr -d '\r' > $S.brief || die brief
+echo "HEAD $H launched $(date -u +%FT%TZ)" >> $S.launch
+codex exec --sandbox read-only -m gpt-6.2-astra -c model_reasoning_effort="high" --output-last-message $S.last.md "$(cat $S.brief)" < /dev/null > $S.log 2>&1
+echo "rc=$?" >> $S.log

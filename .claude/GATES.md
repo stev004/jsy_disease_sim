@@ -4,7 +4,16 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective `7397842`, re-review PASS with N1 MINOR + 3 notes). G46 RESOLVED A (corrective 2 `2b2cd2a`, re-review PASS with 4 NOTES, no defect). G47 RESOLVED A (corrective 3 `98289b3`, re-review 3 PASS with one NOTE). G48 RESOLVED B (director under Steven's delegation 2026-11-27: R3-1 non-blocking, backlog). G49 merge AUTHORIZED and G50 single campaign AUTHORIZED (Steven 2026-11-27). G5 open.
+**2026-11-27:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: L1 FAIL, L2 FAIL, L3 FAIL, L4 FAIL, L5 PASS, L6 FAIL (FINAL — G43 exit audit CONFIRMED, `docs/audits/2026-11-27-g43-campaign-exit-audit-astra62-CONFIRMED.md`; reading MIXED, k = 1 of 6). G35-B FINAL (exit audit CONFIRMED 2026-11-19). Real-data fitting STOPPED (G34 A+B). G40–G50 RESOLVED (G49 merged `c082118`; G50 campaign run and CONFIRMED). **G51 OPEN** (what, if anything, follows G43; default STOP). G5 open.
+
+### G51 — G43 is final (MIXED, 1 of 6 libraries passed). What, if anything, follows?
+- **Result (FINAL):** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: L1 FAIL, L2 FAIL, L3 FAIL, L4 FAIL, L5 PASS, L6 FAIL. Exit audit CONFIRMED (`docs/audits/2026-11-27-g43-campaign-exit-audit-astra62-CONFIRMED.md`). On 20 byte-identical fresh targets, 1 of 6 independent R = 12 libraries passed the frozen arm-(i) gate (L5, one-target margin); the five failures were driven by the inoculation-day offset (13–15/20 hits against 16 required) with P6 and/or P8 failing in four of them; none of the 24 R = 3 batches met the criteria. Frozen reading: "the gate verdict depended on which candidate library was drawn ... recovery under this gate is therefore not shown to be a property of the level R = 12 on this panel".
+- **What this means:** across Phase 0, Phase 0b, G35-B and G43 the outbreak-timing (offset) dimension has never been recovered reliably; beta and detection mostly are. More replicates per candidate does not reliably fix it.
+- **Options:**
+  - **A — STOP (default, director recommendation).** Record the V1.3 synthetic finding: outbreak start timing is not reliably identifiable from this kind of case data under this design; real-data fitting stays stopped. JOS remains a scenario tool.
+  - **B — Labelled demo / conditional fitting.** Fit beta and detection with timing fixed as a stated scenario assumption, titled conditional; no recovery claim.
+  - **C — A new design question** (e.g. a different observation stream such as a serosurvey or longer window), which needs a fresh owner-ruled predeclaration.
+- **Default on no answer:** A (STOP).
 
 ### G5 — Branch cleanup
 - **Question:** 20+ historical branches (now all pushed to origin). Prune any?
