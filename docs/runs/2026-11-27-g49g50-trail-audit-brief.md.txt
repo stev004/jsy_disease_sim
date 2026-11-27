@@ -1,0 +1,14 @@
+TASK: JOS · g49-g50 trail audit · check run trail rows against git and filed artifacts
+ROLE: independent auditor — gpt-6.2-astra @ high (frozen G43 §12 seat 8, Claude-directed run). Read-only provenance audit; no science judgement needed.
+
+GOAL: Audit the 2026-11-27 run `g49-g50` on `main`, trail rows from `g48-g49-g50-resolved` through `g50-exit-CONFIRMED`. Check whether every row's claims resolve against what exists in git and on disk, and return an Attention list. Director: Claude Opus 5.5 (desktop app). Exit auditor: a fresh gpt-6.2-astra @ high (a different instance from you). You are the other family from the director. Disclosed: Astra also held the exit-audit seat for this run and audited earlier runs.
+
+SCOPE: Read-only clone at the path you were launched in. Read `.claude/decisions.tsv` rows from `g48-g49-g50-resolved` to the end, `.claude/RUN.md`, `.claude/GATES.md` (G48–G50 resolved, G51 open), `.claude/FRONTIER.md`, `.claude/DIRECTOR.md`, and every file those rows cite under `docs/runs/2026-11-27-*` and `docs/audits/2026-11-27-*`. You may read (never modify) `/home/steven/jos-g49-merge-20261127`, `/home/steven/jos-g49-merge-mirror.log`, `/home/steven/jos-g50-clone-20261127`, `/home/steven/jos-g43-campaign-20261127` and `/home/steven/jos-g50-*`. Read-only git (incl. `git ls-remote origin`), `sha256sum`, read-only stdlib Python. No edits, commits, pushes, simulations, builds or tests.
+
+CHECKS:
+1. Evidence. Every SHA in an evidence cell exists; every cited path existed on main no later than the row citing it; cited sha256 values equal committed bytes; ls-remote receipts match origin now.
+2. Order. G48/G49/G50 rulings recorded before the merge; the merge-commit mirror log filed on main before the main push; the final merge's code tree equals the mirrored merge (`git diff --name-only 83d20da36479f497f8fc26e024a3626af70e0586 c0821180d73b258ad29fa5578b1fbf5643a4b8cb -- src configs tests scripts pyproject.toml uv.lock .github` empty); campaign launcher filed before launch; the campaign ran once, at `c082118`, from a clean clone into a new empty directory; the exit audit ran after the bundle was sealed; no second campaign.
+3. Claims. Test counts, wall time, bundle size, file counts, k/k′/m and the class in rows match the filed logs, the bundle and the exit audit; G48's quote of Steven's words is exact; G48 = B is labelled a director ruling under delegation.
+4. Rows and state. Every row has seven fields, a numeric tokens cell and `[skip ci]` in both the decision and the commit message; no GitHub Actions run exists for this run's commits; the status phrase is updated consistently in DIRECTOR, GATES and FRONTIER; G51 is open with a default; no stale in-flight claim remains.
+
+REPORT: First line states your model name. Then an Attention list, one line per finding: row ts/phase, what is wrong, the contradicting artifact. "No flags" is valid. Then one line per check (1–5) as OK or FLAG. Final response only.
