@@ -4,9 +4,15 @@
 
 ## Open
 
-**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective `7397842`, re-review PASS with N1 MINOR + 3 notes). G46 RESOLVED A (corrective 2 `2b2cd2a`, re-review PASS with 4 NOTES, no defect). G47 RESOLVED A (corrective 3 `98289b3`, re-review 3 PASS with one NOTE). **G48 OPEN** (one missing test, or rule it non-blocking and go to the merge gate; default HOLD). G5 open.
+**2026-11-19:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: not run (G35-B FINAL — exit audit CONFIRMED, `docs/audits/2026-11-19-g35b-campaign-exit-audit-opus-CONFIRMED.md`); real-data fitting STOPPED (G34 A+B). G40 RESOLVED. G41 RESOLVED B; the owner REJECTED the confirmatory design as uninformative (`docs/research/v1_3/2026-11-20-g41-owner-ruling.md`). G42 RESOLVED B2; consult panel done. G43 RESOLVED F (director under Steven's delegation); G43 predeclaration FROZEN at `fc16adc` (run `g43-predecl`). G44 RESOLVED (implementation authorized; run `g44-impl` complete, review PASS). G45 RESOLVED A (corrective `7397842`, re-review PASS with N1 MINOR + 3 notes). G46 RESOLVED A (corrective 2 `2b2cd2a`, re-review PASS with 4 NOTES, no defect). G47 RESOLVED A (corrective 3 `98289b3`, re-review 3 PASS with one NOTE). G48 RESOLVED B (director under Steven's delegation 2026-11-27: R3-1 non-blocking, backlog). G49 merge AUTHORIZED and G50 single campaign AUTHORIZED (Steven 2026-11-27). G5 open.
 
-### G48 — Re-review 3 passed with one NOTE (a missing test). Add it first, or rule it non-blocking and move to the merge gate?
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G48 — RESOLVED 2026-11-27: B, by the director under Steven's delegation (chat: "yeah keep going. idk if it blocks, you decide or not. merge the code, and we have enough space so feel free to run the study. 2 hours is long") — Re-review 3 passed with one NOTE (a missing test). Add it first, or rule it non-blocking and move to the merge gate?
 - **What:** branch `codex/g43-multilibrary` @ `98289b3c04262a513ed2482f9bf18b9e86726435` (push pending at this commit; see trail row `g44-corr3-pushed`). Re-review 3 PASS, fresh Opus 5.5, bounded to the Q1–Q3 diff: `docs/audits/2026-11-25-g44-corrective3-rereview-opus-PASS.md`. Q1–Q3 confirmed fixed. Director acceptance: full suite exit 0 (1,783 passed, 4 skipped) with temp files on `/dev/shm`; mirror PASS WITH DESELECTION, and the deselected test passed in its own rerun (`docs/runs/2026-11-25-g44-u6-ci-mirror.log`).
 - **The note (R3-1):** the code is correct, but no test checks the marker CONTENT after a VOID reached without an exception (e.g. shared panel P1) when the marker write succeeds. Reverting one line to `write_marker("PASS")` would still pass CI and publish a PASS marker beside a VOID bundle. Fix: one test.
 - **Pattern, for your judgment:** each bounded re-review has found a smaller item in the code the previous fix touched (R1–R7 → N1–N4 → Q1–Q4 → R3-1). The last two rounds found no defects, only test gaps and hardening. My 2026-11-22 rule says any named finding blocks a merge offer; that rule is mine, not the frozen text (§12 line 702 blocks on a *defect*).
@@ -17,12 +23,13 @@
 - **Also for your judgment:** whether, from now on, NOTE-level findings with no defect are recorded on a list instead of opening a gate (it would change the 2026-11-22 DIRECTOR rule).
 - **Separately, before any campaign:** host C: had 4,828,086,272 bytes free at 2026-11-25T22:23Z (`docs/runs/2026-11-25-host-disk-df.txt`, `df -B1 /mnt/c`), below the launch rule `HOST_HEADROOM_BYTES + EXPLORATORY_BUNDLE_UPPER_BYTES + PARENT_BUILD_DISK_BYTES` = 6,001,048,576 bytes (`g43_multilibrary.py` `_launch_checks`), and below the DIRECTOR 5 GB floor. The cause of the drop is not established (the WSL guest's used bytes are in the same file; the g44/g35b/uv-cache directories total 3,106,511,836 bytes). Disk must be freed before the campaign gate.
 - **Default on no answer:** HOLD.
+- **Why B:** R3-1 is a missing test, not a defect; the reviewer verified the behaviour directly by probe. Frozen §12 line 702 blocks on a step-4 *defect*. The last two review rounds found no defects. R3-1 goes to the backlog (add a test that a non-exception VOID publishes a VOID marker). The 2026-11-22 DIRECTOR rule is amended accordingly (see DIRECTOR lesson 2026-11-27).
 
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+### G49 — RESOLVED 2026-11-27: MERGE AUTHORIZED (Steven, same chat message: "merge the code") — SHA-first merge of `codex/g43-multilibrary` @ `98289b3c04262a513ed2482f9bf18b9e86726435`
+- **Command:** `--no-ff` merge of `98289b3c04262a513ed2482f9bf18b9e86726435` into `main` in a fresh clone, full CI mirror on the merge commit filed before the push, explicit `|| die` on every precondition and the push, `ls-remote` receipt. Execution: trail rows `g49-*`.
 
-## Resolved
+### G50 — RESOLVED 2026-11-27: SINGLE CAMPAIGN AUTHORIZED (Steven, same chat message: "feel free to run the study") — frozen G43 §12 step 6
+- **Rules:** one campaign only, at the merge commit, in a fresh clean clone, into a new empty directory outside the repo, from a detached WSL session; launcher refuses if an exit marker exists or the host-disk rule fails (host C: 152,381,341,696 bytes free at 2026-11-27T18:17Z, `docs/runs/2026-11-27-host-disk-df.txt`); no retry, resume or second campaign; then a fresh exit audit (frozen seat 7: gpt-6.2-astra @ high). Real-data fitting stays STOPPED whatever the result. Execution: trail rows `g50-*`.
 
 ### G47 — RESOLVED 2026-11-25: A (Steven, chat: "Fix the notes") — The second re-review passed with four NOTES and no defect. Fix them first, or rule them non-blocking and move to the merge gate?
 - **What:** branch `codex/g43-multilibrary` @ `2b2cd2a4a8237f93ad8e7d3b800585f4c1c489a8` (pushed). Re-review 2 PASS, fresh Opus 5.5: `docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md`. N1–N4 corrected and confirmed by fail-before/pass-after and mutation. Full CI mirror PASS WITH DESELECTION of the pre-existing `test_prov_job_ordering` failure (`docs/runs/2026-11-25-g44-u5-ci-mirror.log`).

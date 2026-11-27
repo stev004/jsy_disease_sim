@@ -1,4 +1,12 @@
-# RUN — nothing in flight. Run `g44-corr3` ENDED: Q1–Q3 corrected and re-reviewed PASS; the merge gate was NOT parked because re-review 3 named one NOTE (R3-1, a missing test) — G48 asks Steven.
+# RUN — IN FLIGHT: run `g49-g50` (Steven 2026-11-27: merge + single campaign; G48 = B).
+
+**Predicate:** `98289b3` merged into main (mirror PASS on the merge commit filed before push, ls-remote receipt); the single G43 campaign run at the merge commit and its bundle sealed; a fresh exit audit (gpt-6.2-astra @ high) filed; status phrase updated per frozen §7.11. Real-data fitting stays STOPPED.
+**In flight:** merge in fresh clone `/home/steven/jos-g49-merge-20261127` (no state commits to main between the clone and the push).
+**Resume recipe:** if the merge clone exists and origin/main lacks the merge: check the mirror log `/home/steven/jos-g49-merge-mirror.log`; if PASS and origin/main is unchanged since the clone, push with ls-remote check; else redo the merge from fresh origin/main. Campaign: never retry or resume; if an exit marker exists, the campaign happened — go to the exit audit.
+
+---
+
+## Previous: Run `g44-corr3` ENDED: Q1–Q3 corrected and re-reviewed PASS; the merge gate was NOT parked because re-review 3 named one NOTE (R3-1, a missing test) — G48 asks Steven.
 
 **Run `g44-corr3` (2026-11-25, G47 = A):** corrective U6 (gpt-6.2-sol @ high, 181,562 tokens; report `docs/runs/2026-11-25-g44-u6-report.md`; no director edits). Acceptance `docs/runs/2026-11-25-g44-u6-director-acceptance.log` (full suite exit 0 with temp files on /dev/shm, host disk below 5 GB); mirror `docs/runs/2026-11-25-g44-u6-ci-mirror.log` PASS WITH DESELECTION (the deselected test passed in its own rerun); re-review 3 PASS (105,901 tokens; `docs/audits/2026-11-25-g44-corrective3-rereview-opus-PASS.md`). Push: trail row `g44-corr3-pushed`. Trail audit `docs/audits/2026-11-25-g44-corr3-trail-audit-astra62.md` (rows `g44-corr3-trail-audit`, `g44-corr3-trail-correction`). Host disk evidence `docs/runs/2026-11-25-host-disk-df.txt`. Nothing merged; no campaign.
 **Resume recipe:** G48 = A → test-only corrective on `/home/steven/jos-g44-wt` at `98289b3` (launcher pattern `docs/runs/2026-11-25-g44-u6-launcher.sh.txt`), acceptance `/tmp/g44acc-shm.sh`, mirror on /dev/shm, re-review restricted to the new test, push, merge gate. G48 = B → park the SHA-first merge gate for `98289b3`. Host disk 4.83 GB free (filed df): keep temp files on /dev/shm.
