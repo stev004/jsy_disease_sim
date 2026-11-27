@@ -1,0 +1,41 @@
+start 2026-11-27T18:57:20Z
+Filesystem        1B-blocks         Used    Available Use% Mounted on
+C:\            499442573312 346374156288 153068417024  70% /mnt/c
+execute start 2026-11-27T18:57:50Z
+Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: L1 FAIL, L2 FAIL, L3 FAIL, L4 FAIL, L5 PASS, L6 FAIL
+	Command being timed: "uv run python -m jersey_outbreak.g43_multilibrary execute --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md --output-dir /home/steven/jos-g43-campaign-20261127/bundle"
+	User time (seconds): 6848.36
+	System time (seconds): 17.31
+	Percent of CPU this job got: 100%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:54:25
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 1357872
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 12
+	Minor (reclaiming a frame) page faults: 1010243
+	Voluntary context switches: 18145
+	Involuntary context switches: 19672
+	Swaps: 0
+	File system inputs: 7960
+	File system outputs: 1348656
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+execute rc=0 end 2026-11-27T20:52:15Z
+total 56
+drwxr-xr-x   3 steven steven  4096 Nov 27 20:52 .
+drwxr-x--- 140 steven steven 36864 Nov 27 18:57 ..
+dr-xr-xr-x  10 steven steven  4096 Nov 27 20:52 bundle
+-rw-r--r--   1 steven steven  2691 Nov 27 18:57 dry-run.json
+-rw-r--r--   1 steven steven    88 Nov 27 20:52 jos-g43-campaign.exit
+{"output_dir":"/home/steven/jos-g43-campaign-20261127/bundle","software_status":"PASS"}
+
+Filesystem        1B-blocks         Used    Available Use% Mounted on
+C:\            499442573312 346402770944 153039802368  70% /mnt/c
+559977636	/home/steven/jos-g43-campaign-20261127/bundle
+CAMPAIGN_DONE

@@ -1,0 +1,33 @@
+TASK: JOS · g50-exit-audit · independent exit audit of the single G43 campaign bundle
+ROLE: independent auditor — fresh gpt-6.2-astra @ high (frozen G43 §12 seat 7). Read-only. You are neither the implementer (gpt-6.2-sol) nor the step-4 reviewer (Claude Opus 5.5).
+
+GOAL: Recompute, from the raw campaign bundle and with the Python standard library only, every predicate P1–P10 for the shared panel and each of the six libraries, the six verdicts, k, k′, m and every m_ℓ, the S1/S2 triggers, the class and the reading; compare with what the bundle publishes; and return exactly one verdict line: `JOS G43 CAMPAIGN EXIT AUDIT: CONFIRMED`, `JOS G43 CAMPAIGN EXIT AUDIT: DISCREPANCY` or `JOS G43 CAMPAIGN EXIT AUDIT: VOID`.
+
+SCOPE (read-only):
+- Repository clone at the merge commit: the path you were launched in (main at `c0821180d73b258ad29fa5578b1fbf5643a4b8cb` or a later docs-only commit; check `git diff --name-only c0821180d73b258ad29fa5578b1fbf5643a4b8cb HEAD -- src configs tests scripts` is empty).
+- Campaign bundle (sealed, read-only): `/home/steven/jos-g43-campaign-20261127/bundle`, exit marker `/home/steven/jos-g43-campaign-20261127/jos-g43-campaign.exit`, launch log `/home/steven/jos-g50-campaign-20261127.log`.
+- You may run read-only shell commands, `sha256sum`, and Python with the standard library only (`python3 -I`). You may run the repository's stdlib-only `src/jersey_outbreak/g43_recompute.py` as ONE input, but your verdict must rest on your own independent recomputation as well; where the two differ, say so. Write scratch files only under `/tmp/jos-g50-exit-audit-*`. No edits to the bundle or the repo, no commits, pushes, simulations, builds or tests.
+
+CONTEXT — binding, read in full:
+1. Frozen predeclaration `docs/research/v1_3/2026-11-20-g43-predeclaration.md` (freeze commit fc16adcb3f8817eb2630ae5a31cd0508990bebd2; committed-bytes sha256 67c3c7c03c1ec0f6176e430098c702a913368de51a9e8793c145094255b71094). §7.1–§7.11 (predicates, classes, readings, S1/S2, status phrase), §8 seeds, §9 caps, §10 bundle, §12 VOID/FAIL rules and step 7.
+2. Owner ruling `docs/research/v1_3/2026-11-20-g43-owner-ruling.md`; owner clarification 1 `docs/research/v1_3/2026-11-21-g43-owner-clarification-1.md` (VOID reports status and cause only).
+3. Implementation reviews (context, not evidence): `docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md`, `docs/audits/2026-11-24-g44-corrective-rereview-opus-PASS.md`, `docs/audits/2026-11-25-g44-corrective2-rereview-opus-PASS.md`, `docs/audits/2026-11-25-g44-corrective3-rereview-opus-PASS.md`.
+4. `.claude/DIRECTOR.md` (never call replicate spread a confidence interval; nothing is calibrated or validated; explicit unknown beats false precision).
+
+Reviewer-requested audit items (from the reviews above):
+- R6: P10's measured counts are read from `campaign_summary.json.measured_work` (the only retained ledger copy). Cross-check them against independent file counts in the bundle (candidate tables, blind records, target tables) and the frozen §9 caps.
+- Q4/N2: the sealed bundle, not the exit marker, is the authoritative record. Confirm the marker's `software_status` agrees with the bundle and that `verify_bundle`-style integrity holds (SHA256SUMS over every file; no write bits).
+
+CHECK AT LEAST:
+1. Integrity: SHA256SUMS covers every file and every digest matches; no write bits; frozen inputs in the bundle equal the committed bytes and digests; the source/config hashes in the bundle equal the merge commit's files; the run used the frozen seeds (§8) and grid.
+2. Software status: PASS or VOID, and if VOID, that the bundle carries status and cause only (clarification 1).
+3. If intact: recompute P1–P10 per library and the shared panel from raw rows (target latent truth, observation events, candidate tables, blind records), using exact integer and Decimal arithmetic as frozen; verdicts; k; k′; m and m_ℓ from the R = 3 reference batches; S1/S2 eligibility and order; the class; the reading text verbatim against §7.4; the status phrase against §7.11.
+4. Blinding: every blind record was persisted before any truth access (timestamps/ordering evidence in the bundle, if retained); no descriptive feeds a verdict.
+5. Work: measured counts equal the §9 caps exactly; wall-time disclosures come from one source.
+6. Nothing in the bundle claims calibration, validation or a confidence interval.
+
+REPORT: First line: your exact model name and effort. Second line: the verdict line. Then: the recomputed table (per library: P1–P10, verdict; shared panel P1/P2/P3/P9/P10), k, k′, m, m_ℓ, S1/S2, class, reading; then any discrepancy, each with the bundle path and both values; then observations (non-verdict-changing), numbered. Final response only; no more than about 2,000 words.
+
+TIMEBOX: one pass; stop and report if you exceed ~300K tokens.
+FORBIDDEN: editing the bundle or repo; commits; pushes; any simulation, build or campaign; calling anything calibrated or validated; calling replicate spread a confidence interval.
+STANDING: `.claude/DIRECTOR.md` is binding in full.
