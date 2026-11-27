@@ -1,0 +1,24 @@
+*Filed verbatim by the director from /home/steven/jos-g4950-trail-astra62.last.md (gpt-6.2-astra @ high, read-only clone at 5bb3b62290d58b0cdf06db154ffd28b32985a8f8; brief docs/runs/2026-11-27-g49g50-trail-audit-brief.md.txt; 77,296 tokens).*
+
+---
+
+gpt-6.2-astra @ high
+
+**Attention** — all row times are UTC on 2026-11-27.
+
+- **18:18 `g48-g49-g50-resolved`** — The row reports 152,381,341,696 bytes free on host C:. The cited `df` receipt records 152,370,274,304 at 18:18:07, a difference of 11,067,392 bytes. Both clear the launch threshold. [Disk receipt](/home/steven/jos-g4950-trail-ro/docs/runs/2026-11-27-host-disk-df.txt:3)
+- **18:18 `g48-g49-g50-resolved`** — Steven’s quote matches GATES character for character, and both records identify B as the director’s delegated ruling. The original chat message is absent from the audit evidence, so exactness to Steven’s original is unverified. [G48 ruling](/home/steven/jos-g4950-trail-ro/.claude/GATES.md:24)
+- **18:18 `g48-g49-g50-resolved`** — G48 records R3-1 as a backlog item and describes the missing test. The designated living backlog has no entry for it. [G48 disposition](/home/steven/jos-g4950-trail-ro/.claude/GATES.md:35) · [Roadmap](/home/steven/jos-g4950-trail-ro/docs/roadmap.md:3)
+- **18:56 `g49-merged`** — The push receipt correctly records `c082118` at push time. Live GitHub `main` is `5bb3b62`, nine first-parent commits later. Historical provenance checks out, but the requested current-tip equality fails. [Push receipt](/home/steven/jos-g4950-trail-ro/docs/runs/2026-11-27-g49-merge-push-receipt.txt:3) · [GitHub main](https://github.com/stev004/jsy_disease_sim/commits/main/)
+- **18:56 `g49-merged`** — The row accurately says `PASS WITH DESELECTION`. The closeout’s “predicate met” overstates the original RUN predicate of a mirror PASS on the pushed merge. The mirror ran on `83d20da` with 1,782 passed, 4 skipped and 1 deselected. The deselected test failed its separate rerun. The required code-tree diff to `c082118` was empty. [Original predicate](https://github.com/stev004/jsy_disease_sim/blob/5323bbb/.claude/RUN.md#L3) · [Mirror rerun](/home/steven/jos-g4950-trail-ro/docs/runs/2026-11-27-g49-merge-mirror.log:258) · [Closeout](/home/steven/jos-g4950-trail-ro/.claude/RUN.md:1)
+- **18:59 `g50-launch`** — The row reports 152 GB free. The launch log records 153,068,417,024 bytes, or 153.07 GB. It retains neither the claimed three-process observation at +90 seconds nor a record of WSL session detachment. [Campaign log](/home/steven/jos-g4950-trail-ro/docs/runs/2026-11-27-g50-campaign.log:1)
+- **18:59 `g50-launch`** — “Every precondition `|| die`” is literally inaccurate. The existing-log guard exits 9 directly. It still blocks a relaunch. [Launcher](/home/steven/jos-g4950-trail-ro/docs/runs/2026-11-27-g50-campaign-launcher.sh.txt:9)
+- **21:00 `g50-exit-CONFIRMED`** — FRONTIER gives two current code baselines. “Where the project is” still names `0c9c371`; the live override correctly names `c082118`. [Stale baseline](/home/steven/jos-g4950-trail-ro/.claude/FRONTIER.md:9) · [Live override](/home/steven/jos-g4950-trail-ro/.claude/FRONTIER.md:15)
+
+**Checks**
+
+1. **FLAG — Evidence.** Every cited Git object resolved, including `83d20da` in the retained merge clone. All repo paths existed by their citing row. The committed manifest matched the sealed copy byte for byte, and all 45,804 digests verified. The historical receipt differs from today’s `main`.
+2. **OK — Order.** The rulings preceded both merges. The merge clone fetched mirror filing `e948c9f` before pushing `c082118`. The launcher was filed at 18:57:17. The retained evidence shows one execution at `c082118` from a clean clone into a new destination. The exit marker was written at 20:52:14 and the exit audit launched at 20:53:33. No second execution appears in scope.
+3. **FLAG — Claims.** The disk figures and launch-observation gaps are listed above. The campaign figures agree: exit 0, elapsed 1:54:25, peak RSS 1,357,872 KB, 559,977,636 file bytes, 45,805 files including the manifest, and 450,000 objectives. The bundle and exit audit agree on **MIXED**, L5 alone PASS, `k = 1`, `k′ = 1`, `m = 0`.
+4. **FLAG — Rows and state.** All five rows have seven fields, numeric tokens and `[skip ci]` in both decision and commit message. GitHub Actions returned zero runs for every run commit checked. DIRECTOR, GATES and FRONTIER carry the same final status phrase. RUN has nothing in flight and G51 is open with default A, STOP. FRONTIER’s stale baseline remains. Audit diff: 0 files changed.
+5. **FLAG — Brief numbering.** The report instruction requests checks 1–5, but the filed brief defines only checks 1–4. [Filed brief](/home/steven/jos-g4950-trail-ro/docs/runs/2026-11-27-g49g50-trail-audit-brief.md.txt:8)
