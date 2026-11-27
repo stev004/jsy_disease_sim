@@ -1,0 +1,28 @@
+#!/bin/bash
+set -u
+die(){ echo "DIE $*"; exit 9; }
+MIRRORED=83d20da36479f497f8fc26e024a3626af70e0586
+BR=98289b3c04262a513ed2482f9bf18b9e86726435
+C=/home/steven/jos-g49-merge-20261127
+cd $C || die cd
+test "$(git rev-parse HEAD)" = "$MIRRORED" || die not-mirrored-head
+test -z "$(git status --porcelain)" || die dirty
+git fetch -q origin main || die fetch
+git cat-file -e origin/main:docs/runs/2026-11-27-g49-merge-mirror.log || die mirror-log-not-on-main
+git checkout -q -B g49-final origin/main || die checkout
+git -c user.name=stev004 -c user.email="$(git -C /home/steven/jos-g44-wt config user.email)" merge -q --no-ff $BR -m "G49: merge codex/g43-multilibrary @ 98289b3 (G43 multi-library harness) [skip ci]
+
+Reviewed: docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md and correctives' re-reviews
+(2026-11-24, 2026-11-25 x2). Authorized by Steven 2026-11-27. Code tree identical to mirrored merge
+83d20da (docs/runs/2026-11-27-g49-merge-mirror.log).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" || die merge
+F=$(git rev-parse HEAD)
+test -z "$(git diff --name-only $MIRRORED $F -- src configs tests scripts pyproject.toml uv.lock .github)" || die code-tree-differs
+echo "code-tree-identical-to $MIRRORED: yes"
+git diff --stat $MIRRORED $F | tail -1
+git push -q origin $F:refs/heads/main || die push
+R=$(git ls-remote origin refs/heads/main | cut -f1)
+echo "ls-remote main: $R"
+test "$R" = "$F" || die lsremote-mismatch
+echo "PUSH_OK MERGE=$F"
