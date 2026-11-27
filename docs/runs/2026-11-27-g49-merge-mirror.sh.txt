@@ -1,0 +1,27 @@
+#!/bin/bash
+set -u
+L=/home/steven/jos-g49-merge-mirror.log
+die(){ echo "DIE $*" >> $L; echo MIRROR_DONE >> $L; exit 9; }
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
+BR=98289b3c04262a513ed2482f9bf18b9e86726435
+C=/home/steven/jos-g49-merge-20261127
+test ! -e $C || die clone-exists
+test ! -e $L || die log-exists
+git clone -q https://github.com/stev004/jsy_disease_sim.git $C || die clone
+cd $C || die cd
+test "$(git ls-remote origin refs/heads/codex/g43-multilibrary | cut -f1)" = "$BR" || die branch-tip
+git fetch -q origin codex/g43-multilibrary || die fetch-branch
+git merge-base --is-ancestor 9002c59fb07e830a2064c818a447be6b023712da $BR || die ancestry
+git -c user.name=stev004 -c user.email="$(git -C /home/steven/jos-g44-wt config user.email)" merge -q --no-ff $BR -m "G49: merge codex/g43-multilibrary @ 98289b3 (G43 multi-library harness) [skip ci]
+
+Reviewed: docs/audits/2026-11-22-g44-implementation-review-opus-PASS.md and correctives' re-reviews
+(2026-11-24, 2026-11-25 x2). Authorized by Steven 2026-11-27.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" || die merge
+M=$(git rev-parse HEAD)
+echo "MERGE_SHA=$M BASE=$(git rev-parse HEAD^1)" > $L
+test -z "$(git diff --name-only $BR $M -- src configs tests scripts)" || die code-tree-differs-from-branch
+rm -rf /tmp/jos-g44u6-mirror-population /tmp/jos-g44u6-mirror-structure /tmp/jos-g44u6-mirror-network
+JOS_EXPECTED_SHA=$M bash /tmp/u6mc.sh >> $L 2>&1
+echo "rc=$?" >> $L
+echo MIRROR_DONE >> $L
