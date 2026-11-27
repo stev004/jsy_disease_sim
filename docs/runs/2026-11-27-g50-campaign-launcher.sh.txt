@@ -1,0 +1,31 @@
+#!/bin/bash
+set -u
+M=c0821180d73b258ad29fa5578b1fbf5643a4b8cb
+P=/home/steven/jos-g43-campaign-20261127
+C=/home/steven/jos-g50-clone-20261127
+L=/home/steven/jos-g50-campaign-20261127.log
+die(){ echo "DIE $*" >> $L; echo CAMPAIGN_DONE >> $L; exit 9; }
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH" UV_CACHE_DIR=/tmp/uv-cache MPLCONFIGDIR=/tmp/mpl-cache STARSIM_INSTALL_FONTS=0
+test ! -e $L || { echo "log exists"; exit 9; }
+test ! -e $P || die campaign-parent-exists
+test ! -e $C || die clone-exists
+test ! -e $P/jos-g43-campaign.exit || die exit-marker-exists
+echo "start $(date -u +%FT%TZ)" > $L
+df -B1 /mnt/c >> $L || die df
+git clone -q https://github.com/stev004/jsy_disease_sim.git $C || die clone
+cd $C || die cd
+git checkout -q --detach $M || die checkout
+test "$(git rev-parse HEAD)" = "$M" || die head
+test -z "$(git status --porcelain)" || die dirty
+uv sync --locked -q >> $L 2>&1 || die uv-sync
+mkdir $P || die mkdir-parent
+uv run python -m jersey_outbreak.g43_multilibrary dry-run --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md > $P/dry-run.json 2>> $L || die dry-run
+echo "execute start $(date -u +%FT%TZ)" >> $L
+/usr/bin/time -v uv run python -m jersey_outbreak.g43_multilibrary execute --config configs/calibration/v13_g43_multilibrary.yaml --predeclaration docs/research/v1_3/2026-11-20-g43-predeclaration.md --output-dir $P/bundle >> $L 2>&1
+echo "execute rc=$? end $(date -u +%FT%TZ)" >> $L
+ls -la $P >> $L
+test -e $P/jos-g43-campaign.exit && cat $P/jos-g43-campaign.exit >> $L
+echo >> $L
+df -B1 /mnt/c >> $L
+du -sb $P/bundle >> $L
+echo CAMPAIGN_DONE >> $L

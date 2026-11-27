@@ -1,7 +1,8 @@
 # RUN — IN FLIGHT: run `g49-g50` (Steven 2026-11-27: merge + single campaign; G48 = B).
 
 **Predicate:** `98289b3` merged into main (mirror PASS on the merge commit filed before push, ls-remote receipt); the single G43 campaign run at the merge commit and its bundle sealed; a fresh exit audit (gpt-6.2-astra @ high) filed; status phrase updated per frozen §7.11. Real-data fitting stays STOPPED.
-**In flight:** merge in fresh clone `/home/steven/jos-g49-merge-20261127` (no state commits to main between the clone and the push).
+**Done:** G49 merged — main `c0821180d73b258ad29fa5578b1fbf5643a4b8cb` (trail row `g49-merged`).
+**In flight:** the single G43 campaign at `c082118` — clone `/home/steven/jos-g50-clone-20261127`, output `/home/steven/jos-g43-campaign-20261127/bundle`, marker `/home/steven/jos-g43-campaign-20261127/jos-g43-campaign.exit`, log `/home/steven/jos-g50-campaign-20261127.log`, launcher `docs/runs/2026-11-27-g50-campaign-launcher.sh.txt`. Launch: trail row `g50-launch`. NEVER relaunch: if the marker or the log exists, the campaign has happened.
 **Resume recipe:** if the merge clone exists and origin/main lacks the merge: check the mirror log `/home/steven/jos-g49-merge-mirror.log`; if PASS and origin/main is unchanged since the clone, push with ls-remote check; else redo the merge from fresh origin/main. Campaign: never retry or resume; if an exit marker exists, the campaign happened — go to the exit audit.
 
 ---
