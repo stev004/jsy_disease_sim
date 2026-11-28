@@ -4,9 +4,15 @@
 
 ## Open
 
-**2026-11-27:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: L1 FAIL, L2 FAIL, L3 FAIL, L4 FAIL, L5 PASS, L6 FAIL (FINAL — G43 exit audit CONFIRMED, `docs/audits/2026-11-27-g43-campaign-exit-audit-astra62-CONFIRMED.md`; reading MIXED, k = 1 of 6). G35-B FINAL (exit audit CONFIRMED 2026-11-19). Real-data fitting STOPPED (G34 A+B). G40–G50 RESOLVED (G49 merged `c082118`; G50 campaign run and CONFIRMED). **G51 OPEN** (what, if anything, follows G43; default STOP). G5 open.
+**2026-11-27:** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: L1 FAIL, L2 FAIL, L3 FAIL, L4 FAIL, L5 PASS, L6 FAIL (FINAL — G43 exit audit CONFIRMED, `docs/audits/2026-11-27-g43-campaign-exit-audit-astra62-CONFIRMED.md`; reading MIXED, k = 1 of 6). G35-B FINAL (exit audit CONFIRMED 2026-11-19). Real-data fitting STOPPED (G34 A+B). G40–G50 RESOLVED (G49 merged `c082118`; G50 campaign run and CONFIRMED). G51 RESOLVED A: V1.3 STOPS before real-data fitting (Steven 2026-11-28; final finding `docs/research/v1_3/2026-11-28-v13-final-finding.md`). G5 open.
 
-### G51 — G43 is final (MIXED, 1 of 6 libraries passed). What, if anything, follows?
+### G5 — Branch cleanup
+- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
+- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
+
+## Resolved
+
+### G51 — RESOLVED 2026-11-28: A — STOP (Steven, chat: "yeah", agreeing to the director's recommendation to stop and write up the final V1.3 finding) — G43 is final (MIXED, 1 of 6 libraries passed). What, if anything, follows?
 - **Result (FINAL):** Phase 0: FAIL (2026-09-24); Phase 0b: FAIL (2026-09-26); G35-B: B FAIL, i PASS, ii FAIL, iii FAIL; G43: L1 FAIL, L2 FAIL, L3 FAIL, L4 FAIL, L5 PASS, L6 FAIL. Exit audit CONFIRMED (`docs/audits/2026-11-27-g43-campaign-exit-audit-astra62-CONFIRMED.md`). On 20 byte-identical fresh targets, 1 of 6 independent R = 12 libraries passed the frozen arm-(i) gate (L5, one-target margin); the five failures were driven by the inoculation-day offset (13–15/20 hits against 16 required) with P6 and/or P8 failing in four of them; none of the 24 R = 3 batches met the criteria. Frozen reading: "the gate verdict depended on which candidate library was drawn ... recovery under this gate is therefore not shown to be a property of the level R = 12 on this panel".
 - **What this means:** across Phase 0, Phase 0b, G35-B and G43 the outbreak-timing (offset) dimension has never been recovered reliably; beta and detection mostly are. More replicates per candidate does not reliably fix it.
 - **Options:**
@@ -14,12 +20,7 @@
   - **B — Labelled demo / conditional fitting.** Fit beta and detection with timing fixed as a stated scenario assumption, titled conditional; no recovery claim.
   - **C — A new design question** (e.g. a different observation stream such as a serosurvey or longer window), which needs a fresh owner-ruled predeclaration.
 - **Default on no answer:** A (STOP).
-
-### G5 — Branch cleanup
-- **Question:** 20+ historical branches (now all pushed to origin). Prune any?
-- **Default:** preserve all (handoff §7.6). Revisit only after V1.1 is secure.
-
-## Resolved
+- **Outcome:** final finding filed `docs/research/v1_3/2026-11-28-v13-final-finding.md`. Real-data fitting stays STOPPED; JOS remains a scenario tool. Re-opening needs a new Steven decision and a fresh owner-ruled predeclaration.
 
 ### G48 — RESOLVED 2026-11-27: B, by the director under Steven's delegation (chat: "yeah keep going. idk if it blocks, you decide or not. merge the code, and we have enough space so feel free to run the study. 2 hours is long") — Re-review 3 passed with one NOTE (a missing test). Add it first, or rule it non-blocking and move to the merge gate?
 - **What:** branch `codex/g43-multilibrary` @ `98289b3c04262a513ed2482f9bf18b9e86726435` (push pending at this commit; see trail row `g44-corr3-pushed`). Re-review 3 PASS, fresh Opus 5.5, bounded to the Q1–Q3 diff: `docs/audits/2026-11-25-g44-corrective3-rereview-opus-PASS.md`. Q1–Q3 confirmed fixed. Director acceptance: full suite exit 0 (1,783 passed, 4 skipped) with temp files on `/dev/shm`; mirror PASS WITH DESELECTION, and the deselected test passed in its own rerun (`docs/runs/2026-11-25-g44-u6-ci-mirror.log`).
